@@ -8,8 +8,13 @@ export interface Profile {
   id?: number;
   department: DepartmentSlug;
   city?: string;
+  // Next prenatal appointment (build spec §4). Local-only, NO push. Optional.
+  nextAppointment?: number;
   createdAt: number;
 }
+
+// Mood scale for the daily journal entry (build spec §2), es-PY labels.
+export type Mood = "muy_bien" | "bien" | "regular" | "mal" | "muy_mal";
 
 export interface Pregnancy {
   id?: number;
@@ -21,10 +26,19 @@ export interface Pregnancy {
 export interface JournalEntry {
   id?: number;
   week: number;
+  mood?: Mood;
   symptoms: string[];
   // When a PIN is set, `note` is stored encrypted (see lib/crypto.ts).
   note: string;
   noteEncrypted?: boolean;
+  createdAt: number;
+}
+
+// Belly photos (build spec §5). The Blob NEVER leaves the device.
+export interface PhotoEntry {
+  id?: number;
+  week: number;
+  blob: Blob;
   createdAt: number;
 }
 
@@ -62,6 +76,7 @@ export class NidoDB extends Dexie {
   contractionEntries!: Table<ContractionEntry, number>;
   weightEntries!: Table<WeightEntry, number>;
   checklistState!: Table<ChecklistStateRow, number>;
+  photoEntries!: Table<PhotoEntry, number>;
 
   constructor() {
     super("nido");
@@ -73,6 +88,11 @@ export class NidoDB extends Dexie {
       contractionEntries: "++id, startedAt",
       weightEntries: "++id, date",
       checklistState: "++id, &key",
+    });
+    // v3: belly photo diary (build spec §5). New store; existing stores
+    // unchanged, so the upgrade is purely additive.
+    this.version(2).stores({
+      photoEntries: "++id, week, createdAt",
     });
   }
 }

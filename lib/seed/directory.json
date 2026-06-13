@@ -132,6 +132,126 @@
       "mapsUrl": "https://maps.google.com/?q=Encarnacion+Paraguay",
       "isSponsored": false,
       "priority": 20
+    },
+    {
+      "id": "dir-ped-001",
+      "name": "Consultorio Pediátrico Crecer (placeholder)",
+      "category": "pediatra",
+      "department": "capital",
+      "city": "Asunción",
+      "address": "Av. España 980 (placeholder)",
+      "whatsappNumber": "+595981000060",
+      "mapsUrl": "https://maps.google.com/?q=Asuncion+Paraguay",
+      "isSponsored": false,
+      "priority": 20
+    },
+    {
+      "id": "dir-ped-002",
+      "name": "Pediatría del Este (placeholder)",
+      "category": "pediatra",
+      "department": "alto-parana",
+      "city": "Ciudad del Este",
+      "address": "Av. Adrián Jara 450 (placeholder)",
+      "whatsappNumber": "+595981000061",
+      "mapsUrl": "https://maps.google.com/?q=Ciudad+del+Este+Paraguay",
+      "isSponsored": false,
+      "priority": 20
+    },
+    {
+      "id": "dir-lac-001",
+      "name": "Apoyo a la Lactancia Mamá Nido (placeholder)",
+      "category": "lactancia",
+      "department": "central",
+      "city": "San Lorenzo",
+      "address": "Centro comunitario (placeholder)",
+      "whatsappNumber": "+595981000070",
+      "mapsUrl": "https://maps.google.com/?q=San+Lorenzo+Paraguay",
+      "isSponsored": false,
+      "priority": 20
+    },
+    {
+      "id": "dir-lac-002",
+      "name": "Consultora en Lactancia Itapúa (placeholder)",
+      "category": "lactancia",
+      "department": "itapua",
+      "city": "Encarnación",
+      "address": "Consultorio céntrico (placeholder)",
+      "whatsappNumber": "+595981000071",
+      "mapsUrl": "https://maps.google.com/?q=Encarnacion+Paraguay",
+      "isSponsored": false,
+      "priority": 20
+    },
+    {
+      "id": "dir-vac-001",
+      "name": "Vacunatorio Central (placeholder)",
+      "category": "vacunatorio",
+      "department": "capital",
+      "city": "Asunción",
+      "address": "Av. Mariscal López 2100 (placeholder)",
+      "whatsappNumber": "+595981000080",
+      "mapsUrl": "https://maps.google.com/?q=Asuncion+Paraguay",
+      "isSponsored": false,
+      "priority": 20
+    },
+    {
+      "id": "dir-vac-002",
+      "name": "Vacunatorio del Pueblo (placeholder)",
+      "category": "vacunatorio",
+      "department": "central",
+      "city": "Lambaré",
+      "address": "Av. Cacique Lambaré 700 (placeholder)",
+      "whatsappNumber": "+595981000081",
+      "mapsUrl": "https://maps.google.com/?q=Lambare+Paraguay",
+      "isSponsored": false,
+      "priority": 20
+    },
+    {
+      "id": "dir-tie-001",
+      "name": "Tienda Mundo Bebé (placeholder)",
+      "category": "tienda_bebe",
+      "department": "capital",
+      "city": "Asunción",
+      "address": "Shopping del centro (placeholder)",
+      "whatsappNumber": "+595981000090",
+      "mapsUrl": "https://maps.google.com/?q=Asuncion+Paraguay",
+      "isSponsored": true,
+      "priority": 75
+    },
+    {
+      "id": "dir-tie-002",
+      "name": "Todo para tu Bebé (placeholder)",
+      "category": "tienda_bebe",
+      "department": "alto-parana",
+      "city": "Ciudad del Este",
+      "address": "Av. San Blas 1200 (placeholder)",
+      "whatsappNumber": "+595981000091",
+      "mapsUrl": "https://maps.google.com/?q=Ciudad+del+Este+Paraguay",
+      "isSponsored": false,
+      "priority": 20
+    },
+    {
+      "id": "dir-far-001",
+      "name": "Farmacia La Salud (placeholder)",
+      "category": "farmacia",
+      "department": "central",
+      "city": "Fernando de la Mora",
+      "address": "Ruta Mcal. Estigarribia 333 (placeholder)",
+      "whatsappNumber": "+595981000100",
+      "mapsUrl": "https://maps.google.com/?q=Fernando+de+la+Mora+Paraguay",
+      "isSponsored": false,
+      "priority": 20
+    },
+    {
+      "id": "dir-far-002",
+      "name": "Farmacia Encarnación (placeholder)",
+      "category": "farmacia",
+      "department": "itapua",
+      "city": "Encarnación",
+      "address": "Av. Irrazábal 1200 (placeholder)",
+      "whatsappNumber": "+595981000101",
+      "mapsUrl": "https://maps.google.com/?q=Encarnacion+Paraguay",
+      "isSponsored": false,
+      "priority": 20
     }
   ]
 }

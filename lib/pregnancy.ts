@@ -39,6 +39,21 @@ export function getDueDate(lmp: number): number {
   return lmp + GESTATION_DAYS * MS_PER_DAY;
 }
 
+/** Back-calculate the LMP from an entered due date (build spec §1). */
+export function lmpFromDueDate(dueDate: number): number {
+  return dueDate - GESTATION_DAYS * MS_PER_DAY;
+}
+
+/**
+ * Raw (un-clamped) gestational week, for validation in the date editor
+ * (build spec §1): lets the UI warn when an entered date implies a term
+ * beyond 42 weeks while still allowing the save.
+ */
+export function getRawWeek(lmp: number, now: number = Date.now()): number {
+  const days = Math.floor((now - lmp) / MS_PER_DAY);
+  return Math.floor(days / 7) + 1;
+}
+
 /** Days remaining until the due date (never negative). */
 export function getDaysRemaining(lmp: number, now: number = Date.now()): number {
   const remaining = Math.ceil((getDueDate(lmp) - now) / MS_PER_DAY);

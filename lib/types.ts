@@ -32,10 +32,22 @@ export interface AdPlacement {
   priority: number;
 }
 
+// Broadened in v3 ("Cerca tuyo", build spec §6).
+export type DirectoryCategory =
+  | "sanatorio"
+  | "obstetra"
+  | "ecografia"
+  | "cordon"
+  | "pediatra"
+  | "lactancia"
+  | "vacunatorio"
+  | "tienda_bebe"
+  | "farmacia";
+
 export interface DirectoryListing {
   id: string;
   name: string;
-  category: "sanatorio" | "obstetra" | "ecografia" | "cordon";
+  category: DirectoryCategory;
   department: DepartmentSlug;
   city: string;
   address?: string;
@@ -43,6 +55,24 @@ export interface DirectoryListing {
   mapsUrl?: string;
   isSponsored: boolean;
   priority: number;
+}
+
+// Curated events (build spec §7). Seed-only — never user-generated.
+export type EventType = "charla" | "taller" | "feria" | "clase" | "encuentro";
+
+export interface EventItem {
+  id: string;
+  title: string;
+  type: EventType;
+  department: DepartmentSlug;
+  city: string;
+  venue?: string;
+  date: number;
+  description: string;
+  organizer: string;
+  whatsappNumber?: string;
+  mapsUrl?: string;
+  isSponsored: boolean;
 }
 
 export interface Article {

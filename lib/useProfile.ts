@@ -10,6 +10,7 @@ export interface ProfileState {
   hasProfile: boolean;
   department?: string;
   city?: string;
+  nextAppointment?: number;
   lmpDate?: number;
   dueDate?: number;
   week?: number;
@@ -46,6 +47,7 @@ export function useProfile(): ProfileState {
     hasProfile: true,
     department: profile.department,
     city: profile.city,
+    nextAppointment: profile.nextAppointment,
     lmpDate: pregnancy.lmpDate,
     dueDate: pregnancy.dueDate,
     week,

@@ -1,0 +1,137 @@
+{
+  "_comment": "PLACEHOLDER directory listings for the MVP. Names are invented and phone numbers are non-working placeholder +595 numbers. Replace with real, consented listings before launch. Do NOT treat these as real businesses.",
+  "listings": [
+    {
+      "id": "dir-san-001",
+      "name": "Sanatorio Santa María (placeholder)",
+      "category": "sanatorio",
+      "department": "capital",
+      "city": "Asunción",
+      "address": "Av. Mariscal López 1234, Asunción (placeholder)",
+      "whatsappNumber": "+595981000001",
+      "mapsUrl": "https://maps.google.com/?q=Asuncion+Paraguay",
+      "isSponsored": true,
+      "priority": 100
+    },
+    {
+      "id": "dir-san-002",
+      "name": "Sanatorio del Sol (placeholder)",
+      "category": "sanatorio",
+      "department": "central",
+      "city": "Fernando de la Mora",
+      "address": "Ruta Mariscal Estigarribia 555 (placeholder)",
+      "whatsappNumber": "+595981000002",
+      "mapsUrl": "https://maps.google.com/?q=Fernando+de+la+Mora+Paraguay",
+      "isSponsored": false,
+      "priority": 50
+    },
+    {
+      "id": "dir-san-003",
+      "name": "Sanatorio Guaraní (placeholder)",
+      "category": "sanatorio",
+      "department": "alto-parana",
+      "city": "Ciudad del Este",
+      "address": "Av. San Blas 2100 (placeholder)",
+      "whatsappNumber": "+595981000003",
+      "mapsUrl": "https://maps.google.com/?q=Ciudad+del+Este+Paraguay",
+      "isSponsored": false,
+      "priority": 50
+    },
+    {
+      "id": "dir-san-004",
+      "name": "Sanatorio Itapúa (placeholder)",
+      "category": "sanatorio",
+      "department": "itapua",
+      "city": "Encarnación",
+      "address": "Av. Irrazábal 980 (placeholder)",
+      "whatsappNumber": "+595981000004",
+      "mapsUrl": "https://maps.google.com/?q=Encarnacion+Paraguay",
+      "isSponsored": false,
+      "priority": 50
+    },
+    {
+      "id": "dir-eco-001",
+      "name": "Centro de Ecografía Vida (placeholder)",
+      "category": "ecografia",
+      "department": "capital",
+      "city": "Asunción",
+      "address": "Calle Palma 700 (placeholder)",
+      "whatsappNumber": "+595981000010",
+      "mapsUrl": "https://maps.google.com/?q=Asuncion+Paraguay",
+      "isSponsored": true,
+      "priority": 90
+    },
+    {
+      "id": "dir-eco-002",
+      "name": "Imágenes Materno-Fetal (placeholder)",
+      "category": "ecografia",
+      "department": "central",
+      "city": "Lambaré",
+      "address": "Av. Cacique Lambaré 333 (placeholder)",
+      "whatsappNumber": "+595981000011",
+      "mapsUrl": "https://maps.google.com/?q=Lambare+Paraguay",
+      "isSponsored": false,
+      "priority": 40
+    },
+    {
+      "id": "dir-eco-003",
+      "name": "Diagnóstico por Imágenes Este (placeholder)",
+      "category": "ecografia",
+      "department": "alto-parana",
+      "city": "Ciudad del Este",
+      "address": "Av. Monseñor Rodríguez 1500 (placeholder)",
+      "whatsappNumber": "+595981000012",
+      "mapsUrl": "https://maps.google.com/?q=Ciudad+del+Este+Paraguay",
+      "isSponsored": false,
+      "priority": 40
+    },
+    {
+      "id": "dir-cor-001",
+      "name": "Banco de Cordón CelulaVida (placeholder)",
+      "category": "cordon",
+      "department": "capital",
+      "city": "Asunción",
+      "address": "Av. España 1450 (placeholder)",
+      "whatsappNumber": "+595981000020",
+      "mapsUrl": "https://maps.google.com/?q=Asuncion+Paraguay",
+      "isSponsored": true,
+      "priority": 80
+    },
+    {
+      "id": "dir-cor-002",
+      "name": "Criopreservación Paraguay (placeholder)",
+      "category": "cordon",
+      "department": "central",
+      "city": "San Lorenzo",
+      "address": "Ruta Mcal. López km 12 (placeholder)",
+      "whatsappNumber": "+595981000021",
+      "mapsUrl": "https://maps.google.com/?q=San+Lorenzo+Paraguay",
+      "isSponsored": false,
+      "priority": 30
+    },
+    {
+      "id": "dir-obs-001",
+      "name": "Dra. Ramírez, gineco-obstetra (placeholder)",
+      "category": "obstetra",
+      "department": "capital",
+      "city": "Asunción",
+      "address": "Consultorio en Villa Morra (placeholder)",
+      "whatsappNumber": "+595981000030",
+      "mapsUrl": "https://maps.google.com/?q=Asuncion+Paraguay",
+      "isSponsored": false,
+      "priority": 20
+    },
+    {
+      "id": "dir-obs-002",
+      "name": "Dr. Benítez, gineco-obstetra (placeholder)",
+      "category": "obstetra",
+      "department": "itapua",
+      "city": "Encarnación",
+      "address": "Consultorio en el centro (placeholder)",
+      "whatsappNumber": "+595981000031",
+      "mapsUrl": "https://maps.google.com/?q=Encarnacion+Paraguay",
+      "isSponsored": false,
+      "priority": 20
+    }
+  ]
+}

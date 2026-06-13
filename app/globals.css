@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  background-color: #fbf7f1;
+  color: #2a2724;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: var(--font-nunito), system-ui, sans-serif;
+  font-weight: 400;
+}
+
+/* Prose styling for guías detail (sentence case, calm, readable). */
+.prose-nido h2 {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #16433f;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+.prose-nido p {
+  margin-bottom: 0.85rem;
+  line-height: 1.65;
+}
+.prose-nido ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin-bottom: 0.85rem;
+}
+.prose-nido li {
+  margin-bottom: 0.35rem;
+  line-height: 1.6;
+}
+.prose-nido strong {
+  font-weight: 500;
+  color: #2a2724;
+}
+.prose-nido em {
+  font-style: italic;
+}
+
+/* Respect users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

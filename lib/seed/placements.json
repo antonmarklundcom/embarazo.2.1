@@ -1,0 +1,64 @@
+{
+  "_comment": "PLACEHOLDER sponsored placements for the MVP. Sponsor names are invented and phone numbers are non-working placeholder +595 numbers. trimester 0 = applies to all trimesters. Replace with real, consented sponsors before launch.",
+  "placements": [
+    {
+      "id": "plc-001",
+      "sponsorName": "Sanatorio Santa María (placeholder)",
+      "type": "sanatorio",
+      "trimester": 1,
+      "headline": "Empezá tu control prenatal acompañada",
+      "body": "Planes de control prenatal y parto en Asunción. Escribinos y te contamos cómo es la atención paso a paso.",
+      "offerTag": "Primera consulta sin costo",
+      "whatsappNumber": "+595981000001",
+      "ctaLabel": "Consultar por WhatsApp",
+      "priority": 100
+    },
+    {
+      "id": "plc-002",
+      "sponsorName": "Centro de Ecografía Vida (placeholder)",
+      "type": "ecografia",
+      "trimester": 2,
+      "headline": "Ecografía morfológica del segundo trimestre",
+      "body": "Reservá tu eco de las semanas 18 a 22 con informe detallado. Te enviamos las imágenes por WhatsApp.",
+      "offerTag": "Turnos esta semana",
+      "whatsappNumber": "+595981000010",
+      "ctaLabel": "Reservar turno",
+      "priority": 90
+    },
+    {
+      "id": "plc-003",
+      "sponsorName": "Banco de Cordón CelulaVida (placeholder)",
+      "type": "cordon",
+      "trimester": 3,
+      "headline": "Guardá las células del cordón de tu bebé",
+      "body": "Informate sin compromiso sobre la criopreservación del cordón umbilical antes del parto. Te explicamos todo.",
+      "offerTag": "Asesoría gratuita",
+      "whatsappNumber": "+595981000020",
+      "ctaLabel": "Quiero información",
+      "priority": 85
+    },
+    {
+      "id": "plc-004",
+      "sponsorName": "Nutrición Materna Paraguay (placeholder)",
+      "type": "nutricion",
+      "trimester": 0,
+      "headline": "Plan de alimentación para tu embarazo",
+      "body": "Acompañamiento nutricional con productos locales y de estación. Adaptado al calor y a tu presupuesto.",
+      "whatsappNumber": "+595981000040",
+      "ctaLabel": "Hablar con una nutricionista",
+      "priority": 60
+    },
+    {
+      "id": "plc-005",
+      "sponsorName": "Sanatorio del Este (placeholder)",
+      "type": "sanatorio",
+      "trimester": 3,
+      "headline": "Tu parto en Alto Paraná, cerca de casa",
+      "body": "Atención de parto y posparto en Ciudad del Este. Escribinos para conocer los planes y la maternidad.",
+      "offerTag": "Recorrido por la maternidad",
+      "whatsappNumber": "+595981000003",
+      "ctaLabel": "Coordinar visita",
+      "priority": 70
+    }
+  ]
+}

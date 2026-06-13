@@ -5,6 +5,8 @@ import {
   getDueDate,
   getDaysRemaining,
   clampWeek,
+  lmpFromDueDate,
+  getRawWeek,
   GESTATION_DAYS,
 } from "./pregnancy";
 
@@ -58,6 +60,25 @@ describe("getDueDate", () => {
   it("is LMP + 280 days", () => {
     const lmp = 1_000_000_000_000;
     expect(getDueDate(lmp)).toBe(lmp + GESTATION_DAYS * DAY);
+  });
+});
+
+describe("lmpFromDueDate", () => {
+  it("is the inverse of getDueDate", () => {
+    const lmp = 1_000_000_000_000;
+    expect(lmpFromDueDate(getDueDate(lmp))).toBe(lmp);
+  });
+  it("subtracts 280 days from the due date", () => {
+    const due = 2_000_000_000_000;
+    expect(lmpFromDueDate(due)).toBe(due - GESTATION_DAYS * DAY);
+  });
+});
+
+describe("getRawWeek", () => {
+  it("does not clamp beyond 42 weeks (for term warnings)", () => {
+    const lmp = 0;
+    expect(getRawWeek(lmp, 0)).toBe(1);
+    expect(getRawWeek(lmp, 50 * 7 * DAY)).toBe(51);
   });
 });
 

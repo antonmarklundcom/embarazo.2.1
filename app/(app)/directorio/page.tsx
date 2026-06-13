@@ -4,26 +4,26 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useProfile } from "@/lib/useProfile";
 import { DEPARTMENTS } from "@/lib/departments";
-import type { DirectoryListing } from "@/lib/types";
+import {
+  DIRECTORY_CATEGORIES,
+  directoryCategoryLabel,
+} from "@/lib/directoryCategories";
+import type { DirectoryCategory, DirectoryListing } from "@/lib/types";
 import { SponsoredBadge } from "@/components/SponsoredBadge";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 
 const BUSINESS_WA = process.env.NEXT_PUBLIC_BUSINESS_WHATSAPP || "+595000000000";
 
-const CATEGORIES = [
-  { key: "sanatorio", label: "Sanatorios" },
-  { key: "ecografia", label: "Ecografías" },
-  { key: "cordon", label: "Cordón" },
-] as const;
-
-type CategoryKey = (typeof CATEGORIES)[number]["key"];
+// "Todos" + every broadened category (build spec §6).
+type CategoryFilter = "todos" | DirectoryCategory;
 
 async function fetchDirectory(
   department: string,
-  category: CategoryKey,
+  category: CategoryFilter,
   q: string,
 ): Promise<DirectoryListing[]> {
-  const params = new URLSearchParams({ department, category });
+  const params = new URLSearchParams({ department });
+  if (category !== "todos") params.set("category", category);
   if (q) params.set("q", q);
   const res = await fetch(`/api/v1/directory?${params.toString()}`);
   if (!res.ok) throw new Error("failed");
@@ -31,10 +31,10 @@ async function fetchDirectory(
   return data.listings;
 }
 
-export default function DirectorioPage() {
+export default function CercaTuyoPage() {
   const profile = useProfile();
   const [department, setDepartment] = useState("capital");
-  const [category, setCategory] = useState<CategoryKey>("sanatorio");
+  const [category, setCategory] = useState<CategoryFilter>("todos");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
 
@@ -55,6 +55,21 @@ export default function DirectorioPage() {
   });
 
   const listings = data ?? [];
+
+  // When "Todos" is selected, group by category for a clean, scannable list.
+  const grouped = useMemo(() => {
+    const map = new Map<DirectoryCategory, DirectoryListing[]>();
+    for (const l of listings) {
+      const arr = map.get(l.category) ?? [];
+      arr.push(l);
+      map.set(l.category, arr);
+    }
+    // Preserve the canonical category order.
+    return DIRECTORY_CATEGORIES.map((c) => c.key)
+      .filter((k) => map.has(k))
+      .map((k) => [k, map.get(k)!] as const);
+  }, [listings]);
+
   const businessWa = useMemo(
     () =>
       `https://wa.me/${BUSINESS_WA.replace(/[^\d]/g, "")}?text=${encodeURIComponent(
@@ -66,43 +81,45 @@ export default function DirectorioPage() {
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">Directorio</h1>
+        <h1 className="text-xl font-medium text-petrol-dark">Cerca tuyo</h1>
         <p className="text-sm text-muted">
-          Sanatorios, ecografías y bancos de cordón por departamento.
+          Sanatorios, obstetras, ecografías, pediatras, lactancia, farmacias y
+          más, por departamento.
         </p>
       </header>
 
-      {/* Segmented category control */}
-      <div className="flex gap-1 rounded-tile bg-black/5 p-1">
-        {CATEGORIES.map((c) => (
-          <button
-            key={c.key}
-            type="button"
-            onClick={() => setCategory(c.key)}
-            className={`min-h-[40px] flex-1 rounded-[10px] px-2 text-sm font-medium transition ${
-              category === c.key ? "bg-white text-petrol shadow-soft" : "text-muted"
-            }`}
-          >
-            {c.label}
-          </button>
-        ))}
+      {/* Scrollable category chips */}
+      <div className="-mx-4 overflow-x-auto px-4">
+        <div className="flex w-max gap-2 pb-1">
+          <CategoryChip
+            label="Todos"
+            active={category === "todos"}
+            onClick={() => setCategory("todos")}
+          />
+          {DIRECTORY_CATEGORIES.map((c) => (
+            <CategoryChip
+              key={c.key}
+              label={c.label}
+              active={category === c.key}
+              onClick={() => setCategory(c.key)}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Department + search */}
-      <div className="flex gap-2">
-        <select
-          value={department}
-          onChange={(e) => setDepartment(e.target.value)}
-          aria-label="Departamento"
-          className="min-h-[44px] flex-1 rounded-tile border border-black/10 bg-white px-3 text-sm focus:border-petrol focus:outline-none"
-        >
-          {DEPARTMENTS.map((d) => (
-            <option key={d.slug} value={d.slug}>
-              {d.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      <select
+        value={department}
+        onChange={(e) => setDepartment(e.target.value)}
+        aria-label="Departamento"
+        className="min-h-[44px] w-full rounded-tile border border-black/10 bg-white px-3 text-sm focus:border-petrol focus:outline-none"
+      >
+        {DEPARTMENTS.map((d) => (
+          <option key={d.slug} value={d.slug}>
+            {d.name}
+          </option>
+        ))}
+      </select>
       <input
         type="search"
         value={search}
@@ -130,34 +147,19 @@ export default function DirectorioPage() {
         </div>
       )}
 
-      <div className="space-y-3">
-        {listings.map((l) => (
-          <article key={l.id} className="rounded-card bg-white p-4 shadow-soft">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h2 className="text-base font-medium text-ink">{l.name}</h2>
-                <p className="text-sm text-muted">{l.city}</p>
-              </div>
-              {l.isSponsored && <SponsoredBadge />}
-            </div>
-            {l.address && <p className="mt-1 text-xs text-muted">{l.address}</p>}
-            <div className="mt-3 flex flex-wrap gap-2">
-              <WhatsAppButton
-                href={`/api/v1/go/${l.id}?department=${department}`}
-                label="WhatsApp"
-              />
-              {l.mapsUrl && (
-                <a
-                  href={l.mapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-[44px] items-center rounded-tile bg-cream px-4 py-2.5 text-sm font-medium text-petrol"
-                >
-                  Cómo llegar
-                </a>
-              )}
-            </div>
-          </article>
+      {/* Grouped list (build spec §6 — clean list grouped by category). */}
+      <div className="space-y-5">
+        {grouped.map(([cat, items]) => (
+          <section key={cat} className="space-y-3">
+            {category === "todos" && (
+              <h2 className="text-sm font-medium text-ink">
+                {directoryCategoryLabel(cat)}
+              </h2>
+            )}
+            {items.map((l) => (
+              <ListingCard key={l.id} listing={l} department={department} />
+            ))}
+          </section>
         ))}
       </div>
 
@@ -166,5 +168,66 @@ export default function DirectorioPage() {
         “Patrocinado”. La información es referencial.
       </p>
     </div>
+  );
+}
+
+function CategoryChip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`min-h-[40px] shrink-0 rounded-full border px-4 text-sm font-medium transition ${
+        active
+          ? "border-petrol bg-petrol text-white"
+          : "border-black/10 bg-white text-muted"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function ListingCard({
+  listing: l,
+  department,
+}: {
+  listing: DirectoryListing;
+  department: string;
+}) {
+  return (
+    <article className="rounded-card bg-white p-4 shadow-soft">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h3 className="text-base font-medium text-ink">{l.name}</h3>
+          <p className="text-sm text-muted">{l.city}</p>
+        </div>
+        {l.isSponsored && <SponsoredBadge />}
+      </div>
+      {l.address && <p className="mt-1 text-xs text-muted">{l.address}</p>}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <WhatsAppButton
+          href={`/api/v1/go/${l.id}?department=${department}`}
+          label="WhatsApp"
+        />
+        {l.mapsUrl && (
+          <a
+            href={l.mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-[44px] items-center rounded-tile bg-cream px-4 py-2.5 text-sm font-medium text-petrol"
+          >
+            Cómo llegar
+          </a>
+        )}
+      </div>
+    </article>
   );
 }

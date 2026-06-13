@@ -8,8 +8,8 @@ const TABS = [
   { href: "/", label: "Inicio", icon: HomeIcon },
   { href: "/progreso", label: "Progreso", icon: TimelineIcon },
   { href: "/herramientas", label: "Herramientas", icon: ToolsIcon },
-  { href: "/directorio", label: "Directorio", icon: MapIcon },
-  { href: "/guias", label: "Guías", icon: BookIcon },
+  { href: "/directorio", label: "Cerca tuyo", icon: MapIcon },
+  { href: "/eventos", label: "Eventos", icon: CalendarIcon },
 ];
 
 export function BottomNav() {
@@ -82,10 +82,11 @@ function MapIcon({ active }: IconProps) {
     </svg>
   );
 }
-function BookIcon({ active }: IconProps) {
+function CalendarIcon({ active }: IconProps) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M4 5a2 2 0 0 1 2-2h6v17H6a2 2 0 0 0-2 2zM20 5a2 2 0 0 0-2-2h-6v17h6a2 2 0 0 1 2 2z" stroke={stroke(active)} strokeWidth="1.7" strokeLinejoin="round" />
+      <rect x="3.5" y="5" width="17" height="15" rx="2" stroke={stroke(active)} strokeWidth="1.7" />
+      <path d="M3.5 9.5h17M8 3v3M16 3v3" stroke={stroke(active)} strokeWidth="1.7" strokeLinecap="round" />
     </svg>
   );
 }

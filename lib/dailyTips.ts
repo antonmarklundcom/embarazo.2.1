@@ -75,5 +75,11 @@ export function getDailyTip(
     (t) => t.trimester === 0 || t.trimester === trimester,
   );
   const list = pool.length > 0 ? pool : DAILY_TIPS;
-  return list[seed % list.length];
+  return list[seed % list.length] ?? FALLBACK_TIP;
 }
+
+const FALLBACK_TIP: DailyTip = {
+  id: "t-fallback",
+  trimester: 0,
+  text: "Tomá agua seguido y descansá cuando puedas. Tu cuerpo está trabajando mucho.",
+};

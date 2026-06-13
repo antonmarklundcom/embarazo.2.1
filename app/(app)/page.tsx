@@ -4,9 +4,12 @@ import Link from "next/link";
 import { useState } from "react";
 import { useProfile } from "@/lib/useProfile";
 import { getWeek } from "@/lib/weeks";
+import { getDailyTip } from "@/lib/dailyTips";
 import { departmentName } from "@/lib/departments";
 import { Onboarding } from "@/components/Onboarding";
 import { LocalResourcesBlock } from "@/components/LocalResourcesBlock";
+import { AppointmentBanner } from "@/components/AppointmentBanner";
+import { RoadmapSection } from "@/components/RoadmapSection";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { PrivacyLine } from "@/components/PrivacyLine";
 
@@ -28,6 +31,7 @@ export default function InicioPage() {
   const trimester = profile.trimester!;
   const department = profile.department!;
   const info = getWeek(week);
+  const tip = getDailyTip(week, trimester);
 
   return (
     <div className="space-y-5">
@@ -43,7 +47,24 @@ export default function InicioPage() {
             probable de parto.
           </p>
         )}
+        <Link
+          href="/ajustes"
+          className="mt-1 inline-block text-xs text-petrol underline"
+        >
+          ¿Fecha incorrecta? Editala en Ajustes
+        </Link>
       </header>
+
+      {/* Next prenatal appointment reminder (in-app only) */}
+      <AppointmentBanner date={profile.nextAppointment} />
+
+      {/* Daily tip */}
+      <section className="rounded-card border border-sage/30 bg-sage/5 p-4">
+        <p className="text-xs font-medium uppercase tracking-wide text-sage">
+          Tip de hoy
+        </p>
+        <p className="mt-1 text-sm leading-relaxed text-ink">{tip.text}</p>
+      </section>
 
       {/* Hero week card */}
       <Link
@@ -77,6 +98,24 @@ export default function InicioPage() {
         </span>
       </Link>
 
+      {/* Daily check-in */}
+      <Link
+        href="/herramientas/sintomas"
+        className="block rounded-card bg-white p-4 shadow-soft transition active:scale-[0.99]"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-medium text-ink">
+              ¿Cómo te sentís hoy?
+            </h3>
+            <p className="mt-1 text-sm text-muted">
+              Registrá tu ánimo y tus síntomas del día.
+            </p>
+          </div>
+          <span className="text-2xl" aria-hidden>🙂</span>
+        </div>
+      </Link>
+
       {/* Tool tiles (bento) */}
       <section aria-labelledby="herramientas" className="space-y-3">
         <h2 id="herramientas" className="text-sm font-medium text-ink">
@@ -86,7 +125,7 @@ export default function InicioPage() {
           <ToolTile href="/herramientas/pataditas" title="Pataditas" subtitle="Contá movimientos" tone="rose" />
           <ToolTile href="/herramientas/contracciones" title="Contracciones" subtitle="Cronometrá" tone="terracotta" />
           <ToolTile href="/herramientas/peso" title="Peso" subtitle="Seguí tu evolución" tone="sage" />
-          <ToolTile href="/herramientas/checklist" title="Checklists" subtitle="Bolso y trámites" tone="petrol" />
+          <ToolTile href="/herramientas/fotos" title="Fotos" subtitle="Diario de tu panza" tone="petrol" />
         </div>
       </section>
 
@@ -108,6 +147,9 @@ export default function InicioPage() {
           Con el calor y la lluvia, prevenir el mosquito es parte de tu cuidado.
         </p>
       </Link>
+
+      {/* Roadmap placeholders (build spec §8) */}
+      <RoadmapSection />
 
       <div className="flex items-center justify-between pt-2">
         <MedicalReviewByline />

@@ -2,6 +2,16 @@ import Link from "next/link";
 
 const TOOLS = [
   {
+    href: "/herramientas/sintomas",
+    title: "Síntomas y ánimo",
+    desc: "Registrá cómo te sentís y tus síntomas, día a día.",
+  },
+  {
+    href: "/herramientas/fotos",
+    title: "Diario de fotos",
+    desc: "Seguí el crecimiento de tu panza, solo en tu teléfono.",
+  },
+  {
     href: "/herramientas/pataditas",
     title: "Contador de pataditas",
     desc: "Registrá los movimientos de tu bebé y conocé su ritmo.",
@@ -20,6 +30,11 @@ const TOOLS = [
     href: "/herramientas/checklist",
     title: "Checklists",
     desc: "Bolso para el sanatorio y trámites después del nacimiento.",
+  },
+  {
+    href: "/guias",
+    title: "Guías",
+    desc: "Artículos sobre el embarazo, revisados y pensados para Paraguay.",
   },
 ];
 

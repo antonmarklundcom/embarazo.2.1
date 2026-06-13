@@ -55,15 +55,24 @@ Todo el contenido vive tipado dentro de `lib/` — no hay base de datos ni CMS:
 | Qué | Archivo | Forma |
 | --- | --- | --- |
 | Semanas 1–42 | `lib/weeks.ts` | `{ week, trimester (derivado), sizeComparison, lengthCm?, weightG?, milestone, tip }` |
+| Tips diarios | `lib/dailyTips.ts` | `{ id, text, trimester }` (trimester 0 = todos) |
 | Departamentos | `lib/departments.ts` | `{ slug, name }` |
 | Guías (8 artículos) | `lib/seed/articles.ts` | `{ slug, title, excerpt, html, date, author, reviewedBy?, cluster? }` |
-| Directorio | `lib/seed/directory.json` | `DirectoryListing` (ver `lib/types.ts`) |
+| Directorio ("Cerca tuyo") | `lib/seed/directory.json` | `DirectoryListing` (ver `lib/types.ts`) |
+| Categorías del directorio | `lib/directoryCategories.ts` | etiquetas es-PY por categoría |
+| Eventos | `lib/seed/events.ts` | `EventItem` (ver `lib/types.ts`) |
 | Patrocinios | `lib/seed/placements.json` | `AdPlacement` (ver `lib/types.ts`) |
 | Checklists | `lib/checklists.ts` | grupos de `{ key, label }` |
 
-> El directorio y los patrocinios incluidos son **placeholders** (nombres
-> inventados, números `+595` de ejemplo). Reemplazalos por listados reales y
-> consentidos antes de lanzar.
+> El directorio, los eventos y los patrocinios incluidos son **placeholders**
+> (nombres inventados, números `+595` de ejemplo). Reemplazalos por listados
+> reales y consentidos antes de lanzar.
+>
+> El directorio admite estas categorías: `sanatorio`, `obstetra`, `ecografia`,
+> `cordon`, `pediatra`, `lactancia`, `vacunatorio`, `tienda_bebe`, `farmacia`.
+> Los eventos usan `type`: `charla`, `taller`, `feria`, `clase`, `encuentro`.
+> Las fechas de los eventos seed se calculan relativas a "hoy" para mantener una
+> mezcla realista de próximos y pasados; para datos reales usá timestamps fijos.
 
 `lib/wordpress.ts` es un hook opcional a futuro: si se define `WP_API_URL`,
 podría leer una API REST de WordPress; mientras tanto devuelve el seed.
@@ -75,8 +84,10 @@ Precargado para uso sin conexión:
 - El shell de la app (navegación, header).
 - Las **42 páginas** de semana (`/semana/1` … `/semana/42`).
 - Las **8 guías**.
-- Las cuatro herramientas (**Pataditas, Contracciones, Peso, Checklist**)
-  funcionan 100% offline: los datos son locales (IndexedDB).
+- El **tip de hoy** y los **eventos** (datos seed en el repo).
+- Las herramientas (**Síntomas y ánimo, Diario de fotos, Pataditas,
+  Contracciones, Peso, Checklist**) funcionan 100% offline: los datos son
+  locales (IndexedDB).
 
 Con estrategia *network-first* + caché de respaldo:
 
@@ -86,10 +97,26 @@ Con estrategia *network-first* + caché de respaldo:
 **No** disponible offline: la primera carga del directorio/patrocinios si nunca
 se cargaron antes con conexión.
 
+## Qué se guarda en el dispositivo
+
+Todo lo personal vive solo en IndexedDB (Dexie) y **nunca se transmite**:
+
+- Perfil (departamento, ciudad) y datos del embarazo (última regla, fecha
+  probable de parto). La fecha es editable desde **Ajustes**.
+- **Fecha del próximo control prenatal** (recordatorio in-app, sin push).
+- **Registros de síntomas y ánimo** (diario), con nota opcional cifrada si hay
+  PIN.
+- **Fotos de la panza** (Blob redimensionado a ~1280px, nunca subido).
+- Pataditas, contracciones, peso y checklists.
+
+"Borrar todos mis datos" (en Ajustes) elimina toda la base local y el PIN.
+
 ## Privacidad (un pilar del producto)
 
 - Sin cuenta, sin correo, sin teléfono.
-- Los datos de salud **nunca salen del dispositivo** (IndexedDB).
+- Los datos de salud **nunca salen del dispositivo** (IndexedDB): incluye los
+  registros de síntomas y ánimo, las fotos de la panza y la fecha del próximo
+  control.
 - Lo único que viaja al servidor es el **trimestre** (1|2|3) derivado y el
   **departamento** guardado, para mostrar recursos cercanos. La API rechaza con
   `400` cualquier otro parámetro.

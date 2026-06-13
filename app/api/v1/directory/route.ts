@@ -10,7 +10,19 @@ const QuerySchema = z
       .string()
       .refine(isValidDepartment, "departamento inválido")
       .optional(),
-    category: z.enum(["sanatorio", "obstetra", "ecografia", "cordon"]).optional(),
+    category: z
+      .enum([
+        "sanatorio",
+        "obstetra",
+        "ecografia",
+        "cordon",
+        "pediatra",
+        "lactancia",
+        "vacunatorio",
+        "tienda_bebe",
+        "farmacia",
+      ])
+      .optional(),
     q: z.string().max(80).optional(),
   })
   .strict();

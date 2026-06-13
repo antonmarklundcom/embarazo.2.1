@@ -1,0 +1,73 @@
+import { describe, it, expect } from "vitest";
+import {
+  getCurrentWeek,
+  getTrimester,
+  getDueDate,
+  getDaysRemaining,
+  clampWeek,
+  GESTATION_DAYS,
+} from "./pregnancy";
+
+const DAY = 86400000;
+
+describe("clampWeek", () => {
+  it("clamps below and above the valid range", () => {
+    expect(clampWeek(0)).toBe(1);
+    expect(clampWeek(-5)).toBe(1);
+    expect(clampWeek(43)).toBe(42);
+    expect(clampWeek(100)).toBe(42);
+  });
+  it("keeps valid weeks and floors fractions", () => {
+    expect(clampWeek(1)).toBe(1);
+    expect(clampWeek(20)).toBe(20);
+    expect(clampWeek(20.9)).toBe(20);
+  });
+  it("falls back to MIN_WEEK on NaN", () => {
+    expect(clampWeek(Number.NaN)).toBe(1);
+  });
+});
+
+describe("getCurrentWeek", () => {
+  it("is week 1 at the LMP date", () => {
+    const lmp = Date.now();
+    expect(getCurrentWeek(lmp, lmp)).toBe(1);
+  });
+  it("advances one week per 7 days", () => {
+    const lmp = 0;
+    expect(getCurrentWeek(lmp, 7 * DAY)).toBe(2);
+    expect(getCurrentWeek(lmp, 13 * 7 * DAY)).toBe(14);
+  });
+  it("clamps very advanced dates to 42", () => {
+    const lmp = 0;
+    expect(getCurrentWeek(lmp, 60 * 7 * DAY)).toBe(42);
+  });
+});
+
+describe("getTrimester", () => {
+  it("maps weeks to trimesters per spec (T1 1-13, T2 14-27, T3 28+)", () => {
+    expect(getTrimester(1)).toBe(1);
+    expect(getTrimester(13)).toBe(1);
+    expect(getTrimester(14)).toBe(2);
+    expect(getTrimester(27)).toBe(2);
+    expect(getTrimester(28)).toBe(3);
+    expect(getTrimester(42)).toBe(3);
+  });
+});
+
+describe("getDueDate", () => {
+  it("is LMP + 280 days", () => {
+    const lmp = 1_000_000_000_000;
+    expect(getDueDate(lmp)).toBe(lmp + GESTATION_DAYS * DAY);
+  });
+});
+
+describe("getDaysRemaining", () => {
+  it("returns full gestation at the LMP date", () => {
+    const lmp = 0;
+    expect(getDaysRemaining(lmp, 0)).toBe(GESTATION_DAYS);
+  });
+  it("never goes negative past the due date", () => {
+    const lmp = 0;
+    expect(getDaysRemaining(lmp, 400 * DAY)).toBe(0);
+  });
+});

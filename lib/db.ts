@@ -4,12 +4,19 @@ import type { DepartmentSlug } from "./types";
 // On-device storage (build spec §5). This data NEVER leaves the device.
 // Only derived `trimester` and stored `department` are ever sent to the server.
 
+// App mode (build spec §3): the current pregnancy flow, or the new
+// pre-pregnancy "planeando / buscando" flow. Stored locally on the profile.
+// Defaults to "embarazada" when missing (existing users keep their flow).
+export type AppMode = "embarazada" | "planeando";
+
 export interface Profile {
   id?: number;
   department: DepartmentSlug;
   city?: string;
   // Next prenatal appointment (build spec §4). Local-only, NO push. Optional.
   nextAppointment?: number;
+  // Pregnancy vs. pre-pregnancy mode (build spec §3). Optional for back-compat.
+  mode?: AppMode;
   createdAt: number;
 }
 
@@ -68,6 +75,22 @@ export interface ChecklistStateRow {
   done: boolean;
 }
 
+// Pre-pregnancy / cycle module (build spec §3). All device-only.
+export interface Cycle {
+  id?: number;
+  // First day of the period (a cycle start). Stored as a timestamp.
+  startDate: number;
+  // Optional last day of bleeding for this period.
+  endDate?: number;
+  createdAt: number;
+}
+
+export interface CycleSettings {
+  id?: number;
+  avgCycleLength: number; // default 28
+  avgPeriodLength: number; // default 5
+}
+
 export class NidoDB extends Dexie {
   profile!: Table<Profile, number>;
   pregnancy!: Table<Pregnancy, number>;
@@ -77,6 +100,8 @@ export class NidoDB extends Dexie {
   weightEntries!: Table<WeightEntry, number>;
   checklistState!: Table<ChecklistStateRow, number>;
   photoEntries!: Table<PhotoEntry, number>;
+  cycles!: Table<Cycle, number>;
+  cycleSettings!: Table<CycleSettings, number>;
 
   constructor() {
     super("nido");
@@ -89,10 +114,16 @@ export class NidoDB extends Dexie {
       weightEntries: "++id, date",
       checklistState: "++id, &key",
     });
-    // v3: belly photo diary (build spec §5). New store; existing stores
+    // v2: belly photo diary (build spec §5). New store; existing stores
     // unchanged, so the upgrade is purely additive.
     this.version(2).stores({
       photoEntries: "++id, week, createdAt",
+    });
+    // v3: pre-pregnancy / cycle module (build spec §3). Additive only — no
+    // existing store is modified, so prior data is preserved on upgrade.
+    this.version(3).stores({
+      cycles: "++id, startDate, createdAt",
+      cycleSettings: "++id",
     });
   }
 }

@@ -7,6 +7,9 @@ import {
   clampWeek,
   lmpFromDueDate,
   getRawWeek,
+  getDaysSinceLMP,
+  getCompletedGestation,
+  formatCompletedGestation,
   GESTATION_DAYS,
 } from "./pregnancy";
 
@@ -90,5 +93,43 @@ describe("getDaysRemaining", () => {
   it("never goes negative past the due date", () => {
     const lmp = 0;
     expect(getDaysRemaining(lmp, 400 * DAY)).toBe(0);
+  });
+});
+
+describe("getDaysSinceLMP", () => {
+  it("is 0 at the LMP date and clamps negatives", () => {
+    const lmp = 0;
+    expect(getDaysSinceLMP(lmp, 0)).toBe(0);
+    expect(getDaysSinceLMP(lmp, -5 * DAY)).toBe(0);
+  });
+  it("counts whole elapsed days", () => {
+    const lmp = 0;
+    expect(getDaysSinceLMP(lmp, 16 * DAY)).toBe(16);
+  });
+});
+
+describe("getCompletedGestation", () => {
+  it("splits elapsed days into completed weeks + days (carné convention)", () => {
+    const lmp = 0;
+    // 121 days = 17 weeks and 2 days; friendly week would be 18.
+    expect(getCompletedGestation(lmp, 121 * DAY)).toEqual({ weeks: 17, days: 2 });
+    expect(getCurrentWeek(lmp, 121 * DAY)).toBe(18);
+  });
+  it("is 0 weeks 0 days at the LMP date", () => {
+    expect(getCompletedGestation(0, 0)).toEqual({ weeks: 0, days: 0 });
+  });
+});
+
+describe("formatCompletedGestation", () => {
+  it("uses es-PY singular/plural correctly", () => {
+    expect(formatCompletedGestation({ weeks: 17, days: 2 })).toBe(
+      "17 semanas y 2 días",
+    );
+    expect(formatCompletedGestation({ weeks: 1, days: 1 })).toBe(
+      "1 semana y 1 día",
+    );
+    expect(formatCompletedGestation({ weeks: 0, days: 0 })).toBe(
+      "0 semanas y 0 días",
+    );
   });
 });

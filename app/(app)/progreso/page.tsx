@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useProfile } from "@/lib/useProfile";
+import { formatCompletedGestation } from "@/lib/pregnancy";
 import { WEEKS } from "@/lib/weeks";
 import type { Trimester } from "@/lib/types";
 
@@ -14,15 +15,24 @@ const TRIMESTERS: { t: Trimester; label: string; range: string }[] = [
 export default function ProgresoPage() {
   const profile = useProfile();
   const current = profile.week ?? 0;
+  const completedLabel = profile.completed
+    ? formatCompletedGestation(profile.completed)
+    : null;
 
   return (
     <div className="space-y-6">
       <header>
         <h1 className="text-xl font-medium text-petrol-dark">Tu progreso</h1>
-        {profile.hasProfile ? (
-          <p className="text-sm text-muted">
-            Estás en la semana {current}. Tocá cualquier semana para ver el detalle.
-          </p>
+        {profile.hasPregnancy ? (
+          <>
+            <p className="text-sm text-muted">
+              Estás en la <span className="font-medium text-ink">semana {current}</span>.
+              Tocá cualquier semana para ver el detalle.
+            </p>
+            {completedLabel && (
+              <p className="text-xs text-muted">{completedLabel} de gestación</p>
+            )}
+          </>
         ) : (
           <p className="text-sm text-muted">
             Explorá las 42 semanas del embarazo.

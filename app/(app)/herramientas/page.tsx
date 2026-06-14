@@ -41,6 +41,11 @@ const TOOLS = [
     title: "Guías",
     desc: "Artículos sobre el embarazo, revisados y pensados para Paraguay.",
   },
+  {
+    href: "/guias/videos",
+    title: "Videos",
+    desc: "Galería de videos educativos, filtrable por tema y trimestre.",
+  },
 ];
 
 export default function HerramientasPage() {

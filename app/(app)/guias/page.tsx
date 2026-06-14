@@ -20,6 +20,21 @@ export default async function GuiasPage() {
         </p>
       </header>
 
+      <Link
+        href="/guias/videos"
+        className="block rounded-card border border-petrol/20 bg-petrol/5 p-4 transition active:scale-[0.99]"
+      >
+        <span className="text-xs font-medium uppercase tracking-wide text-petrol">
+          Videos
+        </span>
+        <h2 className="mt-0.5 text-base font-medium text-ink">
+          Galería de videos educativos
+        </h2>
+        <p className="mt-1 text-sm text-muted">
+          Videos seleccionados, filtrables por tema y trimestre.
+        </p>
+      </Link>
+
       <div className="space-y-3">
         {articles.map((a) => (
           <Link

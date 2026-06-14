@@ -6,7 +6,7 @@ import Link from "next/link";
 export function AppHeader() {
   return (
     <header
-      className="sticky top-0 z-30 border-b border-black/5 bg-cream/90 backdrop-blur"
+      className="sticky top-0 z-30 border-b border-black/5 bg-cream/90 backdrop-blur print:hidden"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <div className="mx-auto flex max-w-md items-center justify-between px-4 py-3">

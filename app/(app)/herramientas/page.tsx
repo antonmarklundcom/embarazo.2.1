@@ -2,6 +2,11 @@ import Link from "next/link";
 
 const TOOLS = [
   {
+    href: "/herramientas/resumen",
+    title: "Resumen para mi control",
+    desc: "Organizá tus datos en una hoja para mostrarle a tu médico/a.",
+  },
+  {
     href: "/herramientas/sintomas",
     title: "Síntomas y ánimo",
     desc: "Registrá cómo te sentís y tus síntomas, día a día.",

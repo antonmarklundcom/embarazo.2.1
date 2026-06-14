@@ -10,7 +10,9 @@ export default function AppShellLayout({
   return (
     <div className="min-h-dvh">
       <AppHeader />
-      <main className="mx-auto max-w-md px-4 pb-28 pt-4">{children}</main>
+      <main className="mx-auto max-w-md px-4 pb-28 pt-4 print:max-w-none print:p-0">
+        {children}
+      </main>
       <BottomNav />
     </div>
   );

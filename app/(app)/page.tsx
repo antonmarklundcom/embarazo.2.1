@@ -8,6 +8,7 @@ import { getWeek } from "@/lib/weeks";
 import { getDailyTip } from "@/lib/dailyTips";
 import { departmentName } from "@/lib/departments";
 import { Onboarding } from "@/components/Onboarding";
+import { PlaneandoHome } from "@/components/PlaneandoHome";
 import { LocalResourcesBlock } from "@/components/LocalResourcesBlock";
 import { AppointmentBanner } from "@/components/AppointmentBanner";
 import { RoadmapSection } from "@/components/RoadmapSection";
@@ -26,6 +27,11 @@ export default function InicioPage() {
 
   if (!profile.hasProfile) {
     return <Onboarding onDone={() => setNonce((n) => n + 1)} />;
+  }
+
+  // Pre-pregnancy "planeando / buscando" mode shows its own dashboard.
+  if (profile.mode === "planeando") {
+    return <PlaneandoHome />;
   }
 
   const week = profile.week!;

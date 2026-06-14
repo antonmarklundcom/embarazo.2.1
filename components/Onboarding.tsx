@@ -1,15 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { db } from "@/lib/db";
+import { db, type AppMode } from "@/lib/db";
 import { getDueDate } from "@/lib/pregnancy";
 import { DEPARTMENTS } from "@/lib/departments";
 import { PrivacyLine } from "./PrivacyLine";
 
-// First-run gate (build spec §6): LMP date → department (city optional) → save.
-// Rendered IN PLACE on / — no redirect, no separate route.
+// First-run gate (build spec §3/§6): choose a mode, then collect the minimum
+// data for that flow. Rendered IN PLACE on / — no redirect, no separate route.
+// - "embarazada": LMP date → department (city optional) → save.
+// - "planeando": department (city optional) → save (no pregnancy record).
+type Step = "mode" | "lmp" | "department";
+
 export function Onboarding({ onDone }: { onDone: () => void }) {
-  const [step, setStep] = useState<0 | 1>(0);
+  const [step, setStep] = useState<Step>("mode");
+  const [mode, setMode] = useState<AppMode>("embarazada");
   const [lmp, setLmp] = useState("");
   const [department, setDepartment] = useState("");
   const [city, setCity] = useState("");
@@ -19,19 +24,28 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
   // LMP can't be more than ~300 days ago or in the future.
   const minLmp = new Date(Date.now() - 300 * 86400000).toISOString().slice(0, 10);
 
+  function chooseMode(m: AppMode) {
+    setMode(m);
+    setStep(m === "embarazada" ? "lmp" : "department");
+  }
+
   async function save() {
-    if (!lmp || !department) return;
+    if (!department) return;
+    if (mode === "embarazada" && !lmp) return;
     setSaving(true);
-    const lmpDate = new Date(`${lmp}T00:00:00`).getTime();
     const now = Date.now();
-    await db().pregnancy.add({
-      lmpDate,
-      dueDate: getDueDate(lmpDate),
-      createdAt: now,
-    });
+    if (mode === "embarazada") {
+      const lmpDate = new Date(`${lmp}T00:00:00`).getTime();
+      await db().pregnancy.add({
+        lmpDate,
+        dueDate: getDueDate(lmpDate),
+        createdAt: now,
+      });
+    }
     await db().profile.add({
       department,
       city: city.trim() || undefined,
+      mode,
       createdAt: now,
     });
     onDone();
@@ -42,11 +56,45 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
       <div className="mb-6 text-center">
         <h1 className="text-2xl font-medium text-petrol-dark">Bienvenida a Nido</h1>
         <p className="mt-2 text-sm text-muted">
-          Tu embarazo, semana a semana, hecho para Paraguay.
+          Tu embarazo y tu camino para buscarlo, hechos para Paraguay.
         </p>
       </div>
 
-      {step === 0 && (
+      {step === "mode" && (
+        <div className="space-y-3">
+          <p className="px-1 text-sm font-medium text-ink">
+            ¿Cómo querés usar Nido?
+          </p>
+          <button
+            type="button"
+            onClick={() => chooseMode("embarazada")}
+            className="block w-full rounded-card bg-white p-5 text-left shadow-soft transition active:scale-[0.99]"
+          >
+            <p className="text-base font-medium text-ink">Estoy embarazada</p>
+            <p className="mt-1 text-sm text-muted">
+              Seguí tu embarazo semana a semana, con herramientas y recursos.
+            </p>
+          </button>
+          <button
+            type="button"
+            onClick={() => chooseMode("planeando")}
+            className="block w-full rounded-card bg-white p-5 text-left shadow-soft transition active:scale-[0.99]"
+          >
+            <p className="text-base font-medium text-ink">
+              Estoy planeando / buscando
+            </p>
+            <p className="mt-1 text-sm text-muted">
+              Calendario menstrual, días fértiles estimados y checklist
+              preconcepción.
+            </p>
+          </button>
+          <p className="px-1 text-xs text-muted">
+            Podés cambiar de modo cuando quieras desde Ajustes, sin perder tus datos.
+          </p>
+        </div>
+      )}
+
+      {step === "lmp" && (
         <div className="rounded-card bg-white p-5 shadow-soft">
           <label htmlFor="lmp" className="block text-sm font-medium text-ink">
             ¿Cuándo fue el primer día de tu última menstruación?
@@ -67,15 +115,22 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           <button
             type="button"
             disabled={!lmp}
-            onClick={() => setStep(1)}
+            onClick={() => setStep("department")}
             className="mt-4 min-h-[44px] w-full rounded-tile bg-petrol px-4 py-2.5 text-sm font-medium text-white transition active:scale-[0.98] disabled:opacity-40"
           >
             Continuar
           </button>
+          <button
+            type="button"
+            onClick={() => setStep("mode")}
+            className="mt-2 min-h-[44px] w-full text-sm text-muted"
+          >
+            Volver
+          </button>
         </div>
       )}
 
-      {step === 1 && (
+      {step === "department" && (
         <div className="rounded-card bg-white p-5 shadow-soft">
           <label htmlFor="dep" className="block text-sm font-medium text-ink">
             ¿En qué departamento vivís?
@@ -119,7 +174,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           </button>
           <button
             type="button"
-            onClick={() => setStep(0)}
+            onClick={() => setStep(mode === "embarazada" ? "lmp" : "mode")}
             className="mt-2 min-h-[44px] w-full text-sm text-muted"
           >
             Volver

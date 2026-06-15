@@ -48,6 +48,10 @@ export default async function SemanaPage({
       <header className="rounded-card bg-petrol p-5 text-white shadow-soft">
         <p className="text-sm text-white/70">Semana</p>
         <p className="text-4xl font-medium">{week}</p>
+        <p className="mt-0.5 text-xs text-white/70">
+          {week - 1} {week - 1 === 1 ? "semana completa" : "semanas completas"} (en
+          el carné perinatal)
+        </p>
         <p className="mt-3 text-base text-white/95">
           Tu bebé es del tamaño de {info.sizeComparison}.
         </p>

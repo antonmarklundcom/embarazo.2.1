@@ -75,6 +75,20 @@ export interface EventItem {
   isSponsored: boolean;
 }
 
+// Curated educational videos (build spec §4). Seed-only — never user-generated.
+// `youtubeId` is embedded via the privacy-enhanced youtube-nocookie domain.
+export interface VideoItem {
+  id: string;
+  title: string;
+  description: string;
+  topic: string;
+  // trimester 0 = applies to all / general.
+  trimester?: 0 | 1 | 2 | 3;
+  week?: number;
+  youtubeId: string;
+  durationLabel?: string;
+}
+
 export interface Article {
   slug: string;
   title: string;

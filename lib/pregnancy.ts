@@ -59,3 +59,35 @@ export function getDaysRemaining(lmp: number, now: number = Date.now()): number 
   const remaining = Math.ceil((getDueDate(lmp) - now) / MS_PER_DAY);
   return remaining < 0 ? 0 : remaining;
 }
+
+/** Whole days elapsed since the LMP (clamped at 0). */
+export function getDaysSinceLMP(lmp: number, now: number = Date.now()): number {
+  const days = Math.floor((now - lmp) / MS_PER_DAY);
+  return days < 0 ? 0 : days;
+}
+
+export interface CompletedGestation {
+  /** Completed weeks (carné perinatal convention): floor(daysSinceLMP / 7). */
+  weeks: number;
+  /** Remaining days into the current week: daysSinceLMP % 7. */
+  days: number;
+}
+
+/**
+ * Medical "completed weeks + days" gestation used on the carné perinatal
+ * (build spec §1). The friendly week shown to the user is this `weeks` + 1.
+ */
+export function getCompletedGestation(
+  lmp: number,
+  now: number = Date.now(),
+): CompletedGestation {
+  const total = getDaysSinceLMP(lmp, now);
+  return { weeks: Math.floor(total / 7), days: total % 7 };
+}
+
+/** es-PY label for completed gestation, e.g. "17 semanas y 2 días". */
+export function formatCompletedGestation(g: CompletedGestation): string {
+  const weeks = `${g.weeks} ${g.weeks === 1 ? "semana" : "semanas"}`;
+  const days = `${g.days} ${g.days === 1 ? "día" : "días"}`;
+  return `${weeks} y ${days}`;
+}

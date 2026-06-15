@@ -2,6 +2,11 @@ import Link from "next/link";
 
 const TOOLS = [
   {
+    href: "/herramientas/resumen",
+    title: "Resumen para mi control",
+    desc: "Organizá tus datos en una hoja para mostrarle a tu médico/a.",
+  },
+  {
     href: "/herramientas/sintomas",
     title: "Síntomas y ánimo",
     desc: "Registrá cómo te sentís y tus síntomas, día a día.",
@@ -35,6 +40,11 @@ const TOOLS = [
     href: "/guias",
     title: "Guías",
     desc: "Artículos sobre el embarazo, revisados y pensados para Paraguay.",
+  },
+  {
+    href: "/guias/videos",
+    title: "Videos",
+    desc: "Galería de videos educativos, filtrable por tema y trimestre.",
   },
 ];
 

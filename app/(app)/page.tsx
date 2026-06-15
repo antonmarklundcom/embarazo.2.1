@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useProfile } from "@/lib/useProfile";
+import { formatCompletedGestation } from "@/lib/pregnancy";
 import { getWeek } from "@/lib/weeks";
 import { getDailyTip } from "@/lib/dailyTips";
 import { departmentName } from "@/lib/departments";
 import { Onboarding } from "@/components/Onboarding";
+import { PlaneandoHome } from "@/components/PlaneandoHome";
 import { LocalResourcesBlock } from "@/components/LocalResourcesBlock";
 import { AppointmentBanner } from "@/components/AppointmentBanner";
 import { RoadmapSection } from "@/components/RoadmapSection";
@@ -27,11 +29,19 @@ export default function InicioPage() {
     return <Onboarding onDone={() => setNonce((n) => n + 1)} />;
   }
 
+  // Pre-pregnancy "planeando / buscando" mode shows its own dashboard.
+  if (profile.mode === "planeando") {
+    return <PlaneandoHome />;
+  }
+
   const week = profile.week!;
   const trimester = profile.trimester!;
   const department = profile.department!;
   const info = getWeek(week);
   const tip = getDailyTip(week, trimester);
+  const completedLabel = profile.completed
+    ? formatCompletedGestation(profile.completed)
+    : null;
 
   return (
     <div className="space-y-5">
@@ -41,6 +51,9 @@ export default function InicioPage() {
         <h1 className="text-xl font-medium text-petrol-dark">
           Semana {week} · {trimester}.º trimestre
         </h1>
+        {completedLabel && (
+          <p className="text-xs text-muted">{completedLabel} de gestación</p>
+        )}
         {profile.daysRemaining !== undefined && (
           <p className="text-sm text-muted">
             Faltan aproximadamente {profile.daysRemaining} días para tu fecha
@@ -75,6 +88,9 @@ export default function InicioPage() {
           <div>
             <p className="text-sm text-white/70">Esta semana</p>
             <p className="text-3xl font-medium">Semana {week}</p>
+            {completedLabel && (
+              <p className="mt-0.5 text-xs text-white/70">{completedLabel}</p>
+            )}
           </div>
           <span className="rounded-full bg-white/15 px-3 py-1 text-xs">
             {trimester}.º trimestre

@@ -47,6 +47,18 @@ body {
   font-style: italic;
 }
 
+/* Doctor's report print view (build spec §2). Render a clean, white page and
+   drop anything explicitly marked .no-print (action buttons, PIN prompts). */
+@media print {
+  html,
+  body {
+    background: #fff;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
 /* Respect users who prefer reduced motion. */
 @media (prefers-reduced-motion: reduce) {
   * {

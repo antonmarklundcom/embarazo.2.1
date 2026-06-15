@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { db, wipeAllData } from "@/lib/db";
+import { db, wipeAllData, type AppMode } from "@/lib/db";
 import { useProfile } from "@/lib/useProfile";
 import { DEPARTMENTS } from "@/lib/departments";
 import {
@@ -47,6 +47,9 @@ export default function AjustesPage() {
   const [pinMsg, setPinMsg] = useState("");
 
   const [confirmWipe, setConfirmWipe] = useState(false);
+
+  // App mode (build spec §3). Switching never deletes data.
+  const [modeMsg, setModeMsg] = useState("");
 
   useEffect(() => {
     if (profile.department) setDepartment(profile.department);
@@ -133,6 +136,20 @@ export default function AjustesPage() {
     setPinExists(isPinSet());
   }, []);
 
+  async function switchMode(next: AppMode) {
+    if (next === profile.mode) return;
+    const rows = await db().profile.toArray();
+    const first = rows[0];
+    if (!first?.id) return;
+    await db().profile.update(first.id, { mode: next });
+    setModeMsg(
+      next === "planeando"
+        ? "Estás en modo Planeando. Tus datos se conservan."
+        : "Estás en modo Embarazada. Tus datos se conservan.",
+    );
+    setTimeout(() => setModeMsg(""), 3500);
+  }
+
   async function saveDepartment() {
     const row = await db().profile.toArray();
     const first = row[0];
@@ -186,6 +203,47 @@ export default function AjustesPage() {
         <PrivacyLine className="mt-1" />
       </header>
 
+      {/* App mode (build spec §3) */}
+      <section className="rounded-card bg-white p-4 shadow-soft">
+        <h2 className="text-base font-medium text-ink">Modo de uso</h2>
+        <p className="mt-1 text-sm text-muted">
+          Cambiá entre seguir tu embarazo o planear/buscar embarazo. Cambiar de
+          modo no borra ninguno de tus datos.
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => switchMode("embarazada")}
+            aria-pressed={profile.mode === "embarazada"}
+            className={`min-h-[44px] rounded-tile border px-3 py-2.5 text-sm font-medium transition ${
+              profile.mode === "embarazada"
+                ? "border-petrol bg-petrol text-white"
+                : "border-black/10 bg-cream text-ink"
+            }`}
+          >
+            Estoy embarazada
+          </button>
+          <button
+            type="button"
+            onClick={() => switchMode("planeando")}
+            aria-pressed={profile.mode === "planeando"}
+            className={`min-h-[44px] rounded-tile border px-3 py-2.5 text-sm font-medium transition ${
+              profile.mode === "planeando"
+                ? "border-petrol bg-petrol text-white"
+                : "border-black/10 bg-cream text-ink"
+            }`}
+          >
+            Planeando / buscando
+          </button>
+        </div>
+        {profile.mode === "embarazada" && !profile.hasPregnancy && (
+          <p className="mt-2 text-sm text-terracotta">
+            Para seguir tu embarazo, cargá tu fecha más abajo.
+          </p>
+        )}
+        {modeMsg && <p className="mt-2 text-sm text-sage">{modeMsg}</p>}
+      </section>
+
       {/* Department */}
       <section className="rounded-card bg-white p-4 shadow-soft">
         <h2 className="text-base font-medium text-ink">Tu departamento</h2>
@@ -210,7 +268,8 @@ export default function AjustesPage() {
         {savedMsg && <p className="mt-2 text-sm text-sage">{savedMsg}</p>}
       </section>
 
-      {/* Editable pregnancy date (build spec §1) */}
+      {/* Editable pregnancy date (build spec §1) — only in pregnancy mode */}
+      {profile.mode === "embarazada" && (
       <section className="rounded-card bg-white p-4 shadow-soft">
         <h2 className="text-base font-medium text-ink">
           Editar fecha de embarazo
@@ -272,8 +331,10 @@ export default function AjustesPage() {
         {dateWarn && <p className="mt-2 text-sm text-terracotta">{dateWarn}</p>}
         {dateMsg && <p className="mt-2 text-sm text-sage">{dateMsg}</p>}
       </section>
+      )}
 
-      {/* Next prenatal appointment (build spec §4) */}
+      {/* Next prenatal appointment (build spec §4) — only in pregnancy mode */}
+      {profile.mode === "embarazada" && (
       <section className="rounded-card bg-white p-4 shadow-soft">
         <h2 className="text-base font-medium text-ink">
           Próximo control prenatal
@@ -309,6 +370,7 @@ export default function AjustesPage() {
         </div>
         {apptMsg && <p className="mt-2 text-sm text-sage">{apptMsg}</p>}
       </section>
+      )}
 
       {/* Optional PIN */}
       <section className="rounded-card bg-white p-4 shadow-soft">
@@ -356,8 +418,9 @@ export default function AjustesPage() {
           <li>• No te pedimos cuenta, correo ni número de teléfono.</li>
           <li>• Tus datos de salud se guardan solo en este dispositivo.</li>
           <li>
-            • Tus registros de síntomas y ánimo, tus fotos de la panza y la fecha
-            de tu próximo control quedan guardados solo en tu teléfono.
+            • Tus registros de síntomas y ánimo, tus fotos de la panza, tu
+            calendario menstrual y la fecha de tu próximo control quedan
+            guardados solo en tu teléfono.
           </li>
           <li>
             • Lo único que viaja al servidor es tu trimestre y tu departamento,
@@ -385,8 +448,8 @@ export default function AjustesPage() {
         <p className="mt-1 text-sm text-muted">
           Esto borra de forma definitiva tu perfil, tu embarazo, el diario de
           síntomas y ánimo, las fotos, la fecha del próximo control, las
-          pataditas, las contracciones, el peso, las checklists y el PIN. No se
-          puede deshacer.
+          pataditas, las contracciones, el peso, las checklists, tu calendario
+          menstrual y el PIN. No se puede deshacer.
         </p>
         {!confirmWipe ? (
           <button

@@ -7,6 +7,11 @@ const TOOLS = [
     desc: "Organizá tus datos en una hoja para mostrarle a tu médico/a.",
   },
   {
+    href: "/derechos",
+    title: "Tus derechos y beneficios",
+    desc: "Licencia, subsidio de IPS, gratuidad y ayudas: qué te corresponde según tu situación.",
+  },
+  {
     href: "/herramientas/sintomas",
     title: "Síntomas y ánimo",
     desc: "Registrá cómo te sentís y tus síntomas, día a día.",

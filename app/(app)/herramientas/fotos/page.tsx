@@ -4,32 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type PhotoEntry } from "@/lib/db";
 import { useProfile } from "@/lib/useProfile";
+import { downscaleImage } from "@/lib/images";
 import { PrivacyLine } from "@/components/PrivacyLine";
-
-const MAX_DIM = 1280;
-
-// Downscale a selected image client-side before saving (build spec §5) so
-// IndexedDB doesn't bloat. Returns a JPEG Blob. Nothing is uploaded.
-async function downscale(file: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, MAX_DIM / Math.max(bitmap.width, bitmap.height));
-  const w = Math.round(bitmap.width * scale);
-  const h = Math.round(bitmap.height * scale);
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    bitmap.close();
-    return file;
-  }
-  ctx.drawImage(bitmap, 0, 0, w, h);
-  bitmap.close();
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob((b) => resolve(b), "image/jpeg", 0.82),
-  );
-  return blob ?? file;
-}
 
 export default function FotosPage() {
   const profile = useProfile();
@@ -49,7 +25,7 @@ export default function FotosPage() {
     if (!file) return;
     setBusy(true);
     try {
-      const blob = await downscale(file);
+      const blob = await downscaleImage(file);
       await db().photoEntries.add({ week, blob, createdAt: Date.now() });
     } finally {
       setBusy(false);

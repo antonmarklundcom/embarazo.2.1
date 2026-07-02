@@ -69,6 +69,7 @@ export default function EmergenciaPage() {
             .&rdquo;
           </p>
         )}
+        <ClinicalLine />
         <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-relaxed text-ink/90">
           {CALL_SCRIPT_STEPS.map((s) => (
             <li key={s}>{s}</li>
@@ -81,13 +82,20 @@ export default function EmergenciaPage() {
         <h2 className="text-base font-medium text-ink">
           Señales de alarma: consultá ya si tenés
         </h2>
-        <ul className="mt-2 space-y-1.5 text-sm leading-relaxed text-ink/90">
+        <ul className="mt-2 space-y-2 text-sm leading-relaxed text-ink/90">
           {ALARM_SIGNS.map((s) => (
             <li key={s.id} className="flex gap-2">
               <span className="text-terracotta" aria-hidden>
                 •
               </span>
-              {s.text}
+              <span>
+                {s.text}
+                {s.textGu && (
+                  <span lang="gn" className="block text-xs italic text-muted">
+                    {s.textGu}
+                  </span>
+                )}
+              </span>
             </li>
           ))}
         </ul>
@@ -229,6 +237,30 @@ function ContactCard({
         </p>
       </div>
     </section>
+  );
+}
+
+// Blood type / allergies saved in the carné perinatal tool, if any.
+function ClinicalLine() {
+  const clinical = useLiveQuery(async () => {
+    const rows = await db().clinical.toArray();
+    return rows[0] ?? null;
+  }, []);
+  if (!clinical?.bloodType && !clinical?.allergies) return null;
+  return (
+    <p className="mt-2 rounded-tile bg-sage/10 p-3 text-sm text-ink">
+      {clinical.bloodType && (
+        <>
+          Grupo sanguíneo: <strong>{clinical.bloodType}</strong>
+        </>
+      )}
+      {clinical.bloodType && clinical.allergies && " · "}
+      {clinical.allergies && (
+        <>
+          Alergias: <strong>{clinical.allergies}</strong>
+        </>
+      )}
+    </p>
   );
 }
 

@@ -12,6 +12,11 @@ const TOOLS = [
     desc: "Organizá tus datos en una hoja para mostrarle a tu médico/a.",
   },
   {
+    href: "/herramientas/carne",
+    title: "Carné perinatal",
+    desc: "Llevá una copia en fotos de tu carné y tus datos clave, siempre con vos.",
+  },
+  {
     href: "/derechos",
     title: "Tus derechos y beneficios",
     desc: "Licencia, subsidio de IPS, gratuidad y ayudas: qué te corresponde según tu situación.",

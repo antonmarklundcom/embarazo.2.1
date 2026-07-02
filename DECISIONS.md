@@ -51,3 +51,11 @@ Every non-obvious assumption made while building the investor MVP. Append-only.
 
 ## Testing
 - Vitest. Tests cover `lib/pregnancy.ts` math and the placements/directory param-whitelist rejection (§11).
+
+## v5 — Derechos, Emergencia, Guaraní, Carné
+- **"Tus derechos y beneficios" (`/derechos`)**: typed catalog in `lib/derechos.ts` keyed by work situation (IPS / sin IPS / no trabaja) and phase. Legal specifics verified against Ley 5508/2015 (18 semanas, extensión a 24, lactancia 90/60 min, paternidad 2 semanas, fuero hasta 1 año), Ley 7383/2024 (hasta 4 h pagas para controles prenatales), Ley 5099/2013 (gratuidad MSPBS), IPS (subsidio 100%, reposo desde semana 38, ≥4 meses de aporte) y CT arts. 261+ (bonificación familiar 5%). **Amounts/rules must be re-verified before launch and periodically**; the UI always shows the "no es asesoría legal" disclaimer. The user's work situation is component state only — never persisted, never transmitted.
+- **Leave-date math** (`computeLeavePlan`): earliest start = FPP − 14 días; end = start + 126 días; IPS reposo emitible desde FPP − 21 días (semana 38). Unit-tested.
+- **Emergencia (`/emergencia`)**: 141 (SEME) and 911 as `tel:` links — national short codes, safe to hardcode. Sanatorio + emergency contact are optional **non-indexed** Profile fields (no Dexie version bump needed). Alarm signs live in `lib/emergency.ts`, mirroring the guía.
+- **Guaraní (jopara)**: alarm signs carry `textGu`, shown inline under the Spanish on `/emergencia` with `lang="gn"`. Register is deliberately simple jopara (Spanish clinical nouns kept), matching MSPBS material style. ⚠️ **Pending native-speaker review before public launch** — treat current strings as drafts.
+- **Carné perinatal (`/herramientas/carne`)**: Dexie **v4** adds `carnePhotos` (page photos, downscaled ≤1280px via shared `lib/images.ts`) and `clinical` (single row: bloodType/allergies/notes). Blood type + allergies also surface on `/emergencia`. Copy explicitly says the photos do not replace the paper carné.
+- **SOS pill** in the header links to `/emergencia` from every screen; deliberately not a bottom-nav tab to keep the 5-tab layout.

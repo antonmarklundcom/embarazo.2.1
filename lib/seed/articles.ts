@@ -219,15 +219,19 @@ export const ARTICLES: Article[] = [
     reviewedBy: REVIEWER,
     cluster: "derechos",
     html: `
-<p>Si trabajás en relación de dependencia, la ley te protege durante el embarazo y después del parto. Conocer tus derechos te ayuda a hacerlos valer.</p>
-<h2>Permiso de maternidad</h2>
-<p>Tenés derecho a un período de licencia por maternidad alrededor del parto, con resguardo de tu puesto. Avisá a tu empleador con el certificado médico y dejá constancia por escrito.</p>
+<p>Si trabajás en relación de dependencia, la ley te protege durante el embarazo y después del parto. Conocer tus derechos te ayuda a hacerlos valer. En la app, la sección <strong>Tus derechos y beneficios</strong> te muestra qué te corresponde según tu situación, con tus propias fechas.</p>
+<h2>Licencia de maternidad: 18 semanas</h2>
+<p>La Ley 5508/2015 te da derecho a <strong>18 semanas ininterrumpidas</strong> de licencia (126 días), que podés empezar hasta 2 semanas antes de la fecha probable de parto. Si el bebé nace antes de la semana 35, pesa menos de 2 kg o necesita cuidados especiales, la licencia se extiende a 24 semanas; en partos múltiples se suma 1 mes por cada hijo a partir del segundo.</p>
+<h2>Subsidio de IPS</h2>
+<p>Si aportás a IPS, estás al día y tenés al menos 4 meses de aporte, durante la licencia cobrás un subsidio equivalente al <strong>100% de tu salario</strong>, en cuotas. El reposo se gestiona en IPS a partir de la semana 38 de gestación.</p>
+<h2>Permiso pagado para tus controles</h2>
+<p>La Ley 7383/2024 te reconoce un permiso de <strong>hasta 4 horas</strong> para consultas, controles o estudios prenatales, sin descuento de salario, tanto en el sector público como en el privado.</p>
 <h2>Descanso de lactancia</h2>
-<p>Al volver al trabajo, te corresponden pausas durante la jornada para amamantar o extraer leche. Es un derecho pensado para que puedas seguir con la lactancia sin perder tu trabajo.</p>
-<h2>Protección contra el despido</h2>
-<p>Durante el embarazo y un tiempo después del parto, existe una protección especial frente al despido por causa del embarazo o la maternidad. Si te despiden en ese período, conviene asesorarte.</p>
-<h2>Atención en salud</h2>
-<p>Si aportás a IPS, tenés cobertura para los controles, el parto y la atención del bebé. Faltar al trabajo para tus controles prenatales con el justificativo médico correspondiente es parte de tu derecho a cuidarte.</p>
+<p>Al volver al trabajo te corresponden <strong>90 minutos por día</strong> para amamantar o extraerte leche hasta los 7 meses del bebé, y 60 minutos por día de los 7 a los 24 meses. Las empresas e instituciones con más de 10 trabajadoras deben contar con una sala de lactancia.</p>
+<h2>Protección contra el despido (fuero maternal)</h2>
+<p>Desde que comunicás tu embarazo al empleador por escrito, tenés estabilidad especial: no pueden despedirte sin una causa justificada comprobada judicialmente, hasta <strong>un año después del nacimiento</strong>. Si te despiden en ese período, asesorate cuanto antes.</p>
+<h2>Para papá</h2>
+<p>Al padre le corresponden <strong>2 semanas de permiso pagado</strong> después del nacimiento, a cargo del empleador. Es un derecho irrenunciable (Ley 5508/2015).</p>
 <h2>Un consejo práctico</h2>
 <ul>
 <li>Guardá copias de tus certificados médicos y de las notas que entregás.</li>

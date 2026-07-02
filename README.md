@@ -99,9 +99,14 @@ Precargado para uso sin conexión:
 - Las **42 páginas** de semana (`/semana/1` … `/semana/42`).
 - Las **8 guías**.
 - El **tip de hoy** y los **eventos** (datos seed en el repo).
-- Las herramientas (**Síntomas y ánimo, Diario de fotos, Pataditas,
-  Contracciones, Peso, Checklist**) funcionan 100% offline: los datos son
-  locales (IndexedDB).
+- **Tus derechos y beneficios** (`/derechos`): navegador de derechos (Ley
+  5508, Ley 7383/2024, IPS, gratuidad, Tekoporã) con las fechas de licencia
+  calculadas localmente.
+- **Emergencia** (`/emergencia`, botón SOS del header): 141/911 con un toque,
+  señales de alarma (castellano + guaraní) y tus contactos guardados.
+- Las herramientas (**Síntomas y ánimo, Diario de fotos, Carné perinatal,
+  Pataditas, Contracciones, Peso, Checklist**) funcionan 100% offline: los
+  datos son locales (IndexedDB).
 
 Con estrategia *network-first* + caché de respaldo:
 
@@ -122,6 +127,9 @@ Todo lo personal vive solo en IndexedDB (Dexie) y **nunca se transmite**:
 - **Registros de síntomas y ánimo** (diario), con nota opcional cifrada si hay
   PIN.
 - **Fotos de la panza** (Blob redimensionado a ~1280px, nunca subido).
+- **Copia del carné perinatal** (fotos de las páginas) y **datos clave**
+  (grupo sanguíneo, alergias, notas).
+- **Contactos de emergencia** (sanatorio y persona de confianza).
 - Pataditas, contracciones, peso y checklists.
 - **Calendario menstrual** (modo planeando): reglas registradas y promedios de
   ciclo (`cycles` + `cycleSettings`).

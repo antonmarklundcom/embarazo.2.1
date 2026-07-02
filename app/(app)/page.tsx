@@ -145,6 +145,23 @@ export default function InicioPage() {
         </div>
       </section>
 
+      {/* Rights & benefits navigator */}
+      <Link
+        href="/derechos"
+        className="block rounded-card border border-petrol/15 bg-petrol/5 p-4 transition active:scale-[0.99]"
+      >
+        <p className="text-xs font-medium uppercase tracking-wide text-petrol">
+          ¿Qué te corresponde?
+        </p>
+        <h3 className="mt-1 text-base font-medium text-ink">
+          Tus derechos y beneficios en Paraguay
+        </h3>
+        <p className="mt-1 text-sm text-muted">
+          Licencia de maternidad con tus fechas, subsidio de IPS, gratuidad en
+          Salud Pública y más, según tu situación.
+        </p>
+      </Link>
+
       {/* Local resources (placements) */}
       <LocalResourcesBlock trimester={trimester} department={department} week={week} />
 

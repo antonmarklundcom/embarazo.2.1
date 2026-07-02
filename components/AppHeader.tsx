@@ -14,21 +14,29 @@ export function AppHeader() {
           <NidoMark />
           <span className="text-lg font-medium text-petrol-dark">Nido</span>
         </Link>
-        <Link
-          href="/ajustes"
-          aria-label="Ajustes"
-          className="flex h-11 w-11 items-center justify-center rounded-full text-muted transition hover:bg-black/5"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <circle cx="12" cy="12" r="3" stroke="#7E766C" strokeWidth="1.7" />
-            <path
-              d="M12 2.5v2M12 19.5v2M21.5 12h-2M4.5 12h-2M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4M18.7 18.7l-1.4-1.4M6.7 6.7 5.3 5.3"
-              stroke="#7E766C"
-              strokeWidth="1.7"
-              strokeLinecap="round"
-            />
-          </svg>
-        </Link>
+        <div className="flex items-center gap-1">
+          <Link
+            href="/emergencia"
+            className="flex h-9 items-center rounded-full bg-terracotta px-3 text-xs font-medium text-white transition active:scale-95"
+          >
+            SOS
+          </Link>
+          <Link
+            href="/ajustes"
+            aria-label="Ajustes"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-muted transition hover:bg-black/5"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <circle cx="12" cy="12" r="3" stroke="#7E766C" strokeWidth="1.7" />
+              <path
+                d="M12 2.5v2M12 19.5v2M21.5 12h-2M4.5 12h-2M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4M18.7 18.7l-1.4-1.4M6.7 6.7 5.3 5.3"
+                stroke="#7E766C"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+              />
+            </svg>
+          </Link>
+        </div>
       </div>
     </header>
   );

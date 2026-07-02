@@ -17,6 +17,12 @@ export interface Profile {
   nextAppointment?: number;
   // Pregnancy vs. pre-pregnancy mode (build spec §3). Optional for back-compat.
   mode?: AppMode;
+  // Emergency mode contacts (local-only, optional, never transmitted). These
+  // are plain non-indexed fields, so no Dexie schema version bump is needed.
+  sanatorioName?: string;
+  sanatorioPhone?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
   createdAt: number;
 }
 
@@ -91,6 +97,23 @@ export interface CycleSettings {
   avgPeriodLength: number; // default 5
 }
 
+// Digital carné perinatal (v4). Photos of the paper carné pages + key
+// clinical basics. Device-only, like every other health record here.
+export interface CarnePhoto {
+  id?: number;
+  blob: Blob;
+  createdAt: number;
+}
+
+export interface ClinicalInfo {
+  id?: number;
+  /** e.g. "O+", "A−" — free choice from the UI's fixed list. */
+  bloodType?: string;
+  allergies?: string;
+  /** Chronic conditions, current medication, anything the guardia should know. */
+  notes?: string;
+}
+
 export class NidoDB extends Dexie {
   profile!: Table<Profile, number>;
   pregnancy!: Table<Pregnancy, number>;
@@ -102,6 +125,8 @@ export class NidoDB extends Dexie {
   photoEntries!: Table<PhotoEntry, number>;
   cycles!: Table<Cycle, number>;
   cycleSettings!: Table<CycleSettings, number>;
+  carnePhotos!: Table<CarnePhoto, number>;
+  clinical!: Table<ClinicalInfo, number>;
 
   constructor() {
     super("nido");
@@ -124,6 +149,12 @@ export class NidoDB extends Dexie {
     this.version(3).stores({
       cycles: "++id, startDate, createdAt",
       cycleSettings: "++id",
+    });
+    // v4: digital carné perinatal (photos of the paper carné + clinical
+    // basics). Additive only.
+    this.version(4).stores({
+      carnePhotos: "++id, createdAt",
+      clinical: "++id",
     });
   }
 }

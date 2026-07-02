@@ -2,6 +2,11 @@ import Link from "next/link";
 
 const TOOLS = [
   {
+    href: "/emergencia",
+    title: "Emergencia",
+    desc: "Números de emergencia, señales de alarma y tus contactos, sin internet.",
+  },
+  {
     href: "/herramientas/resumen",
     title: "Resumen para mi control",
     desc: "Organizá tus datos en una hoja para mostrarle a tu médico/a.",

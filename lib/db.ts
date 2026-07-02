@@ -17,6 +17,12 @@ export interface Profile {
   nextAppointment?: number;
   // Pregnancy vs. pre-pregnancy mode (build spec §3). Optional for back-compat.
   mode?: AppMode;
+  // Emergency mode contacts (local-only, optional, never transmitted). These
+  // are plain non-indexed fields, so no Dexie schema version bump is needed.
+  sanatorioName?: string;
+  sanatorioPhone?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
   createdAt: number;
 }
 

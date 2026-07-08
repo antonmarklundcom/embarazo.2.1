@@ -31,6 +31,17 @@ const serwist = new Serwist({
     },
     ...defaultCache,
   ],
+  // Offline fallback (build spec §9): any navigation that isn't precached
+  // and can't reach the network lands on /offline instead of a browser
+  // error page. /offline itself is precached automatically (app shell).
+  fallbacks: {
+    entries: [
+      {
+        url: "/offline",
+        matcher: ({ request }) => request.destination === "document",
+      },
+    ],
+  },
 });
 
 serwist.addEventListeners();

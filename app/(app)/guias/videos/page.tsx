@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { VIDEOS } from "@/lib/seed/videos";
+import { PUBLISHED_VIDEOS } from "@/lib/seed/videos";
 import type { VideoItem } from "@/lib/types";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 
@@ -21,13 +21,13 @@ export default function VideosPage() {
 
   const topics = useMemo(() => {
     const set = new Set<string>();
-    for (const v of VIDEOS) set.add(v.topic);
+    for (const v of PUBLISHED_VIDEOS) set.add(v.topic);
     return [...set];
   }, []);
 
   const filtered = useMemo(
     () =>
-      VIDEOS.filter((v) => {
+      PUBLISHED_VIDEOS.filter((v) => {
         const topicOk = topic === "todos" || v.topic === topic;
         // A trimester filter also keeps "general" (0/undefined) videos.
         const trimOk =
@@ -38,6 +38,21 @@ export default function VideosPage() {
       }),
     [topic, trimester],
   );
+
+  if (PUBLISHED_VIDEOS.length === 0) {
+    return (
+      <div className="space-y-4">
+        <header>
+          <h1 className="text-xl font-medium text-petrol-dark">Videos</h1>
+        </header>
+        <div className="rounded-card bg-white p-5 text-center shadow-soft">
+          <p className="text-sm text-muted">
+            Estamos armando la galería de videos educativos. Volvé pronto.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

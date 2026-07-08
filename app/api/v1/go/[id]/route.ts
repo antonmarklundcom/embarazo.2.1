@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getDirectory, getPlacements } from "@/lib/wordpress";
 import { isValidDepartment } from "@/lib/departments";
 import { waLink, defaultPrefill } from "@/lib/whatsapp";
+import { isRateLimited, clientKeyFromHeaders } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+
+  const clientKey = clientKeyFromHeaders(req.headers);
+  if (isRateLimited(clientKey)) {
+    return NextResponse.json({ error: "demasiadas solicitudes" }, { status: 429 });
+  }
 
   const [placements, directory] = await Promise.all([
     getPlacements(),

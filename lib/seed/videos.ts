@@ -73,3 +73,12 @@ export const VIDEOS: VideoItem[] = [
     durationLabel: "4 min",
   },
 ];
+
+// PLACEHOLDER_YOUTUBE_ID is a well-known public sample video, never a real
+// pregnancy-education video. Filtering it out here means the gallery (and its
+// nav entries) automatically reappear the moment real videos.ts entries are
+// added — no other code needs to change.
+const PLACEHOLDER_YOUTUBE_ID = "dQw4w9WgXcQ";
+export const PUBLISHED_VIDEOS: VideoItem[] = VIDEOS.filter(
+  (v) => v.youtubeId !== PLACEHOLDER_YOUTUBE_ID,
+);

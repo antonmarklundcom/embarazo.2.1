@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PUBLISHED_VIDEOS } from "@/lib/seed/videos";
 
 const TOOLS = [
   {
@@ -56,14 +57,22 @@ const TOOLS = [
     title: "Guías",
     desc: "Artículos sobre el embarazo, revisados y pensados para Paraguay.",
   },
-  {
-    href: "/guias/videos",
-    title: "Videos",
-    desc: "Galería de videos educativos, filtrable por tema y trimestre.",
-  },
 ];
 
 export default function HerramientasPage() {
+  // The video gallery is hidden until real videos.ts entries replace the
+  // placeholder YouTube IDs (see lib/seed/videos.ts).
+  const tools = PUBLISHED_VIDEOS.length > 0
+    ? [
+        ...TOOLS,
+        {
+          href: "/guias/videos",
+          title: "Videos",
+          desc: "Galería de videos educativos, filtrable por tema y trimestre.",
+        },
+      ]
+    : TOOLS;
+
   return (
     <div className="space-y-4">
       <header>
@@ -73,7 +82,7 @@ export default function HerramientasPage() {
         </p>
       </header>
       <div className="space-y-3">
-        {TOOLS.map((t) => (
+        {tools.map((t) => (
           <Link
             key={t.href}
             href={t.href}

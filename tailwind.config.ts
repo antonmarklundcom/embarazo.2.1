@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
-// Design language §3 — warm wellness palette, implemented exactly.
+// "Mi Bebé" design language — docs/REDESIGN-PLAN.md §1 (canvas 1d).
+// Legacy token names keep working: values were updated in place.
 const config: Config = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
@@ -12,18 +13,27 @@ const config: Config = {
       colors: {
         cream: "#FBF7F1",
         petrol: {
-          DEFAULT: "#1F5F5B",
-          dark: "#16433F",
+          DEFAULT: "#2F5D50",
+          dark: "#24463D",
         },
-        terracotta: "#D9714B",
+        terracotta: "#C96342",
+        // rose/sage stay mid-tone: used as text color in ~20 places.
         rose: "#E0A4A0",
-        sage: "#8FAE86",
-        ink: "#2A2724",
-        muted: "#7E766C",
+        sage: "#6F8A66",
+        ink: "#322E29",
+        muted: "#7A7369",
+        line: "#EDE5DA",
         whatsapp: "#25D366",
         sand: {
-          bg: "#F6E4C2",
-          text: "#854F0B",
+          bg: "#F8E2CB",
+          text: "#8A5A2E",
+        },
+        pastel: {
+          rosa: "#F3DAD4",
+          celeste: "#D9E5EC",
+          salvia: "#DFE8D8",
+          lavanda: "#E6E0F0",
+          arena: "#F8E2CB",
         },
       },
       borderRadius: {

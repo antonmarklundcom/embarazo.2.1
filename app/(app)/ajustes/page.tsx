@@ -21,6 +21,7 @@ import {
 } from "@/lib/crypto";
 import { exportBackup, backupFileName, importBackup } from "@/lib/backup";
 import { PrivacyLine } from "@/components/PrivacyLine";
+import { InstallCard } from "@/components/InstallCard";
 
 function toDateInput(ts?: number): string {
   if (!ts) return "";
@@ -268,6 +269,9 @@ export default function AjustesPage() {
         <h1 className="text-xl font-medium text-petrol-dark">Ajustes</h1>
         <PrivacyLine className="mt-1" />
       </header>
+
+      {/* Install prompt (build plan P1.1) — self-hides when installed */}
+      <InstallCard />
 
       {/* App mode (build spec §3) */}
       <section className="rounded-card bg-white p-4 shadow-soft">

@@ -29,5 +29,21 @@
       "type": "image/png",
       "purpose": "maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Emergencia",
+      "short_name": "Emergencia",
+      "description": "Números de emergencia y señales de alarma, sin internet",
+      "url": "/emergencia",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Herramientas",
+      "short_name": "Herramientas",
+      "description": "Pataditas, contracciones, peso, carné y más",
+      "url": "/herramientas",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
   ]
 }

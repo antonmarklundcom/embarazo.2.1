@@ -1,5 +1,6 @@
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
+import { AnalyticsPing } from "@/components/AnalyticsPing";
 
 // APP SHELL (build spec §4/§6): header + fixed bottom tab bar wrap every (app) route.
 export default function AppShellLayout({
@@ -14,6 +15,7 @@ export default function AppShellLayout({
         {children}
       </main>
       <BottomNav />
+      <AnalyticsPing />
     </div>
   );
 }

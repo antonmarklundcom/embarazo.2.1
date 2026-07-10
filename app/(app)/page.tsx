@@ -14,6 +14,7 @@ import { AppointmentBanner } from "@/components/AppointmentBanner";
 import { RoadmapSection } from "@/components/RoadmapSection";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { PrivacyLine } from "@/components/PrivacyLine";
+import { InstallCard } from "@/components/InstallCard";
 
 export default function InicioPage() {
   const profile = useProfile();
@@ -180,6 +181,9 @@ export default function InicioPage() {
           Con el calor y la lluvia, prevenir el mosquito es parte de tu cuidado.
         </p>
       </Link>
+
+      {/* Install prompt (build plan P1.1) — self-hides when installed */}
+      <InstallCard />
 
       {/* Roadmap placeholders (build spec §8) */}
       <RoadmapSection />

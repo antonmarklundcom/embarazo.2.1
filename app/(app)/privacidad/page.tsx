@@ -70,6 +70,18 @@ export default function PrivacidadPage() {
       </section>
 
       <section className="space-y-2">
+        <h2 className="text-base font-medium text-ink">Métricas de uso</h2>
+        <p className="text-sm leading-relaxed text-muted">
+          Para saber cuánta gente usa la app, una vez por día enviamos una
+          señal anónima que incluye únicamente que la app se abrió, tu modo
+          de uso y —si aplica— tu trimestre y departamento. No generamos ni
+          guardamos ningún identificador de tu teléfono, así que no podemos
+          seguirte de un día para otro ni sabemos quién sos. Son números
+          agregados, nada más.
+        </p>
+      </section>
+
+      <section className="space-y-2">
         <h2 className="text-base font-medium text-ink">El PIN opcional</h2>
         <p className="text-sm leading-relaxed text-muted">
           Si activás un PIN, tus notas del diario se cifran en el navegador

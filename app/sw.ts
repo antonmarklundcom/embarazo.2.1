@@ -25,7 +25,7 @@ const serwist = new Serwist({
         url.pathname === "/api/v1/placements" ||
         url.pathname === "/api/v1/directory",
       handler: new NetworkFirst({
-        cacheName: "nido-api",
+        cacheName: "mibebe-api",
         networkTimeoutSeconds: 5,
       }),
     },

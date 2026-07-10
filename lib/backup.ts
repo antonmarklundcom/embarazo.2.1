@@ -9,7 +9,7 @@ import { db } from "./db";
 const BACKUP_VERSION = 1;
 
 interface BackupFile {
-  app: "nido";
+  app: "mibebe";
   version: number;
   exportedAt: number;
   tables: {
@@ -90,7 +90,7 @@ export async function exportBackup(): Promise<Blob> {
   ]);
 
   const file: BackupFile = {
-    app: "nido",
+    app: "mibebe",
     version: BACKUP_VERSION,
     exportedAt: Date.now(),
     tables: {
@@ -114,13 +114,13 @@ export async function exportBackup(): Promise<Blob> {
 
 export function backupFileName(): string {
   const d = new Date().toISOString().slice(0, 10);
-  return `nido-backup-${d}.json`;
+  return `mibebe-backup-${d}.json`;
 }
 
 function isBackupFile(value: unknown): value is BackupFile {
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
-  return v.app === "nido" && typeof v.version === "number" && !!v.tables;
+  return v.app === "mibebe" && typeof v.version === "number" && !!v.tables;
 }
 
 /**

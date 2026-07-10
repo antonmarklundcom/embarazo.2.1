@@ -52,7 +52,7 @@ export default async function GuiaDetailPage({
       </header>
 
       <div
-        className="prose-nido text-ink"
+        className="prose-mb text-ink"
         // Seed HTML is authored in-repo (not user input); safe to render.
         dangerouslySetInnerHTML={{ __html: article.html }}
       />

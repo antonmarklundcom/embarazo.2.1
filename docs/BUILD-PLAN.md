@@ -24,7 +24,14 @@
 
 ---
 
-## R1 — Product rename (BLOCKED: founder must supply the new name)
+## R1 — Product rename → "Mi Bebé" (DONE, July 2026)
+
+Renamed to **Mi Bebé**. Because the app had no real users yet, the
+internal identifiers were renamed cleanly too (no migration needed):
+`Dexie("mibebe")`, class `MiBebeDB`, `mibebe.pin.*` localStorage keys,
+backup `app: "mibebe"`, SW cache `mibebe-api`, `prose-mb` CSS class.
+Do a data migration only if renaming again *after* real users exist.
+Historical guidance kept below for reference.
 
 The current working name is being dropped. Once the founder provides the
 new name (and domain), execute the rename in one PR:

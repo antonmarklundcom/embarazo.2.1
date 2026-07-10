@@ -10,7 +10,7 @@ const nunito = Nunito_Sans({
   display: "swap",
 });
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://nido.app";
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mibebe.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),

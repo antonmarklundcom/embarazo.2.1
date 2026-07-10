@@ -108,7 +108,7 @@ export default function EmergenciaPage() {
       </section>
 
       <p className="text-xs leading-relaxed text-muted">
-        Nido es informativa y no reemplaza la atención médica. Ante la duda,
+        Mi Bebé es informativa y no reemplaza la atención médica. Ante la duda,
         consultá igual: vale más una consulta de más.
       </p>
     </div>

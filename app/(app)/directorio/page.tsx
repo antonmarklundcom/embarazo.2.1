@@ -73,7 +73,7 @@ export default function CercaTuyoPage() {
   const businessWa = useMemo(
     () =>
       `https://wa.me/${BUSINESS_WA.replace(/[^\d]/g, "")}?text=${encodeURIComponent(
-        "Hola! Estoy usando Nido y me gustaría recomendar o consultar por un lugar en mi zona.",
+        "Hola! Estoy usando Mi Bebé y me gustaría recomendar o consultar por un lugar en mi zona.",
       )}`,
     [],
   );

@@ -96,7 +96,7 @@ export default function EventosPage() {
       )}
 
       <p className="text-[11px] leading-relaxed text-muted">
-        Los eventos son seleccionados por el equipo de Nido y pueden incluir
+        Los eventos son seleccionados por el equipo de Mi Bebé y pueden incluir
         propuestas patrocinadas, siempre señaladas como “Patrocinado”. La
         información es referencial.
       </p>
@@ -108,7 +108,7 @@ function EventCard({ event, past = false }: { event: EventItem; past?: boolean }
   const wa = event.whatsappNumber
     ? waLink(
         event.whatsappNumber,
-        `Hola! Vi el evento "${event.title}" en Nido y quisiera más información.`,
+        `Hola! Vi el evento "${event.title}" en Mi Bebé y quisiera más información.`,
       )
     : null;
 

@@ -182,7 +182,7 @@ const RAW_WEEKS: RawWeek[] = [
     weightG: 300,
     milestone:
       "Llegaste a la mitad del camino. El bebé traga líquido y sus riñones ya producen pis.",
-    tip: "Es momento de empezar a pensar dónde querés tener al bebé. Mirá el directorio de Nido por departamento.",
+    tip: "Es momento de empezar a pensar dónde querés tener al bebé. Mirá el directorio de Mi Bebé por departamento.",
   },
   {
     week: 21,
@@ -272,7 +272,7 @@ const RAW_WEEKS: RawWeek[] = [
     weightG: 1319,
     milestone:
       "La médula ósea ya fabrica glóbulos rojos. El bebé regula mejor su propia temperatura.",
-    tip: "Si trabajás, informate sobre tus derechos: permiso de maternidad, controles y descansos. Mirá la guía de Nido al respecto.",
+    tip: "Si trabajás, informate sobre tus derechos: permiso de maternidad, controles y descansos. Mirá la guía de Mi Bebé al respecto.",
   },
   {
     week: 31,

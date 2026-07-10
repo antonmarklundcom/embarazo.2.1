@@ -97,7 +97,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
   return (
     <div className="mx-auto flex min-h-[80dvh] max-w-md flex-col justify-center py-6">
       <div className="mb-6 text-center">
-        <h1 className="text-2xl font-medium text-petrol-dark">Bienvenida a Nido</h1>
+        <h1 className="text-2xl font-medium text-petrol-dark">Bienvenida a Mi Bebé</h1>
         <p className="mt-2 text-sm text-muted">
           Tu embarazo y tu camino para buscarlo, hechos para Paraguay.
         </p>
@@ -106,7 +106,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
       {step === "mode" && (
         <div className="space-y-3">
           <p className="px-1 text-sm font-medium text-ink">
-            ¿Cómo querés usar Nido?
+            ¿Cómo querés usar Mi Bebé?
           </p>
           <button
             type="button"
@@ -277,7 +277,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
       </div>
 
       <p className="mt-4 px-2 text-center text-[11px] leading-relaxed text-muted">
-        Nido es informativo y no reemplaza la atención de un profesional de la
+        Mi Bebé es informativo y no reemplaza la atención de un profesional de la
         salud. No realiza diagnósticos. Al continuar, aceptás nuestra{" "}
         <Link href="/privacidad" className="underline">
           política de privacidad

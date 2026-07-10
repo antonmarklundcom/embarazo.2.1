@@ -28,7 +28,7 @@ export function RoadmapSection() {
   return (
     <section aria-labelledby="roadmap" className="space-y-3">
       <h2 id="roadmap" className="text-sm font-medium text-ink">
-        Lo que viene en Nido
+        Lo que viene en Mi Bebé
       </h2>
       <div className="space-y-3">
         {ITEMS.map((item) => {

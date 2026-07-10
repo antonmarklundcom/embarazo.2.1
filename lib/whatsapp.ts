@@ -14,7 +14,7 @@ export function waLink(number: string, message: string): string {
 /** Default es-PY pre-fill referencing the current week when available. */
 export function defaultPrefill(week?: number): string {
   if (week && week > 0) {
-    return `Hola! Vi su información en Nido (semana ${week}). Quisiera más información.`;
+    return `Hola! Vi su información en Mi Bebé (semana ${week}). Quisiera más información.`;
   }
-  return "Hola! Vi su información en Nido. Quisiera más información.";
+  return "Hola! Vi su información en Mi Bebé. Quisiera más información.";
 }

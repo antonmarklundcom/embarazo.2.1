@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 // this before public launch (see docs/REVIEW-AND-LAUNCH-PLAN.md §4.6).
 export const metadata: Metadata = {
   title: "Términos de uso",
-  description: "Condiciones de uso de Nido.",
+  description: "Condiciones de uso de Mi Bebé.",
 };
 
 const LAST_UPDATED = "8 de julio de 2026";
@@ -21,7 +21,7 @@ export default function TerminosPage() {
 
       <section className="rounded-card border border-terracotta/30 bg-terracotta/5 p-4">
         <p className="text-sm leading-relaxed text-ink">
-          Nido es una herramienta informativa y de acompañamiento durante el
+          Mi Bebé es una herramienta informativa y de acompañamiento durante el
           embarazo y la búsqueda de embarazo. <strong>No reemplaza la
           atención de un profesional de la salud, no realiza diagnósticos y
           no da indicaciones médicas personalizadas.</strong> Ante cualquier
@@ -33,7 +33,7 @@ export default function TerminosPage() {
       <section className="space-y-2">
         <h2 className="text-base font-medium text-ink">Uso de la app</h2>
         <p className="text-sm leading-relaxed text-muted">
-          Nido es gratuita y no requiere crear una cuenta. Al usarla, aceptás
+          Mi Bebé es gratuita y no requiere crear una cuenta. Al usarla, aceptás
           estos términos y nuestra{" "}
           <a href="/privacidad" className="underline">
             política de privacidad
@@ -60,7 +60,7 @@ export default function TerminosPage() {
         <p className="text-sm leading-relaxed text-muted">
           El directorio y los recursos destacados incluyen listados sponsoreados y
           no sponsoreados. Que un sanatorio, profesional o negocio aparezca en
-          Nido no constituye una recomendación médica ni una garantía sobre la
+          Mi Bebé no constituye una recomendación médica ni una garantía sobre la
           calidad de su atención — hacé tu propia verificación antes de
           elegir dónde atenderte.
         </p>
@@ -69,7 +69,7 @@ export default function TerminosPage() {
       <section className="space-y-2">
         <h2 className="text-base font-medium text-ink">Límite de responsabilidad</h2>
         <p className="text-sm leading-relaxed text-muted">
-          Nido se ofrece &ldquo;tal cual&rdquo;, sin garantías de
+          Mi Bebé se ofrece &ldquo;tal cual&rdquo;, sin garantías de
           disponibilidad continua o ausencia de errores. En la medida
           permitida por la ley, no somos responsables por decisiones tomadas
           únicamente en base al contenido de la app sin consultar a un

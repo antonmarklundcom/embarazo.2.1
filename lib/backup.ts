@@ -131,7 +131,7 @@ export async function importBackup(file: File): Promise<void> {
   const text = await file.text();
   const parsed: unknown = JSON.parse(text);
   if (!isBackupFile(parsed)) {
-    throw new Error("Este archivo no es una copia de seguridad válida de Nido.");
+    throw new Error("Este archivo no es una copia de seguridad válida de Mi Bebé.");
   }
 
   const instance = db();

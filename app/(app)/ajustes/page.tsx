@@ -111,7 +111,7 @@ export default function AjustesPage() {
       window.location.href = "/";
     } catch {
       setBackupErr(
-        "No pudimos restaurar ese archivo. Verificá que sea una copia de seguridad de Nido.",
+        "No pudimos restaurar ese archivo. Verificá que sea una copia de seguridad de Mi Bebé.",
       );
       setRestoring(false);
     }
@@ -580,7 +580,7 @@ export default function AjustesPage() {
       <section className="rounded-card bg-white p-4 shadow-soft">
         <h2 className="text-base font-medium text-ink">Aviso médico</h2>
         <p className="mt-1 text-sm leading-relaxed text-muted">
-          Nido es una herramienta informativa y de acompañamiento. No reemplaza
+          Mi Bebé es una herramienta informativa y de acompañamiento. No reemplaza
           la atención de un profesional de la salud y no realiza diagnósticos.
           Ante cualquier duda o síntoma, contactá a tu sanatorio.
         </p>

@@ -15,24 +15,24 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://nido.app";
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: "Nido — tu embarazo en Paraguay",
-    template: "%s · Nido",
+    default: "Mi Bebé — tu embarazo en Paraguay",
+    template: "%s · Mi Bebé",
   },
   description:
     "Guía del embarazo semana a semana, hecha para Paraguay. Privada: tus datos quedan en tu teléfono.",
-  applicationName: "Nido",
+  applicationName: "Mi Bebé",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Nido",
+    title: "Mi Bebé",
   },
   openGraph: {
     type: "website",
-    title: "Nido — tu embarazo en Paraguay",
+    title: "Mi Bebé — tu embarazo en Paraguay",
     description:
       "Guía del embarazo semana a semana, hecha para Paraguay. Privada: tus datos quedan en tu teléfono.",
-    siteName: "Nido",
+    siteName: "Mi Bebé",
   },
   icons: {
     icon: "/icons/icon-192.png",

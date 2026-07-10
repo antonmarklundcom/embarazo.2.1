@@ -81,7 +81,7 @@ export default function CercaTuyoPage() {
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">Cerca tuyo</h1>
+        <h1 className="text-2xl font-black tracking-tight text-ink">Cerca tuyo</h1>
         <p className="text-sm text-muted">
           Sanatorios, obstetras, ecografías, pediatras, lactancia, farmacias y
           más, por departamento.
@@ -152,7 +152,7 @@ export default function CercaTuyoPage() {
         {grouped.map(([cat, items]) => (
           <section key={cat} className="space-y-3">
             {category === "todos" && (
-              <h2 className="text-sm font-medium text-ink">
+              <h2 className="text-sm font-extrabold text-ink">
                 {directoryCategoryLabel(cat)}
               </h2>
             )}
@@ -206,7 +206,7 @@ function ListingCard({
     <article className="rounded-card bg-white p-4 shadow-soft">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h3 className="text-base font-medium text-ink">{l.name}</h3>
+          <h3 className="text-base font-extrabold text-ink">{l.name}</h3>
           <p className="text-sm text-muted">{l.city}</p>
         </div>
         {l.isSponsored && <SponsoredBadge />}

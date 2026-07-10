@@ -76,7 +76,7 @@ export default function CalendarioPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">
+        <h1 className="text-2xl font-black tracking-tight text-ink">
           Calendario menstrual
         </h1>
         <p className="text-sm text-muted">
@@ -110,10 +110,10 @@ export default function CalendarioPage() {
       {/* Prediction */}
       {predicted !== undefined && (
         <section className="rounded-card border border-sage/30 bg-sage/5 p-4">
-          <h2 className="text-sm font-medium text-petrol-dark">
+          <h2 className="text-sm font-extrabold text-ink">
             Próxima regla estimada
           </h2>
-          <p className="mt-1 text-base font-medium text-ink">
+          <p className="mt-1 text-base font-extrabold text-ink">
             {fmtDate(predicted)}
             {daysToNext !== null && daysToNext >= 0
               ? ` · en ${daysToNext} ${daysToNext === 1 ? "día" : "días"}`
@@ -140,7 +140,7 @@ export default function CalendarioPage() {
       {/* Settings */}
       <section className="rounded-card bg-white p-4 shadow-soft">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-ink">Tus promedios</h2>
+          <h2 className="text-sm font-extrabold text-ink">Tus promedios</h2>
           {!editing && (
             <button
               type="button"
@@ -209,7 +209,7 @@ export default function CalendarioPage() {
       {/* History */}
       {ordered.length > 0 && (
         <section>
-          <h2 className="mb-2 text-sm font-medium text-ink">Historial de reglas</h2>
+          <h2 className="mb-2 text-sm font-extrabold text-ink">Historial de reglas</h2>
           <ul className="space-y-2">
             {ordered.map((c) => (
               <li

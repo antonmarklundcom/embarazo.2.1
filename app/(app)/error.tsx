@@ -24,7 +24,7 @@ export default function AppError({
         😕
       </span>
       <div>
-        <h1 className="text-lg font-medium text-petrol-dark">
+        <h1 className="text-lg font-black text-ink">
           Algo salió mal
         </h1>
         <p className="mt-1 max-w-xs text-sm text-muted">

@@ -52,9 +52,10 @@ replace them.
   (`npm run optimize:images`), `public/assets/{semanas,articulos,hero}`
   folders + `public/assets/README.md`. Founder adds files, code already
   renders them.
-- **C (todo)**: remaining screens sweep (herramientas pages, ajustes,
-  planeando) — mostly free via token retheme; fix leftover `rose`/`sage`
-  overlines to brand-green overline style.
+- **C (done)**: typography sweep across all remaining screens
+  (herramientas, ajustes, progreso, derechos, emergencia, directorio,
+  eventos, planeando, onboarding, error/404 pages): 900 screen titles in
+  ink, extrabold card titles, +1.6px brand-green overlines, `border-line`.
 - **D (todo, founder)**: generate/add the 42 weekly renders + article art.
 
 ## 4. Image pipeline (the "100 images" question)

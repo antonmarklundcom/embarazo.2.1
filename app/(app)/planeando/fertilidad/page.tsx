@@ -27,7 +27,7 @@ export default function FertilidadPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">
+        <h1 className="text-2xl font-black tracking-tight text-ink">
           Días fértiles y ovulación
         </h1>
         <p className="text-sm text-muted">
@@ -60,7 +60,7 @@ export default function FertilidadPage() {
         <>
           <section className="rounded-card bg-petrol p-5 text-white shadow-soft">
             <p className="text-sm text-white/70">Ovulación estimada</p>
-            <p className="mt-1 text-2xl font-medium capitalize">
+            <p className="mt-1 text-2xl font-black capitalize">
               {fmtDate(window.ovulation)}
             </p>
             {(() => {
@@ -83,7 +83,7 @@ export default function FertilidadPage() {
           </section>
 
           <section className="rounded-card bg-sage/10 p-5">
-            <h2 className="text-sm font-medium uppercase tracking-wide text-petrol">
+            <h2 className="text-sm font-extrabold uppercase tracking-[1.6px] text-petrol">
               Ventana fértil estimada
             </h2>
             <p className="mt-2 text-base capitalize text-ink">
@@ -102,7 +102,7 @@ export default function FertilidadPage() {
       )}
 
       <div className="rounded-card bg-white p-4 shadow-soft">
-        <h2 className="text-sm font-medium text-ink">¿Cómo lo calculamos?</h2>
+        <h2 className="text-sm font-extrabold text-ink">¿Cómo lo calculamos?</h2>
         <p className="mt-1 text-sm leading-relaxed text-muted">
           Estimamos la ovulación unos 14 días antes de tu próxima regla esperada.
           Es un método simple y general; tu cuerpo puede ovular antes o después.

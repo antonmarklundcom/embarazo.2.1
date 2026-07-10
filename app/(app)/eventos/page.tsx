@@ -50,7 +50,7 @@ export default function EventosPage() {
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">Eventos</h1>
+        <h1 className="text-2xl font-black tracking-tight text-ink">Eventos</h1>
         <p className="text-sm text-muted">
           Charlas, talleres y encuentros para embarazadas y mamás.
         </p>
@@ -121,7 +121,7 @@ function EventCard({ event, past = false }: { event: EventItem; past?: boolean }
           <span className="inline-block rounded-full bg-cream px-2.5 py-0.5 text-xs font-medium text-petrol">
             {TYPE_LABELS[event.type]}
           </span>
-          <h2 className="mt-1.5 text-base font-medium text-ink">{event.title}</h2>
+          <h2 className="mt-1.5 text-base font-extrabold text-ink">{event.title}</h2>
         </div>
         {event.isSponsored && <SponsoredBadge />}
       </div>

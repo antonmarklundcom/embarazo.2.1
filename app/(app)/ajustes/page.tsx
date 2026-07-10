@@ -265,13 +265,13 @@ export default function AjustesPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">Ajustes</h1>
+        <h1 className="text-2xl font-black tracking-tight text-ink">Ajustes</h1>
         <PrivacyLine className="mt-1" />
       </header>
 
       {/* App mode (build spec §3) */}
       <section className="rounded-card bg-white p-4 shadow-soft">
-        <h2 className="text-base font-medium text-ink">Modo de uso</h2>
+        <h2 className="text-base font-extrabold text-ink">Modo de uso</h2>
         <p className="mt-1 text-sm text-muted">
           Cambiá entre seguir tu embarazo o planear/buscar embarazo. Cambiar de
           modo no borra ninguno de tus datos.
@@ -312,7 +312,7 @@ export default function AjustesPage() {
 
       {/* Department */}
       <section className="rounded-card bg-white p-4 shadow-soft">
-        <h2 className="text-base font-medium text-ink">Tu departamento</h2>
+        <h2 className="text-base font-extrabold text-ink">Tu departamento</h2>
         <select
           value={department}
           onChange={(e) => setDepartment(e.target.value)}
@@ -337,7 +337,7 @@ export default function AjustesPage() {
       {/* Editable pregnancy date (build spec §1) — only in pregnancy mode */}
       {profile.mode === "embarazada" && (
       <section className="rounded-card bg-white p-4 shadow-soft">
-        <h2 className="text-base font-medium text-ink">
+        <h2 className="text-base font-extrabold text-ink">
           Editar fecha de embarazo
         </h2>
         <p className="mt-1 text-sm text-muted">
@@ -402,7 +402,7 @@ export default function AjustesPage() {
       {/* Next prenatal appointment (build spec §4) — only in pregnancy mode */}
       {profile.mode === "embarazada" && (
       <section className="rounded-card bg-white p-4 shadow-soft">
-        <h2 className="text-base font-medium text-ink">
+        <h2 className="text-base font-extrabold text-ink">
           Próximo control prenatal
         </h2>
         <p className="mt-1 text-sm text-muted">
@@ -440,7 +440,7 @@ export default function AjustesPage() {
 
       {/* Optional PIN */}
       <section className="rounded-card bg-white p-4 shadow-soft">
-        <h2 className="text-base font-medium text-ink">PIN opcional</h2>
+        <h2 className="text-base font-extrabold text-ink">PIN opcional</h2>
         <p className="mt-1 text-sm text-muted">
           Si activás un PIN, las notas de tu diario se guardan cifradas en este
           dispositivo. {pinExists ? "Tenés un PIN activo." : "No tenés PIN."}
@@ -479,7 +479,7 @@ export default function AjustesPage() {
 
       {/* Backup / restore */}
       <section className="rounded-card bg-white p-4 shadow-soft">
-        <h2 className="text-base font-medium text-ink">Copia de seguridad</h2>
+        <h2 className="text-base font-extrabold text-ink">Copia de seguridad</h2>
         <p className="mt-1 text-sm text-muted">
           Tus datos viven solo en este teléfono: si lo perdés, lo cambiás o
           borrás los datos del navegador, se pierden para siempre a menos que
@@ -550,7 +550,7 @@ export default function AjustesPage() {
 
       {/* Privacy summary */}
       <section className="rounded-card border border-sage/30 bg-sage/5 p-4">
-        <h2 className="text-base font-medium text-petrol-dark">Tu privacidad</h2>
+        <h2 className="text-base font-extrabold text-ink">Tu privacidad</h2>
         <ul className="mt-2 space-y-1.5 text-sm text-ink">
           <li>• No te pedimos cuenta, correo ni número de teléfono.</li>
           <li>• Tus datos de salud se guardan solo en este dispositivo.</li>
@@ -578,7 +578,7 @@ export default function AjustesPage() {
 
       {/* Medical disclaimer */}
       <section className="rounded-card bg-white p-4 shadow-soft">
-        <h2 className="text-base font-medium text-ink">Aviso médico</h2>
+        <h2 className="text-base font-extrabold text-ink">Aviso médico</h2>
         <p className="mt-1 text-sm leading-relaxed text-muted">
           Mi Bebé es una herramienta informativa y de acompañamiento. No reemplaza
           la atención de un profesional de la salud y no realiza diagnósticos.
@@ -607,7 +607,7 @@ export default function AjustesPage() {
           </button>
         ) : (
           <div className="mt-3 space-y-2">
-            <p className="text-sm font-medium text-ink">
+            <p className="text-sm font-extrabold text-ink">
               ¿Seguro? Esta acción es definitiva.
             </p>
             <div className="flex gap-2">

@@ -53,7 +53,7 @@ export default function FotosPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">
+        <h1 className="text-2xl font-black tracking-tight text-ink">
           Diario de fotos
         </h1>
         <p className="text-sm text-muted">
@@ -95,7 +95,7 @@ export default function FotosPage() {
 
       {groups.map(([w, items]) => (
         <section key={w} className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted">
+          <p className="text-xs font-extrabold uppercase tracking-[1.6px] text-muted">
             Semana {w}
           </p>
           <div className="grid grid-cols-3 gap-2">

@@ -73,7 +73,7 @@ export default function PesoPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">Peso</h1>
+        <h1 className="text-2xl font-black tracking-tight text-ink">Peso</h1>
         <p className="text-sm text-muted">
           Anotá tu peso en los controles para ver tu evolución.
         </p>
@@ -121,7 +121,7 @@ export default function PesoPage() {
       {ordered.length >= 2 && (
         <div className="rounded-card bg-white p-4 shadow-soft">
           <div className="mb-2 flex items-baseline justify-between">
-            <h2 className="text-sm font-medium text-ink">Evolución</h2>
+            <h2 className="text-sm font-extrabold text-ink">Evolución</h2>
             <span className="text-sm text-muted">
               {diff >= 0 ? "+" : ""}
               {diff} kg desde el inicio
@@ -133,7 +133,7 @@ export default function PesoPage() {
 
       {reversed.length > 0 && (
         <section>
-          <h2 className="mb-2 text-sm font-medium text-ink">Registros</h2>
+          <h2 className="mb-2 text-sm font-extrabold text-ink">Registros</h2>
           <ul className="space-y-2">
             {reversed.map((e) => (
               <li

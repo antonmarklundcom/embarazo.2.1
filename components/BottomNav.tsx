@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// Fixed bottom tab bar (build spec §6). ≥44px targets, petrol-teal active state.
+// Fixed bottom tab bar — "Mi Bebé" design: terracotta active state,
+// white bar over line border. 5 tabs kept (see REDESIGN-PLAN.md §2).
 const TABS = [
   { href: "/", label: "Inicio", icon: HomeIcon },
   { href: "/progreso", label: "Progreso", icon: TimelineIcon },
@@ -22,7 +23,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-black/5 bg-white/95 backdrop-blur print:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 backdrop-blur print:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       aria-label="Navegación principal"
     >
@@ -34,13 +35,13 @@ export function BottomNav() {
             <li key={tab.href} className="flex-1">
               <Link
                 href={tab.href}
-                className={`flex min-h-[56px] flex-col items-center justify-center gap-0.5 px-1 py-2 text-[11px] transition ${
-                  active ? "text-petrol" : "text-muted"
+                className={`flex min-h-[56px] flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] transition ${
+                  active ? "font-extrabold text-terracotta" : "font-bold text-muted"
                 }`}
                 aria-current={active ? "page" : undefined}
               >
                 <Icon active={active} />
-                <span className={active ? "font-medium" : ""}>{tab.label}</span>
+                <span>{tab.label}</span>
               </Link>
             </li>
           );
@@ -51,7 +52,7 @@ export function BottomNav() {
 }
 
 type IconProps = { active?: boolean };
-const stroke = (active?: boolean) => (active ? "#1F5F5B" : "#7E766C");
+const stroke = (active?: boolean) => (active ? "#C96342" : "#7A7369");
 
 function HomeIcon({ active }: IconProps) {
   return (

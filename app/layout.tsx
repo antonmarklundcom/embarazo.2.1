@@ -5,7 +5,7 @@ import { Providers } from "@/components/Providers";
 
 const nunito = Nunito_Sans({
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["400", "600", "700", "800", "900"],
   variable: "--font-nunito",
   display: "swap",
 });
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1F5F5B",
+  themeColor: "#2F5D50",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

@@ -9,7 +9,7 @@
 html,
 body {
   background-color: #fbf7f1;
-  color: #2a2724;
+  color: #322e29;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -21,8 +21,8 @@ body {
 /* Prose styling for guías detail (sentence case, calm, readable). */
 .prose-nido h2 {
   font-size: 1.125rem;
-  font-weight: 500;
-  color: #16433f;
+  font-weight: 800;
+  color: #24463d;
   margin-top: 1.5rem;
   margin-bottom: 0.5rem;
 }
@@ -40,8 +40,8 @@ body {
   line-height: 1.6;
 }
 .prose-nido strong {
-  font-weight: 500;
-  color: #2a2724;
+  font-weight: 700;
+  color: #322e29;
 }
 .prose-nido em {
   font-style: italic;

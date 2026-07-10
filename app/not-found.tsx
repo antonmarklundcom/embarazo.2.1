@@ -22,6 +22,9 @@ export default function RootNotFound() {
       >
         Ir a Inicio
       </Link>
+      <Link href="/conoce" className="text-xs text-petrol underline">
+        Conocé la app
+      </Link>
     </div>
   );
 }

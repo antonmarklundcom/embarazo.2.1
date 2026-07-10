@@ -60,9 +60,10 @@ internal identifiers listed above, each with a code comment explaining why.
 
 ## Phase 1 — remaining pre-launch code (independent of founder content)
 
-> **Status (July 2026):** P1.1–P1.5 DONE (see DECISIONS.md "Phase 1"). OG
-> *image* within P1.4 deferred to branding/R1. P1.6 (landing page) and P1.7
-> (Playwright e2e) still open.
+> **Status (July 2026):** P1.1–P1.7 DONE (see DECISIONS.md "Phase 1"). OG
+> *image* within P1.4 deferred to branding/R1. P1.7 additionally uncovered
+> and fixed a real offline-caching bug (SSG pages were never precached).
+> **Phase 1 code is complete** apart from the R1 rename (blocked on the name).
 
 ### P1.1 Install experience
 The distribution model is "installs from a link", but there is no install

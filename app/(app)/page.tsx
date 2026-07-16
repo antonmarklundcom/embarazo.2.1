@@ -14,6 +14,7 @@ import { AppointmentBanner } from "@/components/AppointmentBanner";
 import { RoadmapSection } from "@/components/RoadmapSection";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { PrivacyLine } from "@/components/PrivacyLine";
+import { InstallCard } from "@/components/InstallCard";
 
 // "Hoy" screen — Mi Bebé design 1a (docs/REDESIGN-PLAN.md §2): week strip,
 // photo hero with fallback, tip, mood check-in, herramientas grid, reading
@@ -170,6 +171,9 @@ export default function InicioPage() {
           Con el calor y la lluvia, prevenir el mosquito es parte de tu cuidado.
         </p>
       </Link>
+
+      {/* Install prompt (P1.1) — hides itself once installed/unavailable */}
+      <InstallCard />
 
       {/* Roadmap placeholders (build spec §8) */}
       <RoadmapSection />

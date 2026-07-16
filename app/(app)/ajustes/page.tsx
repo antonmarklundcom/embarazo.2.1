@@ -21,6 +21,7 @@ import {
 } from "@/lib/crypto";
 import { exportBackup, backupFileName, importBackup } from "@/lib/backup";
 import { PrivacyLine } from "@/components/PrivacyLine";
+import { InstallCard } from "@/components/InstallCard";
 
 function toDateInput(ts?: number): string {
   if (!ts) return "";
@@ -547,6 +548,9 @@ export default function AjustesPage() {
         {backupMsg && <p className="mt-2 text-sm text-sage">{backupMsg}</p>}
         {backupErr && <p className="mt-2 text-sm text-terracotta">{backupErr}</p>}
       </section>
+
+      {/* Install prompt (P1.1) — hides itself once installed/unavailable */}
+      <InstallCard />
 
       {/* Privacy summary */}
       <section className="rounded-card border border-sage/30 bg-sage/5 p-4">

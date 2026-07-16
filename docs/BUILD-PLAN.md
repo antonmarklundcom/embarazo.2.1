@@ -67,7 +67,11 @@ internal identifiers listed above, each with a code comment explaining why.
 
 ## Phase 1 — remaining pre-launch code (independent of founder content)
 
-### P1.1 Install experience
+### P1.1 Install experience (DONE)
+`lib/useInstallPrompt.ts` + `components/InstallCard.tsx`, mounted on Home
+and Ajustes. Detects standalone mode, captures `beforeinstallprompt`,
+shows an iOS instruction sheet as fallback. Original spec kept below.
+
 The distribution model is "installs from a link", but there is no install
 UX. Add:
 - A `useInstallPrompt()` hook capturing `beforeinstallprompt`; an
@@ -79,7 +83,11 @@ UX. Add:
 - **Done when:** Chrome/Android shows the native prompt from the button;
   iOS shows instructions; installed users never see either.
 
-### P1.2 PWA update flow
+### P1.2 PWA update flow (DONE)
+`components/UpdateToast.tsx`, mounted in `app/layout.tsx`. Listens for
+`controllerchange` and shows a "Hay una versión nueva" toast with a
+reload button. Original spec kept below.
+
 Serwist uses `skipWaiting: true`; a stale client can straddle versions.
 Add a small "Hay una versión nueva — recargar" toast when a new SW takes
 control (`controllerchange`). **Done when:** deploying a new build surfaces

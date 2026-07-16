@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
+import { UpdateToast } from "@/components/UpdateToast";
 
 const nunito = Nunito_Sans({
   subsets: ["latin"],
@@ -56,6 +57,7 @@ export default function RootLayout({
     <html lang="es-PY" className={nunito.variable}>
       <body className="bg-cream text-ink antialiased">
         <Providers>{children}</Providers>
+        <UpdateToast />
       </body>
     </html>
   );

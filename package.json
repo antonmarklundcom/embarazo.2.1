@@ -1,8 +1,8 @@
 {
-  "name": "nido-app",
+  "name": "mibebe-app",
   "version": "2.1.0",
   "private": true,
-  "description": "Nido — privacy-by-design pregnancy PWA for Paraguay",
+  "description": "Mi Bebé — privacy-by-design pregnancy PWA for Paraguay",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -10,6 +10,7 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "optimize:images": "node scripts/optimize-images.mjs"
   },
   "dependencies": {
@@ -22,6 +23,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@serwist/next": "^9.0.11",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",

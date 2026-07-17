@@ -3,6 +3,7 @@ import { Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { UpdateToast } from "@/components/UpdateToast";
+import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 
 const nunito = Nunito_Sans({
   subsets: ["latin"],
@@ -58,6 +59,7 @@ export default function RootLayout({
       <body className="bg-cream text-ink antialiased">
         <Providers>{children}</Providers>
         <UpdateToast />
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

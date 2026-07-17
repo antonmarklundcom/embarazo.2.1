@@ -135,7 +135,25 @@ screenshots, guía links for SEO; add it to the sitemap and link it from
 the 404 page footer. No framework additions. **Done when:** page is static,
 <15 kB route JS, and passes Lighthouse a11y ≥95.
 
-### P1.7 E2E smoke tests
+### P1.7 E2E smoke tests (DONE)
+`playwright.config.ts` (builds against `next start`, pins the container's
+pre-installed Chromium since @playwright/test's expected revision differs)
++ `e2e/{onboarding,symptom-log,backup-restore,offline}.spec.ts`, 6 tests.
+Run with `npm run build && npm run test:e2e`.
+
+**Found and fixed two real bugs while writing these, not just test gaps:**
+1. The service worker was built (`public/sw.js`) but never registered
+   anywhere in the app — `components/ServiceWorkerRegistration.tsx` now
+   calls `navigator.serviceWorker.register()` on mount (production only).
+   Without this, offline support and the P1.2 update toast were both inert.
+2. `self.__SW_MANIFEST` (`app/sw.ts`) only contains build-time static
+   assets, not prerendered page routes — despite the file's own comment
+   claiming otherwise. The 42 `/semana/[n]` pages and the guías were never
+   actually precached. Fixed by explicitly listing those routes and
+   merging them into `precacheEntries`.
+
+Original spec kept below.
+
 Add Playwright with 3–4 flows against `next start`: complete onboarding
 (both modes and both date entries), log a symptom, export a backup and
 restore it, offline navigation to a precached week page. Wire into CI

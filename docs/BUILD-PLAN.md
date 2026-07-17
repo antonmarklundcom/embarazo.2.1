@@ -117,7 +117,16 @@ no UID anywhere; unset env = no network call.
 - **Done when:** sharing `/` and a guía into WhatsApp shows title, description
   and image; Android install sheet shows screenshots.
 
-### P1.5 ESLint baseline
+### P1.5 ESLint baseline (DONE)
+`eslint.config.mjs` (flat config, `next/core-web-vitals` + `next/typescript`)
++ `npm run lint` wired into `.github/workflows/ci.yml`. Fixed the 3 findings
+it surfaced rather than silencing them: a `useMemo` dependency in
+`directorio/page.tsx` that got a new `[]` reference every render, and two
+misplaced `eslint-disable-next-line` comments (carné/fotos `<img>`) that
+were one line off and covering nothing. `npm run lint` is clean.
+
+Original spec kept below.
+
 `npm run lint` currently hits the interactive setup prompt (no config).
 Add a flat-config with `next/core-web-vitals` + TS, fix or explicitly
 disable any findings, add `npm run lint` to CI. **Done when:** CI runs

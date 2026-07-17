@@ -309,8 +309,8 @@ function CarneViewer({
         </button>
       </div>
       <div className="flex flex-1 items-center justify-center">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         {url && (
+          // eslint-disable-next-line @next/next/no-img-element -- blob: URL from IndexedDB, next/image can't optimize it.
           <img
             src={url}
             alt="Página del carné perinatal"

@@ -54,7 +54,10 @@ export default function CercaTuyoPage() {
     queryFn: () => fetchDirectory(department, category, debounced),
   });
 
-  const listings = data ?? [];
+  // Memoized so its reference is stable when `data` is undefined — otherwise
+  // `data ?? []` creates a new array every render and defeats the `grouped`
+  // useMemo below.
+  const listings = useMemo(() => data ?? [], [data]);
 
   // When "Todos" is selected, group by category for a clean, scannable list.
   const grouped = useMemo(() => {

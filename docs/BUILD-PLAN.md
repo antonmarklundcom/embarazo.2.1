@@ -123,7 +123,12 @@ Add a flat-config with `next/core-web-vitals` + TS, fix or explicitly
 disable any findings, add `npm run lint` to CI. **Done when:** CI runs
 lint non-interactively and passes.
 
-### P1.6 Landing page for non-users
+### P1.6 Landing page for non-users (DONE)
+`app/conoce/page.tsx`: standalone (no app shell), features, privacy promise,
+InstallCard reused, 4 featured guía links + link to `/guias`, CTA into the
+app. Added to sitemap; linked from the root 404 footer. 1.31 kB route JS,
+static. Original spec kept below.
+
 `/` is the app (first-run gate). Add a lightweight public `/conoce` page:
 what the app is, privacy promise, install CTA (links into P1.1 flow),
 screenshots, guía links for SEO; add it to the sitemap and link it from

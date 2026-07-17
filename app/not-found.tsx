@@ -22,6 +22,9 @@ export default function RootNotFound() {
       >
         Ir a Inicio
       </Link>
+      <Link href="/conoce" className="text-xs font-extrabold text-terracotta">
+        ¿Qué es Mi Bebé?
+      </Link>
     </div>
   );
 }

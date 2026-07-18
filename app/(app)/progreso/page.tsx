@@ -22,7 +22,7 @@ export default function ProgresoPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">Tu progreso</h1>
+        <h1 className="text-2xl font-black tracking-tight text-ink">Tu progreso</h1>
         {profile.hasPregnancy ? (
           <>
             <p className="text-sm text-muted">
@@ -43,7 +43,7 @@ export default function ProgresoPage() {
       {TRIMESTERS.map(({ t, label, range }) => (
         <section key={t}>
           <div className="mb-2 flex items-baseline justify-between">
-            <h2 className="text-base font-medium text-ink">{label}</h2>
+            <h2 className="text-base font-extrabold text-ink">{label}</h2>
             <span className="text-xs text-muted">{range}</span>
           </div>
           <div className="grid grid-cols-5 gap-2">

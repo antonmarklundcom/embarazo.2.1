@@ -31,7 +31,7 @@ export function AppointmentBanner({ date }: { date?: number }) {
         href="/ajustes"
         className="block rounded-card border border-terracotta/30 bg-terracotta/5 p-4 transition active:scale-[0.99]"
       >
-        <p className="text-xs font-medium uppercase tracking-wide text-terracotta">
+        <p className="text-xs font-extrabold uppercase tracking-[1.6px] text-terracotta">
           Control prenatal
         </p>
         <p className="mt-1 text-sm text-ink">
@@ -47,7 +47,7 @@ export function AppointmentBanner({ date }: { date?: number }) {
       href="/ajustes"
       className="block rounded-card border border-petrol/20 bg-petrol/5 p-4 transition active:scale-[0.99]"
     >
-      <p className="text-xs font-medium uppercase tracking-wide text-petrol">
+      <p className="text-xs font-extrabold uppercase tracking-[1.6px] text-petrol">
         Próximo control
       </p>
       <p className="mt-1 text-sm text-ink">

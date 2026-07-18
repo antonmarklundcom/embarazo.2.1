@@ -20,7 +20,7 @@ export default function ChecklistPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">Checklists</h1>
+        <h1 className="text-2xl font-black tracking-tight text-ink">Checklists</h1>
         <p className="text-sm text-muted">
           Lo que tildes se guarda solo en tu teléfono.
         </p>
@@ -32,7 +32,7 @@ export default function ChecklistPage() {
         return (
           <section key={group.id} className="rounded-card bg-white p-4 shadow-soft">
             <div className="mb-3 flex items-baseline justify-between">
-              <h2 className="text-base font-medium text-ink">{group.title}</h2>
+              <h2 className="text-base font-extrabold text-ink">{group.title}</h2>
               <span className="text-xs text-muted">
                 {completed}/{total}
               </span>

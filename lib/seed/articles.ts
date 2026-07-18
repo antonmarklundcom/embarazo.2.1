@@ -3,7 +3,7 @@ import type { Article } from "../types";
 // 8 genuinely Paraguay-specific guías in es-PY voseo (build spec §5).
 // reviewedBy is informational seed metadata; the visible byline on the page
 // uses NEXT_PUBLIC_MEDICAL_REVIEWER via <MedicalReviewByline>.
-const REVIEWER = "Equipo médico de Nido";
+const REVIEWER = "Equipo médico de Mi Bebé";
 
 export const ARTICLES: Article[] = [
   {
@@ -12,7 +12,7 @@ export const ARTICLES: Article[] = [
     excerpt:
       "Cómo cuidarte del mosquito Aedes aegypti y qué hacer si tenés fiebre durante el embarazo.",
     date: "2026-01-15",
-    author: "Nido",
+    author: "Mi Bebé",
     reviewedBy: REVIEWER,
     cluster: "salud",
     html: `
@@ -45,7 +45,7 @@ export const ARTICLES: Article[] = [
     excerpt:
       "Podés seguir disfrutando del tereré, con algunos cuidados. Cuánta cafeína es razonable y cómo hidratarte con el calor.",
     date: "2026-01-20",
-    author: "Nido",
+    author: "Mi Bebé",
     reviewedBy: REVIEWER,
     cluster: "alimentacion",
     html: `
@@ -68,7 +68,7 @@ export const ARTICLES: Article[] = [
     excerpt:
       "Una lista clara de lo que conviene tener listo desde la semana 32, para vos y para tu bebé.",
     date: "2026-01-25",
-    author: "Nido",
+    author: "Mi Bebé",
     reviewedBy: REVIEWER,
     cluster: "logistica",
     html: `
@@ -107,7 +107,7 @@ export const ARTICLES: Article[] = [
     excerpt:
       "Los trámites para que tu bebé tenga sus documentos: del certificado de nacido vivo a la cédula.",
     date: "2026-02-01",
-    author: "Nido",
+    author: "Mi Bebé",
     reviewedBy: REVIEWER,
     cluster: "tramites",
     html: `
@@ -130,7 +130,7 @@ export const ARTICLES: Article[] = [
     excerpt:
       "Cómo es el control del embarazo en IPS y en el sector privado, y por qué tu carné perinatal es tan importante.",
     date: "2026-02-05",
-    author: "Nido",
+    author: "Mi Bebé",
     reviewedBy: REVIEWER,
     cluster: "salud",
     html: `
@@ -159,7 +159,7 @@ export const ARTICLES: Article[] = [
     excerpt:
       "Síntomas que no conviene dejar pasar. Ante cualquiera de ellos, contactá a tu sanatorio.",
     date: "2026-02-10",
-    author: "Nido",
+    author: "Mi Bebé",
     reviewedBy: REVIEWER,
     cluster: "salud",
     html: `
@@ -187,7 +187,7 @@ export const ARTICLES: Article[] = [
     excerpt:
       "Qué vacunas se recomiendan durante el embarazo para protegerte a vos y a tu bebé.",
     date: "2026-02-15",
-    author: "Nido",
+    author: "Mi Bebé",
     reviewedBy: REVIEWER,
     cluster: "salud",
     html: `
@@ -215,7 +215,7 @@ export const ARTICLES: Article[] = [
     excerpt:
       "Permiso de maternidad, descanso de lactancia y protección contra el despido: lo básico que conviene conocer.",
     date: "2026-02-20",
-    author: "Nido",
+    author: "Mi Bebé",
     reviewedBy: REVIEWER,
     cluster: "derechos",
     html: `

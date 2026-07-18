@@ -6,13 +6,14 @@ import { MAX_WEEK, MIN_WEEK } from "@/lib/pregnancy";
 // engines (build spec §5 follow-up). App-shell tool pages that only make
 // sense with local on-device data (e.g. /herramientas/*) are intentionally
 // excluded — they carry no organic-search value on their own.
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://nido.app";
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mibebe.app";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${appUrl}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
+    { url: `${appUrl}/conoce`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
     { url: `${appUrl}/guias`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${appUrl}/derechos`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${appUrl}/directorio`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },

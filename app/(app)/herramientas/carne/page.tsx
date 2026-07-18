@@ -41,7 +41,7 @@ export default function CarnePage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">
+        <h1 className="text-2xl font-black tracking-tight text-ink">
           Carné perinatal
         </h1>
         <p className="mt-1 text-sm text-muted">
@@ -147,7 +147,7 @@ function ClinicalBasics() {
   return (
     <section className="rounded-card bg-white p-4 shadow-soft">
       <div className="flex items-start justify-between gap-2">
-        <h2 className="text-base font-medium text-ink">Tus datos clave</h2>
+        <h2 className="text-base font-extrabold text-ink">Tus datos clave</h2>
         {!editing && (
           <button
             type="button"
@@ -309,8 +309,8 @@ function CarneViewer({
         </button>
       </div>
       <div className="flex flex-1 items-center justify-center">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         {url && (
+          // eslint-disable-next-line @next/next/no-img-element -- blob: URL from IndexedDB, next/image can't optimize it.
           <img
             src={url}
             alt="Página del carné perinatal"

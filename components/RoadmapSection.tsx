@@ -27,8 +27,8 @@ export function RoadmapSection() {
 
   return (
     <section aria-labelledby="roadmap" className="space-y-3">
-      <h2 id="roadmap" className="text-sm font-medium text-ink">
-        Lo que viene en Nido
+      <h2 id="roadmap" className="text-sm font-extrabold text-ink">
+        Lo que viene en Mi Bebé
       </h2>
       <div className="space-y-3">
         {ITEMS.map((item) => {
@@ -43,7 +43,7 @@ export function RoadmapSection() {
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <h3 className="text-base font-medium text-petrol-dark">
+                  <h3 className="text-base font-extrabold text-ink">
                     {item.title}
                   </h3>
                   <p className="mt-1 text-sm text-muted">{item.desc}</p>

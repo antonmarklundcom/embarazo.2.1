@@ -97,7 +97,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
   return (
     <div className="mx-auto flex min-h-[80dvh] max-w-md flex-col justify-center py-6">
       <div className="mb-6 text-center">
-        <h1 className="text-2xl font-medium text-petrol-dark">Bienvenida a Nido</h1>
+        <h1 className="text-2xl font-black tracking-tight text-ink">Bienvenida a Mi Bebé</h1>
         <p className="mt-2 text-sm text-muted">
           Tu embarazo y tu camino para buscarlo, hechos para Paraguay.
         </p>
@@ -105,15 +105,15 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
 
       {step === "mode" && (
         <div className="space-y-3">
-          <p className="px-1 text-sm font-medium text-ink">
-            ¿Cómo querés usar Nido?
+          <p className="px-1 text-sm font-extrabold text-ink">
+            ¿Cómo querés usar Mi Bebé?
           </p>
           <button
             type="button"
             onClick={() => chooseMode("embarazada")}
             className="block w-full rounded-card bg-white p-5 text-left shadow-soft transition active:scale-[0.99]"
           >
-            <p className="text-base font-medium text-ink">Estoy embarazada</p>
+            <p className="text-base font-extrabold text-ink">Estoy embarazada</p>
             <p className="mt-1 text-sm text-muted">
               Seguí tu embarazo semana a semana, con herramientas y recursos.
             </p>
@@ -123,7 +123,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
             onClick={() => chooseMode("planeando")}
             className="block w-full rounded-card bg-white p-5 text-left shadow-soft transition active:scale-[0.99]"
           >
-            <p className="text-base font-medium text-ink">
+            <p className="text-base font-extrabold text-ink">
               Estoy planeando / buscando
             </p>
             <p className="mt-1 text-sm text-muted">
@@ -154,7 +154,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
 
           {!useDueDate ? (
             <>
-              <label htmlFor="lmp" className="mt-4 block text-sm font-medium text-ink">
+              <label htmlFor="lmp" className="mt-4 block text-sm font-extrabold text-ink">
                 ¿Cuándo fue el primer día de tu última menstruación?
               </label>
               <p className="mt-1 text-xs text-muted">
@@ -173,7 +173,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
             </>
           ) : (
             <>
-              <label htmlFor="due" className="mt-4 block text-sm font-medium text-ink">
+              <label htmlFor="due" className="mt-4 block text-sm font-extrabold text-ink">
                 ¿Cuál es tu fecha probable de parto?
               </label>
               <p className="mt-1 text-xs text-muted">
@@ -214,7 +214,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
 
       {step === "department" && (
         <div className="rounded-card bg-white p-5 shadow-soft">
-          <label htmlFor="dep" className="block text-sm font-medium text-ink">
+          <label htmlFor="dep" className="block text-sm font-extrabold text-ink">
             ¿En qué departamento vivís?
           </label>
           <p className="mt-1 text-xs text-muted">
@@ -234,7 +234,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
             ))}
           </select>
 
-          <label htmlFor="city" className="mt-4 block text-sm font-medium text-ink">
+          <label htmlFor="city" className="mt-4 block text-sm font-extrabold text-ink">
             Ciudad <span className="font-normal text-muted">(opcional)</span>
           </label>
           <input
@@ -277,7 +277,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
       </div>
 
       <p className="mt-4 px-2 text-center text-[11px] leading-relaxed text-muted">
-        Nido es informativo y no reemplaza la atención de un profesional de la
+        Mi Bebé es informativo y no reemplaza la atención de un profesional de la
         salud. No realiza diagnósticos. Al continuar, aceptás nuestra{" "}
         <Link href="/privacidad" className="underline">
           política de privacidad

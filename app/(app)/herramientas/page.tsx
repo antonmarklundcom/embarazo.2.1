@@ -76,7 +76,7 @@ export default function HerramientasPage() {
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">Herramientas</h1>
+        <h1 className="text-2xl font-black tracking-tight text-ink">Herramientas</h1>
         <p className="text-sm text-muted">
           Todo funciona sin internet y se guarda solo en tu teléfono.
         </p>
@@ -88,7 +88,7 @@ export default function HerramientasPage() {
             href={t.href}
             className="block rounded-card bg-white p-4 shadow-soft transition active:scale-[0.99]"
           >
-            <h2 className="text-base font-medium text-ink">{t.title}</h2>
+            <h2 className="text-base font-extrabold text-ink">{t.title}</h2>
             <p className="mt-1 text-sm text-muted">{t.desc}</p>
           </Link>
         ))}

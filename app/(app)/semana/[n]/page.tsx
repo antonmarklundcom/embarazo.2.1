@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { WEEKS, getWeek } from "@/lib/weeks";
 import { clampWeek, MIN_WEEK, MAX_WEEK } from "@/lib/pregnancy";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
+import { WeekHeroImage } from "@/components/WeekHeroImage";
 
 // Statically generate all 42 weeks so they precache for offline (spec §9).
 export function generateStaticParams() {
@@ -39,50 +40,43 @@ export default async function SemanaPage({
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between text-sm">
-        <Link href="/progreso" className="text-petrol">
+        <Link href="/progreso" className="font-extrabold text-terracotta">
           ← Progreso
         </Link>
-        <span className="text-muted">{info.trimester}.º trimestre</span>
+        <span className="font-bold text-muted">{info.trimester}.º trimestre</span>
       </div>
 
-      <header className="rounded-card bg-petrol p-5 text-white shadow-soft">
-        <p className="text-sm text-white/70">Semana</p>
-        <p className="text-4xl font-medium">{week}</p>
-        <p className="mt-0.5 text-xs text-white/70">
-          {week - 1} {week - 1 === 1 ? "semana completa" : "semanas completas"} (en
-          el carné perinatal)
-        </p>
-        <p className="mt-3 text-base text-white/95">
-          Tu bebé es del tamaño de {info.sizeComparison}.
-        </p>
-        {(info.lengthCm || info.weightG) && (
-          <p className="mt-1 text-sm text-white/70">
-            {info.lengthCm ? `≈ ${info.lengthCm} cm` : ""}
-            {info.lengthCm && info.weightG ? " · " : ""}
-            {info.weightG ? `≈ ${info.weightG} g` : ""}
-          </p>
-        )}
-      </header>
+      <WeekHeroImage
+        week={week}
+        trimester={info.trimester}
+        sizeComparison={info.sizeComparison}
+        lengthCm={info.lengthCm}
+        weightG={info.weightG}
+      />
 
-      <section className="rounded-card bg-white p-5 shadow-soft">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-terracotta">
+      <section className="rounded-card border border-line bg-white p-5">
+        <h2 className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-terracotta">
           Qué pasa esta semana
         </h2>
-        <p className="mt-2 leading-relaxed text-ink">{info.milestone}</p>
+        <p className="mt-2 text-[15px] font-semibold leading-relaxed text-ink">
+          {info.milestone}
+        </p>
       </section>
 
-      <section className="rounded-card bg-sage/10 p-5">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-petrol">
+      <section className="rounded-card bg-pastel-salvia p-5">
+        <h2 className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">
           Consejo
         </h2>
-        <p className="mt-2 leading-relaxed text-ink">{info.tip}</p>
+        <p className="mt-2 text-[15px] font-semibold leading-relaxed text-ink">
+          {info.tip}
+        </p>
       </section>
 
       <nav className="flex items-center justify-between gap-3">
         {prev ? (
           <Link
             href={`/semana/${prev}`}
-            className="min-h-[44px] flex-1 rounded-tile bg-white px-4 py-2.5 text-center text-sm font-medium text-petrol shadow-soft"
+            className="min-h-[44px] flex-1 rounded-tile border border-line bg-white px-4 py-2.5 text-center text-sm font-extrabold text-ink"
           >
             ← Semana {prev}
           </Link>
@@ -92,7 +86,7 @@ export default async function SemanaPage({
         {next ? (
           <Link
             href={`/semana/${next}`}
-            className="min-h-[44px] flex-1 rounded-tile bg-white px-4 py-2.5 text-center text-sm font-medium text-petrol shadow-soft"
+            className="min-h-[44px] flex-1 rounded-tile border border-line bg-white px-4 py-2.5 text-center text-sm font-extrabold text-ink"
           >
             Semana {next} →
           </Link>

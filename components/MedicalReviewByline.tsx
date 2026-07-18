@@ -1,6 +1,6 @@
 // Mandatory component (build spec §3). Renders "Revisado por {reviewer}".
 const REVIEWER =
-  process.env.NEXT_PUBLIC_MEDICAL_REVIEWER || "el equipo médico de Nido";
+  process.env.NEXT_PUBLIC_MEDICAL_REVIEWER || "el equipo médico de Mi Bebé";
 
 export function MedicalReviewByline() {
   return (

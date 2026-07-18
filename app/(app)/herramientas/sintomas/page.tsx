@@ -125,7 +125,7 @@ export default function SintomasPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">
+        <h1 className="text-2xl font-black tracking-tight text-ink">
           ¿Cómo te sentís hoy?
         </h1>
         <p className="text-sm text-muted">
@@ -135,7 +135,7 @@ export default function SintomasPage() {
 
       {/* New entry */}
       <section className="rounded-card bg-white p-4 shadow-soft">
-        <p className="text-sm font-medium text-ink">Tu ánimo</p>
+        <p className="text-sm font-extrabold text-ink">Tu ánimo</p>
         <div className="mt-2 flex justify-between gap-1">
           {MOODS.map((m) => {
             const active = mood === m.key;
@@ -158,7 +158,7 @@ export default function SintomasPage() {
           })}
         </div>
 
-        <p className="mt-4 text-sm font-medium text-ink">Síntomas de hoy</p>
+        <p className="mt-4 text-sm font-extrabold text-ink">Síntomas de hoy</p>
         <div className="mt-2 flex flex-wrap gap-2">
           {SYMPTOMS.map((s) => {
             const active = selected.includes(s);
@@ -180,7 +180,7 @@ export default function SintomasPage() {
           })}
         </div>
 
-        <label htmlFor="note" className="mt-4 block text-sm font-medium text-ink">
+        <label htmlFor="note" className="mt-4 block text-sm font-extrabold text-ink">
           Nota <span className="font-normal text-muted">(opcional)</span>
         </label>
         <textarea
@@ -255,7 +255,7 @@ function MoodSummary({ entries }: { entries: JournalEntry[] }) {
 
   return (
     <section className="rounded-card bg-white p-4 shadow-soft">
-      <h2 className="text-sm font-medium text-ink">Resumen de tu ánimo</h2>
+      <h2 className="text-sm font-extrabold text-ink">Resumen de tu ánimo</h2>
       <p className="mt-0.5 text-xs text-muted">
         {total} {total === 1 ? "registro" : "registros"} en total.
       </p>
@@ -302,10 +302,10 @@ function HistoryByWeek({
 
   return (
     <section className="space-y-4">
-      <h2 className="text-sm font-medium text-ink">Tu historial</h2>
+      <h2 className="text-sm font-extrabold text-ink">Tu historial</h2>
       {groups.map(([week, items]) => (
         <div key={week} className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted">
+          <p className="text-xs font-extrabold uppercase tracking-[1.6px] text-muted">
             Semana {week}
           </p>
           {items.map((e) => (
@@ -360,7 +360,7 @@ function EntryCard({
         <div className="flex items-center gap-2">
           <span className="text-xl">{moodEmoji(entry.mood)}</span>
           <div>
-            <p className="text-sm font-medium text-ink">
+            <p className="text-sm font-extrabold text-ink">
               {moodLabel(entry.mood)}
             </p>
             <p className="text-xs text-muted">{fmtDate(entry.createdAt)}</p>

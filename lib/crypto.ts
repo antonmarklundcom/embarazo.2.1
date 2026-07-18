@@ -6,8 +6,8 @@
 // salt and a verifier (never the PIN itself). The derived key lives in memory
 // for the session.
 
-const PIN_SALT_KEY = "nido.pin.salt";
-const PIN_VERIFIER_KEY = "nido.pin.verifier";
+const PIN_SALT_KEY = "mibebe.pin.salt";
+const PIN_VERIFIER_KEY = "mibebe.pin.verifier";
 const PBKDF2_ITERATIONS = 150_000;
 
 let sessionKey: CryptoKey | null = null;
@@ -69,7 +69,7 @@ export async function setPin(pin: string): Promise<void> {
   const verifier = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
     key,
-    toBytes("nido-verifier"),
+    toBytes("mibebe-verifier"),
   );
   localStorage.setItem(PIN_SALT_KEY, toB64(salt.buffer));
   localStorage.setItem(
@@ -93,7 +93,7 @@ export async function unlock(pin: string): Promise<boolean> {
       key,
       fromB64(dataB64),
     );
-    if (new TextDecoder().decode(plain) !== "nido-verifier") return false;
+    if (new TextDecoder().decode(plain) !== "mibebe-verifier") return false;
     sessionKey = key;
     return true;
   } catch {

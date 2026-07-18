@@ -27,7 +27,7 @@ export default function DerechosPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">
+        <h1 className="text-2xl font-black tracking-tight text-ink">
           Tus derechos y beneficios
         </h1>
         <p className="mt-1 text-sm text-muted">
@@ -37,7 +37,7 @@ export default function DerechosPage() {
       </header>
 
       <section aria-labelledby="situacion" className="space-y-3">
-        <h2 id="situacion" className="text-sm font-medium text-ink">
+        <h2 id="situacion" className="text-sm font-extrabold text-ink">
           ¿Cuál es tu situación de trabajo hoy?
         </h2>
         <div className="space-y-2">
@@ -71,7 +71,7 @@ export default function DerechosPage() {
         <div className="space-y-5">
           {benefitsByPhase(situation).map((group) => (
             <section key={group.phase} className="space-y-3">
-              <h2 className="text-sm font-medium uppercase tracking-wide text-petrol">
+              <h2 className="text-sm font-extrabold uppercase tracking-[1.6px] text-petrol">
                 {PHASE_LABELS[group.phase]}
               </h2>
               {group.items.map((b) => (
@@ -125,7 +125,7 @@ function BenefitCard({
 }) {
   return (
     <article className="rounded-card bg-white p-4 shadow-soft">
-      <h3 className="text-base font-medium text-ink">{benefit.title}</h3>
+      <h3 className="text-base font-extrabold text-ink">{benefit.title}</h3>
       <p className="mt-1 text-sm leading-relaxed text-ink/90">{benefit.body}</p>
       {dates && (
         <p className="mt-2 rounded-tile bg-sage/10 p-3 text-sm leading-relaxed text-ink">

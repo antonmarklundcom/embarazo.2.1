@@ -68,7 +68,7 @@ export default function PataditasPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">Pataditas</h1>
+        <h1 className="text-2xl font-black tracking-tight text-ink">Pataditas</h1>
         <p className="text-sm text-muted">
           Tocá el círculo cada vez que sientas un movimiento. La meta es sentir{" "}
           {GOAL} movimientos en hasta 2 horas.
@@ -116,7 +116,7 @@ export default function PataditasPage() {
 
       {sessions && sessions.length > 0 && (
         <section>
-          <h2 className="mb-2 text-sm font-medium text-ink">Sesiones anteriores</h2>
+          <h2 className="mb-2 text-sm font-extrabold text-ink">Sesiones anteriores</h2>
           <ul className="space-y-2">
             {sessions.map((s) => (
               <li

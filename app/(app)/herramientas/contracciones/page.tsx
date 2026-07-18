@@ -64,7 +64,7 @@ export default function ContraccionesPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">Contracciones</h1>
+        <h1 className="text-2xl font-black tracking-tight text-ink">Contracciones</h1>
         <p className="text-sm text-muted">
           Tocá empezar cuando comience una contracción y parar cuando termine.
           Se registra la duración y el intervalo.
@@ -86,7 +86,7 @@ export default function ContraccionesPage() {
             onClick={stop}
             className="flex h-40 w-40 flex-col items-center justify-center rounded-full bg-petrol text-white transition active:scale-[0.97]"
           >
-            <span className="text-3xl font-medium">{fmtSec(elapsed)}</span>
+            <span className="text-3xl font-black">{fmtSec(elapsed)}</span>
             <span className="mt-1 text-sm text-white/80">Parar</span>
           </button>
         )}
@@ -100,9 +100,9 @@ export default function ContraccionesPage() {
 
       {entries && entries.length > 0 && (
         <section>
-          <h2 className="mb-2 text-sm font-medium text-ink">Registro</h2>
+          <h2 className="mb-2 text-sm font-extrabold text-ink">Registro</h2>
           <div className="overflow-hidden rounded-card bg-white shadow-soft">
-            <div className="grid grid-cols-3 border-b border-black/5 px-4 py-2 text-xs font-medium text-muted">
+            <div className="grid grid-cols-3 border-b border-line px-4 py-2 text-xs font-medium text-muted">
               <span>Hora</span>
               <span className="text-center">Duración</span>
               <span className="text-right">Intervalo</span>
@@ -111,7 +111,7 @@ export default function ContraccionesPage() {
               {entries.map((e) => (
                 <li
                   key={e.id}
-                  className="grid grid-cols-3 border-b border-black/5 px-4 py-2.5 text-sm last:border-0"
+                  className="grid grid-cols-3 border-b border-line px-4 py-2.5 text-sm last:border-0"
                 >
                   <span className="text-muted">{fmtClock(e.startedAt)}</span>
                   <span className="text-center text-ink">{fmtSec(e.durationSec)}</span>

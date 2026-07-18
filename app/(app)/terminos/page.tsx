@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 // this before public launch (see docs/REVIEW-AND-LAUNCH-PLAN.md §4.6).
 export const metadata: Metadata = {
   title: "Términos de uso",
-  description: "Condiciones de uso de Nido.",
+  description: "Condiciones de uso de Mi Bebé.",
 };
 
 const LAST_UPDATED = "8 de julio de 2026";
@@ -13,7 +13,7 @@ export default function TerminosPage() {
   return (
     <article className="space-y-5">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">Términos de uso</h1>
+        <h1 className="text-2xl font-black tracking-tight text-ink">Términos de uso</h1>
         <p className="mt-1 text-xs text-muted">
           Última actualización: {LAST_UPDATED}
         </p>
@@ -21,7 +21,7 @@ export default function TerminosPage() {
 
       <section className="rounded-card border border-terracotta/30 bg-terracotta/5 p-4">
         <p className="text-sm leading-relaxed text-ink">
-          Nido es una herramienta informativa y de acompañamiento durante el
+          Mi Bebé es una herramienta informativa y de acompañamiento durante el
           embarazo y la búsqueda de embarazo. <strong>No reemplaza la
           atención de un profesional de la salud, no realiza diagnósticos y
           no da indicaciones médicas personalizadas.</strong> Ante cualquier
@@ -31,9 +31,9 @@ export default function TerminosPage() {
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-base font-medium text-ink">Uso de la app</h2>
+        <h2 className="text-base font-extrabold text-ink">Uso de la app</h2>
         <p className="text-sm leading-relaxed text-muted">
-          Nido es gratuita y no requiere crear una cuenta. Al usarla, aceptás
+          Mi Bebé es gratuita y no requiere crear una cuenta. Al usarla, aceptás
           estos términos y nuestra{" "}
           <a href="/privacidad" className="underline">
             política de privacidad
@@ -43,7 +43,7 @@ export default function TerminosPage() {
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-base font-medium text-ink">Contenido</h2>
+        <h2 className="text-base font-extrabold text-ink">Contenido</h2>
         <p className="text-sm leading-relaxed text-muted">
           Las guías, la información semanal y las señales de alarma son
           contenido general de referencia, revisado por nuestro equipo
@@ -56,20 +56,20 @@ export default function TerminosPage() {
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-base font-medium text-ink">Directorio y recursos</h2>
+        <h2 className="text-base font-extrabold text-ink">Directorio y recursos</h2>
         <p className="text-sm leading-relaxed text-muted">
           El directorio y los recursos destacados incluyen listados sponsoreados y
           no sponsoreados. Que un sanatorio, profesional o negocio aparezca en
-          Nido no constituye una recomendación médica ni una garantía sobre la
+          Mi Bebé no constituye una recomendación médica ni una garantía sobre la
           calidad de su atención — hacé tu propia verificación antes de
           elegir dónde atenderte.
         </p>
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-base font-medium text-ink">Límite de responsabilidad</h2>
+        <h2 className="text-base font-extrabold text-ink">Límite de responsabilidad</h2>
         <p className="text-sm leading-relaxed text-muted">
-          Nido se ofrece &ldquo;tal cual&rdquo;, sin garantías de
+          Mi Bebé se ofrece &ldquo;tal cual&rdquo;, sin garantías de
           disponibilidad continua o ausencia de errores. En la medida
           permitida por la ley, no somos responsables por decisiones tomadas
           únicamente en base al contenido de la app sin consultar a un
@@ -78,7 +78,7 @@ export default function TerminosPage() {
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-base font-medium text-ink">Cambios</h2>
+        <h2 className="text-base font-extrabold text-ink">Cambios</h2>
         <p className="text-sm leading-relaxed text-muted">
           Podemos actualizar estos términos a medida que la app crece. Los
           cambios importantes se reflejarán en esta página con su fecha de

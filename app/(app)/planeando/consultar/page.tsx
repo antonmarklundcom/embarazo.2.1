@@ -12,7 +12,7 @@ export default function ConsultarFertilidadPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">
+        <h1 className="text-2xl font-black tracking-tight text-ink">
           ¿Cuándo consultar por fertilidad?
         </h1>
         <p className="text-sm text-muted">

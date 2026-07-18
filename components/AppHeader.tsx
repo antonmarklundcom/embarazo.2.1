@@ -14,7 +14,7 @@ export function AppHeader() {
         <Link href="/" className="flex items-center gap-2.5">
           <BrandMark />
           <span className="text-[19px] font-black tracking-tight text-ink">
-            Nido
+            Mi Bebé
           </span>
         </Link>
         <div className="flex items-center gap-2.5">

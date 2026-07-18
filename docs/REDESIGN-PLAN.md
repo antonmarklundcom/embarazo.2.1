@@ -43,13 +43,20 @@ replace them.
 
 ## 3. Phases
 
-- **A (this PR)**: tokens, font weights, AppHeader, BottomNav, Hoy screen.
-- **B**: Consejos (`/guias`) rails + category tiles; `/semana/[n]` hero.
-- **C**: remaining screens sweep (herramientas pages, ajustes, planeando)
-  — mostly free via token retheme; fix leftover `rose`/`sage` overlines
-  to brand-green overline style.
-- **D**: imagery drop-in (see §4) — hero + article cards pick up images
-  automatically once files exist.
+- **A (done — PR #7, merged)**: tokens, font weights, AppHeader, BottomNav,
+  Hoy screen.
+- **B (done)**: Consejos (`/guias`) styled with pastel article cards +
+  brand-green overlines; `/semana/[n]` photo hero (shared `WeekHeroImage`);
+  visible name changed to "Mi Bebé" (internal storage stays `nido`).
+- **B.1 (done)**: image pipeline shipped — `scripts/optimize-images.mjs`
+  (`npm run optimize:images`), `public/assets/{semanas,articulos,hero}`
+  folders + `public/assets/README.md`. Founder adds files, code already
+  renders them.
+- **C (done)**: typography sweep across all remaining screens
+  (herramientas, ajustes, progreso, derechos, emergencia, directorio,
+  eventos, planeando, onboarding, error/404 pages): 900 screen titles in
+  ink, extrabold card titles, +1.6px brand-green overlines, `border-line`.
+- **D (todo, founder)**: generate/add the 42 weekly renders + article art.
 
 ## 4. Image pipeline (the "100 images" question)
 

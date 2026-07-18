@@ -122,7 +122,7 @@ export default function ResumenPage() {
     <div className="space-y-5 print:space-y-3">
       {/* Action bar (not printed) */}
       <div className="no-print flex items-center justify-between gap-2">
-        <h1 className="text-xl font-medium text-petrol-dark">
+        <h1 className="text-2xl font-black tracking-tight text-ink">
           Resumen para mi control
         </h1>
         <button
@@ -171,7 +171,7 @@ export default function ResumenPage() {
       {/* ===== Printable report ===== */}
       <article className="space-y-5 rounded-card bg-white p-5 shadow-soft print:rounded-none print:p-0 print:shadow-none">
         <header className="border-b border-black/10 pb-3">
-          <h2 className="text-lg font-medium text-petrol-dark">
+          <h2 className="text-lg font-black text-ink">
             Resumen para mi control prenatal
           </h2>
           <p className="mt-0.5 text-xs text-muted">
@@ -330,7 +330,7 @@ function ReportSection({
 }) {
   return (
     <section className="space-y-1 break-inside-avoid">
-      <h3 className="text-sm font-medium uppercase tracking-wide text-petrol">
+      <h3 className="text-sm font-extrabold uppercase tracking-[1.6px] text-petrol">
         {title}
       </h3>
       {children}

@@ -24,7 +24,14 @@
 
 ---
 
-## R1 — Product rename (BLOCKED: founder must supply the new name)
+## R1 — Product rename → "Mi Bebé" (DONE, July 2026)
+
+Renamed to **Mi Bebé**. Because the app had no real users yet, the
+internal identifiers were renamed cleanly too (no migration needed):
+`Dexie("mibebe")`, class `MiBebeDB`, `mibebe.pin.*` localStorage keys,
+backup `app: "mibebe"`, SW cache `mibebe-api`, `prose-mb` CSS class.
+Do a data migration only if renaming again *after* real users exist.
+Historical guidance kept below for reference.
 
 The current working name is being dropped. Once the founder provides the
 new name (and domain), execute the rename in one PR:
@@ -60,7 +67,11 @@ internal identifiers listed above, each with a code comment explaining why.
 
 ## Phase 1 — remaining pre-launch code (independent of founder content)
 
-### P1.1 Install experience
+### P1.1 Install experience (DONE)
+`lib/useInstallPrompt.ts` + `components/InstallCard.tsx`, mounted on Home
+and Ajustes. Detects standalone mode, captures `beforeinstallprompt`,
+shows an iOS instruction sheet as fallback. Original spec kept below.
+
 The distribution model is "installs from a link", but there is no install
 UX. Add:
 - A `useInstallPrompt()` hook capturing `beforeinstallprompt`; an
@@ -72,7 +83,11 @@ UX. Add:
 - **Done when:** Chrome/Android shows the native prompt from the button;
   iOS shows instructions; installed users never see either.
 
-### P1.2 PWA update flow
+### P1.2 PWA update flow (DONE)
+`components/UpdateToast.tsx`, mounted in `app/layout.tsx`. Listens for
+`controllerchange` and shows a "Hay una versión nueva" toast with a
+reload button. Original spec kept below.
+
 Serwist uses `skipWaiting: true`; a stale client can straddle versions.
 Add a small "Hay una versión nueva — recargar" toast when a new SW takes
 control (`controllerchange`). **Done when:** deploying a new build surfaces
@@ -90,7 +105,26 @@ date, not an ID — no device identifier is ever generated). Update
 **Done when:** tests prove non-whitelisted fields are rejected; no cookie,
 no UID anywhere; unset env = no network call.
 
-### P1.4 Per-page social/OG polish
+### P1.4 Per-page social/OG polish (DONE)
+`scripts/gen-og.mjs` (`npm run gen:og`) generates `public/og.png`
+(placeholder brand mark, no external deps — same technique as
+`gen-icons.mjs`), wired into `openGraph.images` + `twitter.images` in
+`app/layout.tsx` (inherited by every page). `scripts/gen-screenshots.mjs`
+(`npm run gen:screenshots`) drives a real production build with Playwright
+to capture Home + Herramientas at phone size, wired into
+`manifest.webmanifest`'s `screenshots`. `/semana/[n]` and `/guias/[slug]`
+already had per-page `generateMetadata`.
+
+**Also fixed while here:** `scripts/gen-icons.mjs` was still emitting the
+PWA install icons in the *pre-redesign* palette — regenerated with the
+current brand colors. And building the first screenshot caught a real bug
+in `UpdateToast` (P1.2): `controllerchange` also fires on a page's very
+first service-worker activation (no controller → active), not just genuine
+updates, so a first-time visitor would see a misleading "hay una versión
+nueva" toast. Fixed to only prompt when a controller already existed.
+
+Original spec kept below.
+
 - OG images: static branded default in `public/og.png` (placeholder art
   now, real branding later) + wire `openGraph.images`; per-guía dynamic OG
   via `next/og` `ImageResponse` (title on brand background) if it doesn't
@@ -102,20 +136,52 @@ no UID anywhere; unset env = no network call.
 - **Done when:** sharing `/` and a guía into WhatsApp shows title, description
   and image; Android install sheet shows screenshots.
 
-### P1.5 ESLint baseline
+### P1.5 ESLint baseline (DONE)
+`eslint.config.mjs` (flat config, `next/core-web-vitals` + `next/typescript`)
++ `npm run lint` wired into `.github/workflows/ci.yml`. Fixed the 3 findings
+it surfaced rather than silencing them: a `useMemo` dependency in
+`directorio/page.tsx` that got a new `[]` reference every render, and two
+misplaced `eslint-disable-next-line` comments (carné/fotos `<img>`) that
+were one line off and covering nothing. `npm run lint` is clean.
+
+Original spec kept below.
+
 `npm run lint` currently hits the interactive setup prompt (no config).
 Add a flat-config with `next/core-web-vitals` + TS, fix or explicitly
 disable any findings, add `npm run lint` to CI. **Done when:** CI runs
 lint non-interactively and passes.
 
-### P1.6 Landing page for non-users
+### P1.6 Landing page for non-users (DONE)
+`app/conoce/page.tsx`: standalone (no app shell), features, privacy promise,
+InstallCard reused, 4 featured guía links + link to `/guias`, CTA into the
+app. Added to sitemap; linked from the root 404 footer. 1.31 kB route JS,
+static. Original spec kept below.
+
 `/` is the app (first-run gate). Add a lightweight public `/conoce` page:
 what the app is, privacy promise, install CTA (links into P1.1 flow),
 screenshots, guía links for SEO; add it to the sitemap and link it from
 the 404 page footer. No framework additions. **Done when:** page is static,
 <15 kB route JS, and passes Lighthouse a11y ≥95.
 
-### P1.7 E2E smoke tests
+### P1.7 E2E smoke tests (DONE)
+`playwright.config.ts` (builds against `next start`, pins the container's
+pre-installed Chromium since @playwright/test's expected revision differs)
++ `e2e/{onboarding,symptom-log,backup-restore,offline}.spec.ts`, 6 tests.
+Run with `npm run build && npm run test:e2e`.
+
+**Found and fixed two real bugs while writing these, not just test gaps:**
+1. The service worker was built (`public/sw.js`) but never registered
+   anywhere in the app — `components/ServiceWorkerRegistration.tsx` now
+   calls `navigator.serviceWorker.register()` on mount (production only).
+   Without this, offline support and the P1.2 update toast were both inert.
+2. `self.__SW_MANIFEST` (`app/sw.ts`) only contains build-time static
+   assets, not prerendered page routes — despite the file's own comment
+   claiming otherwise. The 42 `/semana/[n]` pages and the guías were never
+   actually precached. Fixed by explicitly listing those routes and
+   merging them into `precacheEntries`.
+
+Original spec kept below.
+
 Add Playwright with 3–4 flows against `next start`: complete onboarding
 (both modes and both date entries), log a symptom, export a backup and
 restore it, offline navigation to a precached week page. Wire into CI

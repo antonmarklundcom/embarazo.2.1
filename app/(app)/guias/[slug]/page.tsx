@@ -39,11 +39,11 @@ export default async function GuiaDetailPage({
 
       <header>
         {article.cluster && (
-          <span className="text-xs font-medium uppercase tracking-wide text-terracotta">
+          <span className="text-xs font-extrabold uppercase tracking-[1.6px] text-terracotta">
             {article.cluster}
           </span>
         )}
-        <h1 className="mt-1 text-2xl font-medium text-petrol-dark">
+        <h1 className="mt-1 text-2xl font-black tracking-tight text-ink">
           {article.title}
         </h1>
         <div className="mt-2">
@@ -52,7 +52,7 @@ export default async function GuiaDetailPage({
       </header>
 
       <div
-        className="prose-nido text-ink"
+        className="prose-mb text-ink"
         // Seed HTML is authored in-repo (not user input); safe to render.
         dangerouslySetInnerHTML={{ __html: article.html }}
       />

@@ -38,7 +38,7 @@ export function LocalResourcesBlock({
 
   return (
     <section aria-labelledby="recursos" className="space-y-3">
-      <h2 id="recursos" className="text-sm font-medium text-ink">
+      <h2 id="recursos" className="text-sm font-extrabold text-ink">
         Cerca tuyo
       </h2>
       <div className="space-y-3">
@@ -51,7 +51,7 @@ export function LocalResourcesBlock({
               <span className="text-xs text-muted">{p.sponsorName}</span>
               <SponsoredBadge />
             </div>
-            <h3 className="text-base font-medium text-petrol-dark">
+            <h3 className="text-base font-extrabold text-ink">
               {p.headline}
             </h3>
             <p className="mt-1 text-sm text-muted">{p.body}</p>

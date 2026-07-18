@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://nido.app";
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mibebe.app";
 
 export default function robots(): MetadataRoute.Robots {
   return {

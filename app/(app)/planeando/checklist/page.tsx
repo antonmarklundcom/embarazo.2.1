@@ -24,7 +24,7 @@ export default function PreconcepcionPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">
+        <h1 className="text-2xl font-black tracking-tight text-ink">
           Checklist preconcepción
         </h1>
         <p className="text-sm text-muted">
@@ -35,7 +35,7 @@ export default function PreconcepcionPage() {
 
       <section className="rounded-card bg-white p-4 shadow-soft">
         <div className="mb-3 flex items-baseline justify-between">
-          <h2 className="text-base font-medium text-ink">Antes de buscar embarazo</h2>
+          <h2 className="text-base font-extrabold text-ink">Antes de buscar embarazo</h2>
           <span className="text-xs text-muted">
             {completed}/{PRECONCEPTION_ITEMS.length}
           </span>
@@ -44,7 +44,7 @@ export default function PreconcepcionPage() {
           {PRECONCEPTION_ITEMS.map((item) => {
             const checked = done.has(item.key);
             return (
-              <li key={item.key} className="border-b border-black/5 pb-2 last:border-0">
+              <li key={item.key} className="border-b border-line pb-2 last:border-0">
                 <button
                   type="button"
                   onClick={() => toggle(item.key)}

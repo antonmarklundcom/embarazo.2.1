@@ -28,7 +28,7 @@ export default function GlobalError({
         }}
       >
         <h1 style={{ fontSize: "1.125rem", fontWeight: 500 }}>
-          Nido no pudo cargar
+          Mi Bebé no pudo cargar
         </h1>
         <p style={{ fontSize: "0.875rem", maxWidth: 320, color: "#7E766C" }}>
           Tus datos están a salvo en tu teléfono. Probá recargar la app.

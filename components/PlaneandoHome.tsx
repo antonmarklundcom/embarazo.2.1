@@ -32,7 +32,7 @@ export function PlaneandoHome() {
     <div className="space-y-5">
       <header>
         <p className="text-sm text-muted">Hola 👋</p>
-        <h1 className="text-xl font-medium text-petrol-dark">
+        <h1 className="text-2xl font-black tracking-tight text-ink">
           Estás planeando tu embarazo
         </h1>
         <p className="text-sm text-muted">
@@ -45,7 +45,7 @@ export function PlaneandoHome() {
         {lastStart ? (
           <>
             <p className="text-sm text-white/70">Tu ciclo</p>
-            <p className="text-3xl font-medium">Día {dayInCycle}</p>
+            <p className="text-3xl font-black">Día {dayInCycle}</p>
             {predicted !== undefined && (
               <p className="mt-2 text-sm text-white/90">
                 Próxima regla estimada: {fmtLong(predicted)}
@@ -77,7 +77,7 @@ export function PlaneandoHome() {
 
       {/* Tool tiles (bento) */}
       <section aria-labelledby="planeando-tools" className="space-y-3">
-        <h2 id="planeando-tools" className="text-sm font-medium text-ink">
+        <h2 id="planeando-tools" className="text-sm font-extrabold text-ink">
           Tus herramientas
         </h2>
         <div className="grid grid-cols-2 gap-3">
@@ -120,7 +120,7 @@ export function PlaneandoHome() {
         href="/directorio"
         className="block rounded-card bg-white p-4 shadow-soft transition active:scale-[0.99]"
       >
-        <h3 className="text-base font-medium text-ink">Cerca tuyo</h3>
+        <h3 className="text-base font-extrabold text-ink">Cerca tuyo</h3>
         <p className="mt-1 text-sm text-muted">
           Obstetras, ginecología y más, por departamento.
         </p>
@@ -163,7 +163,7 @@ function Tile({
     >
       <span className={`h-2.5 w-2.5 rounded-full ${dot}`} />
       <div>
-        <p className="text-base font-medium text-ink">{title}</p>
+        <p className="text-base font-extrabold text-ink">{title}</p>
         <p className="text-xs text-muted">{subtitle}</p>
       </div>
     </Link>

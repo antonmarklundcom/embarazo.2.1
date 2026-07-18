@@ -114,7 +114,7 @@ export interface ClinicalInfo {
   notes?: string;
 }
 
-export class NidoDB extends Dexie {
+export class MiBebeDB extends Dexie {
   profile!: Table<Profile, number>;
   pregnancy!: Table<Pregnancy, number>;
   journalEntries!: Table<JournalEntry, number>;
@@ -129,7 +129,7 @@ export class NidoDB extends Dexie {
   clinical!: Table<ClinicalInfo, number>;
 
   constructor() {
-    super("nido");
+    super("mibebe");
     this.version(1).stores({
       profile: "++id",
       pregnancy: "++id",
@@ -160,19 +160,19 @@ export class NidoDB extends Dexie {
 }
 
 // Lazily instantiate so this module is safe to import in server components.
-let _db: NidoDB | null = null;
-export function db(): NidoDB {
+let _db: MiBebeDB | null = null;
+export function db(): MiBebeDB {
   if (typeof window === "undefined") {
-    throw new Error("NidoDB is only available in the browser");
+    throw new Error("MiBebeDB is only available in the browser");
   }
-  if (!_db) _db = new NidoDB();
+  if (!_db) _db = new MiBebeDB();
   return _db;
 }
 
 /** Wipe ALL local data (build spec §5 — "Borrar todos mis datos"). */
 export async function wipeAllData(): Promise<void> {
   if (typeof window === "undefined") return;
-  const instance = _db ?? new NidoDB();
+  const instance = _db ?? new MiBebeDB();
   await instance.delete();
   _db = null;
 }

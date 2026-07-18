@@ -43,7 +43,7 @@ export default function VideosPage() {
     return (
       <div className="space-y-4">
         <header>
-          <h1 className="text-xl font-medium text-petrol-dark">Videos</h1>
+          <h1 className="text-2xl font-black tracking-tight text-ink">Videos</h1>
         </header>
         <div className="rounded-card bg-white p-5 text-center shadow-soft">
           <p className="text-sm text-muted">
@@ -57,7 +57,7 @@ export default function VideosPage() {
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">Videos</h1>
+        <h1 className="text-2xl font-black tracking-tight text-ink">Videos</h1>
         <p className="text-sm text-muted">
           Videos educativos seleccionados sobre el embarazo y los primeros días.
         </p>
@@ -144,7 +144,7 @@ function VideoCard({ video }: { video: VideoItem }) {
             <span className="text-xs text-muted">{video.durationLabel}</span>
           )}
         </div>
-        <h2 className="mt-2 text-base font-medium text-ink">{video.title}</h2>
+        <h2 className="mt-2 text-base font-extrabold text-ink">{video.title}</h2>
         <p className="mt-1 text-sm text-muted">{video.description}</p>
       </div>
     </article>

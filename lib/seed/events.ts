@@ -29,7 +29,7 @@ export const EVENTS: EventItem[] = [
     date: inDays(4),
     description:
       "Charla gratuita sobre los controles, la alimentación y las dudas más comunes del primer trimestre.",
-    organizer: "Equipo de Nido (placeholder)",
+    organizer: "Equipo de Mi Bebé (placeholder)",
     whatsappNumber: "+595981000050",
     mapsUrl: "https://maps.google.com/?q=Asuncion+Paraguay",
     isSponsored: true,
@@ -133,7 +133,7 @@ export const EVENTS: EventItem[] = [
     date: inDays(-12),
     description:
       "Evento ya realizado, incluido para mostrar cómo se ven los encuentros pasados en la lista.",
-    organizer: "Equipo de Nido (placeholder)",
+    organizer: "Equipo de Mi Bebé (placeholder)",
     isSponsored: false,
   },
 ];

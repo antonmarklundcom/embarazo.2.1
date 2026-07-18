@@ -9,7 +9,7 @@ export default function RootNotFound() {
         🔎
       </span>
       <div>
-        <h1 className="text-lg font-medium text-petrol-dark">
+        <h1 className="text-lg font-black text-ink">
           No encontramos esa página
         </h1>
         <p className="mt-1 max-w-xs text-sm text-muted">
@@ -21,6 +21,9 @@ export default function RootNotFound() {
         className="min-h-[44px] w-full max-w-xs rounded-tile bg-petrol px-4 py-2.5 text-center text-sm font-medium leading-[1.9] text-white transition active:scale-[0.98]"
       >
         Ir a Inicio
+      </Link>
+      <Link href="/conoce" className="text-xs font-extrabold text-terracotta">
+        ¿Qué es Mi Bebé?
       </Link>
     </div>
   );

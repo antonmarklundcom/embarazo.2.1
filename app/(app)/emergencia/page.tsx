@@ -20,7 +20,7 @@ export default function EmergenciaPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">Emergencia</h1>
+        <h1 className="text-2xl font-black tracking-tight text-ink">Emergencia</h1>
         <p className="mt-1 text-sm text-muted">
           Ante una señal de alarma, llamá o andá a la guardia más cercana. Esta
           pantalla funciona sin internet.
@@ -36,7 +36,7 @@ export default function EmergenciaPage() {
             className="flex items-center justify-between rounded-card bg-terracotta p-5 text-white shadow-soft transition active:scale-[0.99]"
           >
             <div>
-              <p className="text-2xl font-medium">{n.number}</p>
+              <p className="text-2xl font-black">{n.number}</p>
               <p className="text-sm text-white/90">{n.name}</p>
               <p className="text-xs text-white/70">{n.detail}</p>
             </div>
@@ -61,7 +61,7 @@ export default function EmergenciaPage() {
 
       {/* What to say */}
       <section className="rounded-card bg-white p-4 shadow-soft">
-        <h2 className="text-base font-medium text-ink">Cuando llames, decí:</h2>
+        <h2 className="text-base font-extrabold text-ink">Cuando llames, decí:</h2>
         {profile.hasPregnancy && profile.completed && (
           <p className="mt-2 rounded-tile bg-sage/10 p-3 text-sm text-ink">
             &ldquo;Estoy embarazada de{" "}
@@ -79,7 +79,7 @@ export default function EmergenciaPage() {
 
       {/* Alarm signs */}
       <section className="rounded-card border border-terracotta/20 bg-terracotta/5 p-4">
-        <h2 className="text-base font-medium text-ink">
+        <h2 className="text-base font-extrabold text-ink">
           Señales de alarma: consultá ya si tenés
         </h2>
         <ul className="mt-2 space-y-2 text-sm leading-relaxed text-ink/90">
@@ -108,7 +108,7 @@ export default function EmergenciaPage() {
       </section>
 
       <p className="text-xs leading-relaxed text-muted">
-        Nido es informativa y no reemplaza la atención médica. Ante la duda,
+        Mi Bebé es informativa y no reemplaza la atención médica. Ante la duda,
         consultá igual: vale más una consulta de más.
       </p>
     </div>
@@ -159,7 +159,7 @@ function ContactCard({
       <section className="rounded-card bg-white p-4 shadow-soft">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <h2 className="text-base font-medium text-ink">{title}</h2>
+            <h2 className="text-base font-extrabold text-ink">{title}</h2>
             <p className="mt-0.5 text-sm text-muted">
               {savedName || "Sin nombre"} · {savedPhone}
             </p>
@@ -196,7 +196,7 @@ function ContactCard({
 
   return (
     <section className="rounded-card bg-white p-4 shadow-soft">
-      <h2 className="text-base font-medium text-ink">{title}</h2>
+      <h2 className="text-base font-extrabold text-ink">{title}</h2>
       <p className="mt-0.5 text-sm text-muted">{hint}</p>
       <div className="mt-3 space-y-2">
         <input

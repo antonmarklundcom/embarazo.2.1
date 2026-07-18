@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 // review and finalize this before public launch (see docs/REVIEW-AND-LAUNCH-PLAN.md §4.6).
 export const metadata: Metadata = {
   title: "Política de privacidad",
-  description: "Cómo Nido maneja tus datos.",
+  description: "Cómo Mi Bebé maneja tus datos.",
 };
 
 const LAST_UPDATED = "8 de julio de 2026";
@@ -14,7 +14,7 @@ export default function PrivacidadPage() {
   return (
     <article className="space-y-5">
       <header>
-        <h1 className="text-xl font-medium text-petrol-dark">
+        <h1 className="text-2xl font-black tracking-tight text-ink">
           Política de privacidad
         </h1>
         <p className="mt-1 text-xs text-muted">
@@ -24,7 +24,7 @@ export default function PrivacidadPage() {
 
       <section className="rounded-card border border-sage/30 bg-sage/5 p-4">
         <p className="text-sm leading-relaxed text-ink">
-          Nido no te pide cuenta, correo ni número de teléfono. Tus datos de
+          Mi Bebé no te pide cuenta, correo ni número de teléfono. Tus datos de
           embarazo, síntomas, fotos y calendario menstrual se guardan
           <strong> solo en este dispositivo</strong>, en el almacenamiento
           local del navegador. No tenemos un servidor con tu historia clínica
@@ -33,9 +33,9 @@ export default function PrivacidadPage() {
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-base font-medium text-ink">Qué datos guardamos y dónde</h2>
+        <h2 className="text-base font-extrabold text-ink">Qué datos guardamos y dónde</h2>
         <p className="text-sm leading-relaxed text-muted">
-          Todo lo que registrás en Nido — fecha de última regla o fecha
+          Todo lo que registrás en Mi Bebé — fecha de última regla o fecha
           probable de parto, departamento y ciudad, síntomas y estado de
           ánimo, fotos de la panza, fotos del carné perinatal, tipo de sangre
           y alergias, peso, pataditas, contracciones, calendario menstrual,
@@ -47,7 +47,7 @@ export default function PrivacidadPage() {
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-base font-medium text-ink">Qué es lo único que viaja a un servidor</h2>
+        <h2 className="text-base font-extrabold text-ink">Qué es lo único que viaja a un servidor</h2>
         <p className="text-sm leading-relaxed text-muted">
           Para mostrarte recursos y contactos cercanos (sanatorios, ecografía,
           farmacias, eventos), la app consulta nuestro servidor enviando
@@ -61,7 +61,7 @@ export default function PrivacidadPage() {
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-base font-medium text-ink">Cookies y rastreadores</h2>
+        <h2 className="text-base font-extrabold text-ink">Cookies y rastreadores</h2>
         <p className="text-sm leading-relaxed text-muted">
           No usamos cookies de seguimiento ni rastreadores de terceros con
           fines publicitarios. Los videos educativos se embeben en modo de
@@ -70,7 +70,7 @@ export default function PrivacidadPage() {
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-base font-medium text-ink">El PIN opcional</h2>
+        <h2 className="text-base font-extrabold text-ink">El PIN opcional</h2>
         <p className="text-sm leading-relaxed text-muted">
           Si activás un PIN, tus notas del diario se cifran en el navegador
           antes de guardarse (AES-GCM con una clave derivada del PIN vía
@@ -81,7 +81,7 @@ export default function PrivacidadPage() {
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-base font-medium text-ink">Tus derechos sobre tus datos</h2>
+        <h2 className="text-base font-extrabold text-ink">Tus derechos sobre tus datos</h2>
         <p className="text-sm leading-relaxed text-muted">
           Como los datos de salud viven en tu dispositivo, vos tenés control
           directo: podés exportar una copia completa o borrar todo en
@@ -94,7 +94,7 @@ export default function PrivacidadPage() {
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-base font-medium text-ink">Contacto</h2>
+        <h2 className="text-base font-extrabold text-ink">Contacto</h2>
         <p className="text-sm leading-relaxed text-muted">
           Si tenés dudas sobre esta política, escribinos por WhatsApp desde el
           botón de contacto de la app.
@@ -103,7 +103,7 @@ export default function PrivacidadPage() {
 
       <p className="text-[11px] leading-relaxed text-muted">
         Este texto describe honestamente el funcionamiento actual de la app.
-        No reemplaza asesoría legal formal; el equipo de Nido lo revisa y
+        No reemplaza asesoría legal formal; el equipo de Mi Bebé lo revisa y
         actualiza periódicamente.
       </p>
     </article>

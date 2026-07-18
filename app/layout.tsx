@@ -35,6 +35,14 @@ export const metadata: Metadata = {
     description:
       "Guía del embarazo semana a semana, hecha para Paraguay. Privada: tus datos quedan en tu teléfono.",
     siteName: "Mi Bebé",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Mi Bebé" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Mi Bebé — tu embarazo en Paraguay",
+    description:
+      "Guía del embarazo semana a semana, hecha para Paraguay. Privada: tus datos quedan en tu teléfono.",
+    images: ["/og.png"],
   },
   icons: {
     icon: "/icons/icon-192.png",

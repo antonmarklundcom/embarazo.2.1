@@ -6,13 +6,23 @@ import { useEffect, useState } from "react";
 // open across a deploy can straddle versions silently. "controllerchange"
 // fires exactly when a new service worker takes control of an already-open
 // client — surface a reload prompt instead of leaving the old build running.
+//
+// It ALSO fires on a page's very first controller acquisition (no SW ->
+// active SW), which is not an update — a first-time visitor would otherwise
+// see a misleading "new version" toast. Only prompt when a controller was
+// already present before the change.
 export function UpdateToast() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
+    let hadController = !!navigator.serviceWorker.controller;
     let shown = false;
     const onControllerChange = () => {
+      if (!hadController) {
+        hadController = true;
+        return;
+      }
       if (shown) return;
       shown = true;
       setVisible(true);

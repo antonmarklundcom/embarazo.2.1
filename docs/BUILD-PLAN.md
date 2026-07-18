@@ -105,7 +105,26 @@ date, not an ID — no device identifier is ever generated). Update
 **Done when:** tests prove non-whitelisted fields are rejected; no cookie,
 no UID anywhere; unset env = no network call.
 
-### P1.4 Per-page social/OG polish
+### P1.4 Per-page social/OG polish (DONE)
+`scripts/gen-og.mjs` (`npm run gen:og`) generates `public/og.png`
+(placeholder brand mark, no external deps — same technique as
+`gen-icons.mjs`), wired into `openGraph.images` + `twitter.images` in
+`app/layout.tsx` (inherited by every page). `scripts/gen-screenshots.mjs`
+(`npm run gen:screenshots`) drives a real production build with Playwright
+to capture Home + Herramientas at phone size, wired into
+`manifest.webmanifest`'s `screenshots`. `/semana/[n]` and `/guias/[slug]`
+already had per-page `generateMetadata`.
+
+**Also fixed while here:** `scripts/gen-icons.mjs` was still emitting the
+PWA install icons in the *pre-redesign* palette — regenerated with the
+current brand colors. And building the first screenshot caught a real bug
+in `UpdateToast` (P1.2): `controllerchange` also fires on a page's very
+first service-worker activation (no controller → active), not just genuine
+updates, so a first-time visitor would see a misleading "hay una versión
+nueva" toast. Fixed to only prompt when a controller already existed.
+
+Original spec kept below.
+
 - OG images: static branded default in `public/og.png` (placeholder art
   now, real branding later) + wire `openGraph.images`; per-guía dynamic OG
   via `next/og` `ImageResponse` (title on brand background) if it doesn't

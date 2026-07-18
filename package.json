@@ -11,7 +11,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "optimize:images": "node scripts/optimize-images.mjs"
+    "optimize:images": "node scripts/optimize-images.mjs",
+    "gen:icons": "node scripts/gen-icons.mjs",
+    "gen:og": "node scripts/gen-og.mjs",
+    "gen:screenshots": "node scripts/gen-screenshots.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.59.0",

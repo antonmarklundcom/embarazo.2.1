@@ -7,7 +7,7 @@
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#FBF7F1",
-  "theme_color": "#1F5F5B",
+  "theme_color": "#2F5D50",
   "lang": "es-PY",
   "categories": ["health", "lifestyle", "medical"],
   "icons": [
@@ -28,6 +28,22 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/home.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Tu semana, de un vistazo"
+    },
+    {
+      "src": "/screenshots/herramientas.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Herramientas para tu embarazo"
     }
   ]
 }

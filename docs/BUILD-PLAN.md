@@ -138,7 +138,7 @@ failure.
 
 Everything in B–F assumes this exists. Do it in order; A1→A3 are a chain.
 
-### A1 Database + Drizzle schema — **M**
+### A1 Database + Drizzle schema — **M** ✅ DONE
 MySQL on Hostinger + Drizzle ORM + migrations checked into the repo.
 Tables: Auth.js core (`users`, `accounts`, `sessions`,
 `verification_tokens`), plus `pregnancies`, `pregnancy_members`
@@ -149,8 +149,20 @@ payload JSON`), `push_subscriptions`, `invites`, `ai_generations`,
 `lib/server/*` is server-only (`import "server-only"` at the top of every
 file). Local dev works against a local MySQL via `DATABASE_URL`.
 **Done when:** `npm run db:migrate` provisions a clean database; a
-client component importing `lib/server/schema` fails the build; the app
+client component importing `lib/server/db` fails the build; the app
 still builds and runs with `DATABASE_URL` **unset** (local-only mode).
+
+Shipped: `lib/server/schema.ts` (12 tables), `lib/server/db.ts` (lazy pool,
+`isDatabaseConfigured()`), `drizzle.config.ts`, initial migration in
+`drizzle/`, and `db:generate` / `db:migrate` / `db:studio` scripts. Both
+boundary conditions verified by building, not by assertion: a production build
+passes with `DATABASE_URL` unset, and a deliberate client-component import of
+`db.ts` fails the build with the server-only error. Note the guard sits on
+`db.ts` rather than `schema.ts` — drizzle-kit reads the schema with plain Node
+and cannot tolerate the shim (see DECISIONS.md). Data-contract invariants
+(opaque payload, no identity on `contentStats`, no photos in `SYNCED_STORES`,
+no prompt/photo columns on `aiGenerations`) are asserted in
+`lib/server/schema.test.ts` so widening them fails a test.
 
 ### A2 Auth.js with Google (Facebook flagged) — **M**
 NextAuth v5 + Drizzle adapter, JWT session in an httpOnly cookie.

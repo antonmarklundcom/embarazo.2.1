@@ -118,3 +118,48 @@ Founder decision after reviewing 16 screens of the Swedish app Preggers
   build. This is the structural replacement for the old `db() throws
   server-side` guard: the boundary is still enforced by construction, it just
   runs the other direction now.
+
+## A1 — database & Drizzle schema (July 2026)
+- **MySQL + Drizzle + `drizzle-kit`**, migrations checked into `drizzle/`.
+  `npm run db:generate` writes SQL from `lib/server/schema.ts`;
+  `npm run db:migrate` applies it. Generating does **not** need a live database,
+  so schema changes stay reviewable in a PR without anyone holding credentials.
+- **`db:migrate` uses `drizzle-kit migrate`, not a `tsx` script.** Avoids adding
+  `tsx` as a dependency and sidesteps its documented "does not auto-load .env"
+  pitfall on this host.
+- **`lib/server/db.ts` never connects at import time** and `isDatabaseConfigured()`
+  is the branch every caller must take. The app builds and runs with
+  `DATABASE_URL` unset — that is local-only mode (ARCHITECTURE.md §4.2), not a
+  degraded state. Verified: a full production build passes with it unset.
+- **`import "server-only"` lives in `db.ts`, not `schema.ts`.** drizzle-kit reads
+  the schema with plain Node and the shim throws outside a React Server
+  Component, so the schema file cannot carry it. The guard sits on the file that
+  actually holds credentials and runs queries. Verified by building a deliberate
+  client-component import of `db.ts`: the build fails with the server-only error.
+  `schema.ts` is pure table definitions — importing it client-side would only
+  bloat the bundle, and `db()` stays unreachable.
+- **`server-only` is stubbed in vitest** (`test/stubs/server-only.ts`) so
+  `lib/server/*` is unit-testable; the real guard still applies to every build.
+- **`syncRecords` stores the health payload as opaque JSON** keyed
+  `(userId, store, recordId)` with `updatedAt`/`deletedAt` in epoch ms. The pull
+  index is `(userId, updatedAt)`. Nothing indexes into the payload, so
+  client-side encryption stays a future option rather than a rewrite.
+  `lib/server/schema.test.ts` asserts the column set so a future change that
+  widens it fails a test rather than passing review quietly.
+- **`SYNCED_STORES` excludes photos** — belly and carné photos never leave the
+  device in v1. Adding a store to that list is a data-contract decision.
+- **`contentStats` has no identity column** (asserted by test): keyed
+  `(week, contentId, day)` only. **`aiGenerations` records that a generation
+  happened and what it cost**, never the prompt or the input photos (also
+  asserted).
+- **`users.email` is unique**: signing in with Google and later Facebook on the
+  same address links providers to one row instead of creating a second account
+  with a second copy of the pregnancy.
+- **Epoch-millisecond `bigint` columns** are read as JS numbers
+  (`supportBigNumbers`, `bigNumberStrings: false`) — every value is far inside
+  `Number.MAX_SAFE_INTEGER`.
+- **Pool limit 5.** Hostinger's managed MySQL is not generous with connections;
+  a small pool that waits beats a large one that gets refused.
+- Pre-existing `npm audit` findings (sharp/libvips via next) are unchanged by
+  this work; fixing them means bumping `next` past the pinned 15.1.6 and is
+  tracked separately.

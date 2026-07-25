@@ -1,4 +1,5 @@
 import type { EventItem } from "../types";
+import { publishedOnly } from "./gate";
 
 // PLACEHOLDER curated events (build spec §7). Titles, venues, organizers and
 // phone numbers are invented; +595 numbers are non-working examples. Events are
@@ -137,3 +138,10 @@ export const EVENTS: EventItem[] = [
     isSponsored: false,
   },
 ];
+
+// Placeholder gate (BUILD-PLAN Z1) — the app renders PUBLISHED_EVENTS, never
+// EVENTS. Every entry above is currently invented, so the Eventos tab shows its
+// empty state until real, consented events land. Real events must also carry
+// FIXED epoch-millisecond timestamps rather than the module-load-relative
+// `inDays()` demo dates, which drift with every deploy.
+export const PUBLISHED_EVENTS: EventItem[] = publishedOnly(EVENTS);

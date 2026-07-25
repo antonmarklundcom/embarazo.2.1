@@ -91,7 +91,7 @@ G2), **P2.3** content ops (now G1), **P2.4** tool depth (now D7),
 Small, already-identified defects. Independent of everything else; do
 these first so the friends-and-family test is not embarrassed by them.
 
-### Z1 Gate placeholder directory / events / placements — **S**
+### Z1 Gate placeholder directory / events / placements — **S** ✅ DONE
 Standing rule "placeholder data never ships visibly" is only enforced for
 videos. Today `Cerca tuyo` and `Eventos` — two of five nav tabs — render 21
 invented sanatorios with dead `+595981000xxx` numbers, 5 invented sponsors,
@@ -102,13 +102,35 @@ Apply the `PUBLISHED_*` pattern to all three, with warm empty states
 light up automatically when real data lands; a unit test asserts every
 placeholder is filtered.
 
-### Z2 CI honesty — **S**
+Shipped as `lib/seed/gate.ts`: a deep string scan (marker text, the
+`+595 981 000 0xx` range, the stand-in YouTube id) rather than a per-type
+field list, so an entry with real data but one leftover placeholder field
+stays hidden instead of half-shipping. Filtering happens in `lib/wordpress.ts`
+and the seed modules, which covers the API routes, the home resources block,
+the directory page and the video gallery by construction. Empty states
+rewritten to be honest ("estamos armando el directorio") — the Eventos tab now
+distinguishes "no events at all" from "none in this department" and hides its
+department filter in the former case. Covered by `lib/seed/gate.test.ts` (12
+tests) and `e2e/placeholder-gate.spec.ts` (3 tests).
+
+### Z2 CI honesty — **S** ✅ DONE
 `npm run test:e2e` is not in CI despite P1.7 claiming it. Wire it in
 (build once, reuse). Also fail a **production** build when
 `NEXT_PUBLIC_MEDICAL_REVIEWER` is unset or still contains `___`, so the
 placeholder byline cannot reach users.
 **Done when:** CI runs lint + unit + e2e + build; a prod build with an
 unset reviewer fails loudly.
+
+Shipped as `lib/launchChecks.ts`, called from `next.config.ts`. The checks fire
+only when `NEXT_PUBLIC_APP_URL` is set — that is the signal for "configured
+deployment" as opposed to a local or CI compile check — with an awkward
+`ALLOW_PLACEHOLDER_REVIEWER=1` escape hatch. **Also found and fixed while
+here:** `MedicalReviewByline` fell back to "Revisado por el equipo médico de
+Mi Bebé" when the env var was unset, i.e. it claimed medical review that had
+not happened. Worse than a visible placeholder. It now renders nothing until a
+real reviewer is configured. CI dropped its `Dra. ___` placeholder value and
+gained `npx playwright install` + `npm run test:e2e` with trace upload on
+failure.
 
 ---
 

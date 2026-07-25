@@ -2,6 +2,7 @@ import type { AdPlacement, Article, DirectoryListing } from "./types";
 import { ARTICLES } from "./seed/articles";
 import directoryData from "./seed/directory.json";
 import placementsData from "./seed/placements.json";
+import { publishedOnly } from "./seed/gate";
 
 // Optional future content source (build spec §5).
 // IF WP_API_URL is set, these functions could read a WordPress REST API.
@@ -10,8 +11,13 @@ import placementsData from "./seed/placements.json";
 
 const WP_API_URL = process.env.WP_API_URL;
 
-const SEED_DIRECTORY = (directoryData.listings as DirectoryListing[]);
-const SEED_PLACEMENTS = (placementsData.placements as AdPlacement[]);
+// Placeholder gate (BUILD-PLAN Z1). Filtering here rather than at each call
+// site means the API routes, the home-screen resources block and the directory
+// page are all covered by construction: invented businesses and sponsors with
+// non-working +595 numbers can never reach a user. Entries appear automatically
+// once they carry real data.
+const SEED_DIRECTORY = publishedOnly(directoryData.listings as DirectoryListing[]);
+const SEED_PLACEMENTS = publishedOnly(placementsData.placements as AdPlacement[]);
 
 export async function getArticles(): Promise<Article[]> {
   if (WP_API_URL) {

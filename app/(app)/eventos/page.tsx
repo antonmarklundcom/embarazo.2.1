@@ -3,11 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useProfile } from "@/lib/useProfile";
 import { DEPARTMENTS, departmentName } from "@/lib/departments";
-import { EVENTS } from "@/lib/seed/events";
+import { PUBLISHED_EVENTS } from "@/lib/seed/events";
 import type { EventItem, EventType } from "@/lib/types";
 import { waLink } from "@/lib/whatsapp";
 import { SponsoredBadge } from "@/components/SponsoredBadge";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+
+const BUSINESS_WA = process.env.NEXT_PUBLIC_BUSINESS_WHATSAPP || "+595000000000";
 
 const TYPE_LABELS: Record<EventType, string> = {
   charla: "Charla",
@@ -39,10 +41,24 @@ export default function EventosPage() {
   const now = Date.now();
   const events = useMemo(() => {
     const filtered = department
-      ? EVENTS.filter((e) => e.department === department)
-      : EVENTS;
+      ? PUBLISHED_EVENTS.filter((e) => e.department === department)
+      : PUBLISHED_EVENTS;
     return [...filtered].sort((a, b) => a.date - b.date);
   }, [department]);
+
+  // No published events at all is a different situation from "none in this
+  // department" — telling someone to try another department when the whole
+  // catalogue is empty just wastes their time.
+  const catalogueEmpty = PUBLISHED_EVENTS.length === 0;
+
+  const businessWa = useMemo(
+    () =>
+      waLink(
+        BUSINESS_WA,
+        "Hola! Estoy usando Mi Bebé y quiero contarles de un evento para embarazadas o mamás.",
+      ),
+    [],
+  );
 
   const upcoming = events.filter((e) => e.date >= now);
   const past = events.filter((e) => e.date < now);
@@ -56,21 +72,38 @@ export default function EventosPage() {
         </p>
       </header>
 
-      <select
-        value={department}
-        onChange={(e) => setDepartment(e.target.value)}
-        aria-label="Departamento"
-        className="min-h-[44px] w-full rounded-tile border border-black/10 bg-white px-3 text-sm focus:border-petrol focus:outline-none"
-      >
-        <option value="">Todos los departamentos</option>
-        {DEPARTMENTS.map((d) => (
-          <option key={d.slug} value={d.slug}>
-            {d.name}
-          </option>
-        ))}
-      </select>
+      {!catalogueEmpty && (
+        <select
+          value={department}
+          onChange={(e) => setDepartment(e.target.value)}
+          aria-label="Departamento"
+          className="min-h-[44px] w-full rounded-tile border border-black/10 bg-white px-3 text-sm focus:border-petrol focus:outline-none"
+        >
+          <option value="">Todos los departamentos</option>
+          {DEPARTMENTS.map((d) => (
+            <option key={d.slug} value={d.slug}>
+              {d.name}
+            </option>
+          ))}
+        </select>
+      )}
 
-      {upcoming.length === 0 && (
+      {catalogueEmpty && (
+        <div className="rounded-card bg-white p-5 text-center shadow-soft">
+          <p className="text-sm text-ink">
+            Todavía no hay eventos cargados.
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            Estamos armando la agenda de charlas y talleres. ¿Organizás uno o
+            conocés alguno? Contanos y lo sumamos.
+          </p>
+          <div className="mt-3 flex justify-center">
+            <WhatsAppButton href={businessWa} label="Escribinos por WhatsApp" />
+          </div>
+        </div>
+      )}
+
+      {!catalogueEmpty && upcoming.length === 0 && (
         <div className="rounded-card bg-white p-5 text-center shadow-soft">
           <p className="text-sm text-muted">
             No hay eventos próximos
@@ -95,11 +128,13 @@ export default function EventosPage() {
         </section>
       )}
 
-      <p className="text-[11px] leading-relaxed text-muted">
-        Los eventos son seleccionados por el equipo de Mi Bebé y pueden incluir
-        propuestas patrocinadas, siempre señaladas como “Patrocinado”. La
-        información es referencial.
-      </p>
+      {!catalogueEmpty && (
+        <p className="text-[11px] leading-relaxed text-muted">
+          Los eventos son seleccionados por el equipo de Mi Bebé y pueden
+          incluir propuestas patrocinadas, siempre señaladas como
+          “Patrocinado”. La información es referencial.
+        </p>
+      )}
     </div>
   );
 }

@@ -17,6 +17,18 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+      # NEXT_PUBLIC_APP_URL is deliberately NOT set here: this is a compile
+      # check, not a deployment, so the Z2 launch checks (lib/launchChecks.ts)
+      # stay inert. The real deployment build does set it and will fail if the
+      # medical reviewer is still a placeholder.
       - run: npm run build
-        env:
-          NEXT_PUBLIC_MEDICAL_REVIEWER: "Dra. ___, gineco-obstetra"
+      # E2E runs against the production build above — the service worker is
+      # disabled in `next dev`, so offline coverage needs `next start`.
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7

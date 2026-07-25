@@ -164,7 +164,7 @@ and cannot tolerate the shim (see DECISIONS.md). Data-contract invariants
 no prompt/photo columns on `aiGenerations`) are asserted in
 `lib/server/schema.test.ts` so widening them fails a test.
 
-### A2 Auth.js with Google (Facebook flagged) — **M**
+### A2 Auth.js with Google (Facebook flagged) — **M** 🟡 BUILT, PENDING CREDENTIALS
 NextAuth v5 + Drizzle adapter, JWT session in an httpOnly cookie.
 `/api/auth/[...nextauth]`, a branded sign-in screen in the pastel
 language, and an explicit **consent step** for storing health data (not a
@@ -174,6 +174,24 @@ privacy-policy URL, so it must not block anything.
 **Done when:** Google sign-in works end to end; sessions survive reload;
 `/ajustes` shows the account; **"seguir sin cuenta" remains fully usable**
 and is not a dead end.
+
+Shipped: `lib/authConfig.ts` (predicates, unit-tested), `lib/server/auth.ts`,
+guarded `/api/auth/[...nextauth]`, `/api/v1/auth/status`, `/entrar` +
+`ProviderButtons`, `/consentimiento` + consent server actions, `AccountCard` in
+Ajustes, `types/next-auth.d.ts`, migration 0001 (consent columns).
+
+**The last criterion is not met yet and cannot be**: the Google round-trip
+needs real OAuth credentials. Everything up to the provider redirect is built
+and covered; the callback path is unexercised. Set `AUTH_GOOGLE_ID` /
+`AUTH_GOOGLE_SECRET` / `AUTH_SECRET` / `DATABASE_URL` and walk the flow once to
+close this out.
+
+Two defects found by e2e rather than review, both invisible in a green test
+run: `/api/auth/session` returned 500 whenever accounts were unconfigured
+(Auth.js throws without `AUTH_SECRET`, and `SessionProvider` polls that
+endpoint on every page load), and Auth.js rejected every request with
+`UntrustedHost` behind a proxy. Both fixed; `e2e/auth-disabled.spec.ts` now
+asserts the status code so neither can regress silently.
 
 ### A3 Sync engine — **L**
 Dexie v5 adds `updatedAt` / `deletedAt` / `dirty` to synced stores plus a

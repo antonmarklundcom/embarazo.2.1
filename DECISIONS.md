@@ -163,3 +163,45 @@ Founder decision after reviewing 16 screens of the Swedish app Preggers
 - Pre-existing `npm audit` findings (sharp/libvips via next) are unchanged by
   this work; fixing them means bumping `next` past the pinned 15.1.6 and is
   tracked separately.
+
+## A2 — Auth.js (accounts) (July 2026)
+- **NextAuth v5 (`next-auth@5.0.0-beta.32`) + `@auth/drizzle-adapter`.** v5 is
+  still tagged beta but is the App-Router-native line; v4 needs awkward handler
+  glue on Next 15. Risk accepted and recorded: pin the version and re-check on
+  upgrade. Auth.js core tables in `schema.ts` already match the adapter's
+  expected shapes, so no mapping layer.
+- **`lib/authConfig.ts` is a plain, dependency-free module** rather than part of
+  `lib/server/auth.ts`. The predicates decide what the UI offers, so they are
+  needed on both sides of the server boundary and must be unit-testable without
+  pulling in NextAuth.
+- **Auth is enabled only with a database + `AUTH_SECRET` + ≥1 provider.**
+  Missing any of the three = local-only mode, which is a supported way to use
+  the app. We never render a sign-in button that would fail.
+- **`/api/auth/*` is guarded.** Auth.js requires `AUTH_SECRET` in production and
+  throws without it, so with accounts unconfigured `/api/auth/session` returned
+  500 — on every page load, because `SessionProvider` polls it. A 500 is the
+  wrong answer to "is anyone signed in?" when the honest answer is "no, this
+  deployment has no accounts". The route short-circuits to a clean null session
+  before reaching NextAuth. Caught by e2e, not by review.
+- **`trustHost: true`.** Self-hosted behind Hostinger's proxy; without it Auth.js
+  rejects every request with `UntrustedHost`. Found the same way — the e2e run
+  was green while the server log filled with errors, which is why
+  `e2e/auth-disabled.spec.ts` now asserts the status code directly.
+- **`allowDangerousEmailAccountLinking: true` on both providers**, paired with
+  the unique `users.email` index. Google and Facebook both verify email
+  addresses, which is the condition that makes this safe. Without it, a user who
+  signs in with Google today and Facebook tomorrow gets two accounts each
+  holding half a pregnancy — a far worse outcome than the linking risk.
+- **Consent is its own screen after sign-in, before any sync** (`/consentimiento`),
+  recorded as `users.consentVersion` + `consentAt` (migration 0001). Bumping
+  `CONSENT_VERSION` re-asks rather than silently carrying users over. Declining
+  signs out and returns to local-only mode — a real choice, not a dead end.
+- **`useSession()` is not called in local-only mode.** `AccountCard` checks
+  `/api/v1/auth/status` first and only then mounts the component that uses the
+  hook, so a deployment without accounts makes no session requests at all.
+- **Auth screens sit outside the app shell** (no bottom nav, no SOS pill).
+  Someone deciding whether to create an account should not be one mis-tap from
+  the emergency screen.
+- **Not yet verified:** the actual Google round-trip. It needs real OAuth
+  credentials, which the founder is providing. Everything up to the provider
+  redirect is built and tested; the callback path is unexercised.

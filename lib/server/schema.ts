@@ -58,6 +58,12 @@ export const users = mysqlTable(
     // admin can exist before anyone can grant the role.
     role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
 
+    // A2: explicit consent to store health data against this account
+    // (ARCHITECTURE.md §8). Stored as the accepted version + when, so a
+    // material change to the policy can ask again instead of assuming.
+    consentVersion: varchar("consentVersion", { length: 32 }),
+    consentAt: timestamp("consentAt", { mode: "date", fsp: 3 }),
+
     createdAt: timestamp("createdAt", { mode: "date", fsp: 3 })
       .defaultNow()
       .notNull(),

@@ -71,3 +71,50 @@ Prompted by a full app review (see `docs/REVIEW-AND-LAUNCH-PLAN.md`). Code-only 
 - **Removed `maximumScale: 1`** from the viewport export (`app/layout.tsx`) — it disabled pinch-zoom app-wide, a WCAG 1.4.4 violation for a health app.
 - **`app/sitemap.ts` / `app/robots.ts`**: exposes the 42 week pages + 8 guías for indexing; personal tool pages (`/herramientas/*`, `/ajustes`) stay disallowed since they carry no public content.
 - **Rate limiting** (`lib/rateLimit.ts`): simple in-memory sliding window (30 req/min/IP) on `/api/v1/go/[id]` to blunt casual spam of the fire-and-forget attribution webhook. Explicitly not built to survive a distributed attack — acceptable for this route's stakes; state resets on cold start.
+
+## v3 pivot — accounts, sync and the Preggers feature set (July 2026)
+Founder decision after reviewing 16 screens of the Swedish app Preggers
+(`docs/FEATURE-MAP.md` lists all 31 benchmarked items and who owns each).
+
+- **Accounts are in.** Google + Facebook sign-in, a MySQL/Drizzle backend on
+  Hostinger, and record-level sync. This **reverses** the original "no
+  accounts, nothing leaves the device" contract. `docs/ARCHITECTURE.md` §4 was
+  rewritten; the old contract is superseded, not amended. Recorded here so no
+  future session "restores" it by accident.
+- **What the reversal buys**: automatic backup + multi-device restore, real
+  Web Push reminders (the v2 check-on-open fallback was near-worthless —
+  Notification Triggers never shipped in stable browsers), genuine family
+  sharing with roles, and anonymous aggregate content stats. All four were
+  compromised shapes under the old constraint.
+- **What it costs**: the privacy differentiator is gone (the Paraguay-specific
+  content is the real moat anyway); the legal bar rises to lawyer-reviewed
+  policy + explicit consent + working account deletion; and there is now
+  infrastructure to operate. `/privacidad` and `/terminos` as written are now
+  **wrong**, not just draft — they describe a device-only app.
+- **Mitigations kept by design**: the device stays the source of truth and the
+  app works fully offline; **"seguir sin cuenta"** remains a first-class path;
+  synced health payloads are stored as an opaque JSON envelope the server never
+  queries into (keeps client-side encryption a future option, not a rewrite);
+  **photos are never uploaded** in v1; aggregate stats carry no user id or IP.
+- **MySQL over Neon Postgres**: Hostinger's IPv6 routing to Neon is a
+  documented failure mode on this host and the team already runs MySQL +
+  Drizzle here. Chosen for operability, not for features.
+- **Facebook sign-in is flagged off** (`AUTH_FACEBOOK_ENABLED`). Meta business
+  verification + app review takes weeks and requires a live privacy-policy URL,
+  so it cannot sit on the critical path. Google ships first.
+- **Visual language unchanged.** Preggers is a benchmark for layout,
+  information architecture and feature set only. The pastel/cream Mi Bebé
+  palette stays; none of their dark navy/hot pink, art or copy is adopted.
+- **No pop-up ads** (founder decision). There are no sponsors yet, and
+  interstitials over health content damage the trust the app runs on. The
+  `Beneficios` surface is still built, browsable-only and gated until real
+  partners exist.
+- **AI baby image is in**, as an explicitly-labelled entertainment feature
+  walled off from medical content. Server-side only, input photos not
+  retained, hard per-user monthly quota + a global kill switch, because it is
+  the one feature with a per-use cash cost (~$0.04/image at the ≤1024px tier,
+  July 2026 — re-check before launch).
+- **`lib/server/*` is server-only** (`import "server-only"`), enforced by the
+  build. This is the structural replacement for the old `db() throws
+  server-side` guard: the boundary is still enforced by construction, it just
+  runs the other direction now.

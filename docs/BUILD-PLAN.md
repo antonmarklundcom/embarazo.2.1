@@ -1,274 +1,406 @@
-# Build plan — remaining engineering work
+# Build plan — engineering work
 
-> **Authored by Claude Fable 5** (July 2026), for execution by Claude Opus
-> or Claude Sonnet sessions. Read `docs/ARCHITECTURE.md` (especially §4
-> privacy contract and §6 conventions) before starting any task. Work the
-> phases in order; tasks within a phase are independent unless noted.
+> **v3 — July 2026 (rewritten).** The plan changed direction after the
+> founder reviewed the Preggers benchmark and decided to:
+> **(1)** build all 31 benchmarked features (`docs/FEATURE-MAP.md`),
+> **(2)** keep the pastel/cream Mi Bebé palette,
+> **(3)** add real accounts with Google/Facebook sign-in and a synced
+> backend, **(4)** drop pop-up ads, **(5)** ship the AI baby image as an
+> opt-in joy feature.
 >
-> This plan contains **code work only**. Founder-side data/content/legal
-> tasks (real directory listings, medical reviewer, articles, Guaraní
-> review, lawyer verification, branding, ops) live in
-> `docs/REVIEW-AND-LAUNCH-PLAN.md` §4 and are NOT repeated here.
+> Item (3) is an architecture change, not a feature: read
+> `docs/ARCHITECTURE.md` §4–§8 before touching anything in Phase A.
+>
+> This file contains **code work only**. Founder-side data/content/legal
+> tasks live in `docs/REVIEW-AND-LAUNCH-PLAN.md` §4.
 >
 > Status legend: each task lists **Done when** criteria. A task is complete
-> only when those hold AND `npx tsc --noEmit`, `npm test`, `npm run build`
-> pass. Append a DECISIONS.md entry for anything non-obvious.
+> only when those hold AND `npx tsc --noEmit`, `npm run lint`, `npm test`,
+> `npm run build` pass. Append a `DECISIONS.md` entry for anything
+> non-obvious.
+
+---
+
+## What changed from v2, and why it matters
+
+The v2 plan was built around a hard constraint: **no server may ever see
+personal data.** That constraint forced several features into weak shapes.
+Accounts remove it, and four previously-compromised things become
+straightforward:
+
+| Feature | v2 (no server) | v3 (accounts) |
+|---|---|---|
+| Backup | manual JSON file the user must remember to export | automatic sync; new phone restores by signing in |
+| Reminders | "check when the app opens" — barely a reminder | **real Web Push** (VAPID) through the existing SW |
+| Partner | export a code the partner imports into a read-only view | actual shared pregnancy with roles |
+| Popular content / analytics | impossible or heavily degraded | anonymous aggregate counters |
+
+What it costs us, stated plainly so nobody is surprised later:
+
+- **The "no accounts, nothing leaves your phone" differentiator is gone.**
+  What remains — and it is the stronger moat anyway — is that this is the
+  only pregnancy app built *for Paraguay*.
+- **The legal bar rises.** Health data tied to an identity means the
+  privacy policy and terms must be rewritten and lawyer-reviewed, consent
+  must be explicit, and account deletion must actually delete
+  (ARCHITECTURE.md §8). The current `/privacidad` and `/terminos` drafts
+  describe a device-only app and are now **wrong**, not merely unfinished.
+- **There is now infrastructure to run**: a database, backups, secrets,
+  and an OAuth app per provider.
+- **Offline-first must be defended.** Every phase below is written so the
+  app still works with no network and no account. If a task breaks that,
+  the task is wrong.
+
+Mitigation kept from v2: **"seguir sin cuenta" stays a first-class path.**
+
+---
 
 ## Already done (do not redo)
 
 - Investor MVP: modes, 42 weeks, tools, derechos, emergencia, carné, PWA.
-- Phase 0 hardening (July 2026): backup/restore + `storage.persist()`,
-  `/privacidad` `/terminos` drafts, error/404/offline pages, pinch-zoom fix,
-  placeholder video gallery gated, onboarding due-date entry + save error
-  handling, sitemap/robots, `/api/v1/go` rate limiting.
+- **Phase 0 hardening**: backup/restore + `storage.persist()`, `/privacidad`
+  + `/terminos` drafts, error/404/offline pages, pinch-zoom fix,
+  placeholder video gallery gated, onboarding due-date entry, sitemap/robots,
+  `/api/v1/go` rate limiting.
+- **R1 rename** to "Mi Bebé" (internal ids renamed cleanly; DB name `mibebe`).
+- **Redesign A/B/B.1/C**: pastel token system, AppHeader/BottomNav, Hoy
+  screen, `/guias`, week photo hero, image pipeline
+  (`npm run optimize:images`), typography sweep across all screens.
+- **P1.1** install prompt · **P1.2** update toast · **P1.4** OG image +
+  manifest screenshots · **P1.5** ESLint in CI · **P1.6** `/conoce` landing
+  · **P1.7** Playwright E2E (4 specs, 6 tests).
+
+Carried forward unchanged from v2, still to do: **P1.3** (now folded into
+G2), **P2.3** content ops (now G1), **P2.4** tool depth (now D7),
+**P2.5** Guaraní scaffolding (now D8), **P3.1** postpartum (now Phase H),
+**P3.3** directory at scale (now D5/H3).
 
 ---
 
-## R1 — Product rename → "Mi Bebé" (DONE, July 2026)
+## Phase Z — pre-work that should not wait (½ day)
 
-Renamed to **Mi Bebé**. Because the app had no real users yet, the
-internal identifiers were renamed cleanly too (no migration needed):
-`Dexie("mibebe")`, class `MiBebeDB`, `mibebe.pin.*` localStorage keys,
-backup `app: "mibebe"`, SW cache `mibebe-api`, `prose-mb` CSS class.
-Do a data migration only if renaming again *after* real users exist.
-Historical guidance kept below for reference.
+Small, already-identified defects. Independent of everything else; do
+these first so the friends-and-family test is not embarrassed by them.
 
-The current working name is being dropped. Once the founder provides the
-new name (and domain), execute the rename in one PR:
+### Z1 Gate placeholder directory / events / placements
+Standing rule "placeholder data never ships visibly" is only enforced for
+videos. Today `Cerca tuyo` and `Eventos` — two of five nav tabs — render 21
+invented sanatorios with dead `+595981000xxx` numbers, 5 invented sponsors,
+and 8 invented charlas whose dates are computed at module load.
+Apply the `PUBLISHED_*` pattern to all three, with warm empty states
+("estamos armando el directorio — ¿conocés un lugar? escribinos").
+**Done when:** no invented business, sponsor or event can render; tabs
+light up automatically when real data lands; a unit test asserts every
+placeholder is filtered.
 
-**User-visible (safe to change freely):**
-- `app/layout.tsx` metadata (title template, OG, appleWebApp.title)
-- `app/manifest.webmanifest` (`name`, `short_name`, `description`)
-- All copy that speaks the name: `components/Onboarding.tsx`,
-  `components/PrivacyLine.tsx`, week tips in `lib/weeks.ts` (grep — at
-  least week 20 mentions the directory by name), `lib/whatsapp.ts`
-  prefill ("Vi su información en …"), `/privacidad`, `/terminos`,
-  seed articles in `lib/seed/articles.ts` that reference the app,
-  `README.md`, `package.json` `name`/`description`.
-- Icons: rerun `scripts/gen-icons.mjs` if it renders a letterform; replace
-  with real branding when available.
-
-**Internal identifiers (data-loss risk — handle deliberately):**
-- `new Dexie("nido")` in `lib/db.ts`: **keep the internal DB name as-is**
-  (users' IndexedDB data is keyed to it) OR write a one-time migration that
-  opens the old DB, copies all tables to the new name, verifies counts,
-  then deletes the old DB. Keeping it is the recommended, zero-risk option;
-  document the choice in DECISIONS.md.
-- `localStorage` keys `nido.pin.salt` / `nido.pin.verifier` in
-  `lib/crypto.ts`: same rule — keep or migrate, never just rename.
-- Backup format `app: "nido"` in `lib/backup.ts`: keep accepting the old
-  value on import forever; write the new value on export.
-- SW cache name `nido-api` in `app/sw.ts`: safe to rename (caches rebuild).
-
-**Done when:** grep for the old name returns only the deliberately-kept
-internal identifiers listed above, each with a code comment explaining why.
+### Z2 CI honesty
+`npm run test:e2e` is not in CI despite P1.7 claiming it. Wire it in
+(build once, reuse). Also fail a **production** build when
+`NEXT_PUBLIC_MEDICAL_REVIEWER` is unset or still contains `___`, so the
+placeholder byline cannot reach users.
+**Done when:** CI runs lint + unit + e2e + build; a prod build with an
+unset reviewer fails loudly.
 
 ---
 
-## Phase 1 — remaining pre-launch code (independent of founder content)
+## Phase A — accounts & sync foundation (largest single phase)
 
-### P1.1 Install experience (DONE)
-`lib/useInstallPrompt.ts` + `components/InstallCard.tsx`, mounted on Home
-and Ajustes. Detects standalone mode, captures `beforeinstallprompt`,
-shows an iOS instruction sheet as fallback. Original spec kept below.
+Everything in B–F assumes this exists. Do it in order; A1→A3 are a chain.
 
-The distribution model is "installs from a link", but there is no install
-UX. Add:
-- A `useInstallPrompt()` hook capturing `beforeinstallprompt`; an
-  "Instalar la app" card on Home + Ajustes shown only when the prompt is
-  available and the app isn't already standalone
-  (`matchMedia('(display-mode: standalone)')`).
-- iOS path: detect iOS Safari (no `beforeinstallprompt`) and show a short
-  "Agregar a la pantalla de inicio" instruction sheet (share icon → añadir).
-- **Done when:** Chrome/Android shows the native prompt from the button;
-  iOS shows instructions; installed users never see either.
+### A1 Database + Drizzle schema
+MySQL on Hostinger + Drizzle ORM + migrations checked into the repo.
+Tables: Auth.js core (`users`, `accounts`, `sessions`,
+`verification_tokens`), plus `pregnancies`, `pregnancy_members`
+(role: owner/partner/family), `sync_records`
+(`user_id, pregnancy_id, store, record_id, updated_at, deleted_at,
+payload JSON`), `push_subscriptions`, `invites`, `ai_generations`,
+`content_stats`.
+`lib/server/*` is server-only (`import "server-only"` at the top of every
+file). Local dev works against a local MySQL via `DATABASE_URL`.
+**Done when:** `npm run db:migrate` provisions a clean database; a
+client component importing `lib/server/schema` fails the build; the app
+still builds and runs with `DATABASE_URL` **unset** (local-only mode).
 
-### P1.2 PWA update flow (DONE)
-`components/UpdateToast.tsx`, mounted in `app/layout.tsx`. Listens for
-`controllerchange` and shows a "Hay una versión nueva" toast with a
-reload button. Original spec kept below.
+### A2 Auth.js with Google (Facebook flagged)
+NextAuth v5 + Drizzle adapter, JWT session in an httpOnly cookie.
+`/api/auth/[...nextauth]`, a branded sign-in screen in the pastel
+language, and an explicit **consent step** for storing health data (not a
+"by continuing" line). Facebook provider behind `AUTH_FACEBOOK_ENABLED`
+— Meta business verification + app review takes weeks and needs a live
+privacy-policy URL, so it must not block anything.
+**Done when:** Google sign-in works end to end; sessions survive reload;
+`/ajustes` shows the account; **"seguir sin cuenta" remains fully usable**
+and is not a dead end.
 
-Serwist uses `skipWaiting: true`; a stale client can straddle versions.
-Add a small "Hay una versión nueva — recargar" toast when a new SW takes
-control (`controllerchange`). **Done when:** deploying a new build surfaces
-the toast on an open old client and reload gets the new version.
+### A3 Sync engine
+Dexie v5 adds `updatedAt` / `deletedAt` / `dirty` to synced stores plus a
+`syncState` table. `POST /api/v1/sync` (push) and `GET /api/v1/sync?since=`
+(pull), zod-validated, last-write-wins per record. Runs on open, on
+`online`, and debounced after mutations. Journal-note conflicts are kept
+as a `conflicts` row and surfaced, never silently dropped.
+**Photos are not synced** (ARCHITECTURE.md §4.4).
+**Done when:** two browser profiles signed into the same account converge;
+airplane-mode edits sync on reconnect; unit tests cover the LWW comparison
+and the conflict path; e2e covers offline-edit → reconnect → converge.
 
-### P1.3 Privacy-compatible aggregate analytics
-No user-level tracking — but the founder needs installs/retention counts.
-Implement a first-party, cookie-less ping: `POST /api/v1/ping` accepting
-ONLY `{ event: "open" | "install", mode, trimester?, department? }` (zod
-whitelist + tests like the existing routes), fire-and-forget to
-`SHEETS_WEBHOOK_URL`-style env (`ANALYTICS_WEBHOOK_URL`), rate-limited,
-sent at most once per day per device (localStorage last-ping date; the
-date, not an ID — no device identifier is ever generated). Update
-`/privacidad` to disclose it. Off entirely when the env var is unset.
-**Done when:** tests prove non-whitelisted fields are rejected; no cookie,
-no UID anywhere; unset env = no network call.
+### A4 Legal & consent rewrite
+`/privacidad` and `/terminos` rewritten for the account world: what is
+stored, where, who can see it, retention, deletion, the AI feature, push.
+Marked clearly as pending lawyer review (founder task §4.5).
+**Done when:** neither page claims data never leaves the device; the
+consent step links to both.
 
-### P1.4 Per-page social/OG polish (DONE)
-`scripts/gen-og.mjs` (`npm run gen:og`) generates `public/og.png`
-(placeholder brand mark, no external deps — same technique as
-`gen-icons.mjs`), wired into `openGraph.images` + `twitter.images` in
-`app/layout.tsx` (inherited by every page). `scripts/gen-screenshots.mjs`
-(`npm run gen:screenshots`) drives a real production build with Playwright
-to capture Home + Herramientas at phone size, wired into
-`manifest.webmanifest`'s `screenshots`. `/semana/[n]` and `/guias/[slug]`
-already had per-page `generateMetadata`.
+### A5 Account management & deletion
+`/ajustes`: signed-in identity, sign out, **"Borrar mi cuenta"** deleting
+every server row (records, memberships, invites, push subs, AI images) and
+offering a device wipe in the same flow. "Descargar mis datos" extended to
+include synced data.
+**Done when:** deletion leaves zero rows for that user, verified by a test;
+the flow is reachable in ≤2 taps from Ajustes.
 
-**Also fixed while here:** `scripts/gen-icons.mjs` was still emitting the
-PWA install icons in the *pre-redesign* palette — regenerated with the
-current brand colors. And building the first screenshot caught a real bug
-in `UpdateToast` (P1.2): `controllerchange` also fires on a page's very
-first service-worker activation (no controller → active), not just genuine
-updates, so a first-time visitor would see a misleading "hay una versión
-nueva" toast. Fixed to only prompt when a controller already existed.
+### A6 Link a local account
+A user who started without an account and later signs in uploads their
+existing local data instead of losing it or duplicating it.
+**Done when:** local-only → sign-in results in exactly one copy of every
+record on both sides.
 
-Original spec kept below.
+---
 
-- OG images: static branded default in `public/og.png` (placeholder art
-  now, real branding later) + wire `openGraph.images`; per-guía dynamic OG
-  via `next/og` `ImageResponse` (title on brand background) if it doesn't
-  push bundle/infra cost.
-- Add `metadata.description` per `/semana/[n]` (from milestone text) via
-  `generateMetadata`.
-- Manifest: add `screenshots` (2–3 PNGs, can be generated from the running
-  app) and `shortcuts` (Emergencia, Herramientas).
-- **Done when:** sharing `/` and a guía into WhatsApp shows title, description
-  and image; Android install sheet shows screenshots.
+## Phase B — onboarding & profile (feature map 1–8)
 
-### P1.5 ESLint baseline (DONE)
-`eslint.config.mjs` (flat config, `next/core-web-vitals` + `next/typescript`)
-+ `npm run lint` wired into `.github/workflows/ci.yml`. Fixed the 3 findings
-it surfaced rather than silencing them: a `useMemo` dependency in
-`directorio/page.tsx` that got a new `[]` reference every render, and two
-misplaced `eslint-disable-next-line` comments (carné/fotos `<img>`) that
-were one line off and covering nothing. `npm run lint` is clean.
+### B1 Roles (map #1)
+`mamá / papá / acompañante / familiar o amiga` in onboarding and editable
+later; drives tone and which home content shows. Non-owner roles get a
+read-only shell.
+**Done when:** every role reaches a coherent home screen; role is synced.
 
-Original spec kept below.
+### B2 Baby identity & twins (map #2, #3)
+Baby nickname threaded through copy ("Silvia ya mide…"); data model
+supports N babies per pregnancy now, UI for twins later.
+**Done when:** nickname appears wherever "tu bebé" is generic; adding a
+second baby requires no schema migration.
 
-`npm run lint` currently hits the interactive setup prompt (no config).
-Add a flat-config with `next/core-web-vitals` + TS, fix or explicitly
-disable any findings, add `npm run lint` to CI. **Done when:** CI runs
-lint non-interactively and passes.
+### B3 Due-date & pregnancy settings (map #4, #5, #6)
+Calculation methods (LMP · ecografía · FIV · conception date), adjustable
+pregnancy length, `week+day` display **as the default**, separate planned
+delivery date.
+**Done when:** each method produces the correct FPP with unit tests;
+switching method never corrupts existing week data.
 
-### P1.6 Landing page for non-users (DONE)
-`app/conoce/page.tsx`: standalone (no app shell), features, privacy promise,
-InstallCard reused, 4 featured guía links + link to `/guias`, CTA into the
-app. Added to sitemap; linked from the root 404 footer. 1.31 kB route JS,
-static. Original spec kept below.
+### B4 Ajustes restructure
+Group the growing settings into sections (cuenta · bebé · embarazo ·
+notificaciones · privacidad · datos) so it stays navigable.
 
-`/` is the app (first-run gate). Add a lightweight public `/conoce` page:
-what the app is, privacy promise, install CTA (links into P1.1 flow),
-screenshots, guía links for SEO; add it to the sitemap and link it from
-the 404 page footer. No framework additions. **Done when:** page is static,
-<15 kB route JS, and passes Lighthouse a11y ≥95.
+### B5 Notifications (map #7, #8) — replaces v2's P2.1
+Real **Web Push** via VAPID and the existing service worker, now that a
+server exists. Granular per-category opt-ins (consejos · recordatorios de
+control · avisos). Permission requested **only** from the settings toggle.
+Honest copy about iOS (installed PWA required).
+**Done when:** a control reminder fires the day before on Android/Chrome;
+each category can be turned off independently; declining permission
+degrades gracefully.
 
-### P1.7 E2E smoke tests (DONE)
-`playwright.config.ts` (builds against `next start`, pins the container's
-pre-installed Chromium since @playwright/test's expected revision differs)
-+ `e2e/{onboarding,symptom-log,backup-restore,offline}.spec.ts`, 6 tests.
-Run with `npm run build && npm run test:e2e`.
+---
 
-**Found and fixed two real bugs while writing these, not just test gaps:**
-1. The service worker was built (`public/sw.js`) but never registered
-   anywhere in the app — `components/ServiceWorkerRegistration.tsx` now
-   calls `navigator.serviceWorker.register()` on mount (production only).
-   Without this, offline support and the P1.2 update toast were both inert.
-2. `self.__SW_MANIFEST` (`app/sw.ts`) only contains build-time static
-   assets, not prerendered page routes — despite the file's own comment
-   claiming otherwise. The 42 `/semana/[n]` pages and the guías were never
-   actually precached. Fixed by explicitly listing those routes and
-   merging them into `precacheEntries`.
+## Phase C — the home screen (feature map 9–19)
 
-Original spec kept below.
+The highest-leverage phase for the friends-and-family test: it is what
+testers judge in ten seconds.
 
-Add Playwright with 3–4 flows against `next start`: complete onboarding
-(both modes and both date entries), log a symptom, export a backup and
-restore it, offline navigation to a precached week page. Wire into CI
-(build once, reuse). **Done when:** `npm run test:e2e` is green locally
-and in CI.
+### C1 Week hero + stats (map #9, #10)
+Circular hero with progress ring; `semana · días transcurridos · faltan`.
+### C2 Weekly one-liner (map #11)
+One concrete "what is happening now" sentence per week; 42 strings, code
+ships with a graceful fallback so content can land later.
+### C3 Size comparison tabs (map #12)
+Tabs for tamaño / pie / mano, keeping the Paraguayan comparisons and cm/g.
+### C4 Perspective switcher (map #13)
+Same week, three entrances: para vos / para tu pareja / para la familia.
+### C5 "De la obstetra" (map #14)
+One bylined expert card per week, tied to `NEXT_PUBLIC_MEDICAL_REVIEWER`.
+### C6 Week-linked article feed + read time (map #15, #17)
+Articles keyed to the current week; read-time computed from word count.
+### C7 Popular this week (map #16)
+`/api/v1/stats` counters keyed `(week, content_id, day)` — **no user id,
+no IP retained**; zod whitelist + tests like the other routes.
+### C8 Shortcuts + feedback card (map #18, #19)
+Quick actions (emergencia · carné · próximo control) and
+"¿Cómo te está yendo?" routing to WhatsApp feedback during testing.
 
-## Phase 2 — retention & reach (post-soft-launch)
+**Phase done when:** the home screen renders every block with real data
+for any week 1–42, offline, in the pastel language, with no layout shift.
 
-### P2.1 Local appointment reminders (opt-in)
-In-app banner exists; add real notifications WITHOUT a push server (the
-privacy contract forbids storing tokens server-side): request Notification
-permission from Ajustes only (never on load); schedule via SW using the
-Notification Triggers API where available, else check-on-open fallback
-(compute overdue reminders when the app opens/SW activates). Copy must be
-honest about reliability limits, esp. iOS. **Done when:** permission asked
-only from the settings toggle; reminder fires day-before on
-Android/Chrome; graceful fallback elsewhere; no server involvement.
+---
 
-### P2.2 "Compartir mi semana" share card
-Web Share API (`navigator.share`) from the week hero: shares a branded
-text + link (and a canvas-rendered image card where `share` supports
-files). Never includes health details beyond the week number, and the
-share is user-initiated only. **Done when:** share sheet opens on Android/iOS
-with correct fallback (copy-link) on desktop.
+## Phase D — tools & content surfaces (feature map 20–24, 26)
 
-### P2.3 Content ops pipeline (founder-editable data without code review)
-Replace "founder edits TS files" with validated JSON: move articles/events
-metadata to JSON with a zod schema + `npm run validate:content` script
-(also run in CI) that checks slugs, dates, +595 numbers, department slugs,
-no placeholder IDs. Keep the `PUBLISHED_*` gating pattern. Optionally then
-implement the `lib/wordpress.ts` mapping (WP as CMS) — only if the founder
-confirms a WP instance; otherwise skip. **Done when:** an invalid entry
-fails CI with a readable message; valid edits need no TS knowledge.
+### D1 Illustrated tools grid (map #20)
+3-per-row grid with illustrations replacing the current text list.
+### D2 New tools (map #21)
+Kegel (timed exercises), **name picker with Guaraní names**, dental
+health, diary, sleep. Name picker is the sharing magnet — build its share
+card with E2.
+### D3 Food lookup (map #23) — the single most valuable content asset
+"¿Puedo comer…?" searchable database with a safe/caution/avoid verdict and
+a one-line reason: tereré, mate, carne asada, chorizo, quesú Paraguay,
+pescado de río (mercury), mandioca, chipa, yuyos, embutidos, sushi.
+Data as validated JSON (G1 schema) so the founder/Gemini can extend it.
+**Done when:** search is instant and offline; every entry has a reason and
+a reviewer flag; unreviewed entries do not render.
+### D4 Checklist as its own tab (map #24) + nav IA
+Promote checklists to the bottom nav. Resolves the open 5-tab question:
+proposed **Hoy · Guías · Checklist · Herramientas · Cerca tuyo**, with
+Eventos and Beneficios living inside Cerca tuyo.
+### D5 Directory category banners (map #26)
+Image banner + count per category ("Sanatorios · 24 lugares"); server-side
+filtering and pagination when listings pass ~100.
+### D6 Training classes (map #22)
+Stage-filtered classes with duration + equipment. Short, downloadable,
+`sin equipo`. **Lowest priority in this phase** — needs video assets.
+### D7 Tool depth (was P2.4)
+Contractions 5-1-1 pattern hint; kicks history + "menos que tu ritmo
+habitual" nudge; weight gain band behind a flag until the reviewer signs
+the ranges.
+### D8 Guaraní scaffolding (was P2.5)
+Generalise `textGu` into a `<Bilingual>` component and apply beyond
+`/emergencia`.
 
-### P2.4 Tool depth (small, high-value)
-- Contractions: 5-1-1 / 4-1-1 pattern hint ("estas contracciones vienen
-  cada ~5 min hace 1 h — contactá a tu sanatorio") with non-diagnostic copy.
-- Kicks: session history sparkline + "menos que tu ritmo habitual" nudge
-  linking to the alarm-signs guía.
-- Weight: plot recommended-gain band **only after** the medical reviewer
-  signs the ranges (blocked on founder task; build behind a flag).
-- **Done when:** each has unit tests for the pattern logic and reviewed copy.
+---
 
-### P2.5 Guaraní expansion scaffolding
-Generalize the `textGu` pattern from `lib/emergency.ts` into a tiny helper
-(`<Bilingual>` component: Spanish + `lang="gn"` line) and apply to daily
-tips + alarm-adjacent strings, keeping current jopara register. Actual
-translations remain drafts until native review (founder task). **Done when:**
-adding a Guaraní string anywhere is a one-liner and renders consistently.
+## Phase E — family, sharing & growth (feature map 25, 27, 29, 30, 31)
 
-## Phase 3 — the moat
+### E1 Family sharing (map #13 server half)
+Invite by link/code → `pregnancy_members` with role; partner and family
+get a read-only companion view that **never** shows journal notes or
+photos. Replaces v2's export-code workaround (P3.2).
+**Done when:** an invited partner sees the week, due date and next
+appointment and nothing else; revoking access is immediate.
+### E2 Share card + bump frame (map #30)
+Web Share API from the week hero; canvas-rendered week card and a bump
+photo frame. Health details never leave beyond the week number; the photo
+is composited **on device**.
+### E3 Invite a friend (map #31)
+"Invitá a una amiga" sharing the install link; doubles as the test-round
+feedback path.
+### E4 Beneficios tab (map #27)
+Browsable deals surface — **no pop-ups, no interstitials**. Hidden behind
+the `PUBLISHED_*` gate until real partners exist.
+### E5 "Qué necesitás de verdad" (map #25)
+Not a price comparator (no Prisjakt equivalent in PY): a curated needs
+list with realistic ₲ ranges and where to buy in Asunción.
+### E6 FAQ accordion (map #29)
+Reused for the privacy/account trust moment: ¿quién ve mis datos?
+¿qué pasa si borro la app? ¿la obstetra revisa esto?
 
-### P3.1 Postpartum mode ("Ya nació") — largest remaining feature
-Third `AppMode`; Dexie **v5** (append-only): `baby` (birth date, name
-optional), `babyVaccines` (PAI checklist state), `postpartumChecks`.
-Home switches to baby-age dashboard (day/week/month), PAI vaccine calendar
-computed from birth date (catalog in `lib/pai.ts`, unit-tested like
-`derechos.ts`; schedule content itself needs medical review before launch),
-puerperio alarm signs (with Guaraní), lactancia content hooks, Registro
-Civil checklist reuse. Pregnancy data is preserved — mode switch, never a
-wipe; backup format extends compatibly (bump `BACKUP_VERSION`, keep
-importing v1). **Done when:** a user can flip to "Ya nació" at birth and
-the app remains fully offline/device-only; v1 backups still restore.
+---
 
-### P3.2 Partner mode (device-local)
-"Compartir con tu pareja" currently sits in the roadmap teaser. Honest v1
-without a server: an export-code flow — generate a small shareable summary
-(week, due date, next appointment) as text/QR the partner's device imports
-into a read-only companion view. No sync, no accounts; say so in the UI.
-**Done when:** roadmap card becomes a working feature with the same privacy
-contract.
+## Phase F — AI baby image (feature map, founder decision 5)
 
-### P3.3 Directory at scale
-When listings grow past ~100: move directory to server-side filtered
-responses with pagination (same whitelist contract), add a city-level
-filter UI, and a "reportar un dato incorrecto" WhatsApp deep link per
-listing. **Done when:** 18-department data loads fast on 3G and stale
-listings have a feedback path.
+An opt-in "así podría ser tu bebé" portrait. Joy feature; walled off from
+medical content by design (ARCHITECTURE.md §9).
+
+### F1 Generation pipeline
+`POST /api/v1/ai/baby`, **server-side only** (the API key never reaches
+the client). Parent photos are sent to the model and **not retained**.
+Result stored only if the user saves it. Explicit consent step naming what
+is sent and that it is deleted.
+
+### F2 Quota & cost control
+Hard per-user monthly quota in `ai_generations`, enforced server-side
+before any API call, plus a global kill switch env var.
+
+**Cost, as of July 2026** (verify against Google's current price page
+before launch — this moves):
+
+| Tier | ≈ per image |
+|---|---|
+| Gemini image, standard ≤1024px | **≈ $0.04** (≈ ₲300) |
+| 1K–2K tier | ≈ $0.13 |
+| 4K | ≈ $0.15–0.24 |
+| Batch API (24 h turnaround) | **half price** |
+
+Plan on the ~$0.04 tier: 1024px is more than enough for a phone card.
+Quota maths — **3 generations/user/month** at $0.04 ≈ $0.12/user/month;
+1 000 active users ≈ **$120/month worst case** if every user maxes out
+(real take-up will be far lower). Set the quota in an env var so it can be
+cut without a deploy, and put a hard monthly spend ceiling in the same
+place.
+
+**Done when:** quota cannot be bypassed by a client; input photos are
+provably not stored; the feature can be switched off with one env var; the
+result is labelled entertainment everywhere it appears.
+
+---
+
+## Phase G — launch readiness
+
+### G1 Content ops (was P2.3) — do this **before** the content push
+Move articles, events, videos, directory, placements and the D3 food data
+to validated JSON with zod schemas + `npm run validate:content` in CI:
+slugs, dates, `+595` formats, department slugs, no placeholder ids, no
+module-load timestamps. This is what lets Gemini-generated content and
+founder edits land without TypeScript knowledge or code review — it is on
+the critical path to launch, not a nicety.
+**Done when:** an invalid entry fails CI with a readable message.
+
+### G2 Analytics (was P1.3)
+Aggregate product metrics off the existing tables + `content_stats`: 
+installs, weekly active, retention, tool usage. No per-user behavioural
+tracking beyond what the account inherently implies; disclosed in
+`/privacidad`.
+
+### G3 Performance & offline budget
+The home screen grew a lot in Phase C. Re-check 3G budget, precache only
+current ±1 week images, lazy-load the rest, verify Lighthouse.
+
+### G4 Founder-content integration
+Wire in the real directory, videos, events and articles once they exist,
+removing the Z1 gates naturally.
+
+---
+
+## Phase H — the moat (post-launch)
+
+### H1 Postpartum mode "Ya nació" (was P3.1)
+Third `AppMode`; `baby`, `babyVaccines`, `postpartumChecks`; PAI vaccine
+calendar computed from birth date (`lib/pai.ts`, unit-tested); puerperio
+alarm signs with Guaraní; lactancia; Registro Civil checklist reuse.
+Pregnancy data is preserved — mode switch, never a wipe.
+
+### H2 Guaraní expansion beyond safety strings.
+### H3 Directory at scale (18 departments, "reportar un dato incorrecto").
+### H4 Institutional partnerships (consultorios, sanatorios, MSPBS/PAI alignment).
+### H5 Monetisation rails: sponsored placements with real pricing, directory
+"destacado" tier. **Any paid tier must use Tigo Money / Personal / bank
+transfer** — card-first pricing does not work in Paraguay.
+
+---
+
+## Suggested sequencing
+
+**To get the friends-and-family test running:** Z1 · Z2 · A1 · A2 · A3 ·
+A4 · A5 · B1 · B2 · B3 · B5 · C1–C8 · D1 · D4 · E2 · E3.
+That is a working, account-backed, synced app with the new home screen and
+sharing — enough for real feedback, with demo content still gated.
+
+**Then, in parallel with the content push:** G1 first (so content can
+land), then D2 · D3 · D5 · E1 · E4 · E6 · F1 · F2 · A6 · B4 · D7 · D8.
+
+**After launch:** G2 · G3 · G4 · D6 · E5 · Phase H.
 
 ---
 
 ## Standing rules for every task
 
-1. Classify against the privacy contract (ARCHITECTURE.md §4) first.
-2. Gates: `npx tsc --noEmit` && `npm test` && `npm run build`.
-3. New pure logic ⇒ unit tests. New API surface ⇒ whitelist + tests.
-4. Placeholder data never ships visibly (gate it, `PUBLISHED_*` pattern).
-5. Append rationale to `DECISIONS.md`; keep this file's task statuses
-   updated (check items off with the PR link).
-6. es-PY voseo copy; safety-critical strings get Guaraní drafts.
+1. Classify against the data contract (ARCHITECTURE.md §4) first. The
+   question is now "does the server learn anything it does not need, and
+   can the user turn it off and delete it?"
+2. Gates: `npx tsc --noEmit` && `npm run lint` && `npm test` && `npm run build`.
+3. **The app must keep working offline and without an account.** Any task
+   that breaks either is wrong, no matter what it enables.
+4. New pure logic ⇒ unit tests. New API surface ⇒ zod whitelist + tests.
+5. Placeholder data never ships visibly (`PUBLISHED_*` pattern).
+6. `lib/server/*` is server-only; `import "server-only"` at the top.
+7. Append rationale to `DECISIONS.md`; keep this file's statuses updated.
+8. es-PY voseo copy; safety-critical strings get Guaraní drafts.
+9. Pastel/cream Mi Bebé tokens only — no ad-hoc hex, no borrowed palette.

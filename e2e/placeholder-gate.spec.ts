@@ -1,19 +1,9 @@
 import { test, expect } from "@playwright/test";
+import { completeOnboarding } from "./helpers";
 
 // BUILD-PLAN Z1: no invented business, sponsor or event may reach a user.
 // The unit tests in lib/seed/gate.test.ts prove the data is filtered; these
 // prove the screens that render it behave correctly when it is.
-
-async function completeOnboarding(page: import("@playwright/test").Page) {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Estoy embarazada" }).click();
-  const lmp = new Date(Date.now() - 70 * 86400000).toISOString().slice(0, 10);
-  await page.locator("#lmp").fill(lmp);
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.locator("#dep").selectOption({ index: 1 });
-  await page.getByRole("button", { name: "Empezar" }).click();
-  await expect(page.getByText("Tip de hoy")).toBeVisible();
-}
 
 // The invented seed data is recognisable by the "(placeholder)" marker and the
 // +595 981 000 0xx number range. Neither may appear anywhere in the rendered

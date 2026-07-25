@@ -1,4 +1,5 @@
 import Dexie, { type Table } from "dexie";
+import type { DueDateMethod, WeekDisplay } from "./dueDate";
 import type { DepartmentSlug } from "./types";
 
 // On-device storage (build spec §5). This data NEVER leaves the device.
@@ -9,6 +10,24 @@ import type { DepartmentSlug } from "./types";
 // Defaults to "embarazada" when missing (existing users keep their flow).
 export type AppMode = "embarazada" | "planeando";
 
+// Who is using the app (BUILD-PLAN B1 / FEATURE-MAP #1). Drives tone and which
+// home content shows. Optional for back-compat: missing means "mama".
+export type UserRole = "mama" | "papa" | "acompanante" | "familiar";
+
+export const USER_ROLES: UserRole[] = [
+  "mama",
+  "papa",
+  "acompanante",
+  "familiar",
+];
+
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  mama: "Soy la mamá",
+  papa: "Soy el papá",
+  acompanante: "Acompaño a la mamá",
+  familiar: "Familiar o amiga",
+};
+
 export interface Profile {
   id?: number;
   department: DepartmentSlug;
@@ -17,6 +36,8 @@ export interface Profile {
   nextAppointment?: number;
   // Pregnancy vs. pre-pregnancy mode (build spec §3). Optional for back-compat.
   mode?: AppMode;
+  // B1: relationship to the baby. Missing = "mama" (every existing user).
+  role?: UserRole;
   // Emergency mode contacts (local-only, optional, never transmitted). These
   // are plain non-indexed fields, so no Dexie schema version bump is needed.
   sanatorioName?: string;
@@ -31,8 +52,41 @@ export type Mood = "muy_bien" | "bien" | "regular" | "mal" | "muy_mal";
 
 export interface Pregnancy {
   id?: number;
+  /**
+   * Effective LMP. Every due-date method reduces to this (see lib/dueDate.ts),
+   * so the rest of the app is unchanged no matter how the user entered it.
+   */
   lmpDate: number;
   dueDate: number;
+  createdAt: number;
+
+  // --- B3 (FEATURE-MAP #4, #5, #6). All optional, all non-indexed, so no
+  // Dexie version bump is needed and existing rows keep working.
+
+  /** How the user gave us the date, so Ajustes can re-open the same form. */
+  dueDateMethod?: DueDateMethod;
+  /** Total gestation length in days. Missing = 280 (40+0). */
+  gestationDays?: number;
+  /** "24+3" (default, matches the carné) or "25". */
+  weekDisplay?: WeekDisplay;
+  /**
+   * A scheduled delivery date, separate from the estimate. Common in Paraguay,
+   * where planned cesáreas have a fixed date that is not the FPP.
+   */
+  plannedDeliveryDate?: number;
+}
+
+/**
+ * One baby per pregnancy — plural from the start (BUILD-PLAN B2 /
+ * FEATURE-MAP #2, #3). Twins UI comes later, but modelling it now means no
+ * migration then.
+ */
+export interface Baby {
+  id?: number;
+  /** 1 for a single baby, 1..n for multiples. */
+  order: number;
+  /** Optional nickname. Threaded through copy: "Silvia ya mide…". */
+  nickname?: string;
   createdAt: number;
 }
 
@@ -127,6 +181,7 @@ export class MiBebeDB extends Dexie {
   cycleSettings!: Table<CycleSettings, number>;
   carnePhotos!: Table<CarnePhoto, number>;
   clinical!: Table<ClinicalInfo, number>;
+  babies!: Table<Baby, number>;
 
   constructor() {
     super("mibebe");
@@ -155,6 +210,11 @@ export class MiBebeDB extends Dexie {
     this.version(4).stores({
       carnePhotos: "++id, createdAt",
       clinical: "++id",
+    });
+    // v5: babies (B2). Additive only. Modelled as a table rather than a field
+    // on `pregnancy` so twins need no migration later.
+    this.version(5).stores({
+      babies: "++id, order",
     });
   }
 }

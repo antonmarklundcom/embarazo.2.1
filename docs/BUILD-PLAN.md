@@ -266,24 +266,41 @@ test asserts no route returns payload contents.
 
 ## Phase B — onboarding & profile (feature map 1–8)
 
-### B1 Roles (map #1) — **M**
+### B1 Roles (map #1) — **M** 🟡 PARTIAL
 `mamá / papá / acompañante / familiar o amiga` in onboarding and editable
 later; drives tone and which home content shows. Non-owner roles get a
 read-only shell.
 **Done when:** every role reaches a coherent home screen; role is synced.
 
-### B2 Baby identity & twins (map #2, #3) — **M**
+Shipped: the role step in onboarding (`mamá / papá / acompañante / familiar`)
+persisted to `profile.role`, defaulting to `mama` for existing profiles.
+**Not done:** role does not yet change what the home screen shows — that is
+C4's perspective switcher — and syncing waits on A3.
+
+### B2 Baby identity & twins (map #2, #3) — **M** 🟡 PARTIAL
 Baby nickname threaded through copy ("Silvia ya mide…"); data model
 supports N babies per pregnancy now, UI for twins later.
 **Done when:** nickname appears wherever "tu bebé" is generic; adding a
 second baby requires no schema migration.
 
-### B3 Due-date & pregnancy settings (map #4, #5, #6) — **M**
+Shipped: Dexie v5 `babies` table (plural from the start), the optional
+nickname step in onboarding, backup format v2. The second criterion holds.
+**Not done:** the nickname is stored but not yet threaded through copy — that
+is the remaining half of this task.
+
+### B3 Due-date & pregnancy settings (map #4, #5, #6) — **M** 🟡 PARTIAL
 Calculation methods (LMP · ecografía · FIV · conception date), adjustable
 pregnancy length, `week+day` display **as the default**, separate planned
 delivery date.
 **Done when:** each method produces the correct FPP with unit tests;
 switching method never corrupts existing week data.
+
+Shipped: `lib/dueDate.ts` with all five methods (LMP, FPP, ecografía, FIV,
+concepción), 19 unit tests, the onboarding date step, and the `weekDay`
+default. Every method reduces to an effective LMP, so nothing downstream
+changed. **Not done:** editing the method, gestation length, week display and
+planned delivery date from Ajustes — the fields exist on the record but have
+no settings UI yet.
 
 ### B4 Ajustes restructure — **S**
 Group the growing settings into sections (cuenta · bebé · embarazo ·

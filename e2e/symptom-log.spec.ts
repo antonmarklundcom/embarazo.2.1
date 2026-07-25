@@ -1,15 +1,5 @@
 import { test, expect } from "@playwright/test";
-
-async function completeOnboarding(page: import("@playwright/test").Page) {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Estoy embarazada" }).click();
-  const lmp = new Date(Date.now() - 70 * 86400000).toISOString().slice(0, 10);
-  await page.locator("#lmp").fill(lmp);
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.locator("#dep").selectOption({ index: 1 });
-  await page.getByRole("button", { name: "Empezar" }).click();
-  await expect(page.getByText("Tip de hoy")).toBeVisible();
-}
+import { completeOnboarding } from "./helpers";
 
 // P1.7 (BUILD-PLAN.md): log a symptom entry after onboarding.
 test("log a symptom entry", async ({ page }) => {

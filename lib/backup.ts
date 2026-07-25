@@ -1,12 +1,17 @@
 import { db } from "./db";
 
-// Local backup/restore (Phase 0 hardening). All health data lives only in
-// IndexedDB (see lib/db.ts) — if the browser evicts storage, the phone is
-// lost, or the user reinstalls, everything is gone with no export. This
-// gives users a way to save a copy themselves and restore it later, without
-// any of it ever touching a server.
+// Local backup/restore (Phase 0 hardening). Health data is written to
+// IndexedDB first (see lib/db.ts) and photos never sync, so a device-local
+// export remains the only way to move photos to a new phone — and the only
+// recovery path at all for someone using the app without an account.
+//
+// Version history:
+//   1 — original tables.
+//   2 — adds `babies` (B2). Purely additive: v1 files still import, they just
+//       restore no babies. Never make a change here that a v1 file cannot
+//       survive.
 
-const BACKUP_VERSION = 1;
+const BACKUP_VERSION = 2;
 
 interface BackupFile {
   app: "mibebe";
@@ -25,6 +30,8 @@ interface BackupFile {
     cycleSettings: unknown[];
     carnePhotos: unknown[];
     clinical: unknown[];
+    // v2 of the backup format (B2). Older files simply omit it.
+    babies?: unknown[];
   };
 }
 
@@ -74,6 +81,7 @@ export async function exportBackup(): Promise<Blob> {
     cycleSettings,
     carnePhotos,
     clinical,
+    babies,
   ] = await Promise.all([
     instance.profile.toArray(),
     instance.pregnancy.toArray(),
@@ -87,6 +95,7 @@ export async function exportBackup(): Promise<Blob> {
     instance.cycleSettings.toArray(),
     instance.carnePhotos.toArray(),
     instance.clinical.toArray(),
+    instance.babies.toArray(),
   ]);
 
   const file: BackupFile = {
@@ -106,6 +115,7 @@ export async function exportBackup(): Promise<Blob> {
       cycleSettings,
       carnePhotos: await serializeBlobRows(carnePhotos),
       clinical,
+      babies,
     },
   };
 
@@ -158,6 +168,7 @@ export async function importBackup(file: File): Promise<void> {
       instance.cycleSettings,
       instance.carnePhotos,
       instance.clinical,
+      instance.babies,
     ],
     async () => {
       await Promise.all([
@@ -173,6 +184,7 @@ export async function importBackup(file: File): Promise<void> {
         instance.cycleSettings.clear(),
         instance.carnePhotos.clear(),
         instance.clinical.clear(),
+        instance.babies.clear(),
       ]);
       await Promise.all([
         instance.profile.bulkAdd(t.profile as never[]),
@@ -187,6 +199,9 @@ export async function importBackup(file: File): Promise<void> {
         instance.cycleSettings.bulkAdd(t.cycleSettings as never[]),
         instance.carnePhotos.bulkAdd(carnePhotos as never[]),
         instance.clinical.bulkAdd(t.clinical as never[]),
+        // Older backups have no `babies` key — restore nothing rather than
+        // failing the whole import.
+        instance.babies.bulkAdd((t.babies ?? []) as never[]),
       ]);
     },
   );

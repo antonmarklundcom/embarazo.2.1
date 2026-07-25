@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { completeOnboarding } from "./helpers";
 
 // BUILD-PLAN A2. With no auth configured — which is how this build runs, and
 // how any local build runs — the app must stay in local-only mode: no broken
@@ -26,13 +27,7 @@ test("/entrar explains instead of offering a broken button", async ({ page }) =>
 test("Ajustes shows no account section when accounts are unavailable", async ({
   page,
 }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Estoy embarazada" }).click();
-  const lmp = new Date(Date.now() - 70 * 86400000).toISOString().slice(0, 10);
-  await page.locator("#lmp").fill(lmp);
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.locator("#dep").selectOption({ index: 1 });
-  await page.getByRole("button", { name: "Empezar" }).click();
+  await completeOnboarding(page);
 
   await page.goto("/ajustes");
   await expect(page.getByRole("heading", { name: "Ajustes" })).toBeVisible();

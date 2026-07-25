@@ -230,3 +230,37 @@ Founder decision after reviewing 16 screens of the Swedish app Preggers
   identity is a materially higher bar than the device-only version they replace;
   this is a founder task (REVIEW-AND-LAUNCH-PLAN.md §4.5), not something the
   code can close.
+
+## B1/B2/B3 — roles, baby identity, due-date methods (July 2026)
+- **Every due-date method reduces to an effective LMP** (`lib/dueDate.ts`). The
+  whole app is keyed on `pregnancy.lmpDate` and stays that way, so adding
+  methods touched onboarding and settings only — no week page, tool or
+  calculation downstream knows which method produced the date. Five methods:
+  LMP, known FPP, ultrasound, IVF transfer, conception date.
+- **Ultrasound dating is a first-class option, not a special case.** In Paraguay
+  a lot of women only know what the scan said ("tenés 12 semanas y 3 días").
+  Making her convert that into a last-period date in her head is how an app
+  loses people on the first screen. Unit tests assert the round trip: entering
+  the scan result reproduces exactly that gestational age on the scan date.
+- **`gestationDays` affects only the `dueDate` method.** The others derive the
+  LMP from a measured point in the pregnancy, which does not depend on how long
+  the pregnancy is expected to last. Asserted by test.
+- **`weekDay` ("24+3") is the default display**, not the friendly week number:
+  it is what the carné perinatal and every clinician here use, and matching the
+  paper in the user's hand beats matching other apps. Both notations kept as
+  separate functions — the friendly week is completed weeks + 1, and mixing the
+  two registers is exactly what confuses people.
+- **Babies are a table, not a field on `pregnancy`** (Dexie v5, additive). Twins
+  UI comes later, but modelling plurality now means no migration then. The row
+  is created even without a nickname so the shape stays uniform.
+- **Backup format v2** adds `babies`. v1 files still import (they restore no
+  babies) — the format must never change in a way a v1 file cannot survive.
+- **`role` defaults to `mama` when missing**, so every existing profile keeps
+  working without a migration.
+- **The nickname step's button label is constant.** It briefly read "Todavía
+  no — continuar" when empty and "Continuar" once typed; a label that changes
+  as you type is fidgety, and it broke the e2e selector, which is how it got
+  noticed. The nuance moved to helper text under the button.
+- **`e2e/helpers.ts`**: `completeOnboarding` had been copy-pasted into four
+  specs, and reshaping the flow needed the same edit in all four. Now one
+  parameterised helper (weeks, role, nickname).

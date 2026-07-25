@@ -46,10 +46,11 @@ User modes, switchable without data loss:
 | Font | Nunito Sans via `next/font` (400–900) | |
 | On-device data | Dexie 4 (IndexedDB) | still the **offline source of truth** — see §4/§5 |
 | Server data | **MySQL + Drizzle ORM** (Hostinger) | new in v3; see §5 |
+| Admin | `/admin`, role-gated, metadata-only | new in v3; see §9 |
 | Auth | **Auth.js (NextAuth v5)**, Google + Facebook | new in v3; see §6 |
 | Sync | custom pull/push over `/api/v1/sync` | last-write-wins per record; see §5 |
 | Push | Web Push (VAPID) via the existing service worker | unlocked by having a server |
-| AI images | Google Gemini image API (server-side only) | opt-in feature, see §9 |
+| AI images | Google Gemini image API (server-side only) | opt-in feature, see §10 |
 | PWA | Serwist 9 (`app/sw.ts` → `public/sw.js`, git-ignored) | disabled in dev; test via `npm run build && npm start` |
 | Validation | zod on every API boundary | |
 | Tests | Vitest (`npm test`) + Playwright (`npm run test:e2e`) | |
@@ -75,12 +76,13 @@ app/
     derechos/  emergencia/  directorio/  eventos/  ajustes/
     privacidad/  terminos/  error.tsx  not-found.tsx
   (auth)/               NEW: sign-in, consent, invite-accept screens
+  admin/                NEW: founder panel — role-gated, robots-disallowed
   offline/              SW navigation fallback (standalone, no shell)
   global-error.tsx  not-found.tsx  sitemap.ts  robots.ts  sw.ts
   api/
     auth/[...nextauth]/ NEW: Auth.js route handler
     v1/                 placements | directory | go/[id] | health
-                        NEW: sync | invites | push | stats | ai/baby
+                        NEW: sync | invites | push | stats | ai/baby | admin/*
 components/             shared client components
 lib/
   db.ts                 Dexie schema (see §4); db() throws server-side
@@ -217,7 +219,32 @@ to real users:
 - Consent for storing health data is collected explicitly at sign-up, not
   buried in a "by continuing you agree" line.
 
-## 9. AI baby image (opt-in, entertainment)
+## 9. Admin panel (`/admin`)
+
+The founder needs to support real account holders, watch the business, and
+control what costs money. Rules that are part of the design:
+
+- Access is `users.role = admin`, seeded from an `ADMIN_EMAILS` allowlist.
+  Checked server-side on every request. A non-admin gets a **404**, not a
+  403 — the route's existence is not confirmed to strangers.
+- `/admin` is `robots`-disallowed, absent from the sitemap, never linked
+  from the app shell.
+- **Admin sees metadata, never health content.** `sync_records.payload` is
+  not rendered anywhere in the panel — not for support, not for debugging.
+  The panel can say "37 registros de síntomas"; it cannot say what they
+  are. This is the practical payoff of the opaque-envelope decision in
+  §4.3, and support convenience is not a good enough reason to trade it.
+- **Every mutating admin action writes an `admin_audit` row** (actor,
+  action, target user, timestamp). Broadcasts and deletions especially.
+- The panel is a product surface with its own quality bar — pastel
+  language, same tokens — not a debug page.
+
+Scope by phase: **A7** is the support floor (find user, account state,
+deletion, invite repair). **Phase I** adds the support console, business
+and content stats, the subscription/payment ledger, AI spend control, and
+segmented push broadcasts.
+
+## 10. AI baby image (opt-in, entertainment)
 
 A generated "así podría ser tu bebé" portrait from parent photos.
 Constraints that are part of the design, not polish:
@@ -229,9 +256,9 @@ Constraints that are part of the design, not polish:
 - Server-side only (the API key never reaches the client), with a
   **hard per-user monthly quota** enforced in the database.
 - Cost is real money per image — see `docs/BUILD-PLAN.md` Phase F for the
-  current figures and the quota maths.
+  current figures and the quota maths; spend is watched from `/admin` (I4).
 
-## 10. Conventions for continuing agents
+## 11. Conventions for continuing agents
 
 - **Verification gates:** `npx tsc --noEmit`, `npm test`, `npm run lint`,
   `npm run build` all pass before every commit.

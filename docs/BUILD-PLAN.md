@@ -18,6 +18,15 @@
 > only when those hold AND `npx tsc --noEmit`, `npm run lint`, `npm test`,
 > `npm run build` pass. Append a `DECISIONS.md` entry for anything
 > non-obvious.
+>
+> **Sizing, not time.** Tasks are marked **S / M / L**, which is about how
+> much *review* they need, not calendar hours:
+> **S** = one focused pass, self-contained, low risk — review the diff.
+> **M** = one working session, several files, needs its own tests — review
+> the behaviour, not just the diff.
+> **L** = multiple sessions with checkpoints, changes shared contracts,
+> should be split across commits so it can be reviewed as it lands.
+> Do not read these as developer-days; that unit does not apply here.
 
 ---
 
@@ -77,12 +86,12 @@ G2), **P2.3** content ops (now G1), **P2.4** tool depth (now D7),
 
 ---
 
-## Phase Z — pre-work that should not wait (½ day)
+## Phase Z — pre-work that should not wait
 
 Small, already-identified defects. Independent of everything else; do
 these first so the friends-and-family test is not embarrassed by them.
 
-### Z1 Gate placeholder directory / events / placements
+### Z1 Gate placeholder directory / events / placements — **S**
 Standing rule "placeholder data never ships visibly" is only enforced for
 videos. Today `Cerca tuyo` and `Eventos` — two of five nav tabs — render 21
 invented sanatorios with dead `+595981000xxx` numbers, 5 invented sponsors,
@@ -93,7 +102,7 @@ Apply the `PUBLISHED_*` pattern to all three, with warm empty states
 light up automatically when real data lands; a unit test asserts every
 placeholder is filtered.
 
-### Z2 CI honesty
+### Z2 CI honesty — **S**
 `npm run test:e2e` is not in CI despite P1.7 claiming it. Wire it in
 (build once, reuse). Also fail a **production** build when
 `NEXT_PUBLIC_MEDICAL_REVIEWER` is unset or still contains `___`, so the
@@ -107,7 +116,7 @@ unset reviewer fails loudly.
 
 Everything in B–F assumes this exists. Do it in order; A1→A3 are a chain.
 
-### A1 Database + Drizzle schema
+### A1 Database + Drizzle schema — **M**
 MySQL on Hostinger + Drizzle ORM + migrations checked into the repo.
 Tables: Auth.js core (`users`, `accounts`, `sessions`,
 `verification_tokens`), plus `pregnancies`, `pregnancy_members`
@@ -121,7 +130,7 @@ file). Local dev works against a local MySQL via `DATABASE_URL`.
 client component importing `lib/server/schema` fails the build; the app
 still builds and runs with `DATABASE_URL` **unset** (local-only mode).
 
-### A2 Auth.js with Google (Facebook flagged)
+### A2 Auth.js with Google (Facebook flagged) — **M**
 NextAuth v5 + Drizzle adapter, JWT session in an httpOnly cookie.
 `/api/auth/[...nextauth]`, a branded sign-in screen in the pastel
 language, and an explicit **consent step** for storing health data (not a
@@ -132,7 +141,7 @@ privacy-policy URL, so it must not block anything.
 `/ajustes` shows the account; **"seguir sin cuenta" remains fully usable**
 and is not a dead end.
 
-### A3 Sync engine
+### A3 Sync engine — **L**
 Dexie v5 adds `updatedAt` / `deletedAt` / `dirty` to synced stores plus a
 `syncState` table. `POST /api/v1/sync` (push) and `GET /api/v1/sync?since=`
 (pull), zod-validated, last-write-wins per record. Runs on open, on
@@ -143,14 +152,14 @@ as a `conflicts` row and surfaced, never silently dropped.
 airplane-mode edits sync on reconnect; unit tests cover the LWW comparison
 and the conflict path; e2e covers offline-edit → reconnect → converge.
 
-### A4 Legal & consent rewrite
+### A4 Legal & consent rewrite — **S**
 `/privacidad` and `/terminos` rewritten for the account world: what is
 stored, where, who can see it, retention, deletion, the AI feature, push.
 Marked clearly as pending lawyer review (founder task §4.5).
 **Done when:** neither page claims data never leaves the device; the
 consent step links to both.
 
-### A5 Account management & deletion
+### A5 Account management & deletion — **M**
 `/ajustes`: signed-in identity, sign out, **"Borrar mi cuenta"** deleting
 every server row (records, memberships, invites, push subs, AI images) and
 offering a device wipe in the same flow. "Descargar mis datos" extended to
@@ -158,40 +167,63 @@ include synced data.
 **Done when:** deletion leaves zero rows for that user, verified by a test;
 the flow is reachable in ≤2 taps from Ajustes.
 
-### A6 Link a local account
+### A6 Link a local account — **M**
 A user who started without an account and later signs in uploads their
 existing local data instead of losing it or duplicating it.
 **Done when:** local-only → sign-in results in exactly one copy of every
 record on both sides.
 
+### A7 Admin role + `/admin` shell (minimum viable support) — **M**
+Needed as soon as there are accounts to support — a founder who cannot
+answer "I lost my data / I can't sign in / delete my account" has an
+account system they cannot operate. Full panel is Phase I; this is the
+floor.
+- `users.role` (`user` | `admin`), seeded from an `ADMIN_EMAILS` allowlist
+  so the first admin exists without a chicken-and-egg problem.
+- `/admin` route group: server-side role check on every request,
+  `robots` disallow, excluded from the sitemap, never linked from the app.
+- v1 screens: find a user by email; see account state (created, providers,
+  last sync, record counts per store, device count); trigger a
+  support-requested account deletion; resend/repair a family invite.
+- **Every admin action writes an `admin_audit` row** (who, what, which
+  user, when). No exceptions — this is what makes the access defensible.
+**Privacy limit, non-negotiable:** admin sees **metadata only, never
+health content**. `sync_records.payload` is not rendered anywhere in
+`/admin`, not even for support. The panel shows "37 registros de síntomas",
+never what they say. This is what ARCHITECTURE.md §4.3 buys and it must not
+be traded away for support convenience.
+**Done when:** a non-admin hitting any `/admin` URL gets a 404 (not a 403
+— do not confirm the route exists); every mutating action is audited; a
+test asserts no route returns payload contents.
+
 ---
 
 ## Phase B — onboarding & profile (feature map 1–8)
 
-### B1 Roles (map #1)
+### B1 Roles (map #1) — **M**
 `mamá / papá / acompañante / familiar o amiga` in onboarding and editable
 later; drives tone and which home content shows. Non-owner roles get a
 read-only shell.
 **Done when:** every role reaches a coherent home screen; role is synced.
 
-### B2 Baby identity & twins (map #2, #3)
+### B2 Baby identity & twins (map #2, #3) — **M**
 Baby nickname threaded through copy ("Silvia ya mide…"); data model
 supports N babies per pregnancy now, UI for twins later.
 **Done when:** nickname appears wherever "tu bebé" is generic; adding a
 second baby requires no schema migration.
 
-### B3 Due-date & pregnancy settings (map #4, #5, #6)
+### B3 Due-date & pregnancy settings (map #4, #5, #6) — **M**
 Calculation methods (LMP · ecografía · FIV · conception date), adjustable
 pregnancy length, `week+day` display **as the default**, separate planned
 delivery date.
 **Done when:** each method produces the correct FPP with unit tests;
 switching method never corrupts existing week data.
 
-### B4 Ajustes restructure
+### B4 Ajustes restructure — **S**
 Group the growing settings into sections (cuenta · bebé · embarazo ·
 notificaciones · privacidad · datos) so it stays navigable.
 
-### B5 Notifications (map #7, #8) — replaces v2's P2.1
+### B5 Notifications (map #7, #8) — replaces v2's P2.1 — **L**
 Real **Web Push** via VAPID and the existing service worker, now that a
 server exists. Granular per-category opt-ins (consejos · recordatorios de
 control · avisos). Permission requested **only** from the settings toggle.
@@ -240,7 +272,7 @@ for any week 1–42, offline, in the pastel language, with no layout shift.
 Kegel (timed exercises), **name picker with Guaraní names**, dental
 health, diary, sleep. Name picker is the sharing magnet — build its share
 card with E2.
-### D3 Food lookup (map #23) — the single most valuable content asset
+### D3 Food lookup (map #23) — the single most valuable content asset — **M**
 "¿Puedo comer…?" searchable database with a safe/caution/avoid verdict and
 a one-line reason: tereré, mate, carne asada, chorizo, quesú Paraguay,
 pescado de río (mercury), mandioca, chipa, yuyos, embutidos, sushi.
@@ -269,13 +301,13 @@ Generalise `textGu` into a `<Bilingual>` component and apply beyond
 
 ## Phase E — family, sharing & growth (feature map 25, 27, 29, 30, 31)
 
-### E1 Family sharing (map #13 server half)
+### E1 Family sharing (map #13 server half) — **L**
 Invite by link/code → `pregnancy_members` with role; partner and family
 get a read-only companion view that **never** shows journal notes or
 photos. Replaces v2's export-code workaround (P3.2).
 **Done when:** an invited partner sees the week, due date and next
 appointment and nothing else; revoking access is immediate.
-### E2 Share card + bump frame (map #30)
+### E2 Share card + bump frame (map #30) — **M**
 Web Share API from the week hero; canvas-rendered week card and a bump
 photo frame. Health details never leave beyond the week number; the photo
 is composited **on device**.
@@ -299,13 +331,13 @@ Reused for the privacy/account trust moment: ¿quién ve mis datos?
 An opt-in "así podría ser tu bebé" portrait. Joy feature; walled off from
 medical content by design (ARCHITECTURE.md §9).
 
-### F1 Generation pipeline
+### F1 Generation pipeline — **M**
 `POST /api/v1/ai/baby`, **server-side only** (the API key never reaches
 the client). Parent photos are sent to the model and **not retained**.
 Result stored only if the user saves it. Explicit consent step naming what
 is sent and that it is deleted.
 
-### F2 Quota & cost control
+### F2 Quota & cost control — **S**
 Hard per-user monthly quota in `ai_generations`, enforced server-side
 before any API call, plus a global kill switch env var.
 
@@ -334,7 +366,7 @@ result is labelled entertainment everywhere it appears.
 
 ## Phase G — launch readiness
 
-### G1 Content ops (was P2.3) — do this **before** the content push
+### G1 Content ops (was P2.3) — **M** — do this **before** the content push
 Move articles, events, videos, directory, placements and the D3 food data
 to validated JSON with zod schemas + `npm run validate:content` in CI:
 slugs, dates, `+595` formats, department slugs, no placeholder ids, no
@@ -359,6 +391,70 @@ removing the Z1 gates naturally.
 
 ---
 
+## Phase I — admin panel & operations
+
+Builds on A7. This is the founder's cockpit: support real users, see what
+the business is doing, and control what costs money. It is a product
+surface with its own quality bar, not a debug page.
+
+### I1 User support console — **M**
+Search and open a user: account state, providers, sign-in history, sync
+health (last push/pull, pending records, conflicts), devices, family
+members and their roles. Actions: force a resync, revoke a device, revoke
+a family membership, run a support-requested deletion, restore a
+soft-deleted record within the retention window.
+**Still metadata only** (A7 rule): counts and timestamps, never content.
+**Done when:** the three real support cases — "no puedo entrar", "perdí
+mis datos", "sacá a mi ex del embarazo" — are each resolvable from this
+screen without touching the database by hand.
+
+### I2 Business & content stats — **M**
+One dashboard, honest numbers:
+- **Growth**: installs, sign-ups by provider, local-only vs account users,
+  weekly active, W1/W4 retention, mode split (embarazada / planeando).
+- **Depth**: users with ≥1 health record, tool usage, weeks reached.
+- **Content**: most-read guías, article read-through, the `content_stats`
+  counters behind the "popular this week" rail (C7), search terms with no
+  result in the food lookup (D3) — that last one is a content backlog
+  generator, not a vanity metric.
+- **Directory & sponsors**: WhatsApp clicks per listing and per placement
+  from `/api/v1/go`, click-through by department and category, dead-link
+  reports. This is the number a sponsor will ask for before paying.
+**Done when:** every figure is derivable from stored rows (no estimates),
+date-ranged, and exportable as CSV so it can go into a sponsor deck.
+
+### I3 Subscriptions & purchases — **M**, blocked on a payment decision
+The app is free today, so this ships as the **ledger and the screens
+first**, wired to a payment provider later:
+- `subscriptions` (user, plan, status, period, source) and `payments`
+  (amount in ₲, method, provider ref, status) tables.
+- Admin views: active/expired/cancelled, MRR in ₲, churn, failed
+  payments, manual grant/revoke of a paid period (needed for bank
+  transfers, which will not be automated on day one).
+- **Payment reality for Paraguay**: card-first billing works poorly.
+  Assume **Tigo Money / Personal / bank transfer**, which means a manual
+  reconciliation step is a permanent part of the flow, not a stopgap.
+  Design the admin screens around that rather than around a Stripe webhook.
+**Done when:** a paid period can be granted, seen by the app, and expire
+correctly, with zero payment provider connected.
+
+### I4 AI usage & spend — **S**
+Per-user generation counts against quota, global monthly spend against the
+ceiling, failures, and the kill switch as a toggle in the panel rather
+than a redeploy. Alert when spend crosses a configurable share of the
+ceiling.
+**Done when:** the founder can answer "what did AI cost me this month" and
+stop it in one click.
+
+### I5 Broadcast & ops — **M**
+Send a push to a segment (all / by week range / by department), with a
+preview, a confirmation step and a per-broadcast audit row. Feature flags
+and gates (`PUBLISHED_*`, `AI_BABY_ENABLED`) toggleable from the panel.
+**Done when:** a broadcast cannot be sent without an explicit confirm and
+is fully audited; a mis-send can be traced to a person.
+
+---
+
 ## Phase H — the moat (post-launch)
 
 ### H1 Postpartum mode "Ya nació" (was P3.1)
@@ -379,14 +475,17 @@ transfer** — card-first pricing does not work in Paraguay.
 ## Suggested sequencing
 
 **To get the friends-and-family test running:** Z1 · Z2 · A1 · A2 · A3 ·
-A4 · A5 · B1 · B2 · B3 · B5 · C1–C8 · D1 · D4 · E2 · E3.
-That is a working, account-backed, synced app with the new home screen and
-sharing — enough for real feedback, with demo content still gated.
+A4 · A5 · **A7** · B1 · B2 · B3 · B5 · C1–C8 · D1 · D4 · E2 · E3.
+That is a working, account-backed, synced app with the new home screen,
+sharing, and enough admin to support the testers — with demo content still
+gated.
 
 **Then, in parallel with the content push:** G1 first (so content can
-land), then D2 · D3 · D5 · E1 · E4 · E6 · F1 · F2 · A6 · B4 · D7 · D8.
+land), then D2 · D3 · D5 · E1 · E4 · E6 · F1 · F2 · A6 · B4 · D7 · D8 ·
+**I1** · **I4**.
 
-**After launch:** G2 · G3 · G4 · D6 · E5 · Phase H.
+**After launch:** G2 · G3 · G4 · **I2** · **I5** · D6 · E5 · Phase H.
+**I3** waits on the payment decision and is not on the launch path.
 
 ---
 

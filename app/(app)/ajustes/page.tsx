@@ -23,6 +23,7 @@ import { exportBackup, backupFileName, importBackup } from "@/lib/backup";
 import { PrivacyLine } from "@/components/PrivacyLine";
 import { InstallCard } from "@/components/InstallCard";
 import { AccountCard } from "@/components/AccountCard";
+import { PregnancySettingsCard } from "@/components/PregnancySettingsCard";
 
 function toDateInput(ts?: number): string {
   if (!ts) return "";
@@ -273,6 +274,9 @@ export default function AjustesPage() {
 
       {/* Account (A2) — renders nothing when accounts are not configured */}
       <AccountCard />
+
+      {/* Pregnancy settings (B3) — renders nothing without a pregnancy */}
+      <PregnancySettingsCard />
 
       {/* App mode (build spec §3) */}
       <section className="rounded-card bg-white p-4 shadow-soft">

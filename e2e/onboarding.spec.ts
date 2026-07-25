@@ -131,3 +131,52 @@ test("planeando mode skips the pregnancy date step", async ({ page }) => {
     page.getByRole("heading", { name: "Estás planeando tu embarazo" }),
   ).toBeVisible();
 });
+
+// B2 completion: the nickname is not just stored, it reaches the copy.
+test("the baby nickname appears on the home screen", async ({ page }) => {
+  await completeOnboarding(page, { nickname: "Poroto", weeksPregnant: 20 });
+
+  await expect(page.getByText(/Poroto, del tamaño de/)).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /Poroto a las 21 semanas/ }),
+  ).toBeVisible();
+});
+
+// B3 completion: the settings half.
+test("pregnancy settings change the due date without moving the week", async ({
+  page,
+}) => {
+  await completeOnboarding(page, { weeksPregnant: 20 });
+
+  const weekBefore = await page
+    .locator("text=/SEMANA \\d+/")
+    .first()
+    .textContent();
+
+  await page.goto("/ajustes");
+  await expect(
+    page.getByRole("heading", { name: "Tu embarazo" }),
+  ).toBeVisible();
+
+  await page.locator("#gestationDays").fill("287");
+  await page.getByRole("button", { name: "Guardar" }).first().click();
+  await expect(page.getByText("Guardado.")).toBeVisible();
+
+  // The week is derived from the LMP, which a length change must not touch.
+  await page.goto("/");
+  const weekAfter = await page
+    .locator("text=/SEMANA \\d+/")
+    .first()
+    .textContent();
+  expect(weekAfter).toBe(weekBefore);
+});
+
+test("an implausible gestation length is rejected", async ({ page }) => {
+  await completeOnboarding(page, { weeksPregnant: 20 });
+  await page.goto("/ajustes");
+
+  await page.locator("#gestationDays").fill("500");
+  await page.getByRole("button", { name: "Guardar" }).first().click();
+
+  await expect(page.getByText(/tiene que estar entre/)).toBeVisible();
+});

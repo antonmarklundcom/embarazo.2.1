@@ -277,7 +277,7 @@ persisted to `profile.role`, defaulting to `mama` for existing profiles.
 **Not done:** role does not yet change what the home screen shows — that is
 C4's perspective switcher — and syncing waits on A3.
 
-### B2 Baby identity & twins (map #2, #3) — **M** 🟡 PARTIAL
+### B2 Baby identity & twins (map #2, #3) — **M** ✅ DONE (twins UI deferred)
 Baby nickname threaded through copy ("Silvia ya mide…"); data model
 supports N babies per pregnancy now, UI for twins later.
 **Done when:** nickname appears wherever "tu bebé" is generic; adding a
@@ -285,10 +285,12 @@ second baby requires no schema migration.
 
 Shipped: Dexie v5 `babies` table (plural from the start), the optional
 nickname step in onboarding, backup format v2. The second criterion holds.
-**Not done:** the nickname is stored but not yet threaded through copy — that
-is the remaining half of this task.
+Threaded through copy via `babyLabel()`, which falls back to "tu bebé" so no
+screen has to branch on whether a nickname exists. Home hero, size line, week
+card and image alt text all use it. Twins UI is deliberately deferred — the
+model supports N babies, which was the criterion.
 
-### B3 Due-date & pregnancy settings (map #4, #5, #6) — **M** 🟡 PARTIAL
+### B3 Due-date & pregnancy settings (map #4, #5, #6) — **M** ✅ DONE
 Calculation methods (LMP · ecografía · FIV · conception date), adjustable
 pregnancy length, `week+day` display **as the default**, separate planned
 delivery date.
@@ -298,9 +300,12 @@ switching method never corrupts existing week data.
 Shipped: `lib/dueDate.ts` with all five methods (LMP, FPP, ecografía, FIV,
 concepción), 19 unit tests, the onboarding date step, and the `weekDay`
 default. Every method reduces to an effective LMP, so nothing downstream
-changed. **Not done:** editing the method, gestation length, week display and
-planned delivery date from Ajustes — the fields exist on the record but have
-no settings UI yet.
+changed. `PregnancySettingsCard` in Ajustes closes the settings half: gestation length
+with a live due-date preview and range validation, week notation, and a
+planned delivery date separate from the estimate. Changing the length moves
+the due date but **not** the LMP — the LMP is a fact about the pregnancy, the
+length is an expectation about it — so a settings tweak cannot silently
+rewrite the user's week. Asserted by e2e.
 
 ### B4 Ajustes restructure — **S**
 Group the growing settings into sections (cuenta · bebé · embarazo ·

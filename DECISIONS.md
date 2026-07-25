@@ -264,3 +264,11 @@ Founder decision after reviewing 16 screens of the Swedish app Preggers
 - **`e2e/helpers.ts`**: `completeOnboarding` had been copy-pasted into four
   specs, and reshaping the flow needed the same edit in all four. Now one
   parameterised helper (weeks, role, nickname).
+- **`babyLabel()` falls back to "tu bebé"** so callers interpolate
+  unconditionally. The point of B2 is that no screen branches on whether a
+  nickname exists; a helper that can return undefined would have pushed that
+  branch into every caller.
+- **Changing the gestation length moves the due date, never the LMP.** The LMP
+  is a fact about the pregnancy; the length is an expectation about it. Keeping
+  them separate is what stops a settings tweak from silently rewriting the
+  user's current week — asserted by e2e, not just intended.

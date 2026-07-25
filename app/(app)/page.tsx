@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useProfile } from "@/lib/useProfile";
+import { babyLabel, useProfile } from "@/lib/useProfile";
 import { formatCompletedGestation } from "@/lib/pregnancy";
 import { getWeek } from "@/lib/weeks";
 import { getDailyTip } from "@/lib/dailyTips";
@@ -40,6 +40,9 @@ export default function InicioPage() {
 
   const week = profile.week!;
   const trimester = profile.trimester!;
+  // B2: the baby's nickname, or "tu bebé". Every caller interpolates
+  // unconditionally — no screen branches on whether a nickname exists.
+  const baby = babyLabel(profile.babyName);
   const department = profile.department!;
   const info = getWeek(week);
   const tip = getDailyTip(week, trimester);
@@ -57,6 +60,7 @@ export default function InicioPage() {
         trimester={trimester}
         completedLabel={completedLabel}
         sizeComparison={info.sizeComparison}
+        baby={baby}
       />
 
       {/* Next prenatal appointment reminder (in-app only) */}
@@ -121,7 +125,7 @@ export default function InicioPage() {
           <ReadCard
             href={`/semana/${week}`}
             tone="bg-pastel-arena"
-            title={`Tu bebé a las ${week} semanas`}
+            title={`${baby === "tu bebé" ? "Tu bebé" : baby} a las ${week} semanas`}
           />
           <ReadCard
             href="/guias"
@@ -230,11 +234,13 @@ function HeroCard({
   trimester,
   completedLabel,
   sizeComparison,
+  baby,
 }: {
   week: number;
   trimester: number;
   completedLabel: string | null;
   sizeComparison: string;
+  baby: string;
 }) {
   // Weekly render lives at /assets/semanas/bebe-<week>.webp when the founder
   // has added it (REDESIGN-PLAN.md §4); until then show the arena fallback.
@@ -254,7 +260,7 @@ function HeroCard({
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={`/assets/semanas/bebe-${week}.webp`}
-          alt={`Tu bebé a las ${week} semanas`}
+          alt={`${baby === "tu bebé" ? "Tu bebé" : baby} a las ${week} semanas`}
           className="block h-[260px] w-full object-cover"
           style={{ objectPosition: "center 18%" }}
           onError={() => setImgError(true)}
@@ -276,7 +282,8 @@ function HeroCard({
             {completedLabel ?? `Semana ${week}`}
           </p>
           <p className="mt-0.5 text-xs font-bold text-white/85">
-            Del tamaño de {sizeComparison}
+            {baby === "tu bebé" ? "Del" : `${baby}, del`} tamaño de{" "}
+            {sizeComparison}
           </p>
         </div>
         <span className="whitespace-nowrap rounded-full bg-white px-4 py-2 text-[13px] font-extrabold text-ink">

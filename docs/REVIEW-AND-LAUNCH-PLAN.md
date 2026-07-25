@@ -1,6 +1,16 @@
-# Nido — Full review & launch plan (July 2026)
+# Mi Bebé — Full review & launch plan (July 2026)
 
-Goal: make Nido the best pregnancy app in Paraguay. This document covers
+> **Superseded in part (v3, July 2026).** §3 "The plan" is replaced by
+> `docs/BUILD-PLAN.md`, which was rewritten after the founder decided to add
+> accounts + sync and to build the full Preggers-benchmarked feature set
+> (`docs/FEATURE-MAP.md`). §1 (assessment), §2 (issues) and especially
+> **§4 (the founder task list) remain current and are still the source of
+> truth for data/content/legal work** — with two additions now that accounts
+> are in scope: the privacy policy and terms need a *lawyer*, not a draft
+> (§4.5), and provisioning Google/Facebook OAuth apps + the database is a new
+> ops item (§4.6).
+
+Goal: make Mi Bebé the best pregnancy app in Paraguay. This document covers
 (1) the current state, (2) issues found, (3) a phased plan, and (4) the
 concrete data/content tasks only the founder can do.
 

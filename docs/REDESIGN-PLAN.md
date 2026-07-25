@@ -87,11 +87,21 @@ pipeline instead:
    the current ±1 week, lazy-load the rest (3G budget).
 4. Licensing: AI-generated or founder-owned only. No scraped stock.
 
-## 5. Decisions needed from founder
+## 5. Decisions — all three answered (July 2026)
 
-1. Comunidad: build (big scope + server + moderation), fake-door test,
-   or drop the tab? Recommendation: fake-door ("Próximamente") at most.
-2. Tab IA: keep 5 tabs restyled, or move Directorio/Eventos under a
-   surface to match the 4-tab design?
-3. Product name: design says "Mi Bebé" — confirm before executing
-   BUILD-PLAN.md R1 (rename). Phase A does NOT rename.
+1. **Comunidad: not built as a public forum.** The social need is met
+   instead by **family sharing with roles** (BUILD-PLAN E1) — the partner
+   and close family join *your* pregnancy, rather than a moderated public
+   space. This keeps the medical-misinformation and moderation liability
+   out of the product while still making it social.
+2. **Tab IA: resolved to 5 tabs** — Hoy · Guías · Checklist · Herramientas
+   · Cerca tuyo, with Eventos and Beneficios living inside Cerca tuyo
+   (BUILD-PLAN D4).
+3. **Product name confirmed: "Mi Bebé."** The rename (R1) is done.
+
+## 6. Note on the Preggers benchmark
+
+`docs/FEATURE-MAP.md` adds 31 benchmarked features from the Swedish app
+Preggers. **None of its visual language is adopted** — the pastel/cream
+system in §1 above remains the design source of truth. The benchmark
+contributes layout, information architecture and feature ideas only.

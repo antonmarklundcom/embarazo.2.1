@@ -141,8 +141,12 @@ export default function CercaTuyoPage() {
 
       {!isLoading && (isError || listings.length === 0) && (
         <div className="rounded-card bg-white p-5 text-center shadow-soft">
-          <p className="text-sm text-muted">
-            Todavía no tenemos lugares cargados para esta búsqueda en tu zona.
+          <p className="text-sm text-ink">
+            Todavía no tenemos lugares cargados para esta búsqueda.
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            Estamos armando el directorio con lugares reales y confirmados, uno
+            por uno. ¿Conocés uno que debería estar? Contanos.
           </p>
           <div className="mt-3 flex justify-center">
             <WhatsAppButton href={businessWa} label="Escribinos por WhatsApp" />

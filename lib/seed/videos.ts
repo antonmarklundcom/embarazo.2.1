@@ -1,4 +1,5 @@
 import type { VideoItem } from "../types";
+import { publishedOnly } from "./gate";
 
 // Curated educational video gallery (build spec §4).
 //
@@ -74,11 +75,8 @@ export const VIDEOS: VideoItem[] = [
   },
 ];
 
-// PLACEHOLDER_YOUTUBE_ID is a well-known public sample video, never a real
-// pregnancy-education video. Filtering it out here means the gallery (and its
-// nav entries) automatically reappear the moment real videos.ts entries are
-// added — no other code needs to change.
-const PLACEHOLDER_YOUTUBE_ID = "dQw4w9WgXcQ";
-export const PUBLISHED_VIDEOS: VideoItem[] = VIDEOS.filter(
-  (v) => v.youtubeId !== PLACEHOLDER_YOUTUBE_ID,
-);
+// Placeholder gate (BUILD-PLAN Z1) — shared with the directory, placements and
+// events seeds via `./gate`. Filtering here means the gallery (and its nav
+// entries) reappear automatically the moment real entries are added, with no
+// other code change.
+export const PUBLISHED_VIDEOS: VideoItem[] = publishedOnly(VIDEOS);

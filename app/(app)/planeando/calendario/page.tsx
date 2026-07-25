@@ -80,7 +80,8 @@ export default function CalendarioPage() {
           Calendario menstrual
         </h1>
         <p className="text-sm text-muted">
-          Registrá el primer día de cada regla. Todo queda solo en tu teléfono.
+          Registrá el primer día de cada regla. Se guarda en tu teléfono y
+          funciona sin internet.
         </p>
       </header>
 

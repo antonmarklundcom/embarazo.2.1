@@ -137,9 +137,9 @@ export default function ResumenPage() {
       <div className="no-print rounded-card border border-sage/30 bg-sage/5 p-4">
         <PrivacyLine />
         <p className="mt-1 text-xs leading-relaxed text-muted">
-          Este resumen organiza tus datos para que se los muestres a tu médico/a.
-          Queda solo en tu teléfono y solo se comparte cuando vos lo mostrás o
-          imprimís. No es un diagnóstico.
+          Este resumen organiza tus datos para que se los muestres a tu
+          médico/a. Se comparte únicamente cuando vos lo mostrás o imprimís.
+          No es un diagnóstico.
         </p>
       </div>
 

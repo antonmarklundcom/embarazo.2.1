@@ -560,12 +560,15 @@ export default function AjustesPage() {
       <section className="rounded-card border border-sage/30 bg-sage/5 p-4">
         <h2 className="text-base font-extrabold text-ink">Tu privacidad</h2>
         <ul className="mt-2 space-y-1.5 text-sm text-ink">
-          <li>• No te pedimos cuenta, correo ni número de teléfono.</li>
-          <li>• Tus datos de salud se guardan solo en este dispositivo.</li>
+          <li>• Podés usar la app entera sin crear una cuenta.</li>
           <li>
-            • Tus registros de síntomas y ánimo, tus fotos de la panza, tu
-            calendario menstrual y la fecha de tu próximo control quedan
-            guardados solo en tu teléfono.
+            • Tus datos se guardan primero en este dispositivo y funcionan sin
+            internet. Si creás una cuenta, se copian para que puedas
+            recuperarlos en otro teléfono.
+          </li>
+          <li>
+            • Tus fotos de la panza y del carné{" "}
+            <strong>nunca se suben</strong>, tengas cuenta o no.
           </li>
           <li>
             • Lo único que viaja al servidor es tu trimestre y tu departamento,

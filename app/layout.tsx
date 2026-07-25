@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: "%s · Mi Bebé",
   },
   description:
-    "Guía del embarazo semana a semana, hecha para Paraguay. Privada: tus datos quedan en tu teléfono.",
+    "Guía del embarazo semana a semana, hecha para Paraguay. Funciona sin conexión y sin cuenta.",
   applicationName: "Mi Bebé",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     type: "website",
     title: "Mi Bebé — tu embarazo en Paraguay",
     description:
-      "Guía del embarazo semana a semana, hecha para Paraguay. Privada: tus datos quedan en tu teléfono.",
+      "Guía del embarazo semana a semana, hecha para Paraguay. Funciona sin conexión y sin cuenta.",
     siteName: "Mi Bebé",
     images: [{ url: "/og.png", width: 1200, height: 630, alt: "Mi Bebé" }],
   },
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Mi Bebé — tu embarazo en Paraguay",
     description:
-      "Guía del embarazo semana a semana, hecha para Paraguay. Privada: tus datos quedan en tu teléfono.",
+      "Guía del embarazo semana a semana, hecha para Paraguay. Funciona sin conexión y sin cuenta.",
     images: ["/og.png"],
   },
   icons: {

@@ -204,12 +204,26 @@ as a `conflicts` row and surfaced, never silently dropped.
 airplane-mode edits sync on reconnect; unit tests cover the LWW comparison
 and the conflict path; e2e covers offline-edit → reconnect → converge.
 
-### A4 Legal & consent rewrite — **S**
+### A4 Legal & consent rewrite — **S** ✅ DONE (pending lawyer review)
 `/privacidad` and `/terminos` rewritten for the account world: what is
 stored, where, who can see it, retention, deletion, the AI feature, push.
 Marked clearly as pending lawyer review (founder task §4.5).
 **Done when:** neither page claims data never leaves the device; the
 consent step links to both.
+
+Shipped, and wider than specified: besides the two legal pages, fourteen
+screens carried "queda solo en tu teléfono" copy that silently becomes false
+once a user opts into sync. All reworded to claims true in both modes.
+`PrivacyLine` now reads "Tus fotos nunca salen de tu teléfono" — the strongest
+claim that survives the pivot, and the one users care about most. Where the
+strong claim still holds (belly and carné photos) it was strengthened rather
+than softened. Root metadata and `/conoce` swapped the privacy hook for
+"funciona sin conexión y sin cuenta", which is accurate and lands better in
+Paraguay, where data cost is the felt problem.
+
+Still open, and only the founder can close it: **lawyer review**. Both pages
+are drafts, and the bar is materially higher than for the device-only version
+they replace.
 
 ### A5 Account management & deletion — **M**
 `/ajustes`: signed-in identity, sign out, **"Borrar mi cuenta"** deleting

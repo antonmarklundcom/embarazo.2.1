@@ -233,7 +233,7 @@ function ContactCard({
           )}
         </div>
         <p className="text-xs text-muted">
-          Se guarda solo en tu teléfono, como todos tus datos.
+          Se guarda en tu teléfono y funciona sin internet.
         </p>
       </div>
     </section>

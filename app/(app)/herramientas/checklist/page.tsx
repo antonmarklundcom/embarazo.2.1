@@ -22,7 +22,7 @@ export default function ChecklistPage() {
       <header>
         <h1 className="text-2xl font-black tracking-tight text-ink">Checklists</h1>
         <p className="text-sm text-muted">
-          Lo que tildes se guarda solo en tu teléfono.
+          Lo que tildes se guarda en tu teléfono.
         </p>
       </header>
 

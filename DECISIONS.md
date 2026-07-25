@@ -205,3 +205,28 @@ Founder decision after reviewing 16 screens of the Swedish app Preggers
 - **Not yet verified:** the actual Google round-trip. It needs real OAuth
   credentials, which the founder is providing. Everything up to the provider
   redirect is built and tested; the callback path is unexercised.
+
+## A4 — legal & privacy copy rewritten for accounts (July 2026)
+- `/privacidad` and `/terminos` rewritten. The old text said "Mi Bebé no te pide
+  cuenta" and "no tenemos un servidor con tu historia clínica" — statements the
+  code no longer keeps. A privacy policy describing the wrong app is worse than
+  a missing one: it is a promise in writing that the product breaks.
+- **Honesty pass across the whole app, not just the two legal pages.** Fourteen
+  screens carried "queda solo en tu teléfono"-style copy that silently becomes
+  false the moment a user opts into sync. Each was reworded to a claim that is
+  true in BOTH modes ("se guarda primero en tu teléfono", "funciona sin
+  internet"), and `PrivacyLine` — the persistent reassurance line — now says
+  **"Tus fotos nunca salen de tu teléfono"**, which is the strongest claim that
+  survives the pivot and also the one users care about most.
+- Where the strong claim is still absolutely true it was **kept and
+  strengthened**, not softened: belly photos and carné photos never upload, and
+  the copy now says so explicitly on both tools.
+- `/derechos` keeps "tu respuesta queda solo en tu teléfono" — that answer is
+  component state, never persisted and never transmitted, so the claim holds.
+- Root metadata and `/conoce` dropped "Privada: tus datos quedan en tu teléfono"
+  in favour of "Funciona sin conexión y sin cuenta", which is both accurate and
+  a better hook for Paraguay (data cost, not privacy, is the felt problem).
+- Both pages remain **drafts pending lawyer review**. Health data tied to an
+  identity is a materially higher bar than the device-only version they replace;
+  this is a founder task (REVIEW-AND-LAUNCH-PLAN.md §4.5), not something the
+  code can close.

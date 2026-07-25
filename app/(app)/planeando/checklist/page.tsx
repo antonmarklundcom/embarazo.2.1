@@ -29,7 +29,7 @@ export default function PreconcepcionPage() {
         </h1>
         <p className="text-sm text-muted">
           Pasos con respaldo para llegar al embarazo de la forma más sana. Lo que
-          tildes se guarda solo en tu teléfono.
+          tildes se guarda en tu teléfono.
         </p>
       </header>
 

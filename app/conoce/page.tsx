@@ -11,7 +11,7 @@ import { InstallCard } from "@/components/InstallCard";
 export const metadata: Metadata = {
   title: "Mi Bebé — tu embarazo semana a semana en Paraguay",
   description:
-    "La app gratuita del embarazo hecha para Paraguay: semana a semana, tus derechos, herramientas y recursos cercanos. Privada: tus datos quedan en tu teléfono.",
+    "La app gratuita del embarazo hecha para Paraguay: semana a semana, tus derechos, herramientas y recursos cercanos. Funciona sin conexión y sin cuenta.",
   alternates: { canonical: "/conoce" },
 };
 
@@ -80,8 +80,9 @@ export default function ConocePage() {
             Privada por diseño
           </p>
           <p className="mt-1.5 text-[15px] font-semibold leading-relaxed text-ink">
-            No pedimos cuenta, correo ni número de teléfono. Tus datos de
-            salud se guardan solo en tu teléfono — nunca en un servidor.
+            Podés usar la app entera sin crear cuenta: tus datos se guardan
+            en tu teléfono. Si creás una, tus registros se copian para que no
+            los pierdas — pero tus fotos nunca se suben.
           </p>
         </section>
 

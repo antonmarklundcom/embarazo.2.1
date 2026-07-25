@@ -112,7 +112,7 @@ export default function SintomasPage() {
     setMood(null);
     setSelected([]);
     setNote("");
-    setSavedMsg("Guardado en tu teléfono.");
+    setSavedMsg("Guardado.");
     setTimeout(() => setSavedMsg(""), 2500);
   }
 
@@ -129,7 +129,7 @@ export default function SintomasPage() {
           ¿Cómo te sentís hoy?
         </h1>
         <p className="text-sm text-muted">
-          Registrá tu ánimo y tus síntomas. Queda solo en tu teléfono.
+          Registrá tu ánimo y tus síntomas. Se guarda en tu teléfono.
         </p>
       </header>
 

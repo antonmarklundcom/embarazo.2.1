@@ -30,7 +30,7 @@ const TOOLS = [
   {
     href: "/herramientas/fotos",
     title: "Diario de fotos",
-    desc: "Seguí el crecimiento de tu panza, solo en tu teléfono.",
+    desc: "Seguí el crecimiento de tu panza. Las fotos no se suben nunca.",
   },
   {
     href: "/herramientas/pataditas",
@@ -78,7 +78,7 @@ export default function HerramientasPage() {
       <header>
         <h1 className="text-2xl font-black tracking-tight text-ink">Herramientas</h1>
         <p className="text-sm text-muted">
-          Todo funciona sin internet y se guarda solo en tu teléfono.
+          Todo funciona sin internet y se guarda primero en tu teléfono.
         </p>
       </header>
       <div className="space-y-3">

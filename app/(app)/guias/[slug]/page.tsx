@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getArticles } from "@/lib/wordpress";
-import { getArticleBySlug } from "@/lib/seed/articles";
+import { getArticleBySlug } from "@/lib/content";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 
 // Statically generate the guías so they precache for offline (spec §9).

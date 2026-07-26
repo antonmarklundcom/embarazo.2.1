@@ -1,43 +1,41 @@
 import type { AdPlacement, Article, DirectoryListing } from "./types";
-import { ARTICLES } from "./seed/articles";
-import directoryData from "./seed/directory.json";
+import { ARTICLES, DIRECTORY } from "./content";
 import placementsData from "./seed/placements.json";
 import { publishedOnly } from "./seed/gate";
 
-// Optional future content source (build spec §5).
-// IF WP_API_URL is set, these functions could read a WordPress REST API.
-// For the MVP they always return the in-repo seed data so the app runs
-// fully offline / on first clone. The integration is intentionally NOT built.
+// Content source (build spec §5).
+//
+// Articles and the directory come from `content/*.json`, validated by
+// `npm run validate:content` (BUILD-PLAN G1) — the founder edits JSON, not
+// TypeScript, and CI catches the mistakes a schema can catch.
+//
+// IF WP_API_URL is set these functions could read a WordPress REST API
+// instead. That integration is intentionally NOT built.
 
 const WP_API_URL = process.env.WP_API_URL;
 
-// Placeholder gate (BUILD-PLAN Z1). Filtering here rather than at each call
-// site means the API routes, the home-screen resources block and the directory
-// page are all covered by construction: invented businesses and sponsors with
-// non-working +595 numbers can never reach a user. Entries appear automatically
-// once they carry real data.
-const SEED_DIRECTORY = publishedOnly(directoryData.listings as DirectoryListing[]);
+// Placements still live in the old seed file: they are ad inventory rather
+// than editorial content, and there are no real sponsors yet. The Z1 gate keeps
+// the invented ones invisible until there are.
 const SEED_PLACEMENTS = publishedOnly(placementsData.placements as AdPlacement[]);
 
 export async function getArticles(): Promise<Article[]> {
   if (WP_API_URL) {
-    // TODO(wordpress): map WP posts → Article {
-    //   slug, title, excerpt, html (rendered content), date, author, reviewedBy (ACF), cluster (category)
-    // }. Left unimplemented on purpose for the MVP.
+    // TODO(wordpress): map WP posts → Article. Left unimplemented on purpose.
   }
   return ARTICLES;
 }
 
 export async function getDirectory(): Promise<DirectoryListing[]> {
   if (WP_API_URL) {
-    // TODO(wordpress): map a "directory" CPT → DirectoryListing. Not built for the MVP.
+    // TODO(wordpress): map a "directory" CPT → DirectoryListing. Not built.
   }
-  return SEED_DIRECTORY;
+  return DIRECTORY;
 }
 
 export async function getPlacements(): Promise<AdPlacement[]> {
   if (WP_API_URL) {
-    // TODO(wordpress): map a "placement" CPT → AdPlacement. Not built for the MVP.
+    // TODO(wordpress): map a "placement" CPT → AdPlacement. Not built.
   }
   return SEED_PLACEMENTS;
 }

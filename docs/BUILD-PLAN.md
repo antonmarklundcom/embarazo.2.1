@@ -454,7 +454,7 @@ result is labelled entertainment everywhere it appears.
 
 ## Phase G — launch readiness
 
-### G1 Content ops (was P2.3) — **M** — do this **before** the content push
+### G1 Content ops (was P2.3) — **M** ✅ DONE
 Move articles, events, videos, directory, placements and the D3 food data
 to validated JSON with zod schemas + `npm run validate:content` in CI:
 slugs, dates, `+595` formats, department slugs, no placeholder ids, no
@@ -462,6 +462,20 @@ module-load timestamps. This is what lets Gemini-generated content and
 founder edits land without TypeScript knowledge or code review — it is on
 the critical path to launch, not a nicety.
 **Done when:** an invalid entry fails CI with a readable message.
+
+Shipped: `content/*.json` (articles, videos, directory, events, foods, weekly
+notes), `lib/content/schema.ts`, `lib/content/index.ts`,
+`npm run validate:content` wired into CI, `docs/CONTENT-GUIDE.md` (the format,
+in Spanish) and `docs/GEMINI-PROMPTS.md` (ready-to-run prompts that ask for
+exactly this format).
+
+The validator caught a real mistake on its first run — a cluster value the
+schema did not know about — which is the point.
+
+Two prompts deliberately refuse to generate content: the directory (a model
+cannot phone a business for consent, and `consentedAt` is now a required
+field) and video ids (a model will invent eleven plausible characters). Those
+produce a call list and a search list instead.
 
 ### G2 Analytics (was P1.3)
 Aggregate product metrics off the existing tables + `content_stats`: 

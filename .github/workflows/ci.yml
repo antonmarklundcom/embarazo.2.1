@@ -16,6 +16,10 @@ jobs:
           cache: "npm"
       - run: npm ci
       - run: npm run lint
+      # Content validation is part of `npm test`, but running it first and by
+      # name means a content mistake reports as "content", not as a failing
+      # test somewhere in the suite.
+      - run: npm run validate:content
       - run: npm test
       # NEXT_PUBLIC_APP_URL is deliberately NOT set here: this is a compile
       # check, not a deployment, so the Z2 launch checks (lib/launchChecks.ts)

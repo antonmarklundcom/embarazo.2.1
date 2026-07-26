@@ -1,15 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { isPlaceholderRecord, publishedOnly } from "./gate";
-import { EVENTS, PUBLISHED_EVENTS } from "./events";
-import { VIDEOS, PUBLISHED_VIDEOS } from "./videos";
 import { getDirectory, getPlacements } from "../wordpress";
-import directoryData from "./directory.json";
+import { EVENTS } from "../content";
+import { VIDEOS } from "../content";
 import placementsData from "./placements.json";
 
-// BUILD-PLAN Z1. These tests are the guard rail: they fail the build if any
-// invented business, sponsor, event or video can reach a user. When real data
-// replaces the seeds, the "nothing is published" assertions below are expected
-// to be updated — the "no placeholder survives" ones never are.
+// BUILD-PLAN Z1, narrowed by G1.
+//
+// The directory, events, videos and articles moved to `content/*.json`, where
+// the schema rejects placeholder text and the invented +595 981 000 0xx range
+// outright — a bad entry cannot reach the repo, so there is nothing left to
+// filter at runtime. Placements are the exception: they are ad inventory
+// rather than editorial content, still live in the old seed file, and still
+// need the gate until real sponsors exist.
 
 describe("isPlaceholderRecord", () => {
   it("flags the (placeholder) text marker anywhere in the record", () => {
@@ -36,14 +39,13 @@ describe("isPlaceholderRecord", () => {
   it("passes a realistic real listing", () => {
     expect(
       isPlaceholderRecord({
-        id: "dir-001",
+        id: "sanatorio-migone",
         name: "Sanatorio Migone Battilana",
         category: "sanatorio",
         department: "capital",
         city: "Asunción",
         address: "Eligio Ayala 1293",
         whatsappNumber: "+595981234567",
-        mapsUrl: "https://maps.google.com/?q=Sanatorio+Migone",
         isSponsored: false,
         priority: 10,
       }),
@@ -63,33 +65,21 @@ describe("publishedOnly", () => {
   });
 });
 
-describe("seed gating (current state: everything is placeholder)", () => {
-  it("publishes no invented events", () => {
-    expect(EVENTS.length).toBeGreaterThan(0);
-    expect(PUBLISHED_EVENTS).toHaveLength(0);
-  });
-
-  it("publishes no invented videos", () => {
-    expect(VIDEOS.length).toBeGreaterThan(0);
-    expect(PUBLISHED_VIDEOS).toHaveLength(0);
-  });
-
-  it("publishes no invented directory listings", async () => {
-    expect(directoryData.listings.length).toBeGreaterThan(0);
-    await expect(getDirectory()).resolves.toHaveLength(0);
-  });
-
-  it("publishes no invented placements", async () => {
+describe("placements are still gated", () => {
+  it("has invented seed rows", () => {
     expect(placementsData.placements.length).toBeGreaterThan(0);
+  });
+
+  it("publishes none of them", async () => {
     await expect(getPlacements()).resolves.toHaveLength(0);
   });
 });
 
-describe("no placeholder survives any gate", () => {
+describe("no placeholder survives into anything published", () => {
   it("holds for every published collection", async () => {
-    const collections = [
-      PUBLISHED_EVENTS,
-      PUBLISHED_VIDEOS,
+    const collections: unknown[][] = [
+      EVENTS,
+      VIDEOS,
       await getDirectory(),
       await getPlacements(),
     ];

@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { ARTICLES } from "@/lib/seed/articles";
+import { ARTICLES } from "@/lib/content";
 import { MAX_WEEK, MIN_WEEK } from "@/lib/pregnancy";
 
 // SEO surface for the guías + week pages, currently invisible to search

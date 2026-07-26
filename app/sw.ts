@@ -2,7 +2,7 @@ import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
 import { Serwist, NetworkFirst } from "serwist";
 import { MIN_WEEK, MAX_WEEK } from "@/lib/pregnancy";
-import { ARTICLES } from "@/lib/seed/articles";
+import { ARTICLES } from "@/lib/content";
 
 // Service worker (build spec §9). Compiled from app/sw.ts → public/sw.js.
 declare global {

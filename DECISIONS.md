@@ -272,3 +272,42 @@ Founder decision after reviewing 16 screens of the Swedish app Preggers
   is a fact about the pregnancy; the length is an expectation about it. Keeping
   them separate is what stops a settings tweak from silently rewriting the
   user's current week — asserted by e2e, not just intended.
+
+## G1 — content ops (July 2026)
+- **All editorial content moved to `content/*.json`**, validated by
+  `lib/content/schema.ts`. Articles, videos, directory, events, foods and the
+  weekly one-liners. The founder edits JSON; CI catches what a schema can catch.
+- **The validator is a vitest test, not a standalone script.** A script would
+  need its own TypeScript loader to import the schemas — one more fragile part
+  between the founder and a green build. `npm run validate:content` runs that
+  one test file; `npm test` runs it too. Messages are in Spanish and name the
+  file, the entry number and the field.
+- **Each schema rule exists because of a specific past failure**: placeholder
+  text and the invented `+595 981 000 0xx` range (Z1), event dates computed at
+  module load that drifted every deploy, the rickroll video id, duplicate slugs
+  silently shadowing an article, and unreviewed content rendering as reviewed
+  (Z2).
+- **`reviewedBy: null` is valid and honest.** Unreviewed ARTICLES still publish
+  without a byline — hiding them would delete the app's whole library over a
+  claim we already stopped making. Unreviewed FOODS do **not** publish, because
+  "sí, podés comer esto en el embarazo" is itself a medical claim rather than
+  general information. The asymmetry is deliberate.
+- **`consentedAt` is a required field on every directory listing.** Consent was
+  previously a convention in a doc; a required field cannot be skipped in a
+  hurry, and a business that does not know it is listed is exactly the failure
+  this app cannot afford.
+- **Event times carry a fixed `-04:00` offset.** Paraguay does not observe DST,
+  so the offset is exact — and storing it beats relying on the build machine's
+  timezone, which would move events depending on where CI runs.
+- **Placeholder seed files deleted** (`lib/seed/articles.ts`,
+  `lib/seed/directory.json`); videos and events are now thin re-exports of the
+  validated JSON. Placements stay in the old seed with the Z1 gate: they are ad
+  inventory rather than editorial content, and there are no real sponsors yet.
+- **`lib/content/index.ts` asserts types rather than parsing at runtime.**
+  Validation happens in CI, so an invalid file cannot reach a deploy; parsing on
+  import would turn a content mistake into a crash for users instead of a red
+  build for us.
+- **`docs/GEMINI-PROMPTS.md` deliberately refuses to generate two things**: the
+  directory and video ids. A model cannot phone a sanatorio to get consent, and
+  it will happily invent eleven characters that look like a YouTube id. Those
+  prompts produce a call list and a search list instead.

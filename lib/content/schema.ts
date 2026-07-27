@@ -276,6 +276,13 @@ export const weekNoteSchema = z
      * belongs in the week page instead.
      */
     text: cleanText("La frase", 160),
+    /**
+     * Average foot and hand length in cm (C3). Optional and clinician-supplied:
+     * the size tabs appear on their own once these exist. Deliberately NOT
+     * generated — an app should not invent a measurement for a fetus.
+     */
+    footCm: z.number().positive().max(30).optional(),
+    handCm: z.number().positive().max(30).optional(),
     reviewedBy: cleanText("El revisor").nullable(),
   })
   .strict();

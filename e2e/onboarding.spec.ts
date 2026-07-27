@@ -136,10 +136,12 @@ test("planeando mode skips the pregnancy date step", async ({ page }) => {
 test("the baby nickname appears on the home screen", async ({ page }) => {
   await completeOnboarding(page, { nickname: "Poroto", weeksPregnant: 20 });
 
-  await expect(page.getByText(/Poroto, del tamaño de/)).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: /Poroto a las 21 semanas/ }),
-  ).toBeVisible();
+  await expect(page.getByText(/Poroto está del tamaño de/)).toBeVisible();
+
+  // Not asserting the hero image's alt text: there are no week renders in the
+  // repo yet, so the <img> swaps itself for the numeric fallback as soon as the
+  // 404 resolves. Whether the alt is still in the DOM depends on that timing,
+  // which would make this test flaky for a reason unrelated to the nickname.
 });
 
 // B3 completion: the settings half.
@@ -148,10 +150,11 @@ test("pregnancy settings change the due date without moving the week", async ({
 }) => {
   await completeOnboarding(page, { weeksPregnant: 20 });
 
+  // The hero links to /semana/<week>, which is the most stable read of the
+  // week the app currently thinks the user is in.
   const weekBefore = await page
-    .locator("text=/SEMANA \\d+/")
-    .first()
-    .textContent();
+    .getByRole("link", { name: /Ver la semana/ })
+    .getAttribute("href");
 
   await page.goto("/ajustes");
   await expect(
@@ -165,9 +168,8 @@ test("pregnancy settings change the due date without moving the week", async ({
   // The week is derived from the LMP, which a length change must not touch.
   await page.goto("/");
   const weekAfter = await page
-    .locator("text=/SEMANA \\d+/")
-    .first()
-    .textContent();
+    .getByRole("link", { name: /Ver la semana/ })
+    .getAttribute("href");
   expect(weekAfter).toBe(weekBefore);
 });
 

@@ -311,3 +311,36 @@ Founder decision after reviewing 16 screens of the Swedish app Preggers
   directory and video ids. A model cannot phone a sanatorio to get consent, and
   it will happily invent eleven characters that look like a YouTube id. Those
   prompts produce a call list and a search list instead.
+
+## C1/C2/C3/C5/C6/C8 — home screen (July 2026)
+- **Progress by day, not by week.** The ring advances every morning instead of
+  jumping once a week — a weekly jump makes the screen feel static for six days
+  out of seven.
+- **"Faltan N días" is on the home screen.** The old flat hero did not show it
+  at all, and it is the number people actually want.
+- **Size tabs render only for measurements we have.** Preggers shows baby/foot/
+  hand always; we show the extra tabs only once `footCm`/`handCm` exist in the
+  week content. A tab that says "no tenemos este dato" three times is worse than
+  no tabs, and inventing a foot length for a fetus is not something a health app
+  gets to do. Those fields are clinician-supplied and deliberately excluded from
+  the Gemini prompts.
+- **Reading time is computed, never stored** — it cannot drift out of sync with
+  an edited article and nobody has to remember to update it. 180 wpm,
+  deliberately conservative, and never rounds to "0 min", which reads like a bug.
+- **The weekly article feed is deterministic and offline.** Nearest tagged week
+  first, then the rest by recency. No personalisation and no server call: the
+  ranking has to work with no network like everything else here.
+- **The feedback card asks for WhatsApp, not stars in a store.** We are a PWA
+  with no store listing, and during the friends-and-family round what is needed
+  is what people think. It also waits two days before appearing — asking for
+  feedback on day one is asking someone to invent an opinion — and remembers a
+  dismissal.
+- **`HeroCard` was deleted, not left in place.** `WeekProgress` replaces it
+  fully; keeping the old component around "just in case" is how a codebase ends
+  up with two heroes and no answer for which is live.
+- **The e2e test no longer asserts the hero image's alt text.** With no week
+  renders in the repo the `<img>` swaps itself for the numeric fallback as soon
+  as the 404 resolves, so whether the alt is still in the DOM depends on timing.
+  It was passing alone and failing in a full run — a flake for a reason
+  unrelated to what the test is about. The nickname assertion moved to the size
+  card, which is stable.

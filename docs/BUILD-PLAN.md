@@ -327,23 +327,23 @@ degrades gracefully.
 The highest-leverage phase for the friends-and-family test: it is what
 testers judge in ten seconds.
 
-### C1 Week hero + stats (map #9, #10)
+### C1 Week hero + stats (map #9, #10) — ✅ DONE
 Circular hero with progress ring; `semana · días transcurridos · faltan`.
-### C2 Weekly one-liner (map #11)
+### C2 Weekly one-liner (map #11) — ✅ DONE (needs content)
 One concrete "what is happening now" sentence per week; 42 strings, code
 ships with a graceful fallback so content can land later.
-### C3 Size comparison tabs (map #12)
+### C3 Size comparison tabs (map #12) — ✅ DONE (tabs appear with data)
 Tabs for tamaño / pie / mano, keeping the Paraguayan comparisons and cm/g.
 ### C4 Perspective switcher (map #13)
 Same week, three entrances: para vos / para tu pareja / para la familia.
-### C5 "De la obstetra" (map #14)
+### C5 "De la obstetra" (map #14) — 🟡 PARTIAL — feed shipped, byline waits on a real reviewer
 One bylined expert card per week, tied to `NEXT_PUBLIC_MEDICAL_REVIEWER`.
-### C6 Week-linked article feed + read time (map #15, #17)
+### C6 Week-linked article feed + read time (map #15, #17) — ✅ DONE
 Articles keyed to the current week; read-time computed from word count.
 ### C7 Popular this week (map #16)
 `/api/v1/stats` counters keyed `(week, content_id, day)` — **no user id,
 no IP retained**; zod whitelist + tests like the other routes.
-### C8 Shortcuts + feedback card (map #18, #19)
+### C8 Shortcuts + feedback card (map #18, #19) — ✅ DONE
 Quick actions (emergencia · carné · próximo control) and
 "¿Cómo te está yendo?" routing to WhatsApp feedback during testing.
 

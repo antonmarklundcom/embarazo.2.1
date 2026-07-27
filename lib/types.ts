@@ -98,4 +98,6 @@ export interface Article {
   author: string;
   reviewedBy?: string;
   cluster?: string;
+  /** Week this guía is most useful in, for the weekly feed (BUILD-PLAN C6). */
+  week?: number;
 }

@@ -36,6 +36,7 @@ export const ARTICLES = (articlesData.articles as ArticleContent[]).map(
     // article simply has no byline (MedicalReviewByline renders nothing).
     reviewedBy: a.reviewedBy ?? "",
     cluster: a.cluster,
+    week: a.week,
     html: a.html,
   }),
 );

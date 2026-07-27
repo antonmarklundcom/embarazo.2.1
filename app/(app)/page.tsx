@@ -6,6 +6,13 @@ import { babyLabel, useProfile } from "@/lib/useProfile";
 import { formatCompletedGestation } from "@/lib/pregnancy";
 import { getWeek } from "@/lib/weeks";
 import { getDailyTip } from "@/lib/dailyTips";
+import { WEEK_NOTES, weekNote } from "@/lib/content";
+import { getDaysSinceLMP } from "@/lib/pregnancy";
+import { WeekProgress } from "@/components/home/WeekProgress";
+import { SizeCard } from "@/components/home/SizeCard";
+import { WeekArticles } from "@/components/home/WeekArticles";
+import { Shortcuts } from "@/components/home/Shortcuts";
+import { FeedbackCard } from "@/components/home/FeedbackCard";
 import { departmentName } from "@/lib/departments";
 import { Onboarding } from "@/components/Onboarding";
 import { PlaneandoHome } from "@/components/PlaneandoHome";
@@ -49,22 +56,42 @@ export default function InicioPage() {
   const completedLabel = profile.completed
     ? formatCompletedGestation(profile.completed)
     : null;
+  // C2: the one concrete "what is happening now" line for this week, when the
+  // content exists. Falls back to the daily tip, which is always present.
+  const note = weekNote(week);
+  const measures = WEEK_NOTES.get(week) ?? {};
+  const daysSince = profile.lmpDate ? getDaysSinceLMP(profile.lmpDate) : 0;
 
   return (
     <div className="space-y-4">
       <WeekStrip />
 
-      {/* Hero week card */}
-      <HeroCard
+      {/* C1: circular hero + the three numbers people want */}
+      <WeekProgress
         week={week}
-        trimester={trimester}
-        completedLabel={completedLabel}
-        sizeComparison={info.sizeComparison}
+        daysSince={daysSince}
+        daysRemaining={profile.daysRemaining ?? 0}
         baby={baby}
       />
 
+      {/* C2: one concrete sentence about this week */}
+      {note && (
+        <p className="px-1 text-center text-[15px] font-semibold leading-relaxed text-ink">
+          {note}
+        </p>
+      )}
+      {completedLabel && (
+        <p className="-mt-2 text-center text-xs text-muted">{completedLabel}</p>
+      )}
+
+      {/* C8: quick actions */}
+      <Shortcuts />
+
       {/* Next prenatal appointment reminder (in-app only) */}
       <AppointmentBanner date={profile.nextAppointment} />
+
+      {/* C3: size comparison, with tabs once we have foot/hand measurements */}
+      <SizeCard info={info} measures={measures} baby={baby} />
 
       {/* Daily tip */}
       <section className="rounded-card border border-line bg-white p-4">
@@ -75,6 +102,12 @@ export default function InicioPage() {
           {tip.text}
         </p>
       </section>
+
+      {/* C5/C6: articles tied to this week, with read time */}
+      <WeekArticles week={week} />
+
+      {/* C8: feedback, once the user has actually used the app */}
+      <FeedbackCard />
 
       {/* Daily mood check-in */}
       <section className="rounded-card border border-line bg-white p-4">
@@ -229,70 +262,6 @@ function WeekStrip() {
   );
 }
 
-function HeroCard({
-  week,
-  trimester,
-  completedLabel,
-  sizeComparison,
-  baby,
-}: {
-  week: number;
-  trimester: number;
-  completedLabel: string | null;
-  sizeComparison: string;
-  baby: string;
-}) {
-  // Weekly render lives at /assets/semanas/bebe-<week>.webp when the founder
-  // has added it (REDESIGN-PLAN.md §4); until then show the arena fallback.
-  const [imgError, setImgError] = useState(false);
-  return (
-    <Link
-      href={`/semana/${week}`}
-      className="relative block overflow-hidden rounded-card bg-pastel-arena shadow-soft transition active:scale-[0.99]"
-    >
-      {imgError ? (
-        <div className="flex h-[220px] items-center justify-center">
-          <span className="text-[110px] font-black leading-none text-white">
-            {week}
-          </span>
-        </div>
-      ) : (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={`/assets/semanas/bebe-${week}.webp`}
-          alt={`${baby === "tu bebé" ? "Tu bebé" : baby} a las ${week} semanas`}
-          className="block h-[260px] w-full object-cover"
-          style={{ objectPosition: "center 18%" }}
-          onError={() => setImgError(true)}
-        />
-      )}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(50,46,41,0) 46%, rgba(50,46,41,0.55) 100%)",
-        }}
-      />
-      <div className="absolute inset-x-4 bottom-4 flex items-end justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-extrabold tracking-[1.6px] text-[#FBE9D8]">
-            SEMANA {week} · {trimester}.º TRIMESTRE
-          </p>
-          <p className="mt-1 text-2xl font-black text-white">
-            {completedLabel ?? `Semana ${week}`}
-          </p>
-          <p className="mt-0.5 text-xs font-bold text-white/85">
-            {baby === "tu bebé" ? "Del" : `${baby}, del`} tamaño de{" "}
-            {sizeComparison}
-          </p>
-        </div>
-        <span className="whitespace-nowrap rounded-full bg-white px-4 py-2 text-[13px] font-extrabold text-ink">
-          Detalles
-        </span>
-      </div>
-    </Link>
-  );
-}
 
 function MoodButton({ tone, mouth }: { tone: string; mouth: string }) {
   return (

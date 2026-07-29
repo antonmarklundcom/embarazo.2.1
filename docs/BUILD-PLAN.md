@@ -354,7 +354,7 @@ for any week 1–42, offline, in the pastel language, with no layout shift.
 
 ## Phase D — tools & content surfaces (feature map 20–24, 26)
 
-### D1 Illustrated tools grid (map #20)
+### D1 Illustrated tools grid (map #20) — ✅ DONE (pastel tiles until art exists)
 3-per-row grid with illustrations replacing the current text list.
 ### D2 New tools (map #21)
 Kegel (timed exercises), **name picker with Guaraní names**, dental
@@ -367,7 +367,7 @@ pescado de río (mercury), mandioca, chipa, yuyos, embutidos, sushi.
 Data as validated JSON (G1 schema) so the founder/Gemini can extend it.
 **Done when:** search is instant and offline; every entry has a reason and
 a reviewer flag; unreviewed entries do not render.
-### D4 Checklist as its own tab (map #24) + nav IA
+### D4 Checklist as its own tab (map #24) + nav IA — ✅ DONE
 Promote checklists to the bottom nav. Resolves the open 5-tab question:
 proposed **Hoy · Guías · Checklist · Herramientas · Cerca tuyo**, with
 Eventos and Beneficios living inside Cerca tuyo.

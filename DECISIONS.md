@@ -344,3 +344,25 @@ Founder decision after reviewing 16 screens of the Swedish app Preggers
   It was passing alone and failing in a full run — a flake for a reason
   unrelated to what the test is about. The nickname assertion moved to the size
   card, which is stable.
+
+## D1/D4 — tools grid and nav restructure (July 2026)
+- **Two columns, not three.** Preggers uses a 3-per-row grid, but our labels are
+  Spanish and longer; at three columns every tile wrapped to two lines. Two
+  columns reads cleanly at the same tap size.
+- **Pastel tiles instead of illustration files.** The illustrations are a
+  founder asset that does not exist yet, and a grid of coloured tiles reads far
+  better than a grid of broken images. Swapping tiles for art later is a
+  one-line change per tool.
+- **`lib/tools.ts` holds the catalogue**, not the page, so the home screen and
+  the tools tab cannot drift apart and the list is testable.
+- **Non-owner roles do not see the mother's personal tools.** A partner has no
+  belly photos, no carné and no weight to log here; offering them is confusing
+  at best and wrong at worst. `ownerOnly` marks them and `toolsForRole` filters.
+  This is the first place the B1 role actually changes what the app shows.
+- **Checklist gets its own nav tab** (FEATURE-MAP #24) — it was buried in the
+  tools list despite being one of the most-used surfaces. Eventos moved into the
+  tools grid: it is browsed occasionally, not daily.
+- **Nav active state resolves by longest match.** `/herramientas/checklist`
+  starts with `/herramientas`, so the previous plain `startsWith` lit up two
+  tabs at once. Caught while wiring the tab, and now covered by an e2e test that
+  asserts exactly one `aria-current="page"`.

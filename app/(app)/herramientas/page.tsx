@@ -1,98 +1,58 @@
+"use client";
+
 import Link from "next/link";
 import { PUBLISHED_VIDEOS } from "@/lib/seed/videos";
+import { TOOL_TONE_CLASS, toolsForRole, type Tool } from "@/lib/tools";
+import { useProfile } from "@/lib/useProfile";
 
-const TOOLS = [
-  {
-    href: "/emergencia",
-    title: "Emergencia",
-    desc: "Números de emergencia, señales de alarma y tus contactos, sin internet.",
-  },
-  {
-    href: "/herramientas/resumen",
-    title: "Resumen para mi control",
-    desc: "Organizá tus datos en una hoja para mostrarle a tu médico/a.",
-  },
-  {
-    href: "/herramientas/carne",
-    title: "Carné perinatal",
-    desc: "Llevá una copia en fotos de tu carné y tus datos clave, siempre con vos.",
-  },
-  {
-    href: "/derechos",
-    title: "Tus derechos y beneficios",
-    desc: "Licencia, subsidio de IPS, gratuidad y ayudas: qué te corresponde según tu situación.",
-  },
-  {
-    href: "/herramientas/sintomas",
-    title: "Síntomas y ánimo",
-    desc: "Registrá cómo te sentís y tus síntomas, día a día.",
-  },
-  {
-    href: "/herramientas/fotos",
-    title: "Diario de fotos",
-    desc: "Seguí el crecimiento de tu panza. Las fotos no se suben nunca.",
-  },
-  {
-    href: "/herramientas/pataditas",
-    title: "Contador de pataditas",
-    desc: "Registrá los movimientos de tu bebé y conocé su ritmo.",
-  },
-  {
-    href: "/herramientas/contracciones",
-    title: "Cronómetro de contracciones",
-    desc: "Medí duración e intervalo cuando empiecen las contracciones.",
-  },
-  {
-    href: "/herramientas/peso",
-    title: "Registro de peso",
-    desc: "Seguí tu evolución con un gráfico simple.",
-  },
-  {
-    href: "/herramientas/checklist",
-    title: "Checklists",
-    desc: "Bolso para el sanatorio y trámites después del nacimiento.",
-  },
-  {
-    href: "/guias",
-    title: "Guías",
-    desc: "Artículos sobre el embarazo, revisados y pensados para Paraguay.",
-  },
-];
+// BUILD-PLAN D1 (FEATURE-MAP #20). Scannable 2-per-row grid replacing the
+// text list. Two columns rather than Preggers' three: our labels are Spanish
+// and longer, and three columns forced them to wrap to two lines each.
 
 export default function HerramientasPage() {
-  // The video gallery is hidden until real videos.ts entries replace the
-  // placeholder YouTube IDs (see lib/seed/videos.ts).
-  const tools = PUBLISHED_VIDEOS.length > 0
-    ? [
-        ...TOOLS,
-        {
-          href: "/guias/videos",
-          title: "Videos",
-          desc: "Galería de videos educativos, filtrable por tema y trimestre.",
-        },
-      ]
-    : TOOLS;
+  const profile = useProfile();
+  const isOwner = profile.role === "mama";
+
+  const tools: Tool[] = [...toolsForRole(isOwner)];
+  // The video gallery appears on its own once content/videos.json has entries.
+  if (PUBLISHED_VIDEOS.length > 0) {
+    tools.push({
+      href: "/guias/videos",
+      title: "Videos",
+      desc: "Galería de videos educativos, por tema y trimestre.",
+      tone: "arena",
+    });
+  }
 
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="text-2xl font-black tracking-tight text-ink">Herramientas</h1>
+        <h1 className="text-2xl font-black tracking-tight text-ink">
+          Herramientas
+        </h1>
         <p className="text-sm text-muted">
           Todo funciona sin internet y se guarda primero en tu teléfono.
         </p>
       </header>
-      <div className="space-y-3">
-        {tools.map((t) => (
-          <Link
-            key={t.href}
-            href={t.href}
-            className="block rounded-card bg-white p-4 shadow-soft transition active:scale-[0.99]"
-          >
-            <h2 className="text-base font-extrabold text-ink">{t.title}</h2>
-            <p className="mt-1 text-sm text-muted">{t.desc}</p>
-          </Link>
+
+      <ul className="grid grid-cols-2 gap-3">
+        {tools.map((tool) => (
+          <li key={tool.href}>
+            <Link
+              href={tool.href}
+              className="flex h-full min-h-[112px] flex-col justify-between rounded-card border border-line bg-white p-3 transition active:scale-[0.98]"
+            >
+              <span
+                className={`flex h-11 w-11 items-center justify-center rounded-full ${TOOL_TONE_CLASS[tool.tone]}`}
+                aria-hidden="true"
+              />
+              <span className="mt-3 block text-[15px] font-extrabold leading-tight text-ink">
+                {tool.title}
+              </span>
+            </Link>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

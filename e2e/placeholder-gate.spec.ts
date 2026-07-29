@@ -47,3 +47,33 @@ test("home screen renders no sponsored placements", async ({ page }) => {
   await expect(page.getByText("Patrocinado")).toHaveCount(0);
   await expectNoPlaceholderContent(page);
 });
+
+// BUILD-PLAN D4: the checklist has its own tab, and the nav resolves the
+// active tab by longest match — a plain prefix check would light up both
+// Herramientas and Checklist on /herramientas/checklist.
+test("checklist is its own nav tab and is the only active one there", async ({
+  page,
+}) => {
+  await completeOnboarding(page);
+
+  const nav = page.getByRole("navigation", { name: "Navegación principal" });
+  await expect(nav.getByRole("link", { name: "Checklist" })).toBeVisible();
+
+  await nav.getByRole("link", { name: "Checklist" }).click();
+  await expect(page).toHaveURL(/\/herramientas\/checklist/);
+
+  await expect(nav.locator("[aria-current='page']")).toHaveCount(1);
+  await expect(nav.locator("[aria-current='page']")).toHaveText("Checklist");
+});
+
+// BUILD-PLAN D1: the tools grid, and roles that do not own the pregnancy do
+// not get tools that record the mother's own data.
+test("a partner does not see the mother's personal tools", async ({ page }) => {
+  await completeOnboarding(page, { roleLabel: "Soy el papá" });
+  await page.goto("/herramientas");
+
+  await expect(page.getByRole("link", { name: "Emergencia" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Guías" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Diario de fotos" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Carné perinatal" })).toHaveCount(0);
+});

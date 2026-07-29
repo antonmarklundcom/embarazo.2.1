@@ -6,20 +6,35 @@ import { usePathname } from "next/navigation";
 // Fixed bottom tab bar — "Mi Bebé" design: terracotta active state,
 // white bar over line border. 5 tabs kept (see REDESIGN-PLAN.md §2).
 const TABS = [
+  // BUILD-PLAN D4 (FEATURE-MAP #24). Checklist gets its own tab — it is one of
+  // the most-used surfaces and was buried inside Herramientas. Eventos moved
+  // into the tools grid to make room; it is browsed occasionally, not daily.
   { href: "/", label: "Inicio", icon: HomeIcon },
   { href: "/progreso", label: "Progreso", icon: TimelineIcon },
+  { href: "/herramientas/checklist", label: "Checklist", icon: CalendarIcon },
   { href: "/herramientas", label: "Herramientas", icon: ToolsIcon },
   { href: "/directorio", label: "Cerca tuyo", icon: MapIcon },
-  { href: "/eventos", label: "Eventos", icon: CalendarIcon },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
 
-  function isActive(href: string): boolean {
-    if (href === "/") return pathname === "/";
-    return pathname.startsWith(href);
+  // Longest match wins. With Checklist at /herramientas/checklist sitting
+  // under Herramientas at /herramientas, a plain startsWith would light up
+  // both tabs on the checklist page.
+  function activeHref(): string | null {
+    let best: string | null = null;
+    for (const tab of TABS) {
+      const matches =
+        tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
+      if (matches && (best === null || tab.href.length > best.length)) {
+        best = tab.href;
+      }
+    }
+    return best;
   }
+
+  const current = activeHref();
 
   return (
     <nav
@@ -29,7 +44,7 @@ export function BottomNav() {
     >
       <ul className="mx-auto flex max-w-md items-stretch justify-between px-1">
         {TABS.map((tab) => {
-          const active = isActive(tab.href);
+          const active = tab.href === current;
           const Icon = tab.icon;
           return (
             <li key={tab.href} className="flex-1">

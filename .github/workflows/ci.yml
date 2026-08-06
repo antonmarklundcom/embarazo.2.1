@@ -1,13 +1,26 @@
 name: CI
 
 on:
+  # Only `main` on push: every other branch is covered by the pull_request
+  # trigger, and listing "**" here queued two full runs of this job (build +
+  # Playwright + a browser download) for every push to a PR branch, doubling
+  # the Actions minutes this private repo burns.
   push:
-    branches: ["**"]
+    branches: ["main"]
   pull_request:
+
+# One run per branch/PR. A new push cancels the run still in flight for the
+# same ref instead of leaving it to compete for a runner.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    # The job normally finishes in ~2 minutes; this caps a hung step rather
+    # than letting it run to the 6-hour default.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

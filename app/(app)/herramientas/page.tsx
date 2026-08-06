@@ -13,6 +13,11 @@ const TOOLS = [
     desc: "Organizá tus datos en una hoja para mostrarle a tu médico/a.",
   },
   {
+    href: "/herramientas/comer",
+    title: "¿Puedo comer...?",
+    desc: "Buscá un alimento o bebida y mirá si podés comerlo, con qué cuidado.",
+  },
+  {
     href: "/herramientas/carne",
     title: "Carné perinatal",
     desc: "Llevá una copia en fotos de tu carné y tus datos clave, siempre con vos.",

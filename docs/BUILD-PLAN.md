@@ -324,13 +324,28 @@ for any week 1–42, offline, in the pastel language, with no layout shift.
 Kegel (timed exercises), **name picker with Guaraní names**, dental
 health, diary, sleep. Name picker is the sharing magnet — build its share
 card with E2.
-### D3 Food lookup (map #23) — the single most valuable content asset — **M**
+### D3 Food lookup (map #23) — the single most valuable content asset — **M** — ✅ DONE
 "¿Puedo comer…?" searchable database with a safe/caution/avoid verdict and
 a one-line reason: tereré, mate, carne asada, chorizo, quesú Paraguay,
 pescado de río (mercury), mandioca, chipa, yuyos, embutidos, sushi.
 Data as validated JSON (G1 schema) so the founder/Gemini can extend it.
 **Done when:** search is instant and offline; every entry has a reason and
 a reviewer flag; unreviewed entries do not render.
+
+Shipped as `/herramientas/comer` (`app/(app)/herramientas/comer/page.tsx`):
+instant client-side search (no API call) over `PUBLISHED_FOOD`
+(`lib/seed/food.ts`), which is `lib/seed/food.json`'s 62 entries run through
+`FoodEntrySchema` (G1) and then `reviewedOnly()` (`lib/seed/gate.ts`) — the
+same gate pattern as `PUBLISHED_*` elsewhere, reused rather than reinvented.
+Every entry ships today with `reviewedBy` unset, so `PUBLISHED_FOOD` is
+empty and the page shows an honest "no revisado todavía" state; asserted by
+`lib/seed/food.test.ts`. Verdicts are conservative by construction — mixed
+evidence gets `precaucion`, never `safe` — and every reason names the actual
+concern and the action to take, not just "consultá a tu médico". Explicitly
+precached in `app/sw.ts` alongside the weeks/guías so it works fully offline
+from first install. Linked from the herramientas grid and the home screen's
+tools grid. See DECISIONS.md "D3" for the verdict-conservatism rules and why
+there's no API route at all.
 ### D4 Checklist as its own tab (map #24) + nav IA
 Promote checklists to the bottom nav. Resolves the open 5-tab question:
 proposed **Hoy · Guías · Checklist · Herramientas · Cerca tuyo**, with
@@ -418,7 +433,7 @@ result is labelled entertainment everywhere it appears.
 
 ## Phase G — launch readiness
 
-### G1 Content ops (was P2.3) — **M** — do this **before** the content push
+### G1 Content ops (was P2.3) — **M** — do this **before** the content push — ✅ DONE
 Move articles, events, videos, directory, placements and the D3 food data
 to validated JSON with zod schemas + `npm run validate:content` in CI:
 slugs, dates, `+595` formats, department slugs, no placeholder ids, no
@@ -426,6 +441,25 @@ module-load timestamps. This is what lets Gemini-generated content and
 founder edits land without TypeScript knowledge or code review — it is on
 the critical path to launch, not a nicety.
 **Done when:** an invalid entry fails CI with a readable message.
+
+Shipped as `lib/content/schemas.ts` (zod schemas + `z.infer` types for
+`Article`/`VideoItem`/`EventItem`/`DirectoryListing`/`AdPlacement`/`FoodEntry`,
+re-exported from `lib/types.ts` so existing imports were untouched) and
+`scripts/validate-content.mts` (`npm run validate:content`, wired into CI right
+after lint). Articles and videos moved from typed `.ts` arrays to
+`articles.json`/`videos.json`; events moved to `events.json` with **fixed**
+epoch-millisecond dates, replacing the old `inDays()` helper that computed
+dates from `Date.now()` at module load. Every seed loader (`lib/seed/*.ts`,
+`lib/wordpress.ts`) validates at import time too, not just in CI — a bad entry
+throws immediately, naming the file, the entry (index + id), the field and a
+plain-Spanish reason. Catches: bad slugs, malformed/impossible dates, non-`+595`
+phone formats, unknown department slugs, placeholder-token ids
+(`todo`/`xxx`/`changeme`/…), duplicate ids, and (via a grep guard) any seed
+`.ts` file that still computes a date at module load. The existing `PUBLISHED_*`
+gate (`lib/seed/gate.ts`) is unchanged and still runs after validation —
+placeholder data validates fine (it's well-formed) and stays hidden. See
+DECISIONS.md "G1 — content ops" for the `node --experimental-strip-types`
+choice (no new dependency) and the id-vs-placeholder-text distinction.
 
 ### G2 Analytics (was P1.3)
 Aggregate product metrics off the existing tables + `content_stats`: 

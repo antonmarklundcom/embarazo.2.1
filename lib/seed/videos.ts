@@ -1,5 +1,7 @@
 import type { VideoItem } from "../types";
 import { publishedOnly } from "./gate";
+import { VideoItemSchema, validateContentArray } from "../content/schemas";
+import rawVideos from "./videos.json";
 
 // Curated educational video gallery (build spec §4).
 //
@@ -10,70 +12,19 @@ import { publishedOnly } from "./gate";
 // Videos are embedded via youtube-nocookie.com (privacy-enhanced mode); nothing
 // is self-hosted and there is no backend.
 //
-// To edit: add/remove entries here. `topic` drives the topic filter and
-// `trimester` (0 = general/todos) drives the trimester filter.
-export const VIDEOS: VideoItem[] = [
-  {
-    id: "vid-alimentacion",
-    title: "Alimentación saludable en el embarazo",
-    description:
-      "Qué priorizar en el plato durante el embarazo, con ideas simples y accesibles.",
-    topic: "Nutrición",
-    trimester: 0,
-    youtubeId: "dQw4w9WgXcQ", // PLACEHOLDER — replace with a real video ID
-    durationLabel: "5 min",
-  },
-  {
-    id: "vid-primer-trimestre",
-    title: "Qué esperar en el primer trimestre",
-    description:
-      "Cambios del cuerpo, primeros controles y síntomas frecuentes de las primeras semanas.",
-    topic: "Etapas",
-    trimester: 1,
-    youtubeId: "dQw4w9WgXcQ", // PLACEHOLDER — replace with a real video ID
-    durationLabel: "7 min",
-  },
-  {
-    id: "vid-ejercicios",
-    title: "Ejercicios y movimiento seguro",
-    description:
-      "Actividad física suave y segura para acompañar el segundo trimestre.",
-    topic: "Bienestar",
-    trimester: 2,
-    youtubeId: "dQw4w9WgXcQ", // PLACEHOLDER — replace with a real video ID
-    durationLabel: "8 min",
-  },
-  {
-    id: "vid-señales-parto",
-    title: "Señales de que se acerca el parto",
-    description:
-      "Cómo reconocer las contracciones de trabajo de parto y cuándo ir al sanatorio.",
-    topic: "Parto",
-    trimester: 3,
-    youtubeId: "dQw4w9WgXcQ", // PLACEHOLDER — replace with a real video ID
-    durationLabel: "6 min",
-  },
-  {
-    id: "vid-lactancia",
-    title: "Primeros días de lactancia",
-    description:
-      "Una introducción calmada a la lactancia y el agarre en los primeros días.",
-    topic: "Lactancia",
-    trimester: 0,
-    youtubeId: "dQw4w9WgXcQ", // PLACEHOLDER — replace with a real video ID
-    durationLabel: "9 min",
-  },
-  {
-    id: "vid-bolso",
-    title: "Preparar el bolso para el sanatorio",
-    description:
-      "Qué llevar para vos y para el bebé, pensado para el contexto local.",
-    topic: "Parto",
-    trimester: 3,
-    youtubeId: "dQw4w9WgXcQ", // PLACEHOLDER — replace with a real video ID
-    durationLabel: "4 min",
-  },
-];
+// G1 content ops: content lives in videos.json (validated JSON). To edit:
+// add/remove entries there. `topic` drives the topic filter and `trimester`
+// (0 = general/todos) drives the trimester filter.
+const { valid, errors } = validateContentArray(
+  "lib/seed/videos.json",
+  rawVideos as unknown[],
+  VideoItemSchema,
+);
+if (errors.length > 0) {
+  throw new Error(`Contenido inválido en lib/seed/videos.json:\n${errors.join("\n")}`);
+}
+
+export const VIDEOS: VideoItem[] = valid;
 
 // Placeholder gate (BUILD-PLAN Z1) — shared with the directory, placements and
 // events seeds via `./gate`. Filtering here means the gallery (and its nav

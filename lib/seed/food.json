@@ -1,0 +1,715 @@
+[
+  {
+    "id": "food-terere",
+    "name": "Tereré",
+    "synonyms": [
+      "tereré con hierbas",
+      "tereré con yuyos"
+    ],
+    "verdict": "precaucion",
+    "reason": "Podés seguir tomando tereré: la yerba mate tiene cafeína, así que conviene no pasarte de 1-2 termos al día y sumarla al total de cafeína del día.",
+    "detail": "El límite recomendado en el embarazo es de unos 200 mg de cafeína por día entre tereré, mate, cocido, café y gaseosas cola. Si le agregás yuyos, fijate también la ficha de cada yuyo: algunos no se recomiendan en el embarazo.",
+    "source": "OMS — recomendaciones de cafeína en el embarazo"
+  },
+  {
+    "id": "food-mate",
+    "name": "Mate (caliente)",
+    "synonyms": [
+      "mate cebado",
+      "mate amargo",
+      "mate dulce"
+    ],
+    "verdict": "precaucion",
+    "reason": "Igual que el tereré, el mate tiene cafeína: tomalo con moderación y contalo dentro de tu límite diario de cafeína.",
+    "detail": "Evitá compartir la bombilla si alguien del grupo está resfriado o con anginas.",
+    "source": "OMS — recomendaciones de cafeína en el embarazo"
+  },
+  {
+    "id": "food-cocido",
+    "name": "Cocido (mate cocido)",
+    "synonyms": [
+      "mate cocido con leche"
+    ],
+    "verdict": "precaucion",
+    "reason": "Tiene menos cafeína que el tereré o el mate cebado, pero igual suma: no lo tomes como si no contara para tu límite diario.",
+    "source": "OMS — recomendaciones de cafeína en el embarazo"
+  },
+  {
+    "id": "food-cafe",
+    "name": "Café",
+    "synonyms": [
+      "café con leche",
+      "café instantáneo",
+      "expreso"
+    ],
+    "verdict": "precaucion",
+    "reason": "Una taza al día suele entrar dentro del límite seguro, pero varias tazas ya se pasan del máximo recomendado de cafeína.",
+    "detail": "Sumá el café al resto de tu cafeína del día (tereré, mate, cocido, gaseosa cola) para no superar los 200 mg diarios.",
+    "source": "ACOG — cafeína en el embarazo"
+  },
+  {
+    "id": "food-gaseosa-cola",
+    "name": "Gaseosas con cafeína (cola)",
+    "synonyms": [
+      "coca cola",
+      "pepsi",
+      "gaseosa cola"
+    ],
+    "verdict": "precaucion",
+    "reason": "Aportan cafeína y bastante azúcar: una de vez en cuando está bien, pero no las tomes todos los días sumadas a tereré, mate y café.",
+    "source": "ACOG — cafeína en el embarazo"
+  },
+  {
+    "id": "food-energizante",
+    "name": "Bebidas energizantes",
+    "synonyms": [
+      "red bull",
+      "monster",
+      "speed"
+    ],
+    "verdict": "evitar",
+    "reason": "Tienen mucha cafeína junto con otros estimulantes que no están bien estudiados en el embarazo: mejor no tomarlas.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-alcohol",
+    "name": "Alcohol (cualquier bebida alcohólica)",
+    "synonyms": [
+      "cerveza",
+      "vino",
+      "caña",
+      "whisky",
+      "tereré con caña"
+    ],
+    "verdict": "evitar",
+    "reason": "No se conoce ninguna cantidad de alcohol segura en el embarazo: lo más seguro es no tomar nada, en ningún trimestre.",
+    "source": "CDC — Alcohol Use in Pregnancy"
+  },
+  {
+    "id": "food-cerveza-sin-alcohol",
+    "name": "Cerveza sin alcohol",
+    "synonyms": [
+      "cerveza 0.0"
+    ],
+    "verdict": "precaucion",
+    "reason": "Suele tener un resto mínimo de alcohol (hasta 0.5%): revisá siempre la etiqueta y, si preferís no arriesgar nada, elegí otra bebida.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-jugo-natural",
+    "name": "Jugos de fruta naturales (hechos en casa)",
+    "synonyms": [
+      "jugo de naranja",
+      "jugo de mburukuja"
+    ],
+    "verdict": "safe",
+    "reason": "Son una buena forma de hidratarte y sumar vitaminas; preferí exprimirlos vos con fruta lavada.",
+    "source": "Mayo Clinic — Pregnancy nutrition"
+  },
+  {
+    "id": "food-agua-de-coco",
+    "name": "Agua de coco",
+    "synonyms": [
+      "coco frío"
+    ],
+    "verdict": "safe",
+    "reason": "Es una bebida natural e hidratante, buena opción con el calor.",
+    "source": "Mayo Clinic — Pregnancy nutrition"
+  },
+  {
+    "id": "food-queso-paraguay-artesanal",
+    "name": "Quesú Paraguay artesanal",
+    "synonyms": [
+      "queso Paraguay casero",
+      "queso de campo"
+    ],
+    "verdict": "precaucion",
+    "reason": "Si no sabés si está hecho con leche pasteurizada, evitalo o cociná bien cualquier comida que lo lleve; el riesgo es una bacteria (listeria) que en el embarazo puede ser grave.",
+    "detail": "Preguntá siempre si es de leche pasteurizada. El queso Paraguay industrial de marca sí suele estar pasteurizado.",
+    "source": "MSPBS — listeriosis y embarazo"
+  },
+  {
+    "id": "food-queso-paraguay-industrial",
+    "name": "Queso Paraguay industrial (pasteurizado)",
+    "synonyms": [
+      "queso Paraguay de marca"
+    ],
+    "verdict": "safe",
+    "reason": "Hecho con leche pasteurizada, es una opción segura y parte habitual de la mesa paraguaya.",
+    "source": "MSPBS — listeriosis y embarazo"
+  },
+  {
+    "id": "food-quesos-blandos",
+    "name": "Quesos blandos con corteza (brie, camembert, azul)",
+    "synonyms": [
+      "queso brie",
+      "queso camembert",
+      "queso azul",
+      "roquefort"
+    ],
+    "verdict": "precaucion",
+    "reason": "Los que no son pasteurizados tienen más riesgo de listeria: si no podés confirmar que son pasteurizados, mejor no los comas crudos.",
+    "detail": "Si están cocinados dentro de una comida caliente (bien cocidos, humeando), el riesgo baja bastante.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-leche-pasteurizada",
+    "name": "Leche pasteurizada",
+    "synonyms": [
+      "leche entera",
+      "leche descremada"
+    ],
+    "verdict": "safe",
+    "reason": "Es una buena fuente de calcio; elegí siempre la que diga \"pasteurizada\" en el envase.",
+    "source": "Mayo Clinic — Pregnancy nutrition"
+  },
+  {
+    "id": "food-leche-cruda",
+    "name": "Leche cruda (sin pasteurizar)",
+    "synonyms": [
+      "leche de tambo sin hervir"
+    ],
+    "verdict": "evitar",
+    "reason": "Puede tener bacterias como listeria o salmonela; si es la única que conseguís, hervila antes de tomarla.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-yogur",
+    "name": "Yogur",
+    "synonyms": [
+      "yogur bebible",
+      "yogur natural"
+    ],
+    "verdict": "safe",
+    "reason": "Hecho con leche pasteurizada, es una opción segura y buena fuente de calcio.",
+    "source": "Mayo Clinic — Pregnancy nutrition"
+  },
+  {
+    "id": "food-huevo-cocido",
+    "name": "Huevo bien cocido",
+    "synonyms": [
+      "huevo duro",
+      "huevo frito bien hecho",
+      "revuelto"
+    ],
+    "verdict": "safe",
+    "reason": "Cociná la clara y la yema hasta que estén firmes; así evitás el riesgo de salmonela.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-huevo-crudo",
+    "name": "Huevo crudo o poco cocido (mayonesa casera, masa cruda)",
+    "synonyms": [
+      "mayonesa casera",
+      "huevo a la copa muy líquido",
+      "masa de torta cruda"
+    ],
+    "verdict": "precaucion",
+    "reason": "El huevo crudo o muy líquido puede tener salmonela: usá mayonesa comercial pasteurizada en vez de casera y evitá probar masa cruda.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-carne-asada",
+    "name": "Carne asada bien cocida",
+    "synonyms": [
+      "asado",
+      "churrasco bien hecho",
+      "carne a la parrilla"
+    ],
+    "verdict": "safe",
+    "reason": "Bien cocida, sin partes rosadas ni jugo con sangre, es una buena fuente de hierro y proteína.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-carne-jugosa",
+    "name": "Carne jugosa o poco cocida (a punto, jugosa por dentro)",
+    "synonyms": [
+      "carne rosada",
+      "medio crudo",
+      "vuelta y vuelta"
+    ],
+    "verdict": "evitar",
+    "reason": "Si queda rosada o con jugo con sangre puede tener toxoplasma u otras bacterias: pedila siempre bien cocida en el embarazo.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-chorizo-parrillero",
+    "name": "Chorizo y morcilla a la parrilla",
+    "synonyms": [
+      "chorizo",
+      "morcilla",
+      "embutido a la parrilla"
+    ],
+    "verdict": "precaucion",
+    "reason": "Asegurate de que estén bien cocidos por dentro (sin partes crudas ni rosadas) antes de comerlos.",
+    "detail": "Son ricos en grasa y sodio: además de la cocción, no conviene abusar de la cantidad.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-fiambres",
+    "name": "Fiambres y embutidos fríos (jamón, salame, mortadela)",
+    "synonyms": [
+      "jamón crudo",
+      "salame",
+      "mortadela",
+      "queso de chancho",
+      "jamón cocido en fetas"
+    ],
+    "verdict": "precaucion",
+    "reason": "Pueden tener listeria: si los vas a comer, calentalos hasta que humeen (por ejemplo en un sandwich caliente) en vez de comerlos fríos directo del paquete.",
+    "detail": "El riesgo es mayor en fiambres artesanales guardados sin buena cadena de frío que en un paquete comercial recién abierto.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-higado",
+    "name": "Hígado (vacuno o de pollo)",
+    "synonyms": [
+      "hígado a la plancha",
+      "higadito"
+    ],
+    "verdict": "precaucion",
+    "reason": "Tiene mucha vitamina A: comelo de vez en cuando, no como plato de todas las semanas.",
+    "detail": "Un exceso de vitamina A (retinol) de origen animal se asocia a riesgos para el desarrollo del bebé.",
+    "source": "NHS — vitamin A in pregnancy"
+  },
+  {
+    "id": "food-pate-higado",
+    "name": "Paté de hígado refrigerado",
+    "synonyms": [
+      "paté untable",
+      "paté de campaña"
+    ],
+    "verdict": "evitar",
+    "reason": "Suma dos riesgos: exceso de vitamina A y más chance de listeria que un paté enlatado estable; mejor evitalo en el embarazo.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-pollo-cocido",
+    "name": "Pollo bien cocido",
+    "synonyms": [
+      "pollo al horno",
+      "milanesa de pollo bien hecha"
+    ],
+    "verdict": "safe",
+    "reason": "Cocido por completo (sin partes rosadas cerca del hueso), es una opción segura y liviana de proteína.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-pollo-crudo",
+    "name": "Pollo crudo o poco cocido",
+    "synonyms": [
+      "pollo rosado por dentro"
+    ],
+    "verdict": "evitar",
+    "reason": "El pollo mal cocido puede tener salmonela o campylobacter: cocinalo siempre bien, sin partes rosadas.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-cerdo-cocido",
+    "name": "Cerdo bien cocido",
+    "synonyms": [
+      "asado de cerdo",
+      "pechito de cerdo"
+    ],
+    "verdict": "safe",
+    "reason": "Bien cocido por dentro, sin partes rosadas, es seguro para comer.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-cerdo-crudo",
+    "name": "Cerdo poco cocido",
+    "synonyms": [
+      "cerdo jugoso",
+      "cerdo rosado"
+    ],
+    "verdict": "evitar",
+    "reason": "El cerdo mal cocido puede transmitir triquinosis: pedilo o cocinalo siempre bien hecho.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-pescado-rio",
+    "name": "Pescado de río (dorado, surubí, pacú)",
+    "synonyms": [
+      "dorado",
+      "surubí",
+      "pacú",
+      "pescado del Paraná"
+    ],
+    "verdict": "precaucion",
+    "reason": "Comé pescado de río 1 o 2 veces por semana, no todos los días: los peces más grandes acumulan más mercurio.",
+    "detail": "Preferí ejemplares más chicos y variá con otros tipos de pescado y carne durante la semana.",
+    "source": "FDA/EPA — Advice about Eating Fish"
+  },
+  {
+    "id": "food-pescado-mar-bajo-mercurio",
+    "name": "Pescado de mar bajo en mercurio (merluza, corvina)",
+    "synonyms": [
+      "merluza",
+      "corvina",
+      "abadejo"
+    ],
+    "verdict": "safe",
+    "reason": "Son pescados de bajo mercurio: podés comerlos con tranquilidad como parte de una alimentación variada.",
+    "source": "FDA/EPA — Advice about Eating Fish"
+  },
+  {
+    "id": "food-atun-enlatado",
+    "name": "Atún enlatado",
+    "synonyms": [
+      "atún en lata",
+      "atún al natural"
+    ],
+    "verdict": "precaucion",
+    "reason": "El atún claro enlatado tiene mercurio moderado: limitalo a 2-3 latas por semana y evitá el atún blanco (albacora) más seguido.",
+    "source": "FDA/EPA — Advice about Eating Fish"
+  },
+  {
+    "id": "food-pescado-alto-mercurio",
+    "name": "Pez espada, tiburón y atún ojo grande",
+    "synonyms": [
+      "pez espada",
+      "tiburón",
+      "atún ojo grande",
+      "atún rojo"
+    ],
+    "verdict": "evitar",
+    "reason": "Son de los pescados con más mercurio: no se recomiendan durante el embarazo.",
+    "source": "FDA/EPA — Advice about Eating Fish"
+  },
+  {
+    "id": "food-sushi-crudo",
+    "name": "Sushi con pescado crudo",
+    "synonyms": [
+      "sashimi",
+      "nigiri de salmón crudo"
+    ],
+    "verdict": "evitar",
+    "reason": "El pescado crudo puede tener parásitos o bacterias: en el embarazo es más seguro dejarlo para después.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-sushi-cocido",
+    "name": "Sushi vegetariano o con pescado bien cocido",
+    "synonyms": [
+      "roll california con kanikama",
+      "roll vegetariano",
+      "roll tempura"
+    ],
+    "verdict": "safe",
+    "reason": "Los rolls con ingredientes cocidos (kanikama, tempura, vegetales) o vegetarianos son una alternativa segura si tenés ganas de sushi.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-mariscos-cocidos",
+    "name": "Mariscos bien cocidos",
+    "synonyms": [
+      "camarones cocidos",
+      "langostinos",
+      "mejillones cocidos"
+    ],
+    "verdict": "safe",
+    "reason": "Bien cocidos, son una fuente segura de proteína y hierro.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-mariscos-crudos",
+    "name": "Mariscos u ostras crudas",
+    "synonyms": [
+      "ostras crudas",
+      "ceviche con pescado crudo",
+      "camarón crudo"
+    ],
+    "verdict": "evitar",
+    "reason": "Crudos tienen más riesgo de bacterias y virus: en el embarazo conviene comerlos siempre bien cocidos.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-chipa",
+    "name": "Chipa",
+    "synonyms": [
+      "chipa horneada",
+      "chipa so'o"
+    ],
+    "verdict": "safe",
+    "reason": "Hecha con almidón, queso y huevo bien horneados, es una comida tradicional segura para comer.",
+    "source": "MSPBS — guía de alimentación en el embarazo"
+  },
+  {
+    "id": "food-sopa-paraguaya",
+    "name": "Sopa paraguaya",
+    "synonyms": [
+      "sopa so'o"
+    ],
+    "verdict": "safe",
+    "reason": "Bien horneada, es una comida tradicional segura; tené en cuenta que es bastante calórica si comés porciones grandes seguido.",
+    "source": "MSPBS — guía de alimentación en el embarazo"
+  },
+  {
+    "id": "food-mandioca-cocida",
+    "name": "Mandioca bien cocida",
+    "synonyms": [
+      "mandioca hervida",
+      "mandi'o"
+    ],
+    "verdict": "safe",
+    "reason": "Bien hervida, es un alimento tradicional y seguro, buena fuente de energía.",
+    "source": "MSPBS — guía de alimentación en el embarazo"
+  },
+  {
+    "id": "food-mandioca-cruda",
+    "name": "Mandioca cruda o mal cocida",
+    "synonyms": [
+      "mandioca a medio cocinar"
+    ],
+    "verdict": "evitar",
+    "reason": "Cruda o mal cocida puede tener compuestos tóxicos: comela siempre bien hervida, nunca cruda.",
+    "source": "OMS — cassava/mandioca, cianógenos"
+  },
+  {
+    "id": "food-locro",
+    "name": "Locro",
+    "synonyms": [
+      "locro de maíz"
+    ],
+    "verdict": "safe",
+    "reason": "Es una comida casera segura; asegurate de que la carne que lleve esté bien cocida.",
+    "source": "MSPBS — guía de alimentación en el embarazo"
+  },
+  {
+    "id": "food-asado-tira",
+    "name": "Asado de tira / vacío bien cocido",
+    "synonyms": [
+      "asado de tira",
+      "vacío",
+      "matambre"
+    ],
+    "verdict": "safe",
+    "reason": "Bien cocido, sin partes rosadas, es una buena fuente de hierro y proteína para el embarazo.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-papaya-madura",
+    "name": "Papaya / mamón maduro",
+    "synonyms": [
+      "mamón maduro",
+      "papaya madura"
+    ],
+    "verdict": "safe",
+    "reason": "Bien madura, la papaya es una fruta segura y una buena fuente de fibra y vitaminas.",
+    "source": "Mayo Clinic — Pregnancy nutrition"
+  },
+  {
+    "id": "food-papaya-verde",
+    "name": "Papaya verde (no madura)",
+    "synonyms": [
+      "mamón verde",
+      "papaya inmadura"
+    ],
+    "verdict": "evitar",
+    "reason": "La papaya verde tiene un látex que puede estimular el útero: comé solo la fruta bien madura.",
+    "source": "NHS — foods to avoid in pregnancy"
+  },
+  {
+    "id": "food-pina",
+    "name": "Piña / ananá",
+    "synonyms": [
+      "ananá"
+    ],
+    "verdict": "safe",
+    "reason": "A pesar del mito, la piña en cantidades normales de comida no provoca parto ni aborto: podés comerla tranquila.",
+    "source": "NHS — foods to avoid in pregnancy"
+  },
+  {
+    "id": "food-verduras-hoja",
+    "name": "Verduras de hoja bien lavadas",
+    "synonyms": [
+      "lechuga",
+      "espinaca",
+      "acelga",
+      "rúcula"
+    ],
+    "verdict": "safe",
+    "reason": "Lavadas bien bajo el chorro de agua, son una buena fuente de hierro y ácido fólico.",
+    "source": "Mayo Clinic — Pregnancy nutrition"
+  },
+  {
+    "id": "food-ensalada-afuera",
+    "name": "Ensaladas crudas fuera de casa (de origen dudoso)",
+    "synonyms": [
+      "ensalada de buffet",
+      "ensalada de un puesto callejero"
+    ],
+    "verdict": "precaucion",
+    "reason": "Si no sabés cómo lavaron las verduras, hay algo más de riesgo de toxoplasmosis o bacterias: preferí lugares de confianza o pedí que estén bien lavadas.",
+    "source": "MSPBS — prevención de toxoplasmosis"
+  },
+  {
+    "id": "food-brotes-crudos",
+    "name": "Brotes crudos (alfalfa, soja)",
+    "synonyms": [
+      "brotes de alfalfa",
+      "brotes de soja",
+      "germinados crudos"
+    ],
+    "verdict": "precaucion",
+    "reason": "Los brotes crudos pueden tener bacterias metidas adentro que no se van solo lavando: si podés, cocinalos antes de comerlos.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-frutas-lavadas",
+    "name": "Frutas bien lavadas en general",
+    "synonyms": [
+      "manzana",
+      "banana",
+      "guayaba",
+      "mango"
+    ],
+    "verdict": "safe",
+    "reason": "Lavadas bajo el chorro de agua antes de comer, son una parte importante y segura de tu alimentación diaria.",
+    "source": "Mayo Clinic — Pregnancy nutrition"
+  },
+  {
+    "id": "food-jugo-callejero",
+    "name": "Jugo de fruta exprimido en la calle",
+    "synonyms": [
+      "jugo de naranja del puesto",
+      "licuado callejero"
+    ],
+    "verdict": "precaucion",
+    "reason": "Fijate que la fruta y el hielo (si lleva) se vean limpios y que el vendedor tenga buena higiene; ante la duda, preferí prepararlo vos.",
+    "source": "MSPBS — higiene alimentaria"
+  },
+  {
+    "id": "food-yuyos-comunes",
+    "name": "Yuyos comunes del tereré (menta, cedrón, burrito)",
+    "synonyms": [
+      "menta",
+      "cedrón",
+      "burrito",
+      "yerbabuena"
+    ],
+    "verdict": "precaucion",
+    "reason": "En las cantidades normales de un tereré no suelen dar problema, pero evitá tomarlos como infusión concentrada o \"remedio\" en dosis altas.",
+    "source": "MSPBS — yuyos y embarazo"
+  },
+  {
+    "id": "food-ruda",
+    "name": "Ruda",
+    "synonyms": [
+      "ruda macho"
+    ],
+    "verdict": "evitar",
+    "reason": "Se usa tradicionalmente para \"bajar\" el embarazo: puede estimular el útero, así que no la tomes de ninguna forma.",
+    "source": "MSPBS — yuyos y embarazo"
+  },
+  {
+    "id": "food-poleo",
+    "name": "Poleo",
+    "synonyms": [
+      "poleo yuyo"
+    ],
+    "verdict": "evitar",
+    "reason": "Es un yuyo con uso tradicional abortivo: no se recomienda en ninguna cantidad durante el embarazo.",
+    "source": "MSPBS — yuyos y embarazo"
+  },
+  {
+    "id": "food-paico",
+    "name": "Paico",
+    "synonyms": [
+      "paico yuyo"
+    ],
+    "verdict": "evitar",
+    "reason": "Se usa tradicionalmente como vermífugo fuerte y estimulante uterino: mejor no tomarlo en el embarazo.",
+    "source": "MSPBS — yuyos y embarazo"
+  },
+  {
+    "id": "food-boldo",
+    "name": "Boldo",
+    "synonyms": [
+      "boldo yuyo"
+    ],
+    "verdict": "precaucion",
+    "reason": "En infusión ocasional y suave no suele ser problema, pero evitalo en dosis altas o concentradas.",
+    "source": "MSPBS — yuyos y embarazo"
+  },
+  {
+    "id": "food-yuyos-abortivos-tradicionales",
+    "name": "Yuyos \"para bajar\" o de uso abortivo tradicional (en general)",
+    "synonyms": [
+      "yuyo para bajar",
+      "remedio casero para bajar"
+    ],
+    "verdict": "evitar",
+    "reason": "Cualquier yuyo que conozcas por su uso tradicional para \"bajar\" o cortar un embarazo puede ser peligroso: no lo tomes, y si ya lo tomaste contactá a tu sanatorio.",
+    "source": "MSPBS — yuyos y embarazo"
+  },
+  {
+    "id": "food-miel",
+    "name": "Miel",
+    "synonyms": [
+      "miel de abeja"
+    ],
+    "verdict": "safe",
+    "reason": "Para la embarazada, la miel es segura; el riesgo de botulismo por miel es solo para bebés menores de un año, no para adultos.",
+    "source": "Mayo Clinic — Pregnancy nutrition"
+  },
+  {
+    "id": "food-edulcorantes",
+    "name": "Edulcorantes artificiales (stevia, sucralosa, aspartamo)",
+    "synonyms": [
+      "stevia",
+      "sucralosa",
+      "aspartamo",
+      "edulcorante de mesa"
+    ],
+    "verdict": "safe",
+    "reason": "Con moderación y dentro de las cantidades habituales de uso diario, se consideran seguros en el embarazo.",
+    "source": "FDA — food additives in pregnancy"
+  },
+  {
+    "id": "food-picante",
+    "name": "Picante / ají",
+    "synonyms": [
+      "comida picante",
+      "ají picante",
+      "salsa picante"
+    ],
+    "verdict": "safe",
+    "reason": "El picante no le hace daño al bebé; si te da acidez o agruras, comé porciones más chicas.",
+    "source": "Mayo Clinic — Pregnancy nutrition"
+  },
+  {
+    "id": "food-frito-callejero",
+    "name": "Comida frita de kiosco o puesto callejero",
+    "synonyms": [
+      "pastelitos fritos de la calle",
+      "empanadas fritas de puesto"
+    ],
+    "verdict": "precaucion",
+    "reason": "La higiene y el aceite reutilizado varían mucho de un puesto a otro: preferí lugares de confianza y comida bien caliente y recién hecha.",
+    "source": "MSPBS — higiene alimentaria"
+  },
+  {
+    "id": "food-achuras",
+    "name": "Achuras y mondongo",
+    "synonyms": [
+      "chinchulines",
+      "mondongo",
+      "riñones"
+    ],
+    "verdict": "precaucion",
+    "reason": "Cociná siempre bien las achuras por dentro y no las comas muy seguido: son altas en grasa y colesterol.",
+    "source": "FDA — Food Safety for Moms-to-Be"
+  },
+  {
+    "id": "food-buffet-rotiseria",
+    "name": "Comida de buffet o rotisería servida hace rato",
+    "synonyms": [
+      "buffet frío",
+      "comida de rotisería del mediodía a la noche"
+    ],
+    "verdict": "precaucion",
+    "reason": "La comida que quedó mucho tiempo sin estar bien caliente o bien fría tiene más riesgo de intoxicación: preferí comida recién hecha o bien recalentada.",
+    "source": "MSPBS — higiene alimentaria"
+  }
+]

@@ -18,84 +18,24 @@ export interface WeekInfo {
   tip: string;
 }
 
-export interface AdPlacement {
-  id: string;
-  sponsorName: string;
-  type: "sanatorio" | "ecografia" | "cordon" | "nutricion";
-  // trimester 0 = applies to all trimesters.
-  trimester: 0 | 1 | 2 | 3;
-  headline: string;
-  body: string;
-  offerTag?: string;
-  whatsappNumber: string;
-  ctaLabel: string;
-  priority: number;
-}
+// G1 content ops: Article / VideoItem / EventItem / DirectoryListing /
+// AdPlacement (and DirectoryCategory) are now defined once, as zod schemas,
+// in lib/content/schemas.ts — that's what validates the JSON seed files.
+// They're re-exported here so every existing `from "@/lib/types"` import
+// keeps working unchanged.
+export type {
+  Article,
+  AdPlacement,
+  DirectoryListing,
+  EventItem,
+  VideoItem,
+  FoodEntry,
+  FoodVerdict,
+} from "./content/schemas";
+import type { DirectoryCategorySchema } from "./content/schemas";
+import type { z } from "zod";
 
 // Broadened in v3 ("Cerca tuyo", build spec §6).
-export type DirectoryCategory =
-  | "sanatorio"
-  | "obstetra"
-  | "ecografia"
-  | "cordon"
-  | "pediatra"
-  | "lactancia"
-  | "vacunatorio"
-  | "tienda_bebe"
-  | "farmacia";
+export type DirectoryCategory = z.infer<typeof DirectoryCategorySchema>;
 
-export interface DirectoryListing {
-  id: string;
-  name: string;
-  category: DirectoryCategory;
-  department: DepartmentSlug;
-  city: string;
-  address?: string;
-  whatsappNumber: string;
-  mapsUrl?: string;
-  isSponsored: boolean;
-  priority: number;
-}
-
-// Curated events (build spec §7). Seed-only — never user-generated.
 export type EventType = "charla" | "taller" | "feria" | "clase" | "encuentro";
-
-export interface EventItem {
-  id: string;
-  title: string;
-  type: EventType;
-  department: DepartmentSlug;
-  city: string;
-  venue?: string;
-  date: number;
-  description: string;
-  organizer: string;
-  whatsappNumber?: string;
-  mapsUrl?: string;
-  isSponsored: boolean;
-}
-
-// Curated educational videos (build spec §4). Seed-only — never user-generated.
-// `youtubeId` is embedded via the privacy-enhanced youtube-nocookie domain.
-export interface VideoItem {
-  id: string;
-  title: string;
-  description: string;
-  topic: string;
-  // trimester 0 = applies to all / general.
-  trimester?: 0 | 1 | 2 | 3;
-  week?: number;
-  youtubeId: string;
-  durationLabel?: string;
-}
-
-export interface Article {
-  slug: string;
-  title: string;
-  excerpt: string;
-  html: string;
-  date: string;
-  author: string;
-  reviewedBy?: string;
-  cluster?: string;
-}

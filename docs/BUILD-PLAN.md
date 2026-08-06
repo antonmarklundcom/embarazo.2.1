@@ -1,5 +1,23 @@
 # Build plan — engineering work
 
+> **August 2026 — read `docs/OPUS-REVIEW-2026-08.md` before planning from this
+> file.** An independent review found that this plan is sequenced for feature
+> parity with Preggers rather than for reaching real users, and recommends
+> (a) moving accounts/sync (A2–A7) off the launch path, (b) building B5 push
+> **without** accounts, (c) promoting D3 (food lookup) into the first release,
+> (d) deferring Phase F, and (e) adding **Phase J — Android/Play packaging**
+> (`docs/ANDROID-LAUNCH.md`), which this plan is missing entirely despite Play
+> being the founder's stated distribution target. Those are recommendations
+> awaiting a founder decision; the phases below are unchanged until then.
+>
+> Also new, same review round: **`docs/FLO-BENCHMARK.md`** (the second
+> inspiration app, which the 31-item Preggers map does not cover — community,
+> AI assistant, symptom insight, courses, plus the Paraguay-only items no
+> global app has) and **`docs/MVP-AND-MONETISATION.md`** (the v1.0 cut line,
+> and why **§I3's Tigo Money / bank-transfer payment design violates Google
+> Play's billing policy** for in-app digital goods — sponsorship, not
+> subscriptions, is the day-one business).
+
 > **v3 — July 2026 (rewritten).** The plan changed direction after the
 > founder reviewed the Preggers benchmark and decided to:
 > **(1)** build all 31 benchmarked features (`docs/FEATURE-MAP.md`),
@@ -486,6 +504,46 @@ preview, a confirmation step and a per-broadcast audit row. Feature flags
 and gates (`PUBLISHED_*`, `AI_BABY_ENABLED`) toggleable from the panel.
 **Done when:** a broadcast cannot be sent without an explicit confirm and
 is fully audited; a mis-send can be traced to a person.
+
+---
+
+## Phase J — Android / Google Play (new, August 2026)
+
+The distribution target is a Play Store listing, and no phase above accounts
+for it. Full playbook in **`docs/ANDROID-LAUNCH.md`**; the code-side work is
+small, and most of the schedule risk is in the account type and the forms.
+
+### J1 TWA wrapper — **S**
+Package the PWA as a Trusted Web Activity (PWABuilder first, Bubblewrap once it
+needs to live in CI). `targetSdkVersion` **36** — required for new apps from
+31 August 2026 — and `enableNotifications: true` so B5 push can ever reach an
+Android 13+ phone.
+**Done when:** a signed `.aab` uploads to internal testing and the installed
+app opens with **no URL bar** on a real phone.
+
+### J2 Digital Asset Links — **S**
+`public/.well-known/assetlinks.json` carrying **both** the upload key and the
+Play App Signing key SHA-256 fingerprints. Listing only the upload key is what
+produces the URL bar in J1.
+**Done when:** `curl https://<domain>/.well-known/assetlinks.json` returns the
+JSON with no redirect, and Google's asset-link checker passes.
+
+### J3 Keep the Data safety answer clean — **S**
+Move directory/placement filtering client-side so `department` stops being
+transmitted, and trim `/api/v1/go` attribution to the id. That preserves an
+honest **"No data collected"** on the store listing — a visible badge and a
+real asset for a pregnancy app. See `docs/ANDROID-LAUNCH.md` §3.1.
+**Done when:** no API call carries a location-derived or health-derived
+parameter; the whitelist tests are updated to match.
+
+### J4 Listing assets — **S** (mostly founder work)
+Real 512×512 icon, 1024×500 feature graphic, 5–8 framed screenshots, es-PY
+descriptions. `npm run gen:screenshots` is a starting point, not the deliverable.
+
+**Blocked on the founder, not on code:** developer account type (personal vs
+organization — a 3–6 week timeline difference, see `ANDROID-LAUNCH.md` §1),
+D-U-N-S number, identity verification, and the lawyer-reviewed privacy policy
+URL, which must be live before submission.
 
 ---
 

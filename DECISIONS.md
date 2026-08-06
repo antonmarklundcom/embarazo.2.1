@@ -163,3 +163,33 @@ Founder decision after reviewing 16 screens of the Swedish app Preggers
 - Pre-existing `npm audit` findings (sharp/libvips via next) are unchanged by
   this work; fixing them means bumping `next` past the pinned 15.1.6 and is
   tracked separately.
+
+## Note encryption — UTF-8 and backup v2 (August 2026)
+Two defects found during the August review (`docs/OPUS-REVIEW-2026-08.md` §3),
+both of which silently destroyed journal notes rather than failing loudly.
+- **`lib/crypto.ts` encoded plaintext with a `charCodeAt` loop**, truncating
+  every code point above U+00FF, while `decryptNote()` decoded as UTF-8. Any
+  note containing á/é/í/ó/ú/ñ/¡/¿ or an emoji came back as replacement
+  characters — in an es-PY app, most notes. Now encoded with `TextEncoder`.
+  `latinBytes` is kept for base64 strings only (all chars ≤ U+00FF there by
+  construction), and `toB64` chunks its input so a long note cannot exceed the
+  `String.fromCharCode` argument limit.
+  **No migration is provided**: notes encrypted before this fix are already
+  lossy, and there is no correct plaintext to recover. There are no real users
+  yet, which is the only reason that is acceptable.
+- **The PIN salt + verifier live in `localStorage`, which `exportBackup()` did
+  not include.** Restoring a backup onto a new phone — the one scenario backup
+  exists for — produced ciphertext with the key material left on the old
+  device: permanently unreadable, with no error. Backup format is now **v2**
+  and carries `pin: { salt, verifier }` via `exportPinMaterial()` /
+  `importPinMaterial()`. v1 files still restore (no PIN material, which is
+  correct for a backup taken without a PIN). **The PIN itself is still never
+  persisted anywhere** — the salt is useless without it, and whoever holds the
+  backup file already holds the ciphertext.
+- The same gap would have followed the app into A3: syncing the `journal` store
+  moves encrypted notes to a second device that cannot derive the key. Whatever
+  shape sync takes, PIN material has to travel with it or encrypted notes must
+  be excluded from sync explicitly and visibly.
+- Covered by `lib/crypto.test.ts` (11 tests), including the accented/emoji
+  round-trip, a 50k-char note, a non-ASCII PIN, and a cross-device restore.
+  `localStorage` is stubbed in-test rather than pulling in jsdom for two globals.

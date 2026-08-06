@@ -16,6 +16,7 @@ jobs:
           cache: "npm"
       - run: npm ci
       - run: npm run lint
+      - run: npm run validate:content
       - run: npm test
       # NEXT_PUBLIC_APP_URL is deliberately NOT set here: this is a compile
       # check, not a deployment, so the Z2 launch checks (lib/launchChecks.ts)

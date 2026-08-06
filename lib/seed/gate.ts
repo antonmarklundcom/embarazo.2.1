@@ -50,3 +50,21 @@ export function isPlaceholderRecord(record: unknown): boolean {
 export function publishedOnly<T>(items: readonly T[]): T[] {
   return items.filter((item) => !isPlaceholderRecord(item));
 }
+
+/**
+ * A second, narrower gate for content that must clear medical review before
+ * it renders (D3's food lookup, and any future seed with the same shape):
+ * an entry with no `reviewedBy` has not been signed off and must not reach a
+ * user, exactly like a placeholder. This reuses the same gate *pattern* as
+ * `publishedOnly` (filter the seed array once, at the module boundary) rather
+ * than inventing a second mechanism — call sites still only ever render the
+ * `PUBLISHED_*` / `REVIEWED_*` export, never the raw seed array.
+ */
+export function isUnreviewed(record: { reviewedBy?: string }): boolean {
+  return !record.reviewedBy || record.reviewedBy.trim().length === 0;
+}
+
+/** Drops every entry that hasn't been signed off by a reviewer yet. */
+export function reviewedOnly<T extends { reviewedBy?: string }>(items: readonly T[]): T[] {
+  return items.filter((item) => !isUnreviewed(item));
+}

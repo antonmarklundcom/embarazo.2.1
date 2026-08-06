@@ -193,3 +193,60 @@ both of which silently destroyed journal notes rather than failing loudly.
 - Covered by `lib/crypto.test.ts` (11 tests), including the accented/emoji
   round-trip, a 50k-char note, a non-ASCII PIN, and a cross-device restore.
   `localStorage` is stubbed in-test rather than pulling in jsdom for two globals.
+
+## G1 — content ops (August 2026)
+- **`lib/content/schemas.ts` is the single source of truth** for `Article`,
+  `VideoItem`, `EventItem`, `DirectoryListing`, `AdPlacement` (and D3's
+  `FoodEntry`): each is now a zod schema with its TS type derived via
+  `z.infer`, re-exported from `lib/types.ts` so every existing
+  `from "@/lib/types"` import kept working unchanged. Previously the
+  hand-written `interface`s in `lib/types.ts` and the JSON/TS seed data could
+  drift silently; now the schema is what both the app and CI validate against.
+- **Articles and videos moved from typed `.ts` arrays to `.json`**
+  (`lib/seed/articles.json`, `lib/seed/videos.json`), matching the shape
+  `directory.json`/`placements.json` already had. The `.ts` files became thin
+  loaders: parse the JSON, validate every entry through
+  `validateContentArray()`, and **throw at import time** (not just at
+  `validate:content` time) with a message naming the file, the entry (index +
+  id), the field and a plain-Spanish reason. A non-developer editing
+  `articles.json` badly breaks the build loudly, not a silent bad render.
+- **Events moved to `events.json` with fixed epoch-millisecond `date`
+  values**, replacing `events.ts`'s `inDays()` helper that computed dates
+  relative to `Date.now()` at module load. That old shape meant "today's
+  build" and "yesterday's build" showed a different demo calendar and, worse,
+  couldn't be validated as correct by a schema (a computed value has no fixed
+  answer to check against). A plain JSON number structurally rules out
+  "computed at module load"; `validate-content.mts` additionally greps
+  `lib/seed/*.ts` for `Date.now()`/`new Date()` as a belt-and-braces check in
+  case a future seed file reintroduces the pattern.
+- **`npm run validate:content`** (`scripts/validate-content.mts`) runs the
+  same schemas over every JSON content file, prints one line per problem
+  (file — entry — field — reason), and is wired into `.github/workflows/ci.yml`
+  right after lint. It is written in TypeScript and run via
+  `node --experimental-strip-types` (Node 22.6+, unflagged from Node 23.6) —
+  **deliberately not a new dependency**: no `tsx`/`ts-node` needed. `engines.node`
+  bumped to `>=22.6.0` accordingly. The only friction this caused: relative
+  imports need an explicit `.ts` extension for Node's own ESM resolver to find
+  them outside a bundler (`lib/content/schemas.ts` importing
+  `lib/departments.ts`), so `tsconfig.json` gained `allowImportingTsExtensions`
+  (harmless with `noEmit: true`, which was already set). Type-only imports
+  (`import type`) are erased entirely by the stripper and never hit this
+  problem, which is why only the one value-import needed the extension.
+- **Id validation catches placeholder tokens** (`todo`, `xxx`, `changeme`,
+  `sample`, `test`) as a distinct failure from the existing gate.ts
+  placeholder-text scan: an id like `TODO-fix-this` is a drafting mistake
+  that should fail CI, whereas a *published* field saying
+  `"Sanatorio X (placeholder)"` is intentional seed data that should build
+  fine and just stay hidden (`publishedOnly()`). Conflating the two would
+  either let sloppy ids through or fail the build on legitimate placeholder
+  seed content.
+- **Phone validation is strict `+595` + 9 digits, no formatting** — the
+  existing placeholder range (`+595981000xxx`) already matches this shape, so
+  no seed data needed reformatting; only genuinely malformed numbers
+  (missing `+`, wrong digit count, embedded spaces/dashes) fail.
+- **`gate.ts` gained `isUnreviewed()` / `reviewedOnly()`**, the second half of
+  the existing `PUBLISHED_*` gate pattern rather than a new mechanism: an
+  entry with no (or blank) `reviewedBy` is filtered out exactly the way a
+  placeholder entry is. D3's food lookup is the first consumer; any future
+  content needing "must clear medical review before rendering" reuses this
+  instead of inventing another flag.

@@ -418,7 +418,7 @@ result is labelled entertainment everywhere it appears.
 
 ## Phase G — launch readiness
 
-### G1 Content ops (was P2.3) — **M** — do this **before** the content push
+### G1 Content ops (was P2.3) — **M** — do this **before** the content push — ✅ DONE
 Move articles, events, videos, directory, placements and the D3 food data
 to validated JSON with zod schemas + `npm run validate:content` in CI:
 slugs, dates, `+595` formats, department slugs, no placeholder ids, no
@@ -426,6 +426,25 @@ module-load timestamps. This is what lets Gemini-generated content and
 founder edits land without TypeScript knowledge or code review — it is on
 the critical path to launch, not a nicety.
 **Done when:** an invalid entry fails CI with a readable message.
+
+Shipped as `lib/content/schemas.ts` (zod schemas + `z.infer` types for
+`Article`/`VideoItem`/`EventItem`/`DirectoryListing`/`AdPlacement`/`FoodEntry`,
+re-exported from `lib/types.ts` so existing imports were untouched) and
+`scripts/validate-content.mts` (`npm run validate:content`, wired into CI right
+after lint). Articles and videos moved from typed `.ts` arrays to
+`articles.json`/`videos.json`; events moved to `events.json` with **fixed**
+epoch-millisecond dates, replacing the old `inDays()` helper that computed
+dates from `Date.now()` at module load. Every seed loader (`lib/seed/*.ts`,
+`lib/wordpress.ts`) validates at import time too, not just in CI — a bad entry
+throws immediately, naming the file, the entry (index + id), the field and a
+plain-Spanish reason. Catches: bad slugs, malformed/impossible dates, non-`+595`
+phone formats, unknown department slugs, placeholder-token ids
+(`todo`/`xxx`/`changeme`/…), duplicate ids, and (via a grep guard) any seed
+`.ts` file that still computes a date at module load. The existing `PUBLISHED_*`
+gate (`lib/seed/gate.ts`) is unchanged and still runs after validation —
+placeholder data validates fine (it's well-formed) and stays hidden. See
+DECISIONS.md "G1 — content ops" for the `node --experimental-strip-types`
+choice (no new dependency) and the id-vs-placeholder-text distinction.
 
 ### G2 Analytics (was P1.3)
 Aggregate product metrics off the existing tables + `content_stats`: 

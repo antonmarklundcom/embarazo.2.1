@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPlaceholderRecord, publishedOnly } from "./gate";
+import { isPlaceholderRecord, isUnreviewed, publishedOnly, reviewedOnly } from "./gate";
 import { EVENTS, PUBLISHED_EVENTS } from "./events";
 import { VIDEOS, PUBLISHED_VIDEOS } from "./videos";
 import { getDirectory, getPlacements } from "../wordpress";
@@ -82,6 +82,26 @@ describe("seed gating (current state: everything is placeholder)", () => {
   it("publishes no invented placements", async () => {
     expect(placementsData.placements.length).toBeGreaterThan(0);
     await expect(getPlacements()).resolves.toHaveLength(0);
+  });
+});
+
+describe("isUnreviewed / reviewedOnly (D3 review gate)", () => {
+  it("flags an entry with no reviewedBy at all", () => {
+    expect(isUnreviewed({})).toBe(true);
+  });
+
+  it("flags an entry with an empty/blank reviewedBy", () => {
+    expect(isUnreviewed({ reviewedBy: "" })).toBe(true);
+    expect(isUnreviewed({ reviewedBy: "   " })).toBe(true);
+  });
+
+  it("passes an entry with a real reviewedBy", () => {
+    expect(isUnreviewed({ reviewedBy: "Dra. Pérez" })).toBe(false);
+  });
+
+  it("drops unreviewed entries and keeps reviewed ones", () => {
+    const items = [{ id: "a" }, { id: "b", reviewedBy: "Dra. Pérez" }];
+    expect(reviewedOnly(items)).toEqual([{ id: "b", reviewedBy: "Dra. Pérez" }]);
   });
 });
 

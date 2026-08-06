@@ -106,6 +106,7 @@ export default function InicioPage() {
           <ToolCard href="/herramientas/contracciones" title="Contracciones" subtitle="Cronometrá" icon="timer" />
           <ToolCard href="/herramientas/peso" title="Peso" subtitle="Seguí tu progreso" icon="scale" />
           <ToolCard href="/herramientas/fotos" title="Fotos" subtitle="Diario de tu panza" icon="camera" />
+          <ToolCard href="/herramientas/comer" title="¿Puedo comer...?" subtitle="Buscá un alimento" icon="food" />
         </div>
       </section>
 
@@ -322,7 +323,7 @@ function ToolCard({
   href: string;
   title: string;
   subtitle: string;
-  icon: "feet" | "timer" | "scale" | "camera";
+  icon: "feet" | "timer" | "scale" | "camera" | "food";
 }) {
   return (
     <Link
@@ -338,7 +339,7 @@ function ToolCard({
   );
 }
 
-function ToolIcon({ name }: { name: "feet" | "timer" | "scale" | "camera" }) {
+function ToolIcon({ name }: { name: "feet" | "timer" | "scale" | "camera" | "food" }) {
   const common = {
     width: 24,
     height: 24,
@@ -379,6 +380,13 @@ function ToolIcon({ name }: { name: "feet" | "timer" | "scale" | "camera" }) {
         <svg {...common}>
           <path d="M4 8h16M4 8v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M9 4h6l1 4H8Z" />
           <circle cx="12" cy="14" r="2.4" />
+        </svg>
+      );
+    case "food":
+      return (
+        <svg {...common}>
+          <path d="M6 3v7a2.5 2.5 0 0 0 5 0V3M8.5 3v7" />
+          <path d="M16 3c-1.5 1.5-2 3-2 5s1 3 2 3v10" />
         </svg>
       );
   }

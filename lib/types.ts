@@ -29,6 +29,8 @@ export type {
   DirectoryListing,
   EventItem,
   VideoItem,
+  FoodEntry,
+  FoodVerdict,
 } from "./content/schemas";
 import type { DirectoryCategorySchema } from "./content/schemas";
 import type { z } from "zod";

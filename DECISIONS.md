@@ -250,3 +250,45 @@ both of which silently destroyed journal notes rather than failing loudly.
   placeholder entry is. D3's food lookup is the first consumer; any future
   content needing "must clear medical review before rendering" reuses this
   instead of inventing another flag.
+
+## D3 — "¿Puedo comer...?" food lookup (August 2026)
+- **`lib/seed/food.json`** ships **62 entries** weighted to what Paraguayans
+  actually eat and ask about (tereré, mate, cocido, carne asada, chorizo,
+  quesú Paraguay, chipa, mandioca, sopa paraguaya, pescado de río, sushi,
+  yuyos, café, alcohol, quesos blandos, huevo, fiambres, hígado, papaya/mamón,
+  piña, and related items), validated by `FoodEntrySchema`
+  (`lib/content/schemas.ts`) the same way every other G1 content type is.
+  **`reviewedBy` is unset on every entry, on purpose** — none of it has
+  cleared medical review yet, so `PUBLISHED_FOOD`
+  (`reviewedOnly(FOOD)`, `lib/seed/food.ts`) is empty today, asserted by
+  `lib/seed/food.test.ts`. The page (`/herramientas/comer`) only ever imports
+  `PUBLISHED_FOOD`, so it shows its honest "no revisado todavía" empty state
+  rather than any content until a reviewer signs off — verified by hitting the
+  route on a production build.
+- **Conservative by construction, not just by convention**: every entry with
+  mixed or context-dependent evidence (fiambres, quesos blandos, hígado,
+  boldo, pescado de río, huevo poco cocido…) is `precaucion`, never `safe`.
+  `safe` is reserved for items with no real controversy (bien cocido/bien
+  lavado/pasteurizado, o mitos ya desmentidos como la piña). `evitar` is
+  reserved for well-established risks (alcohol, pescado con alto mercurio,
+  pescado/carne crudos, mandioca cruda, yuyos con uso tradicional abortivo).
+  Every `reason` states the actual concern and the action to take — "cociná
+  bien la carne" / "limitá a 1-2 porciones por semana" — never just
+  "consultá a tu médico" as the whole answer; that line only appears once, in
+  the page-level disclaimer.
+- **Fully client-side, no network call**: the page filters `PUBLISHED_FOOD`
+  in memory (`useMemo` over name + synonyms); there's no `/api/v1/food` route
+  and nothing to whitelist-test, unlike the directory/placements APIs. This is
+  also why it needed no data-contract review beyond "does this even touch the
+  server" — it doesn't.
+- **Explicitly precached** (`app/sw.ts`'s `pageRoutes`) alongside the weeks and
+  guías, rather than relying on defaultCache's runtime caching like the other
+  herramientas tool pages — the point of "¿Puedo comer...?" is working with
+  zero network ever, including on first install before the page has been
+  visited once.
+- **Ids drop diacritics** (`food-pina`, not `food-piña`) to satisfy the same
+  `idSchema` slug shape as every other content type — caught by
+  `npm run validate:content` during authoring, which is exactly the kind of
+  mistake G1 was built to catch loudly instead of silently.
+- Linked from the herramientas grid and the home screen's "Herramientas"
+  2-column grid (new `food` icon in `ToolIcon`, `app/(app)/page.tsx`).

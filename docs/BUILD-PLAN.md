@@ -324,13 +324,28 @@ for any week 1–42, offline, in the pastel language, with no layout shift.
 Kegel (timed exercises), **name picker with Guaraní names**, dental
 health, diary, sleep. Name picker is the sharing magnet — build its share
 card with E2.
-### D3 Food lookup (map #23) — the single most valuable content asset — **M**
+### D3 Food lookup (map #23) — the single most valuable content asset — **M** — ✅ DONE
 "¿Puedo comer…?" searchable database with a safe/caution/avoid verdict and
 a one-line reason: tereré, mate, carne asada, chorizo, quesú Paraguay,
 pescado de río (mercury), mandioca, chipa, yuyos, embutidos, sushi.
 Data as validated JSON (G1 schema) so the founder/Gemini can extend it.
 **Done when:** search is instant and offline; every entry has a reason and
 a reviewer flag; unreviewed entries do not render.
+
+Shipped as `/herramientas/comer` (`app/(app)/herramientas/comer/page.tsx`):
+instant client-side search (no API call) over `PUBLISHED_FOOD`
+(`lib/seed/food.ts`), which is `lib/seed/food.json`'s 62 entries run through
+`FoodEntrySchema` (G1) and then `reviewedOnly()` (`lib/seed/gate.ts`) — the
+same gate pattern as `PUBLISHED_*` elsewhere, reused rather than reinvented.
+Every entry ships today with `reviewedBy` unset, so `PUBLISHED_FOOD` is
+empty and the page shows an honest "no revisado todavía" state; asserted by
+`lib/seed/food.test.ts`. Verdicts are conservative by construction — mixed
+evidence gets `precaucion`, never `safe` — and every reason names the actual
+concern and the action to take, not just "consultá a tu médico". Explicitly
+precached in `app/sw.ts` alongside the weeks/guías so it works fully offline
+from first install. Linked from the herramientas grid and the home screen's
+tools grid. See DECISIONS.md "D3" for the verdict-conservatism rules and why
+there's no API route at all.
 ### D4 Checklist as its own tab (map #24) + nav IA
 Promote checklists to the bottom nav. Resolves the open 5-tab question:
 proposed **Hoy · Guías · Checklist · Herramientas · Cerca tuyo**, with

@@ -22,6 +22,10 @@ declare const self: ServiceWorkerGlobalScope;
 const pageRoutes: string[] = [
   "/",
   "/guias",
+  // D3 food lookup: explicitly precached like the weeks/guías so "¿Puedo
+  // comer...?" works fully offline from first install, not just after a
+  // visit — it's meant to be reachable with zero network, ever.
+  "/herramientas/comer",
   ...Array.from(
     { length: MAX_WEEK - MIN_WEEK + 1 },
     (_, i) => `/semana/${MIN_WEEK + i}`,

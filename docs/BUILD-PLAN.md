@@ -9,6 +9,14 @@
 > (`docs/ANDROID-LAUNCH.md`), which this plan is missing entirely despite Play
 > being the founder's stated distribution target. Those are recommendations
 > awaiting a founder decision; the phases below are unchanged until then.
+>
+> Also new, same review round: **`docs/FLO-BENCHMARK.md`** (the second
+> inspiration app, which the 31-item Preggers map does not cover — community,
+> AI assistant, symptom insight, courses, plus the Paraguay-only items no
+> global app has) and **`docs/MVP-AND-MONETISATION.md`** (the v1.0 cut line,
+> and why **§I3's Tigo Money / bank-transfer payment design violates Google
+> Play's billing policy** for in-app digital goods — sponsorship, not
+> subscriptions, is the day-one business).
 
 > **v3 — July 2026 (rewritten).** The plan changed direction after the
 > founder reviewed the Preggers benchmark and decided to:

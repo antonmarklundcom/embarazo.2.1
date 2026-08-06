@@ -1,4 +1,9 @@
 import { db } from "./db";
+import {
+  exportPinMaterial,
+  importPinMaterial,
+  type PinMaterial,
+} from "./crypto";
 
 // Local backup/restore (Phase 0 hardening). All health data lives only in
 // IndexedDB (see lib/db.ts) — if the browser evicts storage, the phone is
@@ -6,12 +11,21 @@ import { db } from "./db";
 // gives users a way to save a copy themselves and restore it later, without
 // any of it ever touching a server.
 
-const BACKUP_VERSION = 1;
+// v2 adds `pin`: the salt + verifier for encrypted journal notes. v1 files are
+// still accepted — they simply carry no PIN material, which is correct for a
+// backup taken without a PIN.
+const BACKUP_VERSION = 2;
 
 interface BackupFile {
   app: "mibebe";
   version: number;
   exportedAt: number;
+  /**
+   * PIN salt + verifier (never the PIN). Encrypted notes are in `tables`, but
+   * the key material lives in localStorage; without this, a restore on a new
+   * device leaves every encrypted note permanently unreadable.
+   */
+  pin?: PinMaterial | null;
   tables: {
     profile: unknown[];
     pregnancy: unknown[];
@@ -93,6 +107,7 @@ export async function exportBackup(): Promise<Blob> {
     app: "mibebe",
     version: BACKUP_VERSION,
     exportedAt: Date.now(),
+    pin: exportPinMaterial(),
     tables: {
       profile,
       pregnancy,
@@ -190,4 +205,10 @@ export async function importBackup(file: File): Promise<void> {
       ]);
     },
   );
+
+  // After the rows land, adopt the backup's PIN material so encrypted notes in
+  // it can be unlocked with the PIN they were written under. A v1 file (or one
+  // taken with no PIN) clears whatever this device had — its notes are
+  // plaintext, and leaving a stale PIN in place would lock a lock with no door.
+  importPinMaterial(parsed.pin ?? null);
 }

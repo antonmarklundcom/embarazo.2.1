@@ -58,6 +58,19 @@ export const users = mysqlTable(
     // admin can exist before anyone can grant the role.
     role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
 
+    // A2: the explicit health-data consent taken at sign-up (ARCHITECTURE.md
+    // §8). Nullable because a row can exist without it — the sign-in callback
+    // refuses those, and a null here is the evidence that it did. The version
+    // records WHICH consent text was accepted, so re-consenting after a
+    // material rewrite is a query, not an archaeology project.
+    healthDataConsentAt: timestamp("healthDataConsentAt", {
+      mode: "date",
+      fsp: 3,
+    }),
+    healthDataConsentVersion: varchar("healthDataConsentVersion", {
+      length: 64,
+    }),
+
     createdAt: timestamp("createdAt", { mode: "date", fsp: 3 })
       .defaultNow()
       .notNull(),

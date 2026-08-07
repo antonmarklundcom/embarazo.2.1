@@ -182,7 +182,7 @@ and cannot tolerate the shim (see DECISIONS.md). Data-contract invariants
 no prompt/photo columns on `aiGenerations`) are asserted in
 `lib/server/schema.test.ts` so widening them fails a test.
 
-### A2 Auth.js with Google (Facebook flagged) — **M**
+### A2 Auth.js with Google (Facebook flagged) — **M** ✅ DONE
 NextAuth v5 + Drizzle adapter, JWT session in an httpOnly cookie.
 `/api/auth/[...nextauth]`, a branded sign-in screen in the pastel
 language, and an explicit **consent step** for storing health data (not a
@@ -192,6 +192,24 @@ privacy-policy URL, so it must not block anything.
 **Done when:** Google sign-in works end to end; sessions survive reload;
 `/ajustes` shows the account; **"seguir sin cuenta" remains fully usable**
 and is not a dead end.
+
+Shipped: `lib/server/auth.ts` (lazy NextAuth v5 + Drizzle adapter, JWT
+session, `isAuthAvailable()`), `app/api/auth/[...nextauth]/route.ts`, the
+branded sign-in screen at `/cuenta` (`components/SignInCard.tsx`), the
+account block on `/ajustes` (`components/AccountSection.tsx` +
+`AccountCard.tsx`), and `users.healthDataConsentAt` /
+`healthDataConsentVersion` (migration `drizzle/0001_orange_rage.sql`).
+The consent step is enforced, not decorative: the checkbox mints a
+short-lived httpOnly ticket and the Auth.js `signIn` callback refuses the
+sign-in without one — and it runs *before* `handleLoginOrRegister`, so a
+refused sign-in leaves no user row. Facebook is registered as a provider
+only when `AUTH_FACEBOOK_ENABLED=true` **and** both credentials are
+present; unflagged it does not exist anywhere in the running app. Local-only
+mode is verified by running the production build with `AUTH_SECRET`,
+`AUTH_GOOGLE_*` and `DATABASE_URL` all unset: the app serves every screen,
+sets no session cookie, and `/api/auth/*` 404s instead of 500-ing. Covered
+by `lib/auth/config.test.ts` (18), `lib/auth/consent.test.ts` (12) and
+`e2e/account.spec.ts` (3).
 
 ### A3 Sync engine — **L**
 Dexie v5 adds `updatedAt` / `deletedAt` / `dirty` to synced stores plus a

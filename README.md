@@ -50,6 +50,16 @@ NEXT_PUBLIC_APP_URL=                 # URL pública, ej. https://app.tudominio.c
 NEXT_PUBLIC_BUSINESS_WHATSAPP=       # +595... contacto de respaldo
 NEXT_PUBLIC_MEDICAL_REVIEWER=        # ej. "Dra. ___, gineco-obstetra"
 
+# --- CUENTAS (opcional; sin esto la app corre en modo local) ---
+DATABASE_URL=                        # mysql://... ; sin valor = solo dispositivo
+AUTH_SECRET=                         # openssl rand -base64 32
+AUTH_URL=                            # https://... (solo producción)
+AUTH_GOOGLE_ID=
+AUTH_GOOGLE_SECRET=
+AUTH_FACEBOOK_ENABLED=false          # requiere verificación de negocio en Meta
+AUTH_FACEBOOK_ID=
+AUTH_FACEBOOK_SECRET=
+
 # --- OPCIONALES (la app funciona sin esto) ---
 SHEETS_WEBHOOK_URL=                  # atribución de clics opcional; sin valor = redirección directa
 WP_API_URL=                          # fuente de contenido futura; sin valor = seed del repo
@@ -57,6 +67,34 @@ WP_API_URL=                          # fuente de contenido futura; sin valor = s
 
 `SHEETS_WEBHOOK_URL` y `WP_API_URL` son **opcionales**: la app corre por
 completo sin ellas, usando los datos seed del repositorio.
+
+Las variables de cuentas también son opcionales. Con `AUTH_SECRET`,
+`AUTH_GOOGLE_*` o `DATABASE_URL` sin valor, la app corre completa en modo
+**"seguir sin cuenta"**: `/cuenta` explica que el ingreso no está activo,
+`/ajustes` muestra el bloque de cuenta en su estado local, y
+`/api/auth/*` responde 404 en lugar de fallar
+(ARCHITECTURE.md §4.2). Es la configuración con la que corre CI.
+
+### Configurar el cliente OAuth de Google
+
+En Google Cloud Console → *APIs & Services* → *Credentials* → *OAuth client
+ID* (tipo **Web application**):
+
+- **Authorized JavaScript origins**: `https://tu-dominio.com.py`
+  (y `http://localhost:3000` para desarrollo).
+- **Authorized redirect URIs**:
+  `https://tu-dominio.com.py/api/auth/callback/google`
+  (y `http://localhost:3000/api/auth/callback/google`).
+
+Los alcances son los que Auth.js pide por defecto — `openid`, `email`,
+`profile` — y no se amplían nunca: de Google solo se guardan nombre, correo
+y foto de perfil (ARCHITECTURE.md §4.7).
+
+**Facebook** queda detrás de `AUTH_FACEBOOK_ENABLED`. Mientras esté en
+`false` o sin valor, el proveedor no existe: no aparece en `/cuenta`, no se
+registra en Auth.js y no bloquea nada. Meta exige verificación de negocio y
+revisión de la app —que tarda semanas y necesita la política de privacidad
+publicada— antes de poder activarlo.
 
 ## Cómo editar el contenido
 

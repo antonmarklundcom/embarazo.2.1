@@ -2,7 +2,7 @@
   "name": "mibebe-app",
   "version": "2.1.0",
   "private": true,
-  "description": "Mi Beb\u00e9 \u2014 privacy-by-design pregnancy PWA for Paraguay",
+  "description": "Mi Bebé — privacy-by-design pregnancy PWA for Paraguay",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -21,12 +21,14 @@
     "gen:screenshots": "node scripts/gen-screenshots.mjs"
   },
   "dependencies": {
+    "@auth/drizzle-adapter": "^1.11.3",
     "@tanstack/react-query": "^5.59.0",
     "dexie": "^4.0.10",
     "dexie-react-hooks": "^1.1.7",
     "drizzle-orm": "^0.45.2",
     "mysql2": "^3.23.1",
     "next": "15.1.6",
+    "next-auth": "^5.0.0-beta.32",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "server-only": "^0.0.1",

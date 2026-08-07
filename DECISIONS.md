@@ -292,3 +292,75 @@ both of which silently destroyed journal notes rather than failing loudly.
   mistake G1 was built to catch loudly instead of silently.
 - Linked from the herramientas grid and the home screen's "Herramientas"
   2-column grid (new `food` icon in `ToolIcon`, `app/(app)/page.tsx`).
+
+## A2 — Auth.js with Google, Facebook flagged (August 2026)
+- **The consent checkbox is load-bearing, not copy.** ARCHITECTURE.md §8 bans
+  the "by continuing you agree" pattern, so the tick has to survive the OAuth
+  round-trip and be checkable on the server. It does that as a short-lived
+  httpOnly ticket (`lib/auth/consent.ts`: `version|issuedAt`, 15-minute TTL,
+  `sameSite=lax` so Google's redirect back still carries it) that only
+  `startSignIn` can mint and only the Auth.js `signIn` callback accepts.
+  Ordering matters and was checked against `@auth/core`'s source rather than
+  assumed: `handleAuthorized` — which runs our callback — fires **before**
+  `handleLoginOrRegister`, so a sign-in without consent creates no `users` row
+  at all. The ticket is deliberately **unsigned**: it carries no identity and
+  grants nothing on its own, so forging it buys an attacker only the right to
+  consent on their own behalf. Signing it would add a key to rotate for no
+  threat removed.
+- **The ticket has a version, and so does the user row.**
+  `users.healthDataConsentVersion` records *which* consent text an account
+  accepted, not just that it accepted something. Rewriting the text (A4 will)
+  is then a version bump that invalidates old tickets and makes "who has not
+  re-consented" a query instead of an archaeology project.
+- **JWT sessions, not database sessions**, per ARCHITECTURE.md §6. The Drizzle
+  adapter still owns `users`/`accounts` — so email-based account linking and
+  A5's deletion story work unchanged — but every page render is a cookie read
+  instead of a round-trip to Hostinger's MySQL. On Paraguayan mobile data that
+  difference is the whole "sessions survive reload" requirement.
+- **`isAuthAvailable()` is `isAuthConfigured(env) && isDatabaseConfigured()`**,
+  and it follows lib/server/db.ts's discipline exactly: nothing reads a secret
+  or connects at import time, nothing throws, call sites branch. The provider
+  logic itself (`lib/auth/config.ts`) takes the environment as an *argument*
+  rather than reading `process.env`, which is what makes it unit-testable and
+  what keeps an unconfigured build from being an error state. Auth without a
+  database is deliberately treated as unconfigured — it would hand out sessions
+  with nothing behind them.
+- **`/api/auth/*` returns 404, not 500, in local-only mode.** Letting Auth.js
+  throw `MissingSecret` would put stack traces in the logs of a *supported*
+  configuration. A build with no credentials is not broken; the endpoint simply
+  does not exist there, and it says so.
+- **Facebook is absent, not disabled.** `enabledProviders()` requires
+  `AUTH_FACEBOOK_ENABLED=true` **and** both credentials before the provider is
+  registered at all — no greyed-out button, no "próximamente" state, nothing in
+  the Auth.js config. Meta business verification + app review needs a live
+  privacy-policy URL and takes weeks (§6); the flag exists so that work can
+  land whenever it lands without touching this code.
+- **No scope overrides on the Google provider.** ARCHITECTURE.md §4.7 caps
+  sign-in identity at name/email/avatar, and Auth.js's defaults
+  (`openid email profile`) are already exactly that. Writing an explicit
+  `authorization.scope` would invite someone to append to it later; not having
+  the line means widening the scopes is a visible addition in a diff.
+- **`allowDangerousEmailAccountLinking: true`.** The alarming name is about a
+  provider that does not verify email ownership; Google does. `users.email` is
+  already uniquely indexed (A1), so the alternative is not "safer" — it is a
+  hard error the day a user who signed in with Google tries Facebook on the
+  same address, and a second copy of the pregnancy if that error were ever
+  worked around. Revisit only if a provider without verified email is added.
+- **`/ajustes` became a server component wrapping the existing client screen**
+  (`AjustesClient.tsx`) with the account block passed in as a server-rendered
+  slot. That was the smallest change that satisfies "`/ajustes` shows the
+  account" without pulling `lib/server/*`, a session or `next-auth/react` into
+  the client bundle — and the ~600-line settings screen kept working untouched.
+  Both `/ajustes` and `/cuenta` are `force-dynamic`: they are per-user by
+  definition and prerendering them would be wrong regardless of env.
+- **"Seguir sin cuenta" is styled as a peer, not an escape hatch.** On `/cuenta`
+  it is a full-width petrol button in its own card with its own explanation of
+  what still works, next to the Google button rather than beneath it in grey.
+  §4.2 calls it a first-class path, so it had to look like one; `e2e/account.spec.ts`
+  asserts it lands back in a working app rather than a dead end.
+- **The privacy bullets on `/ajustes` were corrected, minimally.** "No te
+  pedimos cuenta, correo ni número de teléfono" became false the moment accounts
+  existed. It now reads "podés usar Mi Bebé sin cuenta… sin cuenta, tus datos de
+  salud se guardan solo en este dispositivo". The full rewrite of `/privacidad`
+  and `/terminos` is A4's job — this was the minimum needed to stop the app
+  making a claim it no longer honours.

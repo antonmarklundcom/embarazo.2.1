@@ -566,3 +566,26 @@ one user cannot write into another's records. `e2e/sync.spec.ts` (3) drives the
 real client engine and real Dexie v5 in a real browser going offline and back,
 against a ~40-line fake server in the spec; the only thing left unexercised is
 the Drizzle backend itself, which is thirty lines and needs a MySQL.
+
+## D4 — checklist tab + 5-tab nav IA (August 2026)
+- **The 5 tabs are now Hoy · Guías · Checklist · Herramientas · Cerca tuyo.**
+  Progreso (the 42-week grid) and Eventos lost their nav slots to make room
+  without going to 6 tabs. Neither route was deleted: `/progreso` stays
+  reachable from the "todas las semanas" link on `/semana/[n]`, and `/eventos`
+  is now a card at the top of `/directorio` — the same pattern the Guías page
+  already used for its Videos sub-section, reused rather than inventing a new
+  one. E4 (Beneficios) is expected to join it there the same way once that
+  tab exists, per the BUILD-PLAN note that both live inside Cerca tuyo.
+- **The Checklist tab is mode-aware, not a single route.** `/planeando/checklist`
+  and `/herramientas/checklist` are two distinct Dexie-backed task lists (TTC
+  tasks vs. pregnancy/hospital-bag tasks), not one page filtered by mode, so
+  `BottomNav`'s `checklistHref()` picks the right one from `useProfile().mode`
+  rather than sending every user through a picker or hardcoding one mode.
+- **Checklists came out of the `/herramientas` tools list** now that they have
+  a nav tab (feature map #24's "promote out of the tools drawer") — leaving it
+  in would have meant reaching the same screen two different ways from two
+  different places, which is the kind of inconsistency the redesign is meant
+  to remove, not add.
+- **No route was removed, so no link elsewhere in the app broke** — verified by
+  grepping every `href="/progreso"` / `href="/eventos"` call site rather than
+  assuming; both existing links continue to resolve.

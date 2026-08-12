@@ -390,10 +390,26 @@ precached in `app/sw.ts` alongside the weeks/guías so it works fully offline
 from first install. Linked from the herramientas grid and the home screen's
 tools grid. See DECISIONS.md "D3" for the verdict-conservatism rules and why
 there's no API route at all.
-### D4 Checklist as its own tab (map #24) + nav IA
+### D4 Checklist as its own tab (map #24) + nav IA — **S** ✅ DONE
 Promote checklists to the bottom nav. Resolves the open 5-tab question:
 proposed **Hoy · Guías · Checklist · Herramientas · Cerca tuyo**, with
 Eventos and Beneficios living inside Cerca tuyo.
+
+Shipped as a `BottomNav.tsx` rewrite: the 5 tabs are now `/` (Hoy),
+`/guias` (Guías), a mode-aware checklist tab, `/herramientas`, and
+`/directorio` (Cerca tuyo). Progreso and Eventos lost their nav slots but
+neither route was removed — Progreso stays reachable from the week-detail
+page's existing "todas las semanas" link, and Eventos is now a card at the
+top of `/directorio` (pattern copied from the existing Guías→Videos card),
+ready for Beneficios (E4) to join it the same way once that tab exists. The
+Checklist tab is mode-aware (`checklistHref()` in `BottomNav.tsx`, driven by
+`useProfile().mode`): `/planeando/checklist` in planeando mode,
+`/herramientas/checklist` otherwise — the two are different Dexie-backed
+task lists (TTC vs. pregnancy), not one page with a filter, so the nav tab
+deep-links to the right one instead of routing through a picker. The
+duplicate "Checklists" entry in the `/herramientas` tools list was removed
+now that it has its own tab (feature map #24's "promote out of the tools
+drawer").
 ### D5 Directory category banners (map #26)
 Image banner + count per category ("Sanatorios · 24 lugares"); server-side
 filtering and pagination when listings pass ~100.

@@ -823,3 +823,69 @@ the Drizzle backend itself, which is thirty lines and needs a MySQL.
   bytes" and was unreviewable. No behavioural impact (the string is only ever a
   Map key), but a file the reviewer cannot read is a file that changes without
   review, which is worse than the typo.
+
+## A7 — admin role + /admin shell (August 2026)
+
+**The route guard, for anyone building on it.** `requireAdmin()`
+(`lib/server/admin.ts`) returns the actor or throws `notFound()`. It is called
+in `app/admin/layout.tsx`, so it covers every current and future route in the
+group by construction — a page that forgets to call it still cannot render,
+because the layout never resolves. **Every server action re-authorises
+anyway**: an action is a POST endpoint like any other and does not inherit a
+layout's guard just because the user reached it from a rendered page.
+
+**The audit write rule.** Every mutating action calls
+`recordAudit(db, { actorUserId, action, targetUserId?, meta? })` with an action
+from `ADMIN_ACTIONS` (`lib/admin/audit.ts`, a pinned list so adding one is a
+decision). The order in every action is: authorise → validate → act → audit,
+and the audit is neither optional nor conditional. `meta` carries context —
+an invite code, a deletion's per-table row counts — and can never carry health
+content because nothing in the admin code can read any.
+
+- **404, never 403 — and the `<title>` was leaking it.** Next resolves a
+  segment's static `metadata` even when the layout below throws `notFound()`,
+  so `title: "Panel"` in the admin layout put "Panel · Mi Bebé" in the title of
+  the 404 a stranger receives. Removed; the 404 is now visibly identical to any
+  other. (Honest limit: the RSC flight data still references an
+  `app/admin/page-*.js` chunk, as it would for any Next route. Suppressing that
+  needs middleware and is out of A7's scope — the properties that matter, no
+  data and no different response for "exists but forbidden", hold.)
+- **The database role is the authority, not the allowlist and not the session.**
+  `ADMIN_EMAILS` only *promotes*, at sign-in, and only ever promotes. That
+  solves the chicken-and-egg problem — nobody can grant the first admin role
+  through a panel that is itself admin-gated — without making an env var the
+  live access control. Revoking an admin is a database change that takes effect
+  on the next request, not a redeploy, and removing an address from the
+  allowlist never silently strips access mid-incident.
+- **The metadata-only rule is enforced against the source, not the response.**
+  `lib/admin/allowlist.test.ts` strips comments from every file under
+  `app/admin`, `components/admin` and `lib/server/admin.ts` and fails if any of
+  them contains `payload`, `.note`, `symptoms:`, `noteEncrypted`, `mood` or
+  `decryptNote`. Testing a response body would only cover the routes somebody
+  remembered to test; testing the source covers every route in the group,
+  including the ones Phase I has not written yet. Two guards protect the guard:
+  one asserts the scan actually found files, another that stripping comments
+  left real code behind — a scan that silently matches nothing passes forever.
+  Store *names* are deliberately allowed: the panel has to say "Registros de
+  síntomas: 37", and naming the store is how. Naming a field inside one is the
+  line.
+- **`AccountOverview` is the privacy boundary written as a type.** Counts,
+  dates, providers, device and membership totals. If a future field would let
+  someone read what a user wrote, it does not belong in the type, never mind
+  the query.
+- **Search is by exact email.** A substring search over a health app's user
+  table is a browsing tool, and browsing is not support — all three real
+  tickets ("no puedo entrar", "perdí mis datos", "sacá a mi ex del embarazo")
+  start with someone telling you their address.
+- **Support deletion reuses A5's `deleteAccountData`** rather than
+  re-implementing it, so there is one answer to "what does deletion remove" and
+  A5's `TABLE_DISPOSITION` coverage test protects this path too. The admin must
+  type the account's email to enable the button: it is irreversible, performed
+  on somebody else's data, from a screen where the previous account is one
+  browser-back away.
+- **Invite repair extends rather than re-issues.** The code is already sitting
+  in a WhatsApp message the person is looking at; handing them a new one turns
+  one support ticket into two.
+- **`/admin` sits outside the `(app)` route group** — no AppHeader, no
+  BottomNav, no SOS pill. An admin screen wearing the app's navigation invites
+  a founder to think they are looking at what a user sees.

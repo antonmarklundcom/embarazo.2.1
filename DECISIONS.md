@@ -1049,3 +1049,73 @@ for a pregnancy app, and three routes were quietly spending it.
 - **D5 is the documented point to revisit this** ("server-side filtering and
   pagination when listings pass ~100"). Below that, sending the whole list is
   both cheaper and quieter.
+
+## B5 — Web Push via VAPID (August 2026)
+
+**The subscription + opt-in shape, for anyone building on it.**
+
+`POST /api/v1/push` — no session required — accepts exactly:
+
+```
+{ endpoint, keys: { p256dh, auth }, categories: PushCategory[], reminders?: number[] }
+```
+
+`GET /api/v1/push` returns `{ publicKey }` (or 404 when push is unconfigured).
+`DELETE /api/v1/push` takes `{ endpoint }`.
+
+`PushCategory = "consejos" | "recordatorios" | "avisos"`
+(`lib/push/categories.ts`, shared by the settings screen and the server).
+`DEFAULT_CATEGORIES` is `["recordatorios"]` only. `reminders` is a list of
+**epoch milliseconds** and nothing else — the server learns *when* to poke a
+device, never what about.
+
+- **The server sends no payload at all.** A Web Push message with a body must
+  be encrypted (ECDH → HKDF → AES128GCM); a bodyless one needs only a signed
+  VAPID JWT. So the server pokes and **the service worker composes the
+  sentence locally from IndexedDB** (`app/sw.ts`). That is what makes prenatal
+  reminders possible without the server reading `syncRecords.payload` (§4.3):
+  it cannot know when anyone's control is, so the *device* schedules the poke.
+  It is also why there is **no new dependency** — `web-push` exists to do the
+  encryption we do not need, and an ES256 JWT is 30 lines of `node:crypto`.
+  Verified against node's own verifier in `lib/push/vapid.test.ts`, including
+  that the signature is raw r||s rather than DER, which is the failure mode
+  push services report uselessly.
+- **`pushSubscriptions.userId` became nullable.** A push endpoint is anonymous
+  by construction — no user id, no email, no OAuth — and the standing rule is
+  that the app works with no account. Requiring one would have put the single
+  biggest retention feature behind the account system for no technical reason
+  (`docs/OPUS-REVIEW-2026-08.md` §4.2). The consequence is handled rather than
+  ignored: an anonymous subscription has no account to be deleted with, so the
+  settings toggle deletes by endpoint, and a push service reporting 404/410
+  deletes it server-side.
+- **A5's coverage test caught `pushReminders` the moment it was added**, which
+  is exactly what it was built for. Reminders are keyed by endpoint, not by
+  user, so deletion resolves the user's endpoints *before* dropping their
+  subscriptions — miss that and the server keeps poking a deleted account's
+  phone on a schedule nobody can cancel. Asserted by its own test.
+- **The category opt-in is enforced at send time, not in the UI.** A toggle
+  that only hides a notification the phone already received is not an opt-out,
+  so `dispatchDueReminders` re-checks `acceptsCategory` against the stored
+  subscription before every send.
+- **Permission is requested from exactly one place**, the settings toggle
+  (`components/PushSettings.tsx`); `Notification.requestPermission()` appears
+  once in the codebase. The browser grants that prompt once ever, and an app
+  that spends it on a first-visit pop-up is an app whose reminders can never be
+  turned on. Reading the current state never prompts.
+- **`userVisibleOnly: true` means every poke MUST show something**, so the
+  service worker's fallback is load-bearing, not decoration: if the appointment
+  moved or was cleared between scheduling and firing it shows a true, useless
+  line rather than a specific, wrong one — and rather than the browser's own
+  "this site was updated in the background", which is what you get for showing
+  nothing.
+- **Honest iOS copy, as the task asks.** iOS supports Web Push only from an
+  installed PWA, so `isIosWithoutInstall()` detects it and the screen explains
+  how to install instead of offering a toggle that silently fails.
+- **`/api/v1/push/dispatch` is guarded by a shared secret and 404s without
+  one** — not 401. A scheduler endpoint that confirms it exists is an
+  invitation, and the legitimate caller always has the secret. It returns
+  counts only.
+- **Env vars:** `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`
+  (`mailto:` or `https:`), `PUSH_DISPATCH_SECRET`. With any of them unset the
+  routes 404 and the settings section renders nothing — the same "unconfigured
+  is a supported deployment" rule as `DATABASE_URL` and `AUTH_SECRET`.

@@ -263,7 +263,17 @@ export const pushSubscriptions = mysqlTable(
   "pushSubscriptions",
   {
     id: varchar("id", { length: 64 }).primaryKey(),
-    userId: varchar("userId", { length: 255 }).notNull(),
+
+    // B5: NULLABLE. A push endpoint is anonymous by nature — it needs no user
+    // id, no email and no OAuth — and the standing rule is that the app keeps
+    // working with no account. Requiring a user here would have made the
+    // single most valuable engagement feature depend on the account system for
+    // no technical reason. Note the consequence, handled in A5's deletion
+    // plan: an anonymous subscription has no account to be deleted with, so
+    // the only way to remove one is the settings toggle (which deletes by
+    // endpoint) or the endpoint going stale.
+    userId: varchar("userId", { length: 255 }),
+
     endpoint: varchar("endpoint", { length: 512 }).notNull(),
     p256dh: varchar("p256dh", { length: 255 }).notNull(),
     auth: varchar("auth", { length: 255 }).notNull(),
@@ -279,6 +289,42 @@ export const pushSubscriptions = mysqlTable(
       table.endpoint,
     ),
     userIdx: index("push_subscriptions_user_idx").on(table.userId),
+  }),
+);
+
+/**
+ * B5 — when to poke a device, and about what kind of thing.
+ *
+ * This table is the whole reason server-scheduled reminders are possible at
+ * all without breaking §4.3. The server cannot know when anybody's prenatal
+ * control is: appointments live inside `syncRecords.payload`, which it never
+ * reads. So the DEVICE schedules: it says "poke this endpoint at 09:00
+ * tomorrow, category recordatorios", and the service worker composes the
+ * actual sentence locally from IndexedDB when the poke arrives.
+ *
+ * What the server therefore learns is a timestamp and a category — never what
+ * the notification says, never which appointment it is about, never the week
+ * the user is in.
+ */
+export const pushReminders = mysqlTable(
+  "pushReminders",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    // Keyed by endpoint, not by user: an anonymous subscription schedules
+    // reminders exactly like a signed-in one.
+    endpoint: varchar("endpoint", { length: 512 }).notNull(),
+    category: mysqlEnum("category", PUSH_CATEGORIES).notNull(),
+    /** Epoch ms, device-chosen. The only thing the server knows about it. */
+    fireAt: bigint("fireAt", { mode: "number" }).notNull(),
+    sentAt: bigint("sentAt", { mode: "number" }),
+    createdAt: timestamp("createdAt", { mode: "date", fsp: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    // The dispatch query: everything due and not yet sent.
+    dueIdx: index("push_reminders_due_idx").on(table.fireAt, table.sentAt),
+    endpointIdx: index("push_reminders_endpoint_idx").on(table.endpoint),
   }),
 );
 
@@ -368,6 +414,7 @@ export const schema = {
   invites,
   syncRecords,
   pushSubscriptions,
+  pushReminders,
   aiGenerations,
   contentStats,
   adminAudit,

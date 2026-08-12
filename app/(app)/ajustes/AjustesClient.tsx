@@ -22,6 +22,8 @@ import {
   isUnlocked,
 } from "@/lib/crypto";
 import { exportBackup, backupFileName, importBackup } from "@/lib/backup";
+import { PushSettings } from "@/components/PushSettings";
+import { refreshReminders } from "@/lib/push/client";
 import { syncNow } from "@/lib/sync/client";
 import { PrivacyLine } from "@/components/PrivacyLine";
 import { InstallCard } from "@/components/InstallCard";
@@ -274,6 +276,9 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
     const first = rows[0];
     if (!first?.id) return;
     await db().profile.update(first.id, { nextAppointment: value });
+    // B5: the server holds a fire time, not an appointment, so a moved control
+    // has to be re-scheduled from here. No-op when push is off.
+    await refreshReminders();
     setApptMsg(value ? "Control guardado." : "Control quitado.");
     setTimeout(() => setApptMsg(""), 2500);
   }
@@ -700,6 +705,14 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
       </section>
       )}
       </SettingsGroup>
+
+      {/* B5. B4 left "Notificaciones" unrendered until this landed; this is
+          the section it was holding open. PushSettings owns its own heading
+          rather than sitting inside <SettingsGroup>, because it renders
+          nothing at all in a deployment with no VAPID keys — and a group
+          wrapper would leave an empty "NOTIFICACIONES" header behind, which is
+          the exact thing B4's comment warns against. */}
+      <PushSettings groupTitle="Notificaciones" />
 
       <SettingsGroup title="Privacidad">
       {/* Optional PIN */}

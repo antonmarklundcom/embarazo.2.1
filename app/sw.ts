@@ -73,3 +73,126 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+// ---------------------------------------------------------------------------
+// BUILD-PLAN B5 — push, composed on the device
+// ---------------------------------------------------------------------------
+//
+// The server sends a poke with NO BODY. Everything the notification says is
+// written here, from IndexedDB, on the phone. That is what lets prenatal
+// reminders exist at all without the server reading `syncRecords.payload`
+// (ARCHITECTURE.md §4.3): it knows a time and a category, never an
+// appointment, a week or a name.
+//
+// `userVisibleOnly: true` means we MUST show something for every push we
+// receive. So the fallbacks below are not decoration — a push that resolved to
+// nothing would be a browser-generated "This site has been updated in the
+// background" notice, which is worse than anything we would write ourselves.
+
+const NOTIFICATION_TAG = "mibebe-recordatorio";
+
+/** Read the next appointment straight from Dexie's object store. */
+async function readNextAppointment(): Promise<number | null> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = (value: number | null) => {
+      if (!settled) {
+        settled = true;
+        resolve(value);
+      }
+    };
+
+    let request: IDBOpenDBRequest;
+    try {
+      request = indexedDB.open("mibebe");
+    } catch {
+      return done(null);
+    }
+
+    request.onerror = () => done(null);
+    request.onsuccess = () => {
+      const database = request.result;
+      try {
+        const tx = database.transaction("profile", "readonly");
+        const all = tx.objectStore("profile").getAll();
+        all.onsuccess = () => {
+          const rows = (all.result ?? []) as {
+            nextAppointment?: number;
+            deletedAt?: number | null;
+          }[];
+          const live = rows.find((row) => !row.deletedAt);
+          done(typeof live?.nextAppointment === "number" ? live.nextAppointment : null);
+        };
+        all.onerror = () => done(null);
+      } catch {
+        done(null);
+      }
+    };
+  });
+}
+
+function formatTime(ms: number): string {
+  return new Date(ms).toLocaleTimeString("es-PY", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+async function composeNotification(): Promise<{ title: string; body: string }> {
+  const appointment = await readNextAppointment();
+
+  if (appointment !== null) {
+    const hoursAway = (appointment - Date.now()) / 3_600_000;
+    if (hoursAway > 0 && hoursAway < 48) {
+      return {
+        title: "Mañana tenés control prenatal",
+        body: `A las ${formatTime(appointment)}. Llevá tu carné perinatal.`,
+      };
+    }
+  }
+
+  // The appointment moved or was cleared between scheduling and firing. We
+  // still have to show something, so show something true and useless rather
+  // than something specific and wrong.
+  return {
+    title: "Mi Bebé",
+    body: "Tocá para ver cómo va tu semana.",
+  };
+}
+
+self.addEventListener("push", (event) => {
+  event.waitUntil(
+    (async () => {
+      const { title, body } = await composeNotification();
+      await self.registration.showNotification(title, {
+        body,
+        icon: "/icons/icon-192.png",
+        badge: "/icons/icon-192.png",
+        // Replace rather than stack: two identical reminders on a lock screen
+        // read as a bug. (`renotify` is deliberately not set — it is absent
+        // from lib.dom's NotificationOptions, and its default of false is what
+        // we want anyway.)
+        tag: NOTIFICATION_TAG,
+        data: { url: "/" },
+      });
+    })(),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = (event.notification.data as { url?: string } | undefined)?.url ?? "/";
+  event.waitUntil(
+    (async () => {
+      const clientList = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+      // Focus an open tab rather than opening a second one.
+      for (const client of clientList) {
+        if ("focus" in client) return client.focus();
+      }
+      return self.clients.openWindow(target);
+    })(),
+  );
+});

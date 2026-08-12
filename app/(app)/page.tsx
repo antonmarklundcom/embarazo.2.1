@@ -7,6 +7,8 @@ import { formatCompletedGestation } from "@/lib/pregnancy";
 import { getWeek } from "@/lib/weeks";
 import { getDailyTip } from "@/lib/dailyTips";
 import { departmentName } from "@/lib/departments";
+import { babyAtWeekLabel } from "@/lib/babies";
+import type { BabyIdentity } from "@/lib/db";
 import { Onboarding } from "@/components/Onboarding";
 import { PlaneandoHome } from "@/components/PlaneandoHome";
 import { LocalResourcesBlock } from "@/components/LocalResourcesBlock";
@@ -57,6 +59,7 @@ export default function InicioPage() {
         trimester={trimester}
         completedLabel={completedLabel}
         sizeComparison={info.sizeComparison}
+        babies={profile.babies}
       />
 
       {/* Next prenatal appointment reminder (in-app only) */}
@@ -122,7 +125,7 @@ export default function InicioPage() {
           <ReadCard
             href={`/semana/${week}`}
             tone="bg-pastel-arena"
-            title={`Tu bebé a las ${week} semanas`}
+            title={babyAtWeekLabel(profile.babies, week)}
           />
           <ReadCard
             href="/guias"
@@ -231,11 +234,13 @@ function HeroCard({
   trimester,
   completedLabel,
   sizeComparison,
+  babies,
 }: {
   week: number;
   trimester: number;
   completedLabel: string | null;
   sizeComparison: string;
+  babies: BabyIdentity[];
 }) {
   // Weekly render lives at /assets/semanas/bebe-<week>.webp when the founder
   // has added it (REDESIGN-PLAN.md §4); until then show the arena fallback.
@@ -255,7 +260,7 @@ function HeroCard({
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={`/assets/semanas/bebe-${week}.webp`}
-          alt={`Tu bebé a las ${week} semanas`}
+          alt={babyAtWeekLabel(babies, week)}
           className="block h-[260px] w-full object-cover"
           style={{ objectPosition: "center 18%" }}
           onError={() => setImgError(true)}

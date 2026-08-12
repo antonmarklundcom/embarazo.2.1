@@ -10,7 +10,7 @@ import {
   type CompletedGestation,
 } from "./pregnancy";
 import type { Trimester } from "./types";
-import type { AppMode } from "./db";
+import type { AppMode, BabyIdentity } from "./db";
 
 export interface ProfileState {
   loading: boolean;
@@ -18,6 +18,8 @@ export interface ProfileState {
   /** "embarazada" (default) or "planeando" — see build spec §3. */
   mode: AppMode;
   hasPregnancy: boolean;
+  /** Baby identity/twins (B2). Empty array when no nickname has been set. */
+  babies: BabyIdentity[];
   department?: string;
   city?: string;
   nextAppointment?: number;
@@ -45,12 +47,24 @@ export function useProfile(): ProfileState {
   }, []);
 
   if (data === undefined) {
-    return { loading: true, hasProfile: false, mode: "embarazada", hasPregnancy: false };
+    return {
+      loading: true,
+      hasProfile: false,
+      mode: "embarazada",
+      babies: [],
+      hasPregnancy: false,
+    };
   }
 
   const { profile, pregnancy } = data;
   if (!profile) {
-    return { loading: false, hasProfile: false, mode: "embarazada", hasPregnancy: false };
+    return {
+      loading: false,
+      hasProfile: false,
+      mode: "embarazada",
+      babies: [],
+      hasPregnancy: false,
+    };
   }
 
   const mode: AppMode = profile.mode ?? "embarazada";
@@ -58,6 +72,7 @@ export function useProfile(): ProfileState {
     loading: false,
     hasProfile: true,
     mode,
+    babies: profile.babies ?? [],
     department: profile.department,
     city: profile.city,
     nextAppointment: profile.nextAppointment,

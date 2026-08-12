@@ -297,11 +297,26 @@ identity to begin with. "Descargar mis datos" now runs a sync pull first, so
 the export includes records written on another device. Covered by
 `lib/server/account.test.ts` (8).
 
-### A6 Link a local account — **M**
+### A6 Link a local account — **M** ✅ DONE
 A user who started without an account and later signs in uploads their
 existing local data instead of losing it or duplicating it.
 **Done when:** local-only → sign-in results in exactly one copy of every
 record on both sides.
+
+Shipped as `lib/sync/link.ts` (`decideAccountLink`), `syncState.accountId`,
+`accountId` on the sync responses, and `components/SyncStatusCard.tsx`. The
+upload path itself needed no new code — A3's design already gives it: a
+local-only user's rows are all `dirty = 1`, and singleton stores share a fixed
+record id, so the profile and pregnancy *merge* rather than duplicating. What
+A6 adds is the guard beside it. A3 had no notion of which account local data
+belonged to, so *sign in as A → sync → sign out → keep using the app → sign in
+as B* uploaded A's health records into B's account — two taps from Ajustes.
+Now an unset account adopts (the link), a matching one continues, and a
+different one **refuses**, pushing nothing and pulling nothing (pulling would
+mix two people's data on the device instead of on the server). Covered by
+`lib/sync/link.test.ts` (9) and two new e2e in `e2e/sync.spec.ts`: a
+local-only user's data uploading exactly once on sign-in, and data staying put
+when a different account signs in on the same phone.
 
 ### A7 Admin role + `/admin` shell (minimum viable support) — **M**
 Needed as soon as there are accounts to support — a founder who cannot

@@ -781,3 +781,45 @@ the Drizzle backend itself, which is thirty lines and needs a MySQL.
   that understatement false, so the retention, rights and contact sections now
   say deletion is self-serve from Ajustes. A privacy policy that undersells
   what the app actually offers is still a wrong privacy policy.
+
+## A6 — linking a local account (August 2026)
+
+- **The happy path was already true when A3 landed, and that is worth saying
+  plainly.** A local-only user's rows are all `dirty = 1` — nothing has ever
+  been accepted by a server — and singleton stores share a fixed record id, so
+  signing in pushes everything exactly once and *merges* the profile and
+  pregnancy instead of creating a second copy. A6 did not have to build an
+  upload path; it had to prove that one, and close the hole beside it.
+- **The hole: A3 had no notion of *which* account local data belongs to.**
+  Sign in as A → sync → sign out → keep using the app → sign in as B. Every row
+  touched in between is dirty, and the next sync uploads A's health records
+  into B's account. That is two taps from Ajustes, and it is one person's
+  pregnancy landing in another person's account. `syncState.accountId` plus
+  `decideAccountLink` (`lib/sync/link.ts`) is the fix: unset → adopt (the A6
+  link), same → continue, different → **refuse**.
+- **A refusal pushes nothing AND pulls nothing.** Pulling B's records onto a
+  phone holding A's would mix two people's health data on the device — the same
+  failure in the other direction — so the guard runs before both.
+- **The account is claimed before the upload, not after.** If the push is
+  interrupted halfway, the next attempt resumes the same link rather than
+  seeing an unclaimed device and starting over.
+- **Identity is learned by a probe through the existing pull route**, with
+  `since` set past every possible `serverUpdatedAt` so the page is guaranteed
+  empty. That costs one small request per sync and keeps the API surface — and
+  its whitelist — exactly where A3 left it, instead of adding a `/whoami` that
+  would need its own tests and its own auth reasoning.
+- **The refusal message never names the other account.** The person holding the
+  phone may not be the person who owns that data. Asserted by test.
+- **`SyncStatusCard` exists because silence reads as data loss.** "Did my stuff
+  make it?" is the first question anyone asks after linking an account, and an
+  app that answers it nowhere reads as an app that lost the data. It renders
+  nothing for a local-only user, and it is built entirely from `syncState` and
+  the indexed `dirty` flag — no extra requests, no extra state.
+- **`accountId` on the sync responses is the client's own user id.** It already
+  rides in the session cookie, so returning it discloses nothing new.
+- **Repaired a stray NUL byte in `lib/server/sync.ts`.** A3's `keyOf` shipped
+  with `` `${store}\0${recordId}` `` instead of a space, which git detects as a
+  binary file — so every diff of that file rendered as "Bin 11178 → 11239
+  bytes" and was unreviewable. No behavioural impact (the string is only ever a
+  Map key), but a file the reviewer cannot read is a file that changes without
+  review, which is worse than the typo.

@@ -175,6 +175,19 @@ export interface SyncStateRow {
   lastSyncAt?: number;
   /** Set when the last attempt failed, so the UI can be honest about it. */
   lastError?: string;
+  /**
+   * A6: the account this device's data was last synced with.
+   *
+   * Undefined means "never linked" — a local-only user, whose data uploads on
+   * first sign-in. A value that does not match the current session means the
+   * data on this phone belongs to somebody else's account, and the engine
+   * refuses to push it. Without this field that refusal is impossible, and
+   * signing out and back in as a different Google account silently uploads
+   * one person's health records into another person's account.
+   */
+  accountId?: string;
+  /** True once a first upload for `accountId` has completed (A6). */
+  linkedAt?: number;
 }
 
 /**

@@ -7,7 +7,7 @@
 // non-negotiable, and it is why every entry point below swallows its errors
 // into `syncState.lastError` rather than throwing at a caller.
 
-import { db, type ConflictRow } from "@/lib/db";
+import { db, type ConflictRow, type SyncStateRow } from "@/lib/db";
 import {
   mergeIncoming,
   toPayload,
@@ -20,6 +20,7 @@ import {
   type PushResponse,
   type SyncRecordInput,
 } from "./protocol";
+import { ACCOUNT_MISMATCH_MESSAGE, decideAccountLink } from "./link";
 import { onLocalChange } from "./signal";
 import { SYNCED_STORES, type SyncedStore } from "./stores";
 
@@ -32,7 +33,9 @@ export type SyncOutcome =
   | "unavailable"
   | "offline"
   | "busy"
-  | "error";
+  | "error"
+  /** A6: this phone's data belongs to a different account. Nothing was sent. */
+  | "account-mismatch";
 
 export interface SyncSummary {
   outcome: SyncOutcome;
@@ -55,21 +58,22 @@ let unavailable = false;
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 let started = false;
 
-async function readSyncState(): Promise<number> {
-  const row = await db().syncState.get("default");
-  return row?.lastPulledAt ?? 0;
+async function readSyncState(): Promise<SyncStateRow | undefined> {
+  return db().syncState.get("default");
 }
 
-async function writeSyncState(patch: {
-  lastPulledAt?: number;
-  lastSyncAt?: number;
-  lastError?: string;
-}): Promise<void> {
+async function writeSyncState(
+  patch: Partial<Omit<SyncStateRow, "key">>,
+): Promise<void> {
   const current = await db().syncState.get("default");
   await db().syncState.put({
     key: "default",
     lastPulledAt: patch.lastPulledAt ?? current?.lastPulledAt ?? 0,
     lastSyncAt: patch.lastSyncAt ?? current?.lastSyncAt,
+    accountId: patch.accountId ?? current?.accountId,
+    linkedAt: patch.linkedAt ?? current?.linkedAt,
+    // Deliberately NOT carried forward: an error is about the last attempt,
+    // and a stale one would keep a fixed problem on screen forever.
     lastError: patch.lastError,
   });
 }
@@ -200,7 +204,7 @@ async function applyIncoming(
 }
 
 async function pull(): Promise<{ pulled: number; conflicts: number }> {
-  const since = await readSyncState();
+  const since = (await readSyncState())?.lastPulledAt ?? 0;
   let cursor: string | undefined;
   let pulled = 0;
   let conflicts = 0;
@@ -257,11 +261,35 @@ function httpError(status: number): SyncHttpError {
 }
 
 /**
+ * Ask the server which account this session belongs to, without touching data.
+ *
+ * `since` is set past every possible `serverUpdatedAt`, so the page is
+ * guaranteed empty — this is an identity probe, not a pull. That matters: on a
+ * mismatch we must neither push nor pull, because pulling account B's records
+ * onto a phone holding account A's would mix two people's health data on the
+ * device, which is the same failure in the other direction.
+ *
+ * Reusing the pull route rather than adding a `/whoami` keeps the API surface
+ * (and its whitelist) exactly where A3 left it.
+ */
+async function fetchAccountId(): Promise<string> {
+  const url = new URL(SYNC_URL, window.location.origin);
+  url.searchParams.set("since", String(Number.MAX_SAFE_INTEGER));
+  url.searchParams.set("limit", "1");
+  const res = await fetch(url.toString());
+  if (!res.ok) throw httpError(res.status);
+  return ((await res.json()) as PullResponse).accountId;
+}
+
+/**
  * Push then pull, once.
  *
  * Push first, deliberately: local changes reach the server before the pull can
  * overwrite them, so a record edited offline wins against the older copy the
  * server still holds rather than losing to it.
+ *
+ * A6 puts one thing ahead of both: establishing that the data on this phone
+ * belongs to the account we are about to sync it with.
  */
 export async function syncNow(): Promise<SyncSummary> {
   const idle: SyncSummary = {
@@ -278,8 +306,30 @@ export async function syncNow(): Promise<SyncSummary> {
 
   running = true;
   try {
+    const accountId = await fetchAccountId();
+    const decision = decideAccountLink(
+      (await readSyncState())?.accountId,
+      accountId,
+    );
+
+    if (decision === "refuse") {
+      // Nothing is sent and nothing is fetched. The app keeps working against
+      // the local data exactly as it did; only sync stops.
+      await writeSyncState({ lastError: ACCOUNT_MISMATCH_MESSAGE });
+      return { ...idle, outcome: "account-mismatch" };
+    }
+
+    // Claim the account BEFORE uploading. If the push is interrupted halfway,
+    // the next attempt resumes the same link instead of seeing an unclaimed
+    // device and starting over.
+    if (decision === "adopt") await writeSyncState({ accountId });
+
     const pushed = await push();
     const { pulled, conflicts } = await pull();
+
+    if (decision === "adopt") {
+      await writeSyncState({ accountId, linkedAt: Date.now() });
+    }
     return { outcome: "ok", pushed, pulled, conflicts };
   } catch (err) {
     if (err instanceof SyncHttpError && (err.status === 401 || err.status === 404)) {

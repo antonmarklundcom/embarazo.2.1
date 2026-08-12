@@ -1119,3 +1119,65 @@ device, never what about.
   (`mailto:` or `https:`), `PUSH_DISPATCH_SECRET`. With any of them unset the
   routes 404 and the settings section renders nothing — the same "unconfigured
   is a supported deployment" rule as `DATABASE_URL` and `AUTH_SECRET`.
+
+## E1 — family sharing (August 2026)
+
+**The roles, and exactly what a non-owner may read.** This is the contract;
+build companion UI against it without guessing.
+
+`MemberRole = "owner" | "partner" | "family"` (`lib/sharing/fields.ts`).
+`canWrite(role)` is true for `owner` only. **`partner` and `family` have
+identical permissions in v1** — the distinction is how the app addresses them
+(B1's role copy), not what they can see. They are separate values now so that
+giving a partner something extra later is a permission change rather than a
+migration.
+
+A non-owner can read **one object and nothing else**:
+
+```ts
+CompanionSnapshot = {
+  week: number | null              // friendly 1-based week (see B3)
+  dueDate: number | null           // epoch ms
+  nextAppointmentAt: number | null // epoch ms
+  babyName: string | null
+  updatedAt: number
+}
+```
+
+- **The whitelist is a shape, not a filter.** "Show everything except notes and
+  photos" is a rule that fails open the first time somebody adds a field. A
+  companion cannot read the owner's records at all — they read
+  `companionSnapshots`, and that table *is* the whitelist. Adding a field to a
+  companion view means adding a column in a reviewed diff.
+- **`companionSnapshots` is a deliberate, bounded exception to §4.3**, and
+  worth stating plainly rather than burying. Everywhere else the server holds
+  health data as an opaque payload. Sharing cannot work that way — a partner on
+  their own phone has to be *served* the week — so these four fields live in
+  plain columns. What the design buys is that the exception is legible and
+  finite: `FORBIDDEN_COMPANION_FIELDS` is asserted against both the snapshot
+  shape **and the schema source**, because a filter can be forgotten but a
+  missing column cannot.
+- **The owner's device publishes it.** The server cannot compute any of it: the
+  week comes from an LMP inside `syncRecords.payload`. `publishCompanionSnapshot()`
+  reads only the four fields it sends — it does not take a profile and pick
+  fields out of it, so a call site cannot accidentally widen what travels.
+- **Revocation is immediate because there is nothing to go stale.**
+  `isNull(revokedAt)` is inside the membership query, not applied after it, and
+  the role is never cached in a session or a token. Reading a snapshot goes
+  through `readSnapshotFor`, which does the membership check itself — there is
+  no way to read one without it.
+- **Invite codes are single-use, 10 characters, and avoid `0/O/1/I/L`.** These
+  get read aloud and written down. Single-use matters more here than the usual
+  convenience argument: a link forwarded on from a WhatsApp group would
+  otherwise let a second person into somebody's pregnancy. ~8×10¹⁴ combinations,
+  and a malformed code is rejected on shape before it becomes a lookup.
+- **An owner cannot revoke somebody out of a pregnancy they do not own.** The
+  pregnancy id is resolved from the session and compared against the one in the
+  body, rather than trusted from it.
+- **A companion does not get the guest list.** The owner sees who can see their
+  pregnancy; a partner does not see who else is in the family. That is not
+  theirs to know.
+- **A5's coverage test caught `companionSnapshots` immediately**, for the
+  second time in this batch. Deletion now drops the snapshot with the owner's
+  pregnancies — leaving it would keep serving a deleted account's week and due
+  date to whoever was still a member.

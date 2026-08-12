@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useProfile } from "@/lib/useProfile";
-import { formatCompletedGestation } from "@/lib/pregnancy";
+import { formatCompletedGestation, formatWeekPlusDay } from "@/lib/pregnancy";
 import { getWeek } from "@/lib/weeks";
 import { getDailyTip } from "@/lib/dailyTips";
 import { departmentName } from "@/lib/departments";
@@ -46,6 +46,11 @@ export default function InicioPage() {
   const completedLabel = profile.completed
     ? formatCompletedGestation(profile.completed)
     : null;
+  // B3: week+day ("24+3") is the default compact display, matching the
+  // carné perinatal convention — falls back to the plain week if there's no
+  // completed-gestation data yet (shouldn't happen once hasPregnancy, but
+  // keeps this defensive rather than asserting non-null).
+  const weekPlusDay = profile.completed ? formatWeekPlusDay(profile.completed) : String(week);
 
   return (
     <div className="space-y-4">
@@ -54,6 +59,7 @@ export default function InicioPage() {
       {/* Hero week card */}
       <HeroCard
         week={week}
+        weekPlusDay={weekPlusDay}
         trimester={trimester}
         completedLabel={completedLabel}
         sizeComparison={info.sizeComparison}
@@ -228,11 +234,13 @@ function WeekStrip() {
 
 function HeroCard({
   week,
+  weekPlusDay,
   trimester,
   completedLabel,
   sizeComparison,
 }: {
   week: number;
+  weekPlusDay: string;
   trimester: number;
   completedLabel: string | null;
   sizeComparison: string;
@@ -271,7 +279,7 @@ function HeroCard({
       <div className="absolute inset-x-4 bottom-4 flex items-end justify-between gap-3">
         <div>
           <p className="text-[11px] font-extrabold tracking-[1.6px] text-[#FBE9D8]">
-            SEMANA {week} · {trimester}.º TRIMESTRE
+            SEMANA {weekPlusDay} · {trimester}.º TRIMESTRE
           </p>
           <p className="mt-1 text-2xl font-black text-white">
             {completedLabel ?? `Semana ${week}`}

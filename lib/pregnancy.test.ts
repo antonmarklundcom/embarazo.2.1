@@ -6,10 +6,14 @@ import {
   getDaysRemaining,
   clampWeek,
   lmpFromDueDate,
+  lmpFromEcografia,
+  lmpFromFiv,
+  lmpFromConception,
   getRawWeek,
   getDaysSinceLMP,
   getCompletedGestation,
   formatCompletedGestation,
+  formatWeekPlusDay,
   GESTATION_DAYS,
 } from "./pregnancy";
 
@@ -131,5 +135,65 @@ describe("formatCompletedGestation", () => {
     expect(formatCompletedGestation({ weeks: 0, days: 0 })).toBe(
       "0 semanas y 0 días",
     );
+  });
+});
+
+describe("formatWeekPlusDay", () => {
+  it("omits the day when it's zero", () => {
+    expect(formatWeekPlusDay({ weeks: 24, days: 0 })).toBe("24");
+  });
+  it("shows week+day when the day is nonzero", () => {
+    expect(formatWeekPlusDay({ weeks: 24, days: 3 })).toBe("24+3");
+  });
+});
+
+describe("B3 — adjustable gestation length", () => {
+  it("getDueDate honors a custom gestation length", () => {
+    const lmp = 1_000_000_000_000;
+    expect(getDueDate(lmp, 266)).toBe(lmp + 266 * DAY);
+  });
+  it("lmpFromDueDate honors a custom gestation length", () => {
+    const due = 2_000_000_000_000;
+    expect(lmpFromDueDate(due, 266)).toBe(due - 266 * DAY);
+  });
+  it("getDaysRemaining honors a custom gestation length", () => {
+    expect(getDaysRemaining(0, 0, 266)).toBe(266);
+  });
+  it("defaults to the standard 280 days when omitted", () => {
+    const lmp = 1_000_000_000_000;
+    expect(getDueDate(lmp)).toBe(lmp + GESTATION_DAYS * DAY);
+  });
+});
+
+describe("B3 — due-date calculation methods", () => {
+  it("lmpFromEcografia matches lmpFromDueDate", () => {
+    const due = 2_000_000_000_000;
+    expect(lmpFromEcografia(due)).toBe(lmpFromDueDate(due));
+    expect(lmpFromEcografia(due, 266)).toBe(lmpFromDueDate(due, 266));
+  });
+
+  it("lmpFromFiv subtracts 14 days plus the embryo's age at transfer", () => {
+    const transfer = 1_000_000_000_000;
+    // Day-5 blastocyst transfer: 14 + 5 = 19 days before transfer.
+    expect(lmpFromFiv(transfer, 5)).toBe(transfer - 19 * DAY);
+    // Day-3 transfer: 14 + 3 = 17 days before transfer.
+    expect(lmpFromFiv(transfer, 3)).toBe(transfer - 17 * DAY);
+  });
+
+  it("lmpFromConception subtracts the 14-day luteal offset", () => {
+    const conception = 1_000_000_000_000;
+    expect(lmpFromConception(conception)).toBe(conception - 14 * DAY);
+  });
+
+  it("every method converts to an LMP-equivalent that getCurrentWeek can use directly", () => {
+    const anchor = 10_000_000_000_000;
+    // A due date computed from `anchor` as LMP round-trips back to week 1
+    // at `anchor` itself.
+    expect(getCurrentWeek(lmpFromEcografia(getDueDate(anchor)), anchor)).toBe(1);
+    // At the moment of a day-5 transfer, gestational age is already 19 days
+    // (14 + 5) — week 3, not week 1: FIV dating is precise, not "day zero".
+    expect(getCurrentWeek(lmpFromFiv(anchor, 5), anchor)).toBe(3);
+    // At the moment of conception, gestational age is already 14 days — week 3.
+    expect(getCurrentWeek(lmpFromConception(anchor), anchor)).toBe(3);
   });
 });

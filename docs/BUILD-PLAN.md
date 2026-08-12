@@ -308,12 +308,48 @@ supports N babies per pregnancy now, UI for twins later.
 **Done when:** nickname appears wherever "tu bebé" is generic; adding a
 second baby requires no schema migration.
 
-### B3 Due-date & pregnancy settings (map #4, #5, #6) — **M**
+### B3 Due-date & pregnancy settings (map #4, #5, #6) — **M** ✅ DONE
 Calculation methods (LMP · ecografía · FIV · conception date), adjustable
 pregnancy length, `week+day` display **as the default**, separate planned
 delivery date.
 **Done when:** each method produces the correct FPP with unit tests;
 switching method never corrupts existing week data.
+
+Shipped as four `lmpFrom*` functions in `lib/pregnancy.ts` — `lmpFromEcografia`
+(alias of the existing `lmpFromDueDate`, kept as a separate named function so
+call sites read as "which method" not "which formula"), `lmpFromFiv`
+(transfer date − (14 + embryo day), standard obstetric convention for day-3/
+day-5 transfers), and `lmpFromConception` (conception date − 14-day luteal
+offset) — every method converges on an LMP-equivalent, since week/trimester/
+due-date math is already defined purely in terms of LMP, so adding a method
+never touches that math. `getDueDate`/`lmpFromDueDate`/`getDaysRemaining` all
+gained an optional `gestationDays` param (default `GESTATION_DAYS`=280) for
+the adjustable-length requirement. Unit-tested (16 new tests in
+`lib/pregnancy.test.ts`), including that FIV/conception dating correctly
+starts gestational age ahead of zero (a day-5 transfer is already 19 days/
+week 3 at the moment of transfer, not "day zero" — a bug this exact test
+class exists to catch).
+
+`Pregnancy` (`lib/db.ts`) gained `method`, `gestationDays`, and
+`plannedDeliveryDate` — all optional, plain non-indexed fields, no Dexie
+version bump. Onboarding's binary "LMP vs. due date" checkbox became a
+4-option method selector (`components/Onboarding.tsx`); Ajustes gained a
+"Duración del embarazo" + "Fecha de parto planificada" section, separate
+from the existing LMP/due-date editor. **"Switching method never corrupts
+existing week data"** holds by construction, not by a special code path:
+every method's output is just a new `lmpDate` written through the same
+`db().pregnancy.update`/`.add` calls the pre-B3 editor already used — there
+is nothing method-specific stored that could go stale.
+
+`week+day` as the default: `formatWeekPlusDay` (e.g. "24+3", days omitted
+when zero) applied to the home hero's small overline
+(`SEMANA {weekPlusDay} · {trimestre}`). The big hero number and
+`/emergencia`'s "Estoy embarazada de…" line keep the existing sentence form
+(`formatCompletedGestation`, "24 semanas y 3 días") — that's prose, not a
+label, and the compact form would read oddly there. A full hero-card
+redesign is C1's job; this task only swapped the one label that was a bare
+week integer into the week+day default, to avoid churn against C1's
+upcoming PR.
 
 ### B4 Ajustes restructure — **S**
 Group the growing settings into sections (cuenta · bebé · embarazo ·

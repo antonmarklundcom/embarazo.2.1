@@ -20,15 +20,28 @@ test("embarazada mode via last menstrual period date", async ({ page }) => {
   await expect(page.getByText("Tip de hoy")).toBeVisible();
 });
 
-test("embarazada mode via due date", async ({ page }) => {
+test("embarazada mode via due date (ecografía method)", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Estoy embarazada" }).click();
 
-  await page
-    .getByText("No sé mi última regla — usar fecha probable de parto")
-    .click();
+  await page.locator("#method").selectOption("ecografia");
   const due = new Date(Date.now() + 150 * 86400000).toISOString().slice(0, 10);
   await page.locator("#due").fill(due);
+  await page.getByRole("button", { name: "Continuar" }).click();
+
+  await page.locator("#dep").selectOption({ index: 1 });
+  await page.getByRole("button", { name: "Empezar" }).click();
+
+  await expect(page.getByText("Tip de hoy")).toBeVisible();
+});
+
+test("embarazada mode via FIV embryo transfer date", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Estoy embarazada" }).click();
+
+  await page.locator("#method").selectOption("fiv");
+  const transfer = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  await page.locator("#fivDate").fill(transfer);
   await page.getByRole("button", { name: "Continuar" }).click();
 
   await page.locator("#dep").selectOption({ index: 1 });

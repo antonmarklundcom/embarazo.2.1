@@ -44,6 +44,18 @@ export interface Pregnancy extends Partial<SyncMeta> {
   lmpDate: number;
   dueDate: number;
   createdAt: number;
+  // B3: which method produced `lmpDate` (LMP is always the stored anchor —
+  // see lib/pregnancy.ts's lmpFrom* functions). Optional for back-compat;
+  // an existing pregnancy with no method was entered via raw LMP or the
+  // pre-B3 "due date" toggle, both of which are "lmp"/"ecografia"-equivalent.
+  method?: "lmp" | "ecografia" | "fiv" | "conception";
+  // Adjustable pregnancy length in days (build spec default 280). Optional;
+  // falls back to GESTATION_DAYS when unset. Plain non-indexed field, no
+  // Dexie schema version bump needed.
+  gestationDays?: number;
+  // Planned delivery date (e.g. a scheduled cesárea), separate from the
+  // estimated `dueDate` (feature map #6). Optional, local-only.
+  plannedDeliveryDate?: number;
 }
 
 export interface JournalEntry extends Partial<SyncMeta> {

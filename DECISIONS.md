@@ -1181,3 +1181,59 @@ CompanionSnapshot = {
   second time in this batch. Deletion now drops the snapshot with the owner's
   pregnancies — leaving it would keep serving a deleted account's week and due
   date to whoever was still a member.
+
+## F1 — AI baby image pipeline (August 2026)
+
+The three §10 constraints are enforced structurally, and two of them are
+asserted **against the source** rather than against a function's output,
+because they are properties of the code rather than of any one call.
+
+- **The whole feature dies with one env var, and it fails closed.**
+  `isAiBabyEnabled(env)` requires `AI_BABY_ENABLED === "true"` **and**
+  `GEMINI_API_KEY`. Two variables because they fail differently: the flag is
+  how the founder switches it off in a hurry (I4 makes it a toggle), the key is
+  what makes it work. Anything other than exactly `"true"` is off — a flag that
+  accepts `1`/`yes`/`TRUE` is a flag someone enables by accident. Unset means
+  the route **404s** and the screen says the feature is unavailable; there is
+  no "próximamente" state to probe.
+- **The API key never reaches the client.** It is read in exactly one
+  `server-only` module, sent as an `x-goog-api-key` **header** rather than a
+  query string (query strings land in access logs and proxy caches, and this
+  one is a live credential), and `lib/ai/babyImage.ts` — which client
+  components import — contains no `process.env` read at all. That last point is
+  the assertion worth having: Next only exposes `NEXT_PUBLIC_*` to the client,
+  so a stray read would yield `undefined` rather than the key, but "it happens
+  to be safe" is not the property to rely on.
+- **Parent photos are not retained, and the test looks for the ways they could
+  be.** Every `.values({...})` in `lib/server/aiBaby.ts` is scanned for
+  `photo`/`image`/`data`/`prompt`/`inline`, and the module is asserted to
+  contain no `console.` at all — an upstream error message can quote the
+  request, and the request contains someone's face. `aiGenerations` has no
+  column for them either (asserted since A1).
+- **The `aiGenerations` row is written before the call and updated after.** A
+  row written only on success under-counts exactly the failures F2's quota and
+  I4's spend alarm need to see: a request that died mid-flight may still have
+  cost money.
+- **The prompt is a constant, not a template.** A template invites someone to
+  interpolate the baby's nickname or the week into it, and then the prompt
+  itself is personal data going to a third party. Asserted: no `${`, no
+  `{{`, no `%s`.
+- **The consent step is a gate, not a paragraph.** The control that sends a
+  photo does not render until the box is ticked, and the server independently
+  requires `consent: "acepto"` — same `z.literal` shape as A2's health-data
+  consent, where an absent field cannot pass. It names what is sent, to whom,
+  and that it is not kept.
+- **The result is stored only if the user saves it**, and then into
+  `photoEntries` — the belly-photo store, which never syncs (§4.4). A generated
+  picture of a baby is exactly as private as a bump photo. Leaving the screen
+  without saving means it exists nowhere, and the copy says so.
+- **`AI_BABY_LABEL` is a constant used everywhere the image appears**, so it
+  cannot be reworded into something that reads like a prediction. It satisfies
+  both §10 ("entertainment, never a prediction") and Play's Generative AI
+  policy requirement for in-app disclosure that content is AI-generated.
+- **Photos are downscaled with the existing `lib/images.ts`** before upload —
+  a 12 MP phone photo is both a slow upload on Paraguayan mobile data and more
+  of somebody's face than the model needs.
+- **Quota is NOT enforced here.** That is F2, and it is the reason the
+  `quotaMonth` column is written on every row from day one. F1 without F2 is
+  spendable; do not enable `AI_BABY_ENABLED` in production until F2 ships.

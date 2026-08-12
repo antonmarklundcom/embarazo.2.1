@@ -318,7 +318,7 @@ mix two people's data on the device instead of on the server). Covered by
 local-only user's data uploading exactly once on sign-in, and data staying put
 when a different account signs in on the same phone.
 
-### A7 Admin role + `/admin` shell (minimum viable support) — **M**
+### A7 Admin role + `/admin` shell (minimum viable support) — **M** ✅ DONE
 Needed as soon as there are accounts to support — a founder who cannot
 answer "I lost my data / I can't sign in / delete my account" has an
 account system they cannot operate. Full panel is Phase I; this is the
@@ -340,6 +340,24 @@ be traded away for support convenience.
 **Done when:** a non-admin hitting any `/admin` URL gets a 404 (not a 403
 — do not confirm the route exists); every mutating action is audited; a
 test asserts no route returns payload contents.
+
+Shipped as `lib/admin/allowlist.ts` + `lib/admin/audit.ts` (pure),
+`lib/server/admin.ts` (`requireAdmin`, `recordAudit`, metadata-only queries),
+the `app/admin` route group (search by email · account state ·
+`/admin/usuarios/[id]`), `app/admin/actions.ts` (support deletion, invite
+revoke/extend) and `components/admin/AdminUserActions.tsx`. The guard lives in
+the layout so it covers every future route by construction, and every action
+re-authorises anyway — an action is a POST endpoint and does not inherit a
+layout's guard. **Found and fixed while here:** `title: "Panel"` in the admin
+layout leaked into the `<title>` of the 404 a stranger receives, because Next
+resolves a segment's static metadata even when the layout throws `notFound()`
+— exactly the "do not confirm the route exists" rule, broken by a metadata
+export. The "no payload" requirement is enforced by scanning the admin source
+(comments stripped) rather than a response body: that covers every route in
+the group including Phase I's, and two extra assertions stop the scan from
+passing vacuously. Support deletion reuses A5's `deleteAccountData`, so A5's
+`TABLE_DISPOSITION` coverage test protects this path too. Covered by
+`lib/admin/allowlist.test.ts` (9) and `e2e/admin.spec.ts` (3).
 
 ---
 

@@ -15,6 +15,7 @@ import {
   isAuthConfigured as isAuthConfiguredForEnv,
   type ProviderId,
 } from "@/lib/auth/config";
+import { syncAdminRoleFromAllowlist } from "./admin";
 import {
   CONSENT_COOKIE,
   CONSENT_VERSION,
@@ -163,6 +164,12 @@ function buildConfig(): NextAuthConfig {
               healthDataConsentVersion: CONSENT_VERSION,
             })
             .where(eq(users.id, user.id));
+
+          // A7: promote an address on the ADMIN_EMAILS allowlist. This is the
+          // answer to the chicken-and-egg problem — nobody can grant the first
+          // admin role through a panel that is itself admin-gated. It only
+          // ever promotes; removing an address never silently strips access.
+          await syncAdminRoleFromAllowlist(user.id, user.email);
         }
         // One ticket, one sign-in.
         await clearConsentCookie();

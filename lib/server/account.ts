@@ -6,6 +6,7 @@ import type { Database } from "./db";
 import {
   accounts,
   aiGenerations,
+  companionSnapshots,
   invites,
   pregnancies,
   pregnancyMembers,
@@ -56,6 +57,10 @@ export const TABLE_DISPOSITION = {
   pregnancies: "deleted",
   pregnancyMembers: "deleted",
   invites: "deleted",
+  // E1. Keyed by pregnancy, so it goes with the owner's pregnancies. Leaving
+  // it would keep serving a deleted account's week and due date to whoever
+  // was still a member.
+  companionSnapshots: "deleted",
 
   // Devices and paid-for work.
   pushSubscriptions: "deleted",
@@ -107,6 +112,7 @@ export interface AccountDeleteExecutor {
   deleteMemberships(userId: string, pregnancyIds: string[]): Promise<number>;
   /** Invites they created, invites to their pregnancies, invites they accepted. */
   deleteInvites(userId: string, pregnancyIds: string[]): Promise<number>;
+  deleteCompanionSnapshots(pregnancyIds: string[]): Promise<number>;
   deletePregnancies(pregnancyIds: string[]): Promise<number>;
   deleteUser(userId: string): Promise<number>;
 }
@@ -136,6 +142,7 @@ export async function deleteAccountData(
     aiGenerations: await executor.deleteAiGenerations(userId),
     invites: await executor.deleteInvites(userId, pregnancyIds),
     pregnancyMembers: await executor.deleteMemberships(userId, pregnancyIds),
+    companionSnapshots: await executor.deleteCompanionSnapshots(pregnancyIds),
     pregnancies: await executor.deletePregnancies(pregnancyIds),
     accounts: await executor.deleteAccounts(userId),
     sessions: await executor.deleteSessions(userId),
@@ -256,6 +263,15 @@ export function drizzleAccountExecutor(
         clauses.push(inArray(invites.pregnancyId, pregnancyIds));
       }
       return affected(await database.delete(invites).where(or(...clauses)));
+    },
+
+    async deleteCompanionSnapshots(pregnancyIds) {
+      if (pregnancyIds.length === 0) return 0;
+      return affected(
+        await database
+          .delete(companionSnapshots)
+          .where(inArray(companionSnapshots.pregnancyId, pregnancyIds)),
+      );
     },
 
     async deletePregnancies(pregnancyIds) {

@@ -39,6 +39,7 @@ function memoryDb() {
     pushSubscriptions: [],
     aiGenerations: [],
     pushReminders: [],
+    companionSnapshots: [],
     contentStats: [],
     adminAudit: [],
   };
@@ -105,6 +106,11 @@ function memoryDb() {
           pregnancyIds.includes(r.pregnancyId as string),
       );
     },
+    async deleteCompanionSnapshots(pregnancyIds) {
+      return removeWhere("companionSnapshots", (r) =>
+        pregnancyIds.includes(r.pregnancyId as string),
+      );
+    },
     async deletePregnancies(pregnancyIds) {
       return removeWhere("pregnancies", (r) =>
         pregnancyIds.includes(r.id as string),
@@ -167,6 +173,10 @@ function seed(db: ReturnType<typeof memoryDb>) {
   tables.pushReminders!.push(
     { endpoint: "x", category: "recordatorios", fireAt: 1 },
     { endpoint: "y", category: "recordatorios", fireAt: 2 },
+  );
+  tables.companionSnapshots!.push(
+    { pregnancyId: "preg-a", week: 24 },
+    { pregnancyId: "preg-b", week: 12 },
   );
   tables.aiGenerations!.push({ userId: VICTIM }, { userId: BYSTANDER });
 
@@ -249,6 +259,17 @@ describe("deleteAccountData", () => {
     expect(db.tables.aiGenerations).toHaveLength(1);
     // The bystander's own invite to their own pregnancy survives.
     expect(db.tables.invites!.map((i) => i.code)).toEqual(["3"]);
+  });
+
+  it("stops serving the deleted owner's week to their family", async () => {
+    // The companion snapshot is the ONLY thing a non-owner could read (E1);
+    // leaving it behind would keep answering for a deleted account.
+    const db = memoryDb();
+    seed(db);
+    await deleteAccountData(db.executor, VICTIM);
+    expect(db.tables.companionSnapshots!.map((r) => r.pregnancyId)).toEqual([
+      "preg-b",
+    ]);
   });
 
   it("removes a partner's access to the deleted owner's pregnancy", async () => {

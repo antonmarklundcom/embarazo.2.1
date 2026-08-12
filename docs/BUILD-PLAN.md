@@ -641,12 +641,28 @@ Generalise `textGu` into a `<Bilingual>` component and apply beyond
 
 ## Phase E — family, sharing & growth (feature map 25, 27, 29, 30, 31)
 
-### E1 Family sharing (map #13 server half) — **L**
+### E1 Family sharing (map #13 server half) — **L** ✅ DONE
 Invite by link/code → `pregnancy_members` with role; partner and family
 get a read-only companion view that **never** shows journal notes or
 photos. Replaces v2's export-code workaround (P3.2).
 **Done when:** an invited partner sees the week, due date and next
 appointment and nothing else; revoking access is immediate.
+
+Shipped as `lib/sharing/{fields,client}.ts`, `lib/server/sharing.ts`,
+`/api/v1/sharing` and `/familia`. Migration `drizzle/0004_*.sql` adds
+`companionSnapshots`. **Read DECISIONS.md "E1" for the role/field contract.**
+The design decision worth reviewing: "nothing else" is enforced as a *shape*,
+not a filter. A companion cannot read the owner's records at all — they read a
+snapshot table holding week, due date, next control and baby name, published by
+the owner's device, and that table IS the whitelist. "Show everything except
+notes and photos" fails open the first time somebody adds a field; a missing
+column cannot. `FORBIDDEN_COMPANION_FIELDS` is asserted against both the
+snapshot shape and the schema source. This is a deliberate, bounded exception
+to §4.3 (those four fields become server-legible) and is documented as one
+rather than buried. Revocation is immediate because `isNull(revokedAt)` is
+inside the membership query and the role is never cached anywhere. Invite codes
+are single-use — a link forwarded from a WhatsApp group must not let a second
+person into somebody's pregnancy. Covered by `lib/sharing/fields.test.ts` (12).
 ### E2 Share card + bump frame (map #30) — **M**
 Web Share API from the week hero; canvas-rendered week card and a bump
 photo frame. Health details never leave beyond the week number; the photo

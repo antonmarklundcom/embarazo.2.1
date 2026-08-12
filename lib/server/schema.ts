@@ -193,6 +193,35 @@ export const invites = mysqlTable(
   }),
 );
 
+/**
+ * E1 — the ONLY thing a non-owner can read.
+ *
+ * This table is a deliberate, narrow exception to §4.3, and it is worth being
+ * explicit about. Everywhere else the server holds health data as an opaque
+ * payload it cannot read. Family sharing cannot work that way: a partner
+ * signing in on their own phone has to be served the week and the due date by
+ * the server, so those specific fields are stored here in plain columns.
+ *
+ * What that buys is that the exception is *bounded and legible*. The alternative
+ * — letting a companion pull the owner's `syncRecords` and filtering out notes
+ * and photos — is a rule that fails open the first time somebody adds a field.
+ * Here, a companion view can only ever show what is in this table, so widening
+ * it is a schema change in a reviewed diff.
+ *
+ * The owner's device writes this; nothing else does. Journal notes, symptoms,
+ * moods, weights, cycles, clinical data and photos have no column here and
+ * never will (`FORBIDDEN_COMPANION_FIELDS`, asserted by test).
+ */
+export const companionSnapshots = mysqlTable("companionSnapshots", {
+  pregnancyId: varchar("pregnancyId", { length: 64 }).primaryKey(),
+  /** Friendly 1-based week (DECISIONS.md B3), not completed weeks. */
+  week: int("week"),
+  dueDate: bigint("dueDate", { mode: "number" }),
+  nextAppointmentAt: bigint("nextAppointmentAt", { mode: "number" }),
+  babyName: varchar("babyName", { length: 64 }),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull(),
+});
+
 // ---------------------------------------------------------------------------
 // Sync (A3)
 // ---------------------------------------------------------------------------
@@ -412,6 +441,7 @@ export const schema = {
   pregnancies,
   pregnancyMembers,
   invites,
+  companionSnapshots,
   syncRecords,
   pushSubscriptions,
   pushReminders,

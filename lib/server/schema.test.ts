@@ -114,6 +114,7 @@ describe("schema export", () => {
         "accounts",
         "adminAudit",
         "aiGenerations",
+        "companionSnapshots",
         "contentStats",
         "invites",
         "pregnancies",

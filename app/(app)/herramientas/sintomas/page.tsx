@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db, type JournalEntry, type Mood } from "@/lib/db";
+import { db, notDeleted, softDelete, type JournalEntry, type Mood } from "@/lib/db";
+import { SyncConflicts } from "@/components/SyncConflicts";
 import { useProfile } from "@/lib/useProfile";
 import {
   isPinSet,
@@ -117,10 +118,10 @@ export default function SintomasPage() {
   }
 
   async function remove(id?: number) {
-    if (id) await db().journalEntries.delete(id);
+    if (id) await softDelete("journalEntries", id);
   }
 
-  const list = entries ?? [];
+  const list = notDeleted(entries);
 
   return (
     <div className="space-y-5">
@@ -132,6 +133,10 @@ export default function SintomasPage() {
           Registrá tu ánimo y tus síntomas. Queda solo en tu teléfono.
         </p>
       </header>
+
+      {/* A3: a journal note replaced by a newer edit from another device is
+          never dropped — it surfaces here for the user to keep or discard. */}
+      <SyncConflicts />
 
       {/* New entry */}
       <section className="rounded-card bg-white p-4 shadow-soft">

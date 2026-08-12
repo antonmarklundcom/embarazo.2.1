@@ -211,7 +211,7 @@ sets no session cookie, and `/api/auth/*` 404s instead of 500-ing. Covered
 by `lib/auth/config.test.ts` (18), `lib/auth/consent.test.ts` (12) and
 `e2e/account.spec.ts` (3).
 
-### A3 Sync engine — **L**
+### A3 Sync engine — **L** ✅ DONE
 Dexie v5 adds `updatedAt` / `deletedAt` / `dirty` to synced stores plus a
 `syncState` table. `POST /api/v1/sync` (push) and `GET /api/v1/sync?since=`
 (pull), zod-validated, last-write-wins per record. Runs on open, on
@@ -221,6 +221,32 @@ as a `conflicts` row and surfaced, never silently dropped.
 **Done when:** two browser profiles signed into the same account converge;
 airplane-mode edits sync on reconnect; unit tests cover the LWW comparison
 and the conflict path; e2e covers offline-edit → reconnect → converge.
+
+Shipped as `lib/sync/*` (stores · merge · protocol · client · signal),
+`lib/server/sync.ts`, `app/api/v1/sync/route.ts`, Dexie **v5** in `lib/db.ts`,
+`components/SyncProvider.tsx` and `components/SyncConflicts.tsx`. **Read the
+"A3 — sync engine" section of DECISIONS.md before building anything that
+writes to a synced store** — it is written as the contract, not as a diary.
+The short version: existing `db().x.add(...)` call sites are unchanged (Dexie
+hooks stamp `uid`/`updatedAt`/`deletedAt`/`dirty`, so the rule can't be
+forgotten by a future call site), but deletes must go through
+`softDelete(store, id)` and reads through `notDeleted(rows)`. Two corrections
+to earlier work were forced here and both are load-bearing: A1's
+`SYNCED_STORES` named six tables that do not exist and omitted `pregnancy`
+(one canonical list now lives in `lib/sync/stores.ts`, imported by both ends),
+and the pull cursor needed a **server-authored** `serverUpdatedAt` column —
+ordering the pull by the client's `updatedAt` silently loses every record
+written by a phone that was offline, and the convergence tests fail without
+the split. PIN-encrypted journal notes are deliberately **not** synced
+(the key is device-local; §3.2 of the August review), the record travels with
+`noteWithheld` and a withheld payload can never blank a note the receiving
+device still holds. Singleton stores (`profile`, `pregnancy`, `cycleSettings`,
+`clinical`) use a fixed record id so two offline onboardings merge instead of
+duplicating. Covered by `lib/sync/merge.test.ts` (24),
+`lib/sync/protocol.test.ts` (15), `lib/server/sync.test.ts` (15 — two devices
+against the real handlers) and `e2e/sync.spec.ts` (3 — a real browser going
+offline and back, including that the app is completely unchanged when
+`/api/v1/sync` 404s, which is the "seguir sin cuenta" guarantee).
 
 ### A4 Legal & consent rewrite — **S**
 `/privacidad` and `/terminos` rewritten for the account world: what is

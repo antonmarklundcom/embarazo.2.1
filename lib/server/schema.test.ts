@@ -45,6 +45,7 @@ describe("syncRecords keeps the payload opaque (§4.3)", () => {
         "payload",
         "pregnancyId",
         "recordId",
+        "serverUpdatedAt",
         "store",
         "updatedAt",
         "userId",

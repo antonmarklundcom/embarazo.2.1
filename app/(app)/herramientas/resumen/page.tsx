@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db, type JournalEntry, type Mood } from "@/lib/db";
+import { db, notDeleted, type JournalEntry, type Mood } from "@/lib/db";
 import {
   getCurrentWeek,
   getCompletedGestation,
@@ -55,16 +55,23 @@ export default function ResumenPage() {
   }, []);
 
   const data = useLiveQuery(async () => {
-    const profile = (await db().profile.toArray())[0] ?? null;
-    const pregnancy = (await db().pregnancy.toArray())[0] ?? null;
-    const weights = await db().weightEntries.orderBy("date").toArray();
-    const journal = await db()
-      .journalEntries.orderBy("createdAt")
-      .toArray();
-    const kicks = await db().kickSessions.orderBy("startedAt").toArray();
-    const contractions = await db()
-      .contractionEntries.orderBy("startedAt")
-      .toArray();
+    // Every read here is filtered through notDeleted: since A3 these stores
+    // are soft-deleted, and a tombstone must never reach the summary a user
+    // hands to their obstetra.
+    const profile = notDeleted(await db().profile.toArray())[0] ?? null;
+    const pregnancy = notDeleted(await db().pregnancy.toArray())[0] ?? null;
+    const weights = notDeleted(
+      await db().weightEntries.orderBy("date").toArray(),
+    );
+    const journal = notDeleted(
+      await db().journalEntries.orderBy("createdAt").toArray(),
+    );
+    const kicks = notDeleted(
+      await db().kickSessions.orderBy("startedAt").toArray(),
+    );
+    const contractions = notDeleted(
+      await db().contractionEntries.orderBy("startedAt").toArray(),
+    );
     return { profile, pregnancy, weights, journal, kicks, contractions };
   }, []);
 

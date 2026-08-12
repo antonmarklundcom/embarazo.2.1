@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/db";
+import { db, notDeleted, softDelete } from "@/lib/db";
 
 function fmtDate(ts: number): string {
   return new Date(ts).toLocaleDateString("es-PY", {
@@ -61,10 +61,10 @@ export default function PesoPage() {
   }
 
   async function remove(id?: number) {
-    if (id) await db().weightEntries.delete(id);
+    if (id) await softDelete("weightEntries", id);
   }
 
-  const ordered = entries ?? [];
+  const ordered = notDeleted(entries);
   const reversed = [...ordered].reverse();
   const first = ordered[0];
   const last = ordered[ordered.length - 1];

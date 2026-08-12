@@ -1,7 +1,7 @@
 "use client";
 
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "./db";
+import { db, notDeleted } from "./db";
 import {
   getCurrentWeek,
   getTrimester,
@@ -36,8 +36,8 @@ export interface ProfileState {
  */
 export function useProfile(): ProfileState {
   const data = useLiveQuery(async () => {
-    const profile = await db().profile.toArray();
-    const pregnancy = await db().pregnancy.toArray();
+    const profile = notDeleted(await db().profile.toArray());
+    const pregnancy = notDeleted(await db().pregnancy.toArray());
     return {
       profile: profile[0] ?? null,
       pregnancy: pregnancy[0] ?? null,

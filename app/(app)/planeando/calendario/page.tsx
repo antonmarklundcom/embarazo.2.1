@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { db } from "@/lib/db";
+import { db, softDelete } from "@/lib/db";
 import { useCycles } from "@/lib/useCycles";
 import { cycleDay, daysUntil } from "@/lib/cycle";
 import { PrivacyLine } from "@/components/PrivacyLine";
@@ -37,7 +37,9 @@ export default function CalendarioPage() {
   }
 
   async function remove(id?: number) {
-    if (id) await db().cycles.delete(id);
+    // Soft delete: the row is tombstoned so the deletion reaches the
+    // user's other devices instead of being undone by the next pull.
+    if (id) await softDelete("cycles", id);
   }
 
   function startEditing() {

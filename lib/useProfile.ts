@@ -7,10 +7,11 @@ import {
   getTrimester,
   getDaysRemaining,
   getCompletedGestation,
+  GESTATION_DAYS,
   type CompletedGestation,
 } from "./pregnancy";
 import type { Trimester } from "./types";
-import type { AppMode, BabyIdentity, Role } from "./db";
+import type { AppMode, BabyIdentity, Pregnancy, Role } from "./db";
 
 export interface ProfileState {
   loading: boolean;
@@ -32,6 +33,12 @@ export interface ProfileState {
   daysRemaining?: number;
   /** Medical completed-weeks gestation (carné convention, build spec §1). */
   completed?: CompletedGestation;
+  /** B3: which method produced the stored LMP. Defaults to "lmp". */
+  method?: NonNullable<Pregnancy["method"]>;
+  /** B3: adjustable pregnancy length in days. Defaults to GESTATION_DAYS (280). */
+  gestationDays?: number;
+  /** B3: planned delivery date, separate from the estimated due date. */
+  plannedDeliveryDate?: number;
 }
 
 /**
@@ -92,6 +99,7 @@ export function useProfile(): ProfileState {
   }
 
   const week = getCurrentWeek(pregnancy.lmpDate);
+  const gestationDays = pregnancy.gestationDays ?? GESTATION_DAYS;
   return {
     ...base,
     hasPregnancy: true,
@@ -99,7 +107,10 @@ export function useProfile(): ProfileState {
     dueDate: pregnancy.dueDate,
     week,
     trimester: getTrimester(week),
-    daysRemaining: getDaysRemaining(pregnancy.lmpDate),
+    daysRemaining: getDaysRemaining(pregnancy.lmpDate, Date.now(), gestationDays),
     completed: getCompletedGestation(pregnancy.lmpDate),
+    method: pregnancy.method ?? "lmp",
+    gestationDays,
+    plannedDeliveryDate: pregnancy.plannedDeliveryDate,
   };
 }

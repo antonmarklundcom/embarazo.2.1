@@ -567,6 +567,42 @@ real client engine and real Dexie v5 in a real browser going offline and back,
 against a ~40-line fake server in the spec; the only thing left unexercised is
 the Drizzle backend itself, which is thirty lines and needs a MySQL.
 
+## B3 — due-date & pregnancy settings (August 2026)
+- **Every calculation method converges on an LMP-equivalent** rather than
+  branching week/trimester/due-date math per method. `getCurrentWeek`,
+  `getTrimester`, `getDueDate` etc. all already take `lmp` as their only
+  temporal input; a `lmpFrom<Method>()` function per method is the entire
+  surface area a new method needs, and nothing downstream has to know which
+  method produced the value it's using.
+- **FIV and conception dating are NOT "day zero at the anchor date".** A
+  day-5 blastocyst transfer means the embryo is already 19 days old
+  (14 days assumed-ovulation offset + 5 days embryo age) at the moment of
+  transfer — gestational week 3, not week 1. Getting this wrong would make
+  IVF pregnancies read as younger than they are, which compounds into a
+  wrong due date and wrong week content for the rest of the pregnancy. The
+  first version of the cross-method equivalence test in
+  `lib/pregnancy.test.ts` asserted week 1 here and failed against the real
+  math — caught before merge, not after.
+- **`gestationDays` is a `Pregnancy` field, not a `Profile` field.** It's
+  meaningless without a pregnancy record (planeando-mode profiles have
+  none), and it travels with the pregnancy if a future task ever lets a
+  device hold history across pregnancies.
+- **Method-switching "never corrupts existing week data" by not having a
+  method-specific code path to get wrong.** Every method just produces a
+  new `lmpDate`, written through the exact same `pregnancy.update()`/`.add()`
+  calls that existed before B3. There's no migration, no per-method stored
+  shape, and so nothing for switching methods to corrupt.
+- **`week+day` default was scoped to the one hero label that was a bare week
+  integer** (`SEMANA {week}` → `SEMANA {weekPlusDay}`), not rolled out to
+  every week-number-bearing string in the app. `/emergencia`'s "Estoy
+  embarazada de…" sentence and the hero's big number both intentionally kept
+  `formatCompletedGestation`'s prose form ("24 semanas y 3 días") — that's a
+  sentence, not a label, and "24+3" would read as a typo there. Reason for
+  the narrow scope, stated so a future session doesn't "helpfully" widen it:
+  C1 (home screen hero + stats) is about to redesign this exact hero card,
+  and touching every occurrence now would just create merge churn against
+  that PR for no benefit.
+
 ## B2 — baby identity & twins (August 2026)
 - **`babies` is `BabyIdentity[]`, not `string[]`.** A bare string array would
   satisfy today's "just a nickname" requirement, but the task explicitly asks

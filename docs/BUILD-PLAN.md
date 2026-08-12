@@ -335,8 +335,30 @@ degrades gracefully.
 The highest-leverage phase for the friends-and-family test: it is what
 testers judge in ten seconds.
 
-### C1 Week hero + stats (map #9, #10)
+### C1 Week hero + stats (map #9, #10) — ✅ DONE
 Circular hero with progress ring; `semana · días transcurridos · faltan`.
+
+Shipped as `WeekHero` (`app/(app)/page.tsx`), replacing the flat rectangular
+`HeroCard`: a circular week photo (with the existing arena-fallback-on-error
+behavior kept) ringed by an SVG progress circle — `stroke-dasharray`/
+`strokeDashoffset` against `getProgressFraction(lmp)`
+(new pure function in `lib/pregnancy.ts`, unit-tested — 0 at LMP, 1 at the
+due date, clamped so an overdue pregnancy doesn't overshoot a full circle).
+Below it, the three-stat row feature map #10 asks for explicitly: **Semana**
+(`week`), **Días pasados** (`getDaysSinceLMP`), **Faltan** (`getDaysRemaining`)
+— all three already existed as functions, this task just surfaces them as
+first-class numbers instead of leaving them implicit in the "17 semanas y 2
+días" sentence.
+
+**This is the layout shell C2–C8 fill in.** A comment in `page.tsx` marks the
+slot area between the hero and the existing tool/reading rails; each of
+those tasks adds one block there (weekly one-liner, size tabs, perspective
+switcher, obstetra card, article feed, popular-this-week, shortcuts+feedback)
+rather than restructuring the hero itself. Verified visually with a
+Playwright screenshot at a phone viewport (390×844) in addition to the
+automated gates — the ring renders correctly, no layout shift against the
+skeleton placeholder (`HomeSkeleton`'s height was adjusted to match the
+taller circular hero + stats row).
 ### C2 Weekly one-liner (map #11)
 One concrete "what is happening now" sentence per week; 42 strings, code
 ships with a graceful fallback so content can land later.

@@ -566,3 +566,31 @@ one user cannot write into another's records. `e2e/sync.spec.ts` (3) drives the
 real client engine and real Dexie v5 in a real browser going offline and back,
 against a ~40-line fake server in the spec; the only thing left unexercised is
 the Drizzle backend itself, which is thirty lines and needs a MySQL.
+
+## C1 — week hero + stats, the Phase C layout shell (August 2026)
+- **This PR is deliberately the only one that touches the hero card's
+  structure.** BUILD-PLAN.md's PR-shape note says C1 lands first and C2–C8
+  wait for it, specifically so eight PRs don't each reshape the same
+  section and conflict on every merge. `page.tsx` carries an explicit
+  comment marking the slot area between the hero and the tool/reading
+  rails — C2–C8 should each add one block there, not restructure
+  `WeekHero` itself.
+- **The ring uses a plain SVG `stroke-dasharray`/`strokeDashoffset` pair**,
+  not a charting library — this is one circle, and pulling in a dependency
+  for it would be the kind of premature abstraction the standing rules warn
+  against. `-rotate-90` on the `<svg>` starts the arc at 12 o'clock, which
+  reads as "progress" more naturally than the default 3 o'clock start.
+- **`getProgressFraction` clamps to [0, 1]**, not because the math can't go
+  negative or past 1 (it can — a future due date or an overdue pregnancy),
+  but because the ring has no way to draw "110%": clamping there is the
+  right layer, rather than every caller remembering to clamp before passing
+  it in.
+- **The three stats reuse existing functions** (`getDaysSinceLMP`,
+  `getDaysRemaining`, `week` itself) rather than inventing new ones — the
+  numbers already existed, they just weren't surfaced as their own row.
+- **Verified with an actual screenshot**, not just the automated gates: a
+  throwaway Playwright script drove real onboarding against `npm run start`
+  and captured the rendered home screen at a 390×844 phone viewport, per
+  the "start the dev server and use the feature in a browser" rule for
+  UI-facing changes. Deleted after use — see the screenshot only in this
+  session's transcript, not committed.

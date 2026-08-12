@@ -818,13 +818,31 @@ produces the URL bar in J1.
 **Done when:** `curl https://<domain>/.well-known/assetlinks.json` returns the
 JSON with no redirect, and Google's asset-link checker passes.
 
-### J3 Keep the Data safety answer clean — **S**
+### J3 Keep the Data safety answer clean — **S** ✅ DONE
 Move directory/placement filtering client-side so `department` stops being
 transmitted, and trim `/api/v1/go` attribution to the id. That preserves an
 honest **"No data collected"** on the store listing — a visible badge and a
 real asset for a pregnancy app. See `docs/ANDROID-LAUNCH.md` §3.1.
 **Done when:** no API call carries a location-derived or health-derived
 parameter; the whitelist tests are updated to match.
+
+Shipped by giving all three routes an **empty** whitelist rather than a
+narrower one: `/api/v1/directory`, `/api/v1/placements` and `/api/v1/go/[id]`
+now accept no query parameters and reject (not ignore) anything sent, so a
+stale client fails loudly instead of transmitting while the listing claims
+nothing is collected. Filtering moved to `lib/directoryFilter.ts`, pure and
+unit-tested — `matchesTrimester` keeps the pre-existing `trimester: 0` = "all
+trimesters" convention. `category` and `q` were dropped too even though
+neither is location- or health-derived: a route that accepts nothing cannot
+leak anything, and the single cache key means the service worker's one cached
+copy now serves every filter offline. **A real product cost, recorded rather
+than hidden:** `week` is gone from the WhatsApp pre-fill, so the business
+receives "Vi su información en Mi Bebé" instead of "…(semana 24)" — keeping it
+meant sending the user's gestational week to our server on every tap. Covered
+by `lib/directoryFilter.test.ts` (11) and a rewritten `app/api/v1/api.test.ts`
+(10), which tests both directions: the routes reject every retired parameter,
+and a source scan asserts nothing in `app/` or `components/` still builds such
+a URL.
 
 ### J4 Listing assets — **S** (mostly founder work)
 Real 512×512 icon, 1024×500 feature graphic, 5–8 framed screenshots, es-PY

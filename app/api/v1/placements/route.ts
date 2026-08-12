@@ -1,53 +1,33 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { z } from "zod";
 import { getPlacements } from "@/lib/wordpress";
-import { isValidDepartment } from "@/lib/departments";
 
-// Privacy boundary (build spec §7): only `trimester` and `department` are
-// accepted. Any other param → 400. No cookies, no Set-Cookie.
-const QuerySchema = z
-  .object({
-    trimester: z
-      .enum(["1", "2", "3"])
-      .transform((v) => Number(v) as 1 | 2 | 3)
-      .optional(),
-    department: z
-      .string()
-      .refine(isValidDepartment, "departamento inválido")
-      .optional(),
-  })
-  .strict();
-
-const ALLOWED = new Set(["trimester", "department"]);
+// BUILD-PLAN J3 — this route takes no parameters at all.
+//
+// It used to accept `trimester` and `department`. Trimester is derived from
+// the user's due date, which makes it **health-derived**; department is a
+// coarse location. Sending either turns an honest "No data collected" on the
+// Play listing into a declaration of health and approximate-location
+// collection (`docs/ANDROID-LAUNCH.md` §3.1), and a health app that declares
+// collection gets a heavier review for no benefit.
+//
+// There are five placements. Filtering them on the device costs nothing and
+// tells us nothing about anyone, so `components/LocalResourcesBlock.tsx` now
+// does the trimester match (`matchesTrimester`, unit-tested) locally.
 
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
   for (const key of params.keys()) {
-    if (!ALLOWED.has(key)) {
-      return NextResponse.json(
-        { error: `parámetro no permitido: ${key}` },
-        { status: 400 },
-      );
-    }
+    return NextResponse.json(
+      { error: `parámetro no permitido: ${key}` },
+      { status: 400 },
+    );
   }
 
-  const parsed = QuerySchema.safeParse({
-    trimester: params.get("trimester") ?? undefined,
-    department: params.get("department") ?? undefined,
-  });
-  if (!parsed.success) {
-    return NextResponse.json({ error: "parámetros inválidos" }, { status: 400 });
-  }
-
-  const { trimester } = parsed.data;
   const all = await getPlacements();
-
-  const filtered = all
-    .filter((p) => p.trimester === 0 || trimester === undefined || p.trimester === trimester)
-    .sort((a, b) => b.priority - a.priority);
+  const sorted = [...all].sort((a, b) => b.priority - a.priority);
 
   return NextResponse.json(
-    { placements: filtered },
+    { placements: sorted },
     { headers: { "Cache-Control": "public, max-age=3600" } },
   );
 }

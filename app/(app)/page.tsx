@@ -195,7 +195,7 @@ export default function InicioPage() {
       </Link>
 
       {/* Local resources (placements) */}
-      <LocalResourcesBlock trimester={trimester} department={department} week={week} />
+      <LocalResourcesBlock trimester={trimester} />
 
       {/* Seasonal info card */}
       <Link

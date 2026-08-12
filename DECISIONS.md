@@ -1002,3 +1002,50 @@ them tappable. Fixed here by labelling the compact form as gestational age
 (`"24+3 SEMANAS"`) instead of as the app's week number. **If you render
 `formatWeekPlusDay`, do not put the word "SEMANA" in front of it**, and never
 use its `weeks` to build a `/semana/[n]` href.
+
+## J3 — data-safety trimming (August 2026)
+
+The goal is a Play listing that can honestly answer **"No data collected"**
+(`docs/ANDROID-LAUNCH.md` §3.1). That is a rare, visible badge and a real asset
+for a pregnancy app, and three routes were quietly spending it.
+
+- **`/api/v1/directory`, `/api/v1/placements` and `/api/v1/go/[id]` now accept
+  no query parameters at all.** Not a narrowed whitelist — an empty one. Every
+  parameter they took was either location-derived (`department`) or
+  health-derived (`trimester`, `week`, both computed from the due date).
+- **Unknown parameters are rejected, not ignored.** A stale cached client still
+  appending `?department=` must fail loudly rather than have it silently
+  dropped while the store listing claims nothing is collected. A route that
+  ignores a parameter still receives it, and "we didn't look at it" is not what
+  the Data safety form asks.
+- **`category` and `q` went too, though neither is location- or
+  health-derived.** Keeping them would mean keeping a query surface, a
+  whitelist, and an argument about the next parameter someone wants to add. A
+  route that accepts nothing cannot leak anything, and it caches under a single
+  key — which also means the service worker's one cached copy now serves every
+  filter offline, instead of only the last combination the user happened to
+  request.
+- **The filtering moved to `lib/directoryFilter.ts`, pure and unit-tested.**
+  Moving a filter off the server is only a privacy win if the filter still
+  works. `matchesTrimester` preserves the pre-existing `trimester: 0` = "all
+  trimesters" convention, which is why it cannot be an equality check.
+- **`week` is gone from the WhatsApp pre-fill, and that is a real product
+  cost.** The business now receives "Vi su información en Mi Bebé" instead of
+  "…(semana 24)". Keeping it meant transmitting the user's gestational week —
+  the most health-derived value the app holds — to our server on every tap, to
+  save the business one question. Recorded here rather than quietly dropped.
+- **What the founder needs from attribution still works.** "How many people
+  tapped WhatsApp on this listing" is answered by the id alone. A sponsor
+  asking for click-through *by department* can be answered from the directory
+  itself — every listing already has a department — without the **user's**
+  department ever travelling.
+- **Two tests, deliberately from both directions.** The routes reject every
+  retired parameter; and a source scan asserts no file under `app/` or
+  `components/` still *builds* such a URL. The first without the second gives a
+  privacy win that manifests as a broken feature.
+- **Props were removed, not left unused.** `LocalResourcesBlock`'s `department`
+  and `week`, and `ListingCard`'s `department`, are gone rather than ignored: a
+  prop that exists only to be dropped invites someone to start sending it again.
+- **D5 is the documented point to revisit this** ("server-side filtering and
+  pagination when listings pass ~100"). Below that, sending the whole list is
+  both cheaper and quieter.

@@ -10,6 +10,7 @@ import {
   directoryCategoryLabel,
 } from "@/lib/directoryCategories";
 import type { DirectoryCategory, DirectoryListing } from "@/lib/types";
+import { filterDirectory } from "@/lib/directoryFilter";
 import { SponsoredBadge } from "@/components/SponsoredBadge";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 
@@ -18,15 +19,14 @@ const BUSINESS_WA = process.env.NEXT_PUBLIC_BUSINESS_WHATSAPP || "+595000000000"
 // "Todos" + every broadened category (build spec §6).
 type CategoryFilter = "todos" | DirectoryCategory;
 
-async function fetchDirectory(
-  department: string,
-  category: CategoryFilter,
-  q: string,
-): Promise<DirectoryListing[]> {
-  const params = new URLSearchParams({ department });
-  if (category !== "todos") params.set("category", category);
-  if (q) params.set("q", q);
-  const res = await fetch(`/api/v1/directory?${params.toString()}`);
+// J3: the request carries NO parameters. `department` is a coarse location and
+// Play's Data safety form treats it as one, which would cost the app an honest
+// "No data collected" on the store listing (docs/ANDROID-LAUNCH.md §3.1). The
+// directory is a few dozen entries and is already precached, so the whole list
+// comes back once and the device filters it — the search box and the
+// department picker never leave the phone.
+async function fetchDirectory(): Promise<DirectoryListing[]> {
+  const res = await fetch("/api/v1/directory");
   if (!res.ok) throw new Error("failed");
   const data = (await res.json()) as { listings: DirectoryListing[] };
   return data.listings;
@@ -50,15 +50,28 @@ export default function CercaTuyoPage() {
     return () => clearTimeout(id);
   }, [search]);
 
+  // One cache key for everybody: the response no longer varies by user, which
+  // also means the service worker's cached copy serves every filter offline.
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["directory", department, category, debounced],
-    queryFn: () => fetchDirectory(department, category, debounced),
+    queryKey: ["directory"],
+    queryFn: fetchDirectory,
   });
 
   // Memoized so its reference is stable when `data` is undefined — otherwise
   // `data ?? []` creates a new array every render and defeats the `grouped`
   // useMemo below.
-  const listings = useMemo(() => data ?? [], [data]);
+  // J3: filtering moved here from the server. `filterDirectory` is the exact
+  // rule the route used to apply, extracted and unit-tested — moving a filter
+  // to the client is only a privacy win if it still filters correctly.
+  const listings = useMemo(
+    () =>
+      filterDirectory(data ?? [], {
+        department,
+        category,
+        q: debounced,
+      }),
+    [data, department, category, debounced],
+  );
 
   // When "Todos" is selected, group by category for a clean, scannable list.
   const grouped = useMemo(() => {
@@ -181,7 +194,7 @@ export default function CercaTuyoPage() {
               </h2>
             )}
             {items.map((l) => (
-              <ListingCard key={l.id} listing={l} department={department} />
+              <ListingCard key={l.id} listing={l} />
             ))}
           </section>
         ))}
@@ -219,13 +232,12 @@ function CategoryChip({
   );
 }
 
-function ListingCard({
-  listing: l,
-  department,
-}: {
-  listing: DirectoryListing;
-  department: string;
-}) {
+/**
+ * J3 dropped the `department` prop: the WhatsApp link no longer carries it,
+ * and a prop kept only to be ignored invites someone to start sending it
+ * again.
+ */
+function ListingCard({ listing: l }: { listing: DirectoryListing }) {
   return (
     <article className="rounded-card bg-white p-4 shadow-soft">
       <div className="flex items-start justify-between gap-2">
@@ -238,7 +250,7 @@ function ListingCard({
       {l.address && <p className="mt-1 text-xs text-muted">{l.address}</p>}
       <div className="mt-3 flex flex-wrap gap-2">
         <WhatsAppButton
-          href={`/api/v1/go/${l.id}?department=${department}`}
+          href={`/api/v1/go/${l.id}`}
           label="WhatsApp"
         />
         {l.mapsUrl && (

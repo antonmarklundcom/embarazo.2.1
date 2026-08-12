@@ -2,38 +2,35 @@
 
 import { useQuery } from "@tanstack/react-query";
 import type { AdPlacement, Trimester } from "@/lib/types";
+import { filterPlacements } from "@/lib/directoryFilter";
 import { SponsoredBadge } from "./SponsoredBadge";
 import { WhatsAppButton } from "./WhatsAppButton";
 
-// Shows ≤3 placements from /api/v1/placements using ONLY derived trimester +
-// stored department (build spec §6). Renders nothing on failure.
-async function fetchPlacements(
-  trimester: Trimester,
-  department: string,
-): Promise<AdPlacement[]> {
-  const res = await fetch(
-    `/api/v1/placements?trimester=${trimester}&department=${department}`,
-  );
+// Shows ≤3 placements. J3: the request carries NO parameters — trimester is
+// derived from the due date (health data) and department is a coarse location,
+// and transmitting either costs the app its honest "No data collected" answer
+// on the Play listing. The full list comes back and the device filters it.
+// Renders nothing on failure.
+async function fetchPlacements(): Promise<AdPlacement[]> {
+  const res = await fetch("/api/v1/placements");
   if (!res.ok) throw new Error("failed");
   const data = (await res.json()) as { placements: AdPlacement[] };
   return data.placements;
 }
 
-export function LocalResourcesBlock({
-  trimester,
-  department,
-  week,
-}: {
-  trimester: Trimester;
-  department: string;
-  week: number;
-}) {
+/**
+ * J3 dropped the `department` and `week` props: nothing here transmits them
+ * any more, and a prop that exists only to be ignored invites someone to start
+ * sending it again.
+ */
+export function LocalResourcesBlock({ trimester }: { trimester: Trimester }) {
+  // One cache key for everybody: the response no longer varies by user.
   const { data } = useQuery({
-    queryKey: ["placements", trimester, department],
-    queryFn: () => fetchPlacements(trimester, department),
+    queryKey: ["placements"],
+    queryFn: fetchPlacements,
   });
 
-  const placements = (data ?? []).slice(0, 3);
+  const placements = filterPlacements(data ?? [], trimester).slice(0, 3);
   if (placements.length === 0) return null;
 
   return (
@@ -62,7 +59,7 @@ export function LocalResourcesBlock({
             )}
             <div className="mt-3">
               <WhatsAppButton
-                href={`/api/v1/go/${p.id}?trimester=${trimester}&department=${department}&week=${week}`}
+                href={`/api/v1/go/${p.id}`}
                 label={p.ctaLabel}
               />
             </div>

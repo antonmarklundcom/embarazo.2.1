@@ -313,11 +313,39 @@ test asserts no route returns payload contents.
 
 ## Phase B — onboarding & profile (feature map 1–8)
 
-### B1 Roles (map #1) — **M**
+### B1 Roles (map #1) — **M** ✅ DONE
 `mamá / papá / acompañante / familiar o amiga` in onboarding and editable
 later; drives tone and which home content shows. Non-owner roles get a
 read-only shell.
 **Done when:** every role reaches a coherent home screen; role is synced.
+
+Shipped as a new onboarding step between mode and date/department
+(`components/Onboarding.tsx`), a `role?: Role` field on `Profile`
+(`lib/db.ts` — plain non-indexed field, no Dexie version bump, same pattern
+as `sanatorioName` etc.), and `lib/roleCopy.ts`: the single place that maps
+a role to phrasing (`ROLE_LABELS`, `ROLE_ONBOARDING_COPY`,
+`pregnancyPossessive`, `babyAtWeekLabel`, `moodCheckInLabel`), unit-tested
+(9 tests). Editable later from a new "¿Cómo te describís vos?" section in
+`/ajustes`, next to the existing mode switcher. Wired into the home screen's
+most prominent role-sensitive strings: the week-hero image alt text and
+caption, the "para leer hoy" card, and the daily mood check-in header
+(second person for mamá, third person otherwise). `role` defaults to
+`"mama"` everywhere it's read (`useProfile`, both `db().profile.add` call
+sites) so existing profiles without the field keep their current behaviour
+exactly. Synced automatically — `profile` is already in `SYNCED_STORES`
+(A3) and the whole row travels as the opaque payload, so no sync-layer
+change was needed for "role is synced".
+
+**Scope boundary, stated explicitly**: "every role reaches a coherent home
+screen" was interpreted as the pregnancy ("embarazada" mode) home screen,
+the flagship surface. `PlaneandoHome` (the fertility/TTC dashboard) is
+inherently about the mamá's own cycle data and was left role-copy-untouched
+— rewriting it per-role is judged out of scope for an M task and better
+suited to whichever future task actually redesigns that screen. The "read
+mostly-only shell" language for non-owner roles is E1's job (family sharing
+between *different* accounts); B1 is single-device and stores the role
+locally, so there is no second person to restrict yet — role here drives
+tone only, as the done-when criteria require.
 
 ### B2 Baby identity & twins (map #2, #3) — **M**
 Baby nickname threaded through copy ("Silvia ya mide…"); data model

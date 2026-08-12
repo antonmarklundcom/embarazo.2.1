@@ -2,20 +2,23 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { db, type AppMode } from "@/lib/db";
+import { db, type AppMode, type Role } from "@/lib/db";
 import { getDueDate, lmpFromDueDate, getRawWeek, MAX_WEEK } from "@/lib/pregnancy";
 import { DEPARTMENTS } from "@/lib/departments";
+import { ROLE_ONBOARDING_COPY, ROLE_ORDER } from "@/lib/roleCopy";
 import { PrivacyLine } from "./PrivacyLine";
 
-// First-run gate (build spec §3/§6): choose a mode, then collect the minimum
-// data for that flow. Rendered IN PLACE on / — no redirect, no separate route.
+// First-run gate (build spec §3/§6): choose a mode, then a relationship role
+// (B1, feature map #1), then collect the minimum data for that flow.
+// Rendered IN PLACE on / — no redirect, no separate route.
 // - "embarazada": LMP or FPP date → department (city optional) → save.
 // - "planeando": department (city optional) → save (no pregnancy record).
-type Step = "mode" | "lmp" | "department";
+type Step = "mode" | "role" | "lmp" | "department";
 
 export function Onboarding({ onDone }: { onDone: () => void }) {
   const [step, setStep] = useState<Step>("mode");
   const [mode, setMode] = useState<AppMode>("embarazada");
+  const [role, setRole] = useState<Role>("mama");
   const [useDueDate, setUseDueDate] = useState(false);
   const [lmp, setLmp] = useState("");
   const [dueDateInput, setDueDateInput] = useState("");
@@ -31,7 +34,12 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
 
   function chooseMode(m: AppMode) {
     setMode(m);
-    setStep(m === "embarazada" ? "lmp" : "department");
+    setStep("role");
+  }
+
+  function chooseRole(r: Role) {
+    setRole(r);
+    setStep(mode === "embarazada" ? "lmp" : "department");
   }
 
   function resolveLmpDate(): number | null {
@@ -82,6 +90,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         department,
         city: city.trim() || undefined,
         mode,
+        role,
         createdAt: now,
       });
       onDone();
@@ -134,6 +143,38 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           <p className="px-1 text-xs text-muted">
             Podés cambiar de modo cuando quieras desde Ajustes, sin perder tus datos.
           </p>
+        </div>
+      )}
+
+      {step === "role" && (
+        <div className="space-y-3">
+          <p className="px-1 text-sm font-extrabold text-ink">
+            ¿Cómo te describís vos?
+          </p>
+          {ROLE_ORDER.map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => chooseRole(r)}
+              className="block w-full rounded-card bg-white p-5 text-left shadow-soft transition active:scale-[0.99]"
+            >
+              <p className="text-base font-extrabold text-ink">
+                {ROLE_ONBOARDING_COPY[r].title}
+              </p>
+              <p className="mt-1 text-sm text-muted">{ROLE_ONBOARDING_COPY[r].desc}</p>
+            </button>
+          ))}
+          <p className="px-1 text-xs text-muted">
+            Esto ajusta cómo te habla la app. Podés cambiarlo cuando quieras
+            desde Ajustes.
+          </p>
+          <button
+            type="button"
+            onClick={() => setStep("mode")}
+            className="mt-1 min-h-[44px] w-full text-sm text-muted"
+          >
+            Volver
+          </button>
         </div>
       )}
 
@@ -204,7 +245,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           </button>
           <button
             type="button"
-            onClick={() => setStep("mode")}
+            onClick={() => setStep("role")}
             className="mt-2 min-h-[44px] w-full text-sm text-muted"
           >
             Volver
@@ -260,7 +301,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           </button>
           <button
             type="button"
-            onClick={() => setStep(mode === "embarazada" ? "lmp" : "mode")}
+            onClick={() => setStep(mode === "embarazada" ? "lmp" : "role")}
             className="mt-2 min-h-[44px] w-full text-sm text-muted"
           >
             Volver

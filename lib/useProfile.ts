@@ -10,13 +10,15 @@ import {
   type CompletedGestation,
 } from "./pregnancy";
 import type { Trimester } from "./types";
-import type { AppMode } from "./db";
+import type { AppMode, Role } from "./db";
 
 export interface ProfileState {
   loading: boolean;
   hasProfile: boolean;
   /** "embarazada" (default) or "planeando" — see build spec §3. */
   mode: AppMode;
+  /** Relationship role (B1). Defaults to "mama" — see lib/roleCopy.ts. */
+  role: Role;
   hasPregnancy: boolean;
   department?: string;
   city?: string;
@@ -45,19 +47,33 @@ export function useProfile(): ProfileState {
   }, []);
 
   if (data === undefined) {
-    return { loading: true, hasProfile: false, mode: "embarazada", hasPregnancy: false };
+    return {
+      loading: true,
+      hasProfile: false,
+      mode: "embarazada",
+      role: "mama",
+      hasPregnancy: false,
+    };
   }
 
   const { profile, pregnancy } = data;
   if (!profile) {
-    return { loading: false, hasProfile: false, mode: "embarazada", hasPregnancy: false };
+    return {
+      loading: false,
+      hasProfile: false,
+      mode: "embarazada",
+      role: "mama",
+      hasPregnancy: false,
+    };
   }
 
   const mode: AppMode = profile.mode ?? "embarazada";
+  const role: Role = profile.role ?? "mama";
   const base = {
     loading: false,
     hasProfile: true,
     mode,
+    role,
     department: profile.department,
     city: profile.city,
     nextAppointment: profile.nextAppointment,

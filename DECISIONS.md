@@ -567,6 +567,24 @@ real client engine and real Dexie v5 in a real browser going offline and back,
 against a ~40-line fake server in the spec; the only thing left unexercised is
 the Drizzle backend itself, which is thirty lines and needs a MySQL.
 
+## B4 — Ajustes restructure (August 2026)
+- **Grouping only, zero functional change.** Every section keeps its
+  existing component, state, and save handler untouched; `SettingsGroup` is
+  purely a label + spacing wrapper. This was deliberate: B4 is marked **S**
+  precisely because it shouldn't need behavioral review, only a visual diff.
+- **Bebé and Notificaciones groups are omitted, not stubbed.** Rendering an
+  empty "Bebé" section with nothing under it would be worse than not
+  rendering it — it reads as broken, not as "coming soon". Both groups
+  exist as documented conventions (wrap new content in `<SettingsGroup
+  title="...">`) for B2 and B5 to pick up when they land, rather than as
+  placeholder UI.
+- **Two sections were reordered** (privacy summary + aviso médico moved to
+  sit next to the PIN section, ahead of backup/restore) so each group's
+  sections are contiguous in the JSX and the visual order matches the
+  logical group order. This is the only non-trivial diff in the task —
+  verified by e2e (`account.spec.ts`) still passing, since none of the
+  visible text changed, only its position.
+
 ## B3 — due-date & pregnancy settings (August 2026)
 - **Every calculation method converges on an LMP-equivalent** rather than
   branching week/trimester/due-date math per method. `getCurrentWeek`,
@@ -722,6 +740,7 @@ the Drizzle backend itself, which is thirty lines and needs a MySQL.
 - **No route was removed, so no link elsewhere in the app broke** — verified by
   grepping every `href="/progreso"` / `href="/eventos"` call site rather than
   assuming; both existing links continue to resolve.
+
 ## A5 — account management & deletion (August 2026)
 
 - **Deletion is expressed as a plan over an executor interface**

@@ -1,7 +1,7 @@
 "use client";
 
 import { useLiveQuery } from "dexie-react-hooks";
-import { db, type Cycle } from "./db";
+import { db, notDeleted, type Cycle } from "./db";
 import {
   averageCycleLength,
   predictNextStart,
@@ -31,8 +31,10 @@ export interface CyclesState {
  */
 export function useCycles(): CyclesState {
   const data = useLiveQuery(async () => {
-    const cycles = await db().cycles.orderBy("startDate").toArray();
-    const settings = (await db().cycleSettings.toArray())[0] ?? null;
+    // A3: synced stores are soft-deleted, so a tombstoned row is still in
+    // the table and must be filtered out of everything the user sees.
+    const cycles = notDeleted(await db().cycles.orderBy("startDate").toArray());
+    const settings = notDeleted(await db().cycleSettings.toArray())[0] ?? null;
     return { cycles, settings };
   }, []);
 

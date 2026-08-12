@@ -173,6 +173,8 @@ export async function importBackup(file: File): Promise<void> {
       instance.cycleSettings,
       instance.carnePhotos,
       instance.clinical,
+      instance.syncState,
+      instance.conflicts,
     ],
     async () => {
       await Promise.all([
@@ -188,6 +190,15 @@ export async function importBackup(file: File): Promise<void> {
         instance.cycleSettings.clear(),
         instance.carnePhotos.clear(),
         instance.clinical.clear(),
+        // A3: a restore replaces the data, so the sync bookkeeping that
+        // described the *old* data has to go with it. Clearing `syncState`
+        // resets the pull cursor to zero, so the next sync reconciles the
+        // restored rows against the server from scratch instead of assuming
+        // it is already up to date. Restored rows that predate v5 carry no
+        // `uid`; the creating hook in lib/db.ts stamps them on the way in and
+        // marks them dirty, so they upload rather than sit invisible.
+        instance.syncState.clear(),
+        instance.conflicts.clear(),
       ]);
       await Promise.all([
         instance.profile.bulkAdd(t.profile as never[]),

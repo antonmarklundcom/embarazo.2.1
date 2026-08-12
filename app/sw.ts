@@ -1,6 +1,6 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { Serwist, NetworkFirst } from "serwist";
+import { Serwist, NetworkFirst, NetworkOnly } from "serwist";
 import { MIN_WEEK, MAX_WEEK } from "@/lib/pregnancy";
 import { ARTICLES } from "@/lib/seed/articles";
 
@@ -39,6 +39,14 @@ const serwist = new Serwist({
   clientsClaim: true,
   navigationPreload: true,
   runtimeCaching: [
+    // A3: /api/v1/sync is never cached, in either direction. A cached pull
+    // would replay stale records over newer local ones, and a cached push
+    // response would clear a dirty flag for a write the server never got.
+    // This sits before defaultCache so its same-origin rules cannot claim it.
+    {
+      matcher: ({ url }) => url.pathname === "/api/v1/sync",
+      handler: new NetworkOnly(),
+    },
     // Network-first with cached fallback for the two read APIs (spec §9).
     {
       matcher: ({ url }) =>

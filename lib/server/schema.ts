@@ -197,25 +197,17 @@ export const invites = mysqlTable(
 // Sync (A3)
 // ---------------------------------------------------------------------------
 
-/**
- * Dexie stores that sync. Photos are deliberately absent — they never leave
- * the device in v1 (ARCHITECTURE.md §4.4). Adding a store here is a data
- * contract decision, not a refactor.
- */
-export const SYNCED_STORES = [
-  "profile",
-  "symptomEntries",
-  "kickSessions",
-  "contractions",
-  "weights",
-  "appointments",
-  "checklistItems",
-  "cycles",
-  "cycleSettings",
-  "clinical",
-  "journal",
-] as const;
-export type SyncedStore = (typeof SYNCED_STORES)[number];
+// A3 moved the canonical list to `lib/sync/stores.ts` and corrected it: the
+// names here were provisional and did not match a single actual Dexie table
+// (`symptomEntries` vs `journalEntries`, an `appointments` store that does not
+// exist, no `pregnancy`). Both ends of the wire now read one list. The
+// relative import is deliberate — drizzle-kit reads this file outside Next.js,
+// where the `@/` alias does not resolve.
+export {
+  SYNCED_STORES,
+  type SyncedStore,
+} from "../sync/stores";
+import { SYNCED_STORES } from "../sync/stores";
 
 export const syncRecords = mysqlTable(
   "syncRecords",
@@ -228,10 +220,21 @@ export const syncRecords = mysqlTable(
     // records that are not pregnancy-scoped (e.g. cycle data).
     pregnancyId: varchar("pregnancyId", { length: 64 }),
 
-    // Epoch milliseconds, client-authored. Last-write-wins compares these.
+    // Epoch milliseconds, CLIENT-authored. Last-write-wins compares these and
+    // nothing else — it is the only ordering two offline devices share.
     updatedAt: bigint("updatedAt", { mode: "number" }).notNull(),
     // Soft delete so a deletion propagates to the user's other devices.
     deletedAt: bigint("deletedAt", { mode: "number" }),
+
+    // Epoch milliseconds, SERVER-authored: when this row was last written here.
+    //
+    // The pull cursor uses this, never `updatedAt`. Mixing the two clocks is a
+    // silent data-loss bug: a record stamped 10:00 by a phone that was offline
+    // until 11:00 arrives after a device has already pulled "everything up to
+    // 10:30", and would never be delivered. Ordering the pull by the server's
+    // own write clock has no such gap, and A3's convergence tests fail without
+    // this column.
+    serverUpdatedAt: bigint("serverUpdatedAt", { mode: "number" }).notNull(),
 
     // OPAQUE. See the header note: never queried into, never indexed.
     payload: json("payload"),
@@ -240,8 +243,11 @@ export const syncRecords = mysqlTable(
     pk: primaryKey({
       columns: [table.userId, table.store, table.recordId],
     }),
-    // Drives the `GET /api/v1/sync?since=` pull.
-    sinceIdx: index("sync_records_since_idx").on(table.userId, table.updatedAt),
+    // Drives the `GET /api/v1/sync?since=` pull, in server-clock order.
+    sinceIdx: index("sync_records_since_idx").on(
+      table.userId,
+      table.serverUpdatedAt,
+    ),
     pregnancyIdx: index("sync_records_pregnancy_idx").on(table.pregnancyId),
   }),
 );

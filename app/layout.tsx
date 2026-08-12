@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { UpdateToast } from "@/components/UpdateToast";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
+import { SyncProvider } from "@/components/SyncProvider";
 
 const nunito = Nunito_Sans({
   subsets: ["latin"],
@@ -68,6 +69,7 @@ export default function RootLayout({
         <Providers>{children}</Providers>
         <UpdateToast />
         <ServiceWorkerRegistration />
+        <SyncProvider />
       </body>
     </html>
   );

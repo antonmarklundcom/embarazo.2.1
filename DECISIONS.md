@@ -364,3 +364,205 @@ both of which silently destroyed journal notes rather than failing loudly.
   salud se guardan solo en este dispositivo". The full rewrite of `/privacidad`
   and `/terminos` is A4's job — this was the minimum needed to stop the app
   making a claim it no longer honours.
+
+## A3 — sync engine (August 2026)
+
+**This section is the contract.** A session that has not read the A3 diff should
+be able to build against it from here alone.
+
+### The shape of a synced record
+
+Every row in a synced Dexie store carries four fields the engine owns
+(`SyncMeta`, `lib/sync/merge.ts`). Nothing in the UI ever sets them by hand:
+
+| Field | Meaning |
+|---|---|
+| `uid` | Record id, **stable across devices**. Not Dexie's `++id`. |
+| `updatedAt` | Epoch ms, client-authored. The only thing LWW compares. |
+| `deletedAt` | Soft delete (`null` when live). |
+| `dirty` | `1` when the server has not accepted the current version yet. |
+
+They are stamped by Dexie `creating`/`updating` hooks registered in
+`lib/db.ts`, not by a helper. There are ~30 existing call sites writing to
+these tables and a rule that lives in a helper is a rule a future call site can
+forget; a hook cannot be. **So: keep writing `db().weightEntries.add({...})`
+exactly as before.** The stamping only fills fields left `undefined`, which is
+what lets the engine write `dirty: 0` and a server-authored `updatedAt` when it
+applies a remote record — no global "I am syncing" flag to fall out of step
+with an `await`.
+
+**`uid` is deterministic where the data has a natural identity**
+(`lib/sync/stores.ts`). Singleton stores — `profile`, `pregnancy`,
+`cycleSettings`, `clinical` — all use the fixed id `"singleton"`, and
+`checklistState` uses `key:<key>`. Without that, a user who onboarded offline
+on two phones and then signed in would end up with two profiles and two
+pregnancies and LWW would have nothing to compare; with it they are one record
+and merge. Everything else gets `crypto.randomUUID()`.
+
+### Which stores sync
+
+Synced (`SYNCED_STORES`, `lib/sync/stores.ts` — one list, imported by both
+`lib/db.ts` and `lib/server/schema.ts`): `profile`, `pregnancy`,
+`journalEntries`, `kickSessions`, `contractionEntries`, `weightEntries`,
+`checklistState`, `cycles`, `cycleSettings`, `clinical`.
+
+Never synced (`UNSYNCED_STORES`, asserted by test): `photoEntries`,
+`carnePhotos` — photos do not leave the device (ARCHITECTURE.md §4.4) — plus
+`syncState` and `conflicts`, which are local bookkeeping. Adding a store to
+`SYNCED_STORES` is a data-contract decision, not a refactor.
+
+**A1's `SYNCED_STORES` was provisional and wrong** — it named
+`symptomEntries`, `contractions`, `weights`, `appointments`, `checklistItems`
+and `journal`, none of which is an actual Dexie table, and it omitted
+`pregnancy` entirely. Corrected here; migration `drizzle/0002_*.sql` alters the
+enum.
+
+### Deleting
+
+**Never call `.delete()` on a synced store.** Use
+`softDelete(store, id)` from `lib/db.ts`: it sets `deletedAt`, the hooks mark it
+dirty, and the tombstone propagates. A hard delete is undone by the next pull —
+the classic "I deleted it and it came back" bug. The deleted record's payload is
+dropped on push, so the server never holds the body of something the user
+deleted.
+
+**Every read of a synced store must filter tombstones** with
+`notDeleted(rows)` from `lib/db.ts`. Already applied in `useProfile`,
+`useCycles`, `/herramientas/peso`, `/herramientas/sintomas` and
+`/herramientas/resumen`.
+
+### The last-write-wins rule
+
+One implementation, `lib/sync/merge.ts`, used by both ends of the wire — a
+client and a server that disagree about who won is how a sync engine loops
+forever.
+
+- Compare `updatedAt` only. **Strictly greater wins; an exact tie keeps local.**
+- **Deletion is not privileged.** A delete is a write with `deletedAt` set and
+  its own `updatedAt`, so an edit made after a delete resurrects the record.
+  "Deletes always win" would lose edits silently.
+- Applying a remote record writes `dirty: 0` and the remote `updatedAt`.
+
+### Conflicts
+
+`ConflictRow` (Dexie `conflicts` table): `{ id, store, recordId, detectedAt,
+localUpdatedAt, remoteUpdatedAt, localPayload, resolved }`. `resolved` is `0`
+until the user acts; `localPayload` is the losing version, verbatim.
+
+**Only `journalEntries` conflicts**, and the trigger is: a note this device
+holds is about to be replaced by *different* text. Note what the rule
+deliberately does **not** test — `dirty`. The obvious version ("conflict only
+if we had unpushed changes") misses the common case: device A writes a note and
+syncs it clean; device B, still holding yesterday's copy, writes its own and
+syncs later; B wins on timestamp and A's text vanishes with A never having been
+dirty at the moment of the overwrite. Only the server could distinguish that
+from a legitimate sequential edit, and only by keeping a shadow copy of the
+note, which §4.3 rules out. So the rule is the one a device can actually
+evaluate. It over-triggers when one person edits one note on two devices — the
+right way to be wrong here.
+
+Surfaced by `components/SyncConflicts.tsx` on `/herramientas/sintomas`
+("Recuperar la mía" / "Dejar la nueva"). It renders nothing when there is
+nothing to say.
+
+### PIN-encrypted journal notes are NOT synced
+
+`docs/OPUS-REVIEW-2026-08.md` §3.2 flagged this: the note key is derived from a
+PIN plus a device-local salt, so shipping ciphertext to a second device
+produces something that device can never open. Uploading the salt too would
+hand the server both halves of a four-digit secret, which is worse than not
+syncing.
+
+So a journal record whose `noteEncrypted` is true syncs everything *except* the
+note text, with `noteWithheld: true` in the payload saying so. And
+`applyPayload` will **never** let a withheld payload blank out a note the
+receiving device still holds — otherwise device B, having received a withheld
+record and then touched it, would push the emptiness back and destroy the note
+on device A.
+
+### The wire — `/api/v1/sync`
+
+Requires a session; the user id comes from the session and **never** from the
+body. 401 without a session, 404 when the deployment has no account system at
+all (matching `/api/auth/*`). Schemas in `lib/sync/protocol.ts`, `.strict()`.
+
+`POST` `{ records: [{ store, recordId, updatedAt, deletedAt?, payload?,
+pregnancyId? }] }`, ≤200 records, ≤64 KB payload each →
+`{ results: [{ store, recordId, outcome }], serverTime }` where `outcome` is
+`accepted | stale | rejected`. **`stale` is not an error**: the server holds
+something newer, the client clears its dirty flag anyway, and the pull delivers
+the winner. Re-pushing a loser forever is how a sync engine burns a battery.
+`rejected` is only for an `updatedAt` more than 24 h in the future — a phone
+whose clock is a year fast would otherwise win every comparison forever,
+including against writes the user makes later on a correct device.
+
+`GET ?since=<ms>[&limit][&cursor]` → `{ records: [...+ serverUpdatedAt],
+serverTime, nextCursor? }`. No other query param is accepted.
+
+`pregnancyId` is accepted on the wire and stored but never set by the A3
+client — **E1 populates it**, and it is there so adding family sharing does not
+change the wire format.
+
+### Two clocks, and the bug that costs
+
+`syncRecords` gained a **`serverUpdatedAt`** column (migration
+`drizzle/0002_*.sql`). The pull cursor orders by it; last-write-wins compares
+the client's `updatedAt`. Mixing them silently loses records, and A3's
+convergence tests fail without the split: a phone that was offline until 11:00
+pushes a record stamped 10:00 by its own clock, and a device that already
+pulled "everything up to 10:30" would never be given it. The client advances
+its cursor only to the highest `serverUpdatedAt` it has actually received —
+never to `serverTime` — and the cursor is inclusive, so the cost of never
+skipping a record is re-delivering one.
+
+The cursor is composite (`serverUpdatedAt:store:recordId`) rather than a bare
+timestamp: if more records share one millisecond than fit in a page, advancing
+past that millisecond drops them and not advancing loops forever.
+
+Last-write-wins is applied **in SQL** (`ON DUPLICATE KEY UPDATE` with `if(...)`
+guards), not by reading and then writing, so two devices pushing the same
+record at once cannot both read the old row and let the slower write win. The
+assignment order in that clause is load-bearing: MySQL evaluates it left to
+right, so every clause comparing against the stored `updatedAt` runs before
+`updatedAt` itself is replaced.
+
+### When it runs, and how it stays optional
+
+`components/SyncProvider.tsx` (mounted in the root layout) calls `startSync()`:
+once on open, on `online`, and debounced 3 s after any local write (via the
+three-line bus in `lib/sync/signal.ts`, so `lib/db.ts` never imports the sync
+client). Push runs before pull, so an offline edit reaches the server before
+the pull can overwrite it locally.
+
+**It never asks whether the user is signed in.** Reading the session in a
+layout would make every page dynamic and cost the 42 prerendered week pages;
+instead the engine makes one request and treats 401/404 as "stand down for this
+page load". That is exactly what "seguir sin cuenta" looks like from here, and
+`e2e/sync.spec.ts` asserts the app is unchanged when `/api/v1/sync` 404s.
+Every failure lands in `syncState.lastError`; nothing throws at a caller.
+
+`/api/v1/sync` is explicitly `NetworkOnly` in the service worker — a cached
+pull would replay stale records over newer local ones, and a cached push
+response would clear a dirty flag for a write the server never received.
+
+### Restoring a backup
+
+`importBackup()` now also clears `syncState` and `conflicts`. A restore
+replaces the data, so the bookkeeping describing the *old* data has to go with
+it; resetting the pull cursor to zero makes the next sync reconcile from
+scratch. Rows from a pre-v5 backup carry no `uid` — the creating hook stamps
+them on the way in and marks them dirty, so they upload instead of sitting
+invisible.
+
+### What the tests actually cover
+
+`lib/sync/merge.test.ts` (24) is the rule; `lib/sync/protocol.test.ts` (15) is
+the whitelist, including that `photoEntries` and `carnePhotos` are rejected at
+the boundary so a client bug cannot upload a photo. `lib/server/sync.test.ts`
+(15) runs two devices against the real `pushRecords`/`pullRecords` over an
+in-memory backend — convergence, deletion propagation, offline batches, two
+offline onboardings merging into one profile, same-millisecond paging, and that
+one user cannot write into another's records. `e2e/sync.spec.ts` (3) drives the
+real client engine and real Dexie v5 in a real browser going offline and back,
+against a ~40-line fake server in the spec; the only thing left unexercised is
+the Drizzle backend itself, which is thirty lines and needs a MySQL.

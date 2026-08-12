@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { db, wipeAllData, type AppMode } from "@/lib/db";
+import { db, wipeAllData, type AppMode, type Role } from "@/lib/db";
+import { ROLE_ONBOARDING_COPY, ROLE_ORDER } from "@/lib/roleCopy";
 import { useProfile } from "@/lib/useProfile";
 import { DEPARTMENTS } from "@/lib/departments";
 import {
@@ -56,6 +57,9 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
 
   // App mode (build spec §3). Switching never deletes data.
   const [modeMsg, setModeMsg] = useState("");
+
+  // Relationship role (B1). Editable, per feature map #1's "editable later".
+  const [roleMsg, setRoleMsg] = useState("");
 
   // Backup / restore (Phase 0 hardening — data never leaves the device).
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -220,6 +224,16 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
     setTimeout(() => setModeMsg(""), 3500);
   }
 
+  async function switchRole(next: Role) {
+    if (next === profile.role) return;
+    const rows = await db().profile.toArray();
+    const first = rows[0];
+    if (!first?.id) return;
+    await db().profile.update(first.id, { role: next });
+    setRoleMsg(`Guardado: ${ROLE_ONBOARDING_COPY[next].title}.`);
+    setTimeout(() => setRoleMsg(""), 3500);
+  }
+
   async function saveDepartment() {
     const row = await db().profile.toArray();
     const first = row[0];
@@ -316,6 +330,32 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
           </p>
         )}
         {modeMsg && <p className="mt-2 text-sm text-sage">{modeMsg}</p>}
+      </section>
+
+      {/* Relationship role (B1) */}
+      <section className="rounded-card bg-white p-4 shadow-soft">
+        <h2 className="text-base font-extrabold text-ink">¿Cómo te describís vos?</h2>
+        <p className="mt-1 text-sm text-muted">
+          Ajusta cómo te habla la app. No cambia tus datos.
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {ROLE_ORDER.map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => switchRole(r)}
+              aria-pressed={profile.role === r}
+              className={`min-h-[44px] rounded-tile border px-3 py-2.5 text-sm font-medium transition ${
+                profile.role === r
+                  ? "border-petrol bg-petrol text-white"
+                  : "border-black/10 bg-cream text-ink"
+              }`}
+            >
+              {ROLE_ONBOARDING_COPY[r].title}
+            </button>
+          ))}
+        </div>
+        {roleMsg && <p className="mt-2 text-sm text-sage">{roleMsg}</p>}
       </section>
 
       {/* Department */}

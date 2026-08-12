@@ -566,3 +566,39 @@ one user cannot write into another's records. `e2e/sync.spec.ts` (3) drives the
 real client engine and real Dexie v5 in a real browser going offline and back,
 against a ~40-line fake server in the spec; the only thing left unexercised is
 the Drizzle backend itself, which is thirty lines and needs a MySQL.
+
+## B1 — roles (August 2026)
+- **Role is a device-local tone setting, not an access level.** It's a plain
+  optional field on `Profile` (`lib/db.ts`), separate from `MemberRole`
+  (`owner`/`partner`/`family`, `lib/server/schema.ts`) which E1 will use to
+  gate what a *different* account can see when invited into someone else's
+  pregnancy. Conflating the two would have made B1 depend on E1's invite
+  system for no reason — B1 is one person, one device, choosing how the app
+  talks to them.
+- **`lib/roleCopy.ts` is the single place role maps to phrasing.** Every
+  screen that needs role-aware copy imports from here rather than
+  hand-rolling its own `role === "mama" ? "tu" : "su"` branch — the same
+  reasoning as `lib/sync/merge.ts` being the one LWW implementation both ends
+  of A3 use. `isSelfCentered()` is the one function everything else composes
+  from, so a future role addition (if one is ever needed) only has to answer
+  one question.
+- **Role step sits between mode and date/department in onboarding**, not
+  before mode: which mode (embarazada/planeando) determines what data comes
+  next, and role doesn't change that branch, so asking mode first keeps the
+  flow shorter for the common case and avoids asking a question whose answer
+  doesn't affect anything yet.
+- **Defaults to `"mama"` everywhere it's read**, matching every other
+  "added a field after users existed" pattern in this codebase (`mode`,
+  `sanatorioName`, etc.) — an existing profile with no `role` behaves
+  exactly as before this task shipped.
+- **`PlaneandoHome` (fertility/TTC dashboard) was deliberately left
+  role-copy-untouched.** It's inherently about the mamá's own cycle data;
+  making every string there coherent for papá/acompañante/familiar roles is
+  a screen redesign, not a copy swap, and is out of scope for this task.
+  The role is still stored and available to whichever task redesigns that
+  screen next.
+- **E2E helper functions across six spec files** (`onboarding`, `account`,
+  `backup-restore`, `symptom-log`, `placeholder-gate`, `sync`) needed one
+  added line each — `page.getByRole("button", { name: "Mamá" }).click()`
+  right after the mode click — since the new step sits in the middle of
+  every existing onboarding flow they drive.

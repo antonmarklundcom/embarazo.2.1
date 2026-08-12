@@ -28,6 +28,29 @@ function toDateInput(ts?: number): string {
   return new Date(ts).toISOString().slice(0, 10);
 }
 
+// B4: groups the growing settings list into labeled sections (cuenta ·
+// bebé · embarazo · notificaciones · privacidad · datos) instead of one
+// long flat list. A group with no content today (bebé, notificaciones —
+// nothing to show until B2/B5 land) simply isn't rendered rather than
+// showing an empty header; future tasks that add content there should wrap
+// it in <SettingsGroup title="Bebé"> / "Notificaciones" alongside these.
+function SettingsGroup({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-3">
+      <h2 className="px-1 text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">
+        {title}
+      </h2>
+      <div className="space-y-3">{children}</div>
+    </div>
+  );
+}
+
 // BUILD-PLAN A2 — the interactive half of /ajustes. The route's page.tsx is a
 // server component now (it reads the session), so this is a client component it
 // renders, with the server-rendered account block handed in as `account`.
@@ -275,8 +298,11 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
 
       {/* Account block (A2). Server-rendered upstream: this file never sees a
           session, a token or lib/server/*. */}
-      {account}
+      <SettingsGroup title="Cuenta">
+        {account}
+      </SettingsGroup>
 
+      <SettingsGroup title="Embarazo">
       {/* App mode (build spec §3) */}
       <section className="rounded-card bg-white p-4 shadow-soft">
         <h2 className="text-base font-extrabold text-ink">Modo de uso</h2>
@@ -445,7 +471,9 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
         {apptMsg && <p className="mt-2 text-sm text-sage">{apptMsg}</p>}
       </section>
       )}
+      </SettingsGroup>
 
+      <SettingsGroup title="Privacidad">
       {/* Optional PIN */}
       <section className="rounded-card bg-white p-4 shadow-soft">
         <h2 className="text-base font-extrabold text-ink">PIN opcional</h2>
@@ -485,6 +513,52 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
         </p>
       </section>
 
+      {/* Privacy summary */}
+      <section className="rounded-card border border-sage/30 bg-sage/5 p-4">
+        <h2 className="text-base font-extrabold text-ink">Tu privacidad</h2>
+        <ul className="mt-2 space-y-1.5 text-sm text-ink">
+          <li>
+            • Podés usar Mi Bebé sin cuenta. Si no creás una, no tenemos tu
+            correo ni tu nombre.
+          </li>
+          <li>
+            • Sin cuenta, tus datos de salud se guardan solo en este
+            dispositivo.
+          </li>
+          <li>
+            • Tus registros de síntomas y ánimo, tus fotos de la panza, tu
+            calendario menstrual y la fecha de tu próximo control quedan
+            guardados solo en tu teléfono.
+          </li>
+          <li>
+            • Lo único que viaja al servidor es tu trimestre y tu departamento,
+            para mostrarte recursos cercanos.
+          </li>
+          <li>• No usamos cookies de seguimiento ni rastreadores.</li>
+        </ul>
+        <p className="mt-3 text-xs text-muted">
+          <Link href="/privacidad" className="underline">
+            Política de privacidad
+          </Link>
+          {" · "}
+          <Link href="/terminos" className="underline">
+            Términos de uso
+          </Link>
+        </p>
+      </section>
+
+      {/* Medical disclaimer */}
+      <section className="rounded-card bg-white p-4 shadow-soft">
+        <h2 className="text-base font-extrabold text-ink">Aviso médico</h2>
+        <p className="mt-1 text-sm leading-relaxed text-muted">
+          Mi Bebé es una herramienta informativa y de acompañamiento. No reemplaza
+          la atención de un profesional de la salud y no realiza diagnósticos.
+          Ante cualquier duda o síntoma, contactá a tu sanatorio.
+        </p>
+      </section>
+      </SettingsGroup>
+
+      <SettingsGroup title="Datos">
       {/* Backup / restore */}
       <section className="rounded-card bg-white p-4 shadow-soft">
         <h2 className="text-base font-extrabold text-ink">Copia de seguridad</h2>
@@ -559,50 +633,6 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
       {/* Install prompt (P1.1) — hides itself once installed/unavailable */}
       <InstallCard />
 
-      {/* Privacy summary */}
-      <section className="rounded-card border border-sage/30 bg-sage/5 p-4">
-        <h2 className="text-base font-extrabold text-ink">Tu privacidad</h2>
-        <ul className="mt-2 space-y-1.5 text-sm text-ink">
-          <li>
-            • Podés usar Mi Bebé sin cuenta. Si no creás una, no tenemos tu
-            correo ni tu nombre.
-          </li>
-          <li>
-            • Sin cuenta, tus datos de salud se guardan solo en este
-            dispositivo.
-          </li>
-          <li>
-            • Tus registros de síntomas y ánimo, tus fotos de la panza, tu
-            calendario menstrual y la fecha de tu próximo control quedan
-            guardados solo en tu teléfono.
-          </li>
-          <li>
-            • Lo único que viaja al servidor es tu trimestre y tu departamento,
-            para mostrarte recursos cercanos.
-          </li>
-          <li>• No usamos cookies de seguimiento ni rastreadores.</li>
-        </ul>
-        <p className="mt-3 text-xs text-muted">
-          <Link href="/privacidad" className="underline">
-            Política de privacidad
-          </Link>
-          {" · "}
-          <Link href="/terminos" className="underline">
-            Términos de uso
-          </Link>
-        </p>
-      </section>
-
-      {/* Medical disclaimer */}
-      <section className="rounded-card bg-white p-4 shadow-soft">
-        <h2 className="text-base font-extrabold text-ink">Aviso médico</h2>
-        <p className="mt-1 text-sm leading-relaxed text-muted">
-          Mi Bebé es una herramienta informativa y de acompañamiento. No reemplaza
-          la atención de un profesional de la salud y no realiza diagnósticos.
-          Ante cualquier duda o síntoma, contactá a tu sanatorio.
-        </p>
-      </section>
-
       {/* Danger zone */}
       <section className="rounded-card border border-terracotta/30 bg-terracotta/5 p-4">
         <h2 className="text-base font-medium text-terracotta">
@@ -646,6 +676,7 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
           </div>
         )}
       </section>
+      </SettingsGroup>
     </div>
   );
 }

@@ -315,9 +315,28 @@ delivery date.
 **Done when:** each method produces the correct FPP with unit tests;
 switching method never corrupts existing week data.
 
-### B4 Ajustes restructure — **S**
+### B4 Ajustes restructure — **S** ✅ DONE
 Group the growing settings into sections (cuenta · bebé · embarazo ·
 notificaciones · privacidad · datos) so it stays navigable.
+
+Shipped as a new `SettingsGroup` wrapper in `AjustesClient.tsx` (an
+uppercase eyebrow label + spaced stack, matching the eyebrow-label pattern
+already used elsewhere in the app, e.g. `SignInCard`) applied around the
+existing sections with **no functional change** — same components, same
+state, same save handlers, just grouped: **Cuenta** (account block),
+**Embarazo** (modo de uso, departamento, fecha de embarazo, próximo
+control), **Privacidad** (PIN, resumen de privacidad, aviso médico),
+**Datos** (copia de seguridad, instalar la app, borrar todos mis datos).
+Two sections moved a few lines (privacy summary + aviso médico now sit next
+to the PIN section instead of between backup and the danger zone) so each
+group's sections are contiguous; nothing was reworded.
+**Bebé and Notificaciones are not rendered** — B2 (baby identity) and B5
+(push) haven't landed on `main` yet, so there is no content for either
+group today, and an empty section header would be worse than no header.
+Both PRs (B2 already open as #19) should wrap their new
+sections in `<SettingsGroup title="Bebé">` / `"Notificaciones"` when they
+land, reusing this component rather than inventing another grouping
+pattern.
 
 ### B5 Notifications (map #7, #8) — replaces v2's P2.1 — **L**
 Real **Web Push** via VAPID and the existing service worker, now that a

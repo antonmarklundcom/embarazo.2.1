@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { AccountCard } from "@/components/AccountCard";
 import { DeleteAccountCard } from "@/components/DeleteAccountCard";
+import { SyncStatusCard } from "@/components/SyncStatusCard";
 import { getSession, isAuthAvailable } from "@/lib/server/auth";
 
 // BUILD-PLAN A2 — the account block on /ajustes.
@@ -22,6 +23,9 @@ export async function AccountSection() {
     return (
       <>
         <AccountCard session={session} />
+        {/* A6: what happened to the data on this phone when you signed in.
+            Renders nothing until there is something to report. */}
+        <SyncStatusCard />
         {/* A5: deletion sits directly under the identity it deletes, so it is
             two taps from Ajustes and impossible to miss. It is deliberately
             NOT down in the "borrar todos mis datos" danger zone — that one

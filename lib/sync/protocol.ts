@@ -85,6 +85,13 @@ export interface PushResponse {
   results: PushResult[];
   /** Server clock, so the client can measure its own drift. */
   serverTime: number;
+  /**
+   * Which account this session belongs to (A6). The client's own user id —
+   * it already rides in the session cookie, so this discloses nothing new —
+   * and it is what lets a device notice that the data it is holding belongs
+   * to a *different* account and refuse to upload it.
+   */
+  accountId: string;
 }
 
 /**
@@ -99,6 +106,8 @@ export type PulledRecord = SyncRecordInput & { serverUpdatedAt: number };
 export interface PullResponse {
   records: PulledRecord[];
   serverTime: number;
+  /** Which account this session belongs to (A6). See PushResponse. */
+  accountId: string;
   /**
    * Opaque continuation token. Present when more records are waiting; pass it
    * back as `?cursor=` to get the next page.

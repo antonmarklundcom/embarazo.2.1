@@ -363,8 +363,15 @@ function WeekHero({
         </div>
       </Link>
 
+      {/* B3: `week+day` is the default display, in carné notation ("24+3").
+          It is labelled "SEMANAS", not "SEMANA N", on purpose — the app has
+          two week numberings and this used to conflate them. `weekPlusDay`
+          counts COMPLETED weeks (carné convention); `week` is the friendly
+          1-based number the 42 `/semana/[n]` pages use, and it is one higher.
+          Rendering "SEMANA 24+3" next to a link to /semana/25 showed the user
+          two different weeks for the same day. See DECISIONS.md "B3". */}
       <p className="mt-3 text-[11px] font-extrabold tracking-[1.6px] text-petrol">
-        SEMANA {weekPlusDay} · {trimester}.º TRIMESTRE
+        {weekPlusDay} SEMANAS · {trimester}.º TRIMESTRE
       </p>
       <p className="mt-1 text-xl font-black text-ink">
         {completedLabel ?? `Semana ${week}`}

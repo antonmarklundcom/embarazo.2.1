@@ -26,6 +26,9 @@ function fakeServer() {
 
   return {
     rows,
+    // A6: which account this session belongs to. Reassigning it stands in for
+    // signing out and back in as somebody else.
+    accountId: "user-a",
     push(records: StoredRecord[]) {
       const results = [];
       for (const record of records) {
@@ -47,13 +50,13 @@ function fakeServer() {
           });
         }
       }
-      return { results, serverTime: Date.now() };
+      return { results, serverTime: Date.now(), accountId: this.accountId };
     },
     pull(since: number) {
       const records = [...rows.values()]
         .filter((r) => r.serverUpdatedAt >= since)
         .sort((a, b) => a.serverUpdatedAt - b.serverUpdatedAt);
-      return { records, serverTime: Date.now() };
+      return { records, serverTime: Date.now(), accountId: this.accountId };
     },
   };
 }
@@ -84,6 +87,7 @@ async function serve(
 async function onboard(page: Page) {
   await page.goto("/");
   await page.getByRole("button", { name: "Estoy embarazada" }).click();
+  await page.getByRole("button", { name: "Mamá" }).click();
   const lmp = new Date(Date.now() - 70 * 86400000).toISOString().slice(0, 10);
   await page.locator("#lmp").fill(lmp);
   await page.getByRole("button", { name: "Continuar" }).click();
@@ -212,4 +216,106 @@ test("the app works with no account and no sync server at all", async ({
   // Still there after a reload, with no error surfaced anywhere.
   await page.reload();
   await expect(page.getByText("60 kg").first()).toBeVisible();
+});
+
+
+test("a local-only user's data uploads once when they sign in", async ({
+  browser,
+}) => {
+  // BUILD-PLAN A6: "local-only → sign-in results in exactly one copy of every
+  // record on both sides."
+  const server = fakeServer();
+  const context = await browser.newContext();
+
+  // Before signing in: /api/v1/sync does not exist for this visitor.
+  let signedIn = false;
+  await context.route("**/api/v1/sync**", async (route) => {
+    if (!signedIn) {
+      return route.fulfill({ status: 401, body: "sesión requerida" });
+    }
+    const request = route.request();
+    if (request.method() === "POST") {
+      const body = request.postDataJSON() as { records: StoredRecord[] };
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(server.push(body.records)),
+      });
+    }
+    const since = Number(new URL(request.url()).searchParams.get("since") ?? 0);
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(server.pull(since)),
+    });
+  });
+
+  const page = await context.newPage();
+  await onboard(page);
+  await page.goto("/herramientas/peso");
+  await page.locator("#kg").fill("58");
+  await page.getByRole("button", { name: /Guardar/ }).click();
+  await expect(page.getByText("58 kg").first()).toBeVisible();
+
+  // Nothing has left the device.
+  expect(server.rows.size).toBe(0);
+
+  // Sign in. A real sign-in navigates, which is what clears the engine's
+  // "stand down" flag for the page load.
+  signedIn = true;
+  await page.goto("/ajustes");
+  await reconnect(page);
+
+  await expect.poll(() => server.rows.size).toBeGreaterThan(0);
+  await expect
+    .poll(() =>
+      [...server.rows.values()].filter((r) => r.store === "weightEntries")
+        .length,
+    )
+    .toBe(1);
+
+  // Exactly one copy of each singleton, not one per device.
+  const stores = [...server.rows.values()].map((r) => r.store);
+  expect(stores.filter((s) => s === "profile")).toHaveLength(1);
+  expect(stores.filter((s) => s === "pregnancy")).toHaveLength(1);
+
+  // Syncing again uploads nothing new — the rows are no longer dirty.
+  const sizeAfterFirstLink = server.rows.size;
+  await reconnect(page);
+  await page.waitForTimeout(500);
+  expect(server.rows.size).toBe(sizeAfterFirstLink);
+
+  await context.close();
+});
+
+test("data is not uploaded into a different account", async ({ browser }) => {
+  // sign in as A → sync → sign out → sign in as B. Without the A6 guard, every
+  // row touched in between lands in B's account.
+  const server = fakeServer();
+  const contextA = await browser.newContext();
+  await serve(contextA, server);
+  const a = await contextA.newPage();
+
+  await onboard(a);
+  await a.goto("/herramientas/peso");
+  await a.locator("#kg").fill("59");
+  await a.getByRole("button", { name: /Guardar/ }).click();
+  await reconnect(a);
+  await expect.poll(() => server.rows.size).toBeGreaterThan(0);
+
+  const rowsUnderA = server.rows.size;
+
+  // Somebody else signs in on this phone.
+  server.accountId = "user-b";
+  await a.goto("/herramientas/peso");
+  await a.locator("#kg").fill("70");
+  await a.getByRole("button", { name: /Guardar/ }).click();
+  await reconnect(a);
+  await a.waitForTimeout(1000);
+
+  // The new entry stayed on the device. Nothing was written for user-b.
+  expect(server.rows.size).toBe(rowsUnderA);
+  await expect(a.getByText("70 kg").first()).toBeVisible();
+
+  await contextA.close();
 });

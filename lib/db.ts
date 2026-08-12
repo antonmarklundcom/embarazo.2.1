@@ -19,6 +19,21 @@ import {
 // Defaults to "embarazada" when missing (existing users keep their flow).
 export type AppMode = "embarazada" | "planeando";
 
+// Baby identity (B2, feature map #2/#3). One entry per baby; index order is
+// birth order. An object per baby (not a bare string array) so a later task
+// can add per-baby fields (e.g. sex once known) without a schema migration —
+// today only `name` is collected.
+export interface BabyIdentity {
+  name?: string;
+}
+
+// Relationship role (B1, feature map #1): who is using the app, relative to
+// the pregnancy. Drives copy tone (lib/roleCopy.ts), not access — that is
+// the separate MemberRole (owner/partner/family) E1 introduces for family
+// sharing between *different* accounts. "mama" is the default for anyone who
+// onboarded before this field existed.
+export type Role = "mama" | "papa" | "acompanante" | "familiar";
+
 export interface Profile extends Partial<SyncMeta> {
   id?: number;
   department: DepartmentSlug;
@@ -27,6 +42,13 @@ export interface Profile extends Partial<SyncMeta> {
   nextAppointment?: number;
   // Pregnancy vs. pre-pregnancy mode (build spec §3). Optional for back-compat.
   mode?: AppMode;
+  // Baby identity/twins (B2). Optional for back-compat; empty/undefined means
+  // no nickname yet. Plain non-indexed field — adding a second baby is just
+  // pushing to this array, no Dexie schema version bump.
+  babies?: BabyIdentity[];
+  // Relationship role (B1). Optional for back-compat; defaults to "mama".
+  // Plain non-indexed field, so no Dexie schema version bump is needed.
+  role?: Role;
   // Emergency mode contacts (local-only, optional, never transmitted). These
   // are plain non-indexed fields, so no Dexie schema version bump is needed.
   sanatorioName?: string;
@@ -44,6 +66,18 @@ export interface Pregnancy extends Partial<SyncMeta> {
   lmpDate: number;
   dueDate: number;
   createdAt: number;
+  // B3: which method produced `lmpDate` (LMP is always the stored anchor —
+  // see lib/pregnancy.ts's lmpFrom* functions). Optional for back-compat;
+  // an existing pregnancy with no method was entered via raw LMP or the
+  // pre-B3 "due date" toggle, both of which are "lmp"/"ecografia"-equivalent.
+  method?: "lmp" | "ecografia" | "fiv" | "conception";
+  // Adjustable pregnancy length in days (build spec default 280). Optional;
+  // falls back to GESTATION_DAYS when unset. Plain non-indexed field, no
+  // Dexie schema version bump needed.
+  gestationDays?: number;
+  // Planned delivery date (e.g. a scheduled cesárea), separate from the
+  // estimated `dueDate` (feature map #6). Optional, local-only.
+  plannedDeliveryDate?: number;
 }
 
 export interface JournalEntry extends Partial<SyncMeta> {
@@ -141,6 +175,19 @@ export interface SyncStateRow {
   lastSyncAt?: number;
   /** Set when the last attempt failed, so the UI can be honest about it. */
   lastError?: string;
+  /**
+   * A6: the account this device's data was last synced with.
+   *
+   * Undefined means "never linked" — a local-only user, whose data uploads on
+   * first sign-in. A value that does not match the current session means the
+   * data on this phone belongs to somebody else's account, and the engine
+   * refuses to push it. Without this field that refusal is impossible, and
+   * signing out and back in as a different Google account silently uploads
+   * one person's health records into another person's account.
+   */
+  accountId?: string;
+  /** True once a first upload for `accountId` has completed (A6). */
+  linkedAt?: number;
 }
 
 /**

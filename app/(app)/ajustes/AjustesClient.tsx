@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { db, wipeAllData, type AppMode } from "@/lib/db";
+import { db, wipeAllData, type AppMode, type BabyIdentity, type Role } from "@/lib/db";
+import { ROLE_ONBOARDING_COPY, ROLE_ORDER } from "@/lib/roleCopy";
 import { useProfile } from "@/lib/useProfile";
 import { DEPARTMENTS } from "@/lib/departments";
 import {
@@ -11,6 +12,7 @@ import {
   lmpFromDueDate,
   getRawWeek,
   MAX_WEEK,
+  GESTATION_DAYS,
 } from "@/lib/pregnancy";
 import {
   isPinSet,
@@ -20,12 +22,36 @@ import {
   isUnlocked,
 } from "@/lib/crypto";
 import { exportBackup, backupFileName, importBackup } from "@/lib/backup";
+import { syncNow } from "@/lib/sync/client";
 import { PrivacyLine } from "@/components/PrivacyLine";
 import { InstallCard } from "@/components/InstallCard";
 
 function toDateInput(ts?: number): string {
   if (!ts) return "";
   return new Date(ts).toISOString().slice(0, 10);
+}
+
+// B4: groups the growing settings list into labeled sections (cuenta ·
+// bebé · embarazo · notificaciones · privacidad · datos) instead of one
+// long flat list. A group with no content today (bebé, notificaciones —
+// nothing to show until B2/B5 land) simply isn't rendered rather than
+// showing an empty header; future tasks that add content there should wrap
+// it in <SettingsGroup title="Bebé"> / "Notificaciones" alongside these.
+function SettingsGroup({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-3">
+      <h2 className="px-1 text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">
+        {title}
+      </h2>
+      <div className="space-y-3">{children}</div>
+    </div>
+  );
 }
 
 // BUILD-PLAN A2 — the interactive half of /ajustes. The route's page.tsx is a
@@ -57,6 +83,19 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
   // App mode (build spec §3). Switching never deletes data.
   const [modeMsg, setModeMsg] = useState("");
 
+  // Adjustable pregnancy length + planned delivery date (B3).
+  const [gestationInput, setGestationInput] = useState(String(GESTATION_DAYS));
+  const [gestationMsg, setGestationMsg] = useState("");
+  const [plannedInput, setPlannedInput] = useState("");
+  const [plannedMsg, setPlannedMsg] = useState("");
+
+  // Baby identity / twins (B2). Local editable copy of profile.babies names.
+  const [babyNames, setBabyNames] = useState<string[]>([""]);
+  const [babyMsg, setBabyMsg] = useState("");
+
+  // Relationship role (B1). Editable, per feature map #1's "editable later".
+  const [roleMsg, setRoleMsg] = useState("");
+
   // Backup / restore (Phase 0 hardening — data never leaves the device).
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [backupMsg, setBackupMsg] = useState("");
@@ -83,6 +122,11 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
     setBackupErr("");
     setBackupMsg("");
     try {
+      // A5: "Descargar mis datos" must include synced data. The device is the
+      // source of truth, but a record written on another phone lives only on
+      // the server until it is pulled — so pull first, then export. This is a
+      // no-op (and silent) without an account, which is the common case.
+      await syncNow();
       const blob = await exportBackup();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -126,9 +170,23 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
   }, [profile.department]);
 
   useEffect(() => {
+    if (profile.babies.length > 0) {
+      setBabyNames(profile.babies.map((b) => b.name ?? ""));
+    }
+  }, [profile.babies]);
+
+  useEffect(() => {
     if (profile.lmpDate) setLmpInput(toDateInput(profile.lmpDate));
     if (profile.dueDate) setDueInput(toDateInput(profile.dueDate));
   }, [profile.lmpDate, profile.dueDate]);
+
+  useEffect(() => {
+    if (profile.gestationDays) setGestationInput(String(profile.gestationDays));
+  }, [profile.gestationDays]);
+
+  useEffect(() => {
+    setPlannedInput(toDateInput(profile.plannedDeliveryDate));
+  }, [profile.plannedDeliveryDate]);
 
   useEffect(() => {
     setApptInput(toDateInput(profile.nextAppointment));
@@ -181,6 +239,36 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
     setTimeout(() => setDateMsg(""), 3000);
   }
 
+  async function saveGestationLength() {
+    setGestationMsg("");
+    const days = Number(gestationInput);
+    if (!Number.isFinite(days) || days < 140 || days > 320) {
+      setGestationMsg("Ingresá una duración válida (entre 140 y 320 días).");
+      return;
+    }
+    const rows = await db().pregnancy.toArray();
+    const first = rows[0];
+    if (!first?.id) return;
+    await db().pregnancy.update(first.id, {
+      gestationDays: days,
+      dueDate: getDueDate(first.lmpDate, days),
+    });
+    setGestationMsg("Duración actualizada. Tu fecha probable de parto se recalculó.");
+    setTimeout(() => setGestationMsg(""), 3500);
+  }
+
+  async function savePlannedDeliveryDate() {
+    const rows = await db().pregnancy.toArray();
+    const first = rows[0];
+    if (!first?.id) return;
+    const value = plannedInput
+      ? new Date(`${plannedInput}T00:00:00`).getTime()
+      : undefined;
+    await db().pregnancy.update(first.id, { plannedDeliveryDate: value });
+    setPlannedMsg(value ? "Fecha planificada guardada." : "Fecha planificada quitada.");
+    setTimeout(() => setPlannedMsg(""), 2500);
+  }
+
   async function persistAppointment(value: number | undefined) {
     const rows = await db().profile.toArray();
     const first = rows[0];
@@ -218,6 +306,37 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
         : "Estás en modo Embarazada. Tus datos se conservan.",
     );
     setTimeout(() => setModeMsg(""), 3500);
+  }
+
+  async function saveBabyNames() {
+    const rows = await db().profile.toArray();
+    const first = rows[0];
+    if (!first?.id) return;
+    const babies: BabyIdentity[] = babyNames
+      .map((name) => name.trim())
+      .filter((name) => name.length > 0)
+      .map((name) => ({ name }));
+    await db().profile.update(first.id, { babies });
+    setBabyMsg("Guardado.");
+    setTimeout(() => setBabyMsg(""), 2500);
+  }
+
+  function addBabyNameField() {
+    setBabyNames((names) => [...names, ""]);
+  }
+
+  function removeBabyNameField(index: number) {
+    setBabyNames((names) => names.filter((_, i) => i !== index));
+  }
+
+  async function switchRole(next: Role) {
+    if (next === profile.role) return;
+    const rows = await db().profile.toArray();
+    const first = rows[0];
+    if (!first?.id) return;
+    await db().profile.update(first.id, { role: next });
+    setRoleMsg(`Guardado: ${ROLE_ONBOARDING_COPY[next].title}.`);
+    setTimeout(() => setRoleMsg(""), 3500);
   }
 
   async function saveDepartment() {
@@ -275,8 +394,11 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
 
       {/* Account block (A2). Server-rendered upstream: this file never sees a
           session, a token or lib/server/*. */}
-      {account}
+      <SettingsGroup title="Cuenta">
+        {account}
+      </SettingsGroup>
 
+      <SettingsGroup title="Embarazo">
       {/* App mode (build spec §3) */}
       <section className="rounded-card bg-white p-4 shadow-soft">
         <h2 className="text-base font-extrabold text-ink">Modo de uso</h2>
@@ -316,6 +438,32 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
           </p>
         )}
         {modeMsg && <p className="mt-2 text-sm text-sage">{modeMsg}</p>}
+      </section>
+
+      {/* Relationship role (B1) */}
+      <section className="rounded-card bg-white p-4 shadow-soft">
+        <h2 className="text-base font-extrabold text-ink">¿Cómo te describís vos?</h2>
+        <p className="mt-1 text-sm text-muted">
+          Ajusta cómo te habla la app. No cambia tus datos.
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {ROLE_ORDER.map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => switchRole(r)}
+              aria-pressed={profile.role === r}
+              className={`min-h-[44px] rounded-tile border px-3 py-2.5 text-sm font-medium transition ${
+                profile.role === r
+                  ? "border-petrol bg-petrol text-white"
+                  : "border-black/10 bg-cream text-ink"
+              }`}
+            >
+              {ROLE_ONBOARDING_COPY[r].title}
+            </button>
+          ))}
+        </div>
+        {roleMsg && <p className="mt-2 text-sm text-sage">{roleMsg}</p>}
       </section>
 
       {/* Department */}
@@ -407,6 +555,112 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
       </section>
       )}
 
+      {/* Pregnancy settings: adjustable length + planned delivery date (B3) */}
+      {profile.mode === "embarazada" && (
+      <section className="rounded-card bg-white p-4 shadow-soft">
+        <h2 className="text-base font-extrabold text-ink">Duración del embarazo</h2>
+        <p className="mt-1 text-sm text-muted">
+          Por defecto usamos 280 días (40 semanas). Ajustala si tu médico/a te
+          indicó una duración distinta.
+        </p>
+        <div className="mt-3 flex items-center gap-2">
+          <input
+            type="number"
+            inputMode="numeric"
+            min={140}
+            max={320}
+            value={gestationInput}
+            onChange={(e) => setGestationInput(e.target.value)}
+            className="min-h-[44px] w-24 rounded-tile border border-black/10 bg-cream px-3 py-2 text-ink focus:border-petrol focus:outline-none"
+          />
+          <span className="text-sm text-muted">días</span>
+        </div>
+        <button
+          type="button"
+          onClick={saveGestationLength}
+          className="mt-3 min-h-[44px] w-full rounded-tile bg-petrol px-4 py-2.5 text-sm font-medium text-white transition active:scale-[0.98]"
+        >
+          Guardar duración
+        </button>
+        {gestationMsg && <p className="mt-2 text-sm text-sage">{gestationMsg}</p>}
+
+        <h2 className="mt-5 text-base font-extrabold text-ink">
+          Fecha de parto planificada
+        </h2>
+        <p className="mt-1 text-sm text-muted">
+          Si tenés una cesárea programada u otra fecha planificada, distinta a
+          la fecha probable de parto estimada.
+        </p>
+        <input
+          type="date"
+          value={plannedInput}
+          onChange={(e) => setPlannedInput(e.target.value)}
+          className="mt-3 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-3 py-2 text-ink focus:border-petrol focus:outline-none"
+        />
+        <button
+          type="button"
+          onClick={savePlannedDeliveryDate}
+          className="mt-3 min-h-[44px] w-full rounded-tile bg-petrol px-4 py-2.5 text-sm font-medium text-white transition active:scale-[0.98]"
+        >
+          Guardar fecha planificada
+        </button>
+        {plannedMsg && <p className="mt-2 text-sm text-sage">{plannedMsg}</p>}
+      </section>
+      )}
+
+      {/* Baby identity / twins (B2) — only in pregnancy mode */}
+      {profile.mode === "embarazada" && (
+      <section className="rounded-card bg-white p-4 shadow-soft">
+        <h2 className="text-base font-extrabold text-ink">Nombre de tu bebé</h2>
+        <p className="mt-1 text-sm text-muted">
+          Lo usamos para personalizar la app. Si son mellizos o más, agregá un
+          nombre por cada uno.
+        </p>
+        <div className="mt-3 space-y-2">
+          {babyNames.map((name, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) =>
+                  setBabyNames((names) =>
+                    names.map((n, j) => (j === i ? e.target.value : n)),
+                  )
+                }
+                placeholder={i === 0 ? "Ej: Silvia" : `Bebé ${i + 1}`}
+                className="min-h-[44px] flex-1 rounded-tile border border-black/10 bg-cream px-3 py-2 text-ink focus:border-petrol focus:outline-none"
+              />
+              {babyNames.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeBabyNameField(i)}
+                  aria-label={`Quitar nombre ${i + 1}`}
+                  className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-tile border border-black/10 text-muted"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={addBabyNameField}
+          className="mt-2 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-4 py-2.5 text-sm font-medium text-petrol"
+        >
+          + Agregar otro bebé (mellizos)
+        </button>
+        <button
+          type="button"
+          onClick={saveBabyNames}
+          className="mt-3 min-h-[44px] w-full rounded-tile bg-petrol px-4 py-2.5 text-sm font-medium text-white transition active:scale-[0.98]"
+        >
+          Guardar
+        </button>
+        {babyMsg && <p className="mt-2 text-sm text-sage">{babyMsg}</p>}
+      </section>
+      )}
+
       {/* Next prenatal appointment (build spec §4) — only in pregnancy mode */}
       {profile.mode === "embarazada" && (
       <section className="rounded-card bg-white p-4 shadow-soft">
@@ -445,7 +699,9 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
         {apptMsg && <p className="mt-2 text-sm text-sage">{apptMsg}</p>}
       </section>
       )}
+      </SettingsGroup>
 
+      <SettingsGroup title="Privacidad">
       {/* Optional PIN */}
       <section className="rounded-card bg-white p-4 shadow-soft">
         <h2 className="text-base font-extrabold text-ink">PIN opcional</h2>
@@ -485,15 +741,62 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
         </p>
       </section>
 
+      {/* Privacy summary */}
+      <section className="rounded-card border border-sage/30 bg-sage/5 p-4">
+        <h2 className="text-base font-extrabold text-ink">Tu privacidad</h2>
+        <ul className="mt-2 space-y-1.5 text-sm text-ink">
+          <li>
+            • Podés usar Mi Bebé sin cuenta. Si no creás una, no tenemos tu
+            correo ni tu nombre.
+          </li>
+          <li>
+            • Sin cuenta, tus datos de salud se guardan solo en este
+            dispositivo.
+          </li>
+          <li>
+            • Tus registros de síntomas y ánimo, tus fotos de la panza, tu
+            calendario menstrual y la fecha de tu próximo control quedan
+            guardados solo en tu teléfono.
+          </li>
+          <li>
+            • Lo único que viaja al servidor es tu trimestre y tu departamento,
+            para mostrarte recursos cercanos.
+          </li>
+          <li>• No usamos cookies de seguimiento ni rastreadores.</li>
+        </ul>
+        <p className="mt-3 text-xs text-muted">
+          <Link href="/privacidad" className="underline">
+            Política de privacidad
+          </Link>
+          {" · "}
+          <Link href="/terminos" className="underline">
+            Términos de uso
+          </Link>
+        </p>
+      </section>
+
+      {/* Medical disclaimer */}
+      <section className="rounded-card bg-white p-4 shadow-soft">
+        <h2 className="text-base font-extrabold text-ink">Aviso médico</h2>
+        <p className="mt-1 text-sm leading-relaxed text-muted">
+          Mi Bebé es una herramienta informativa y de acompañamiento. No reemplaza
+          la atención de un profesional de la salud y no realiza diagnósticos.
+          Ante cualquier duda o síntoma, contactá a tu sanatorio.
+        </p>
+      </section>
+      </SettingsGroup>
+
+      <SettingsGroup title="Datos">
       {/* Backup / restore */}
       <section className="rounded-card bg-white p-4 shadow-soft">
         <h2 className="text-base font-extrabold text-ink">Copia de seguridad</h2>
         <p className="mt-1 text-sm text-muted">
-          Tus datos viven solo en este teléfono: si lo perdés, lo cambiás o
-          borrás los datos del navegador, se pierden para siempre a menos que
-          tengas una copia. Descargá un archivo con todos tus datos y guardalo
-          en un lugar seguro (por ejemplo, envíatelo por WhatsApp o guardalo en
-          Google Drive).
+          Sin cuenta, tus datos viven solo en este teléfono: si lo perdés, lo
+          cambiás o borrás los datos del navegador, se pierden para siempre a
+          menos que tengas una copia. Descargá un archivo con todos tus datos y
+          guardalo en un lugar seguro (por ejemplo, envíatelo por WhatsApp o
+          guardalo en Google Drive). Si tenés cuenta, la copia incluye también
+          lo que hayas cargado desde otros aparatos.
         </p>
         {persisted === false && (
           <p className="mt-2 text-sm text-terracotta">
@@ -559,50 +862,6 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
       {/* Install prompt (P1.1) — hides itself once installed/unavailable */}
       <InstallCard />
 
-      {/* Privacy summary */}
-      <section className="rounded-card border border-sage/30 bg-sage/5 p-4">
-        <h2 className="text-base font-extrabold text-ink">Tu privacidad</h2>
-        <ul className="mt-2 space-y-1.5 text-sm text-ink">
-          <li>
-            • Podés usar Mi Bebé sin cuenta. Si no creás una, no tenemos tu
-            correo ni tu nombre.
-          </li>
-          <li>
-            • Sin cuenta, tus datos de salud se guardan solo en este
-            dispositivo.
-          </li>
-          <li>
-            • Tus registros de síntomas y ánimo, tus fotos de la panza, tu
-            calendario menstrual y la fecha de tu próximo control quedan
-            guardados solo en tu teléfono.
-          </li>
-          <li>
-            • Lo único que viaja al servidor es tu trimestre y tu departamento,
-            para mostrarte recursos cercanos.
-          </li>
-          <li>• No usamos cookies de seguimiento ni rastreadores.</li>
-        </ul>
-        <p className="mt-3 text-xs text-muted">
-          <Link href="/privacidad" className="underline">
-            Política de privacidad
-          </Link>
-          {" · "}
-          <Link href="/terminos" className="underline">
-            Términos de uso
-          </Link>
-        </p>
-      </section>
-
-      {/* Medical disclaimer */}
-      <section className="rounded-card bg-white p-4 shadow-soft">
-        <h2 className="text-base font-extrabold text-ink">Aviso médico</h2>
-        <p className="mt-1 text-sm leading-relaxed text-muted">
-          Mi Bebé es una herramienta informativa y de acompañamiento. No reemplaza
-          la atención de un profesional de la salud y no realiza diagnósticos.
-          Ante cualquier duda o síntoma, contactá a tu sanatorio.
-        </p>
-      </section>
-
       {/* Danger zone */}
       <section className="rounded-card border border-terracotta/30 bg-terracotta/5 p-4">
         <h2 className="text-base font-medium text-terracotta">
@@ -646,6 +905,7 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
           </div>
         )}
       </section>
+      </SettingsGroup>
     </div>
   );
 }

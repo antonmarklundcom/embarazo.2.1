@@ -594,3 +594,289 @@ the Drizzle backend itself, which is thirty lines and needs a MySQL.
   the "start the dev server and use the feature in a browser" rule for
   UI-facing changes. Deleted after use — see the screenshot only in this
   session's transcript, not committed.
+- **Merged with B1/B2/B3 after all four PRs landed independently.** The
+  hero's props grew to `progress`/`daysElapsed`/`daysLeft` (C1),
+  `babies`/`role` (B1/B2, combined via the `babyAtWeekLabel` wrapper in
+  `page.tsx`), and the overline switched to B3's `weekPlusDay`. None of the
+  four tasks depended on another's diff — this is exactly the "expected,
+  easily-resolved conflict from independent PRs" pattern B2's own
+  DECISIONS.md entry called out in advance. `getDaysRemaining`/
+  `getProgressFraction` also picked up B3's `gestationDays` param here so
+  the ring and "faltan" stat honor an adjusted pregnancy length instead of
+  silently assuming 280 days.
+
+## B4 — Ajustes restructure (August 2026)
+- **Grouping only, zero functional change.** Every section keeps its
+  existing component, state, and save handler untouched; `SettingsGroup` is
+  purely a label + spacing wrapper. This was deliberate: B4 is marked **S**
+  precisely because it shouldn't need behavioral review, only a visual diff.
+- **Bebé and Notificaciones groups are omitted, not stubbed.** Rendering an
+  empty "Bebé" section with nothing under it would be worse than not
+  rendering it — it reads as broken, not as "coming soon". Both groups
+  exist as documented conventions (wrap new content in `<SettingsGroup
+  title="...">`) for B2 and B5 to pick up when they land, rather than as
+  placeholder UI.
+- **Two sections were reordered** (privacy summary + aviso médico moved to
+  sit next to the PIN section, ahead of backup/restore) so each group's
+  sections are contiguous in the JSX and the visual order matches the
+  logical group order. This is the only non-trivial diff in the task —
+  verified by e2e (`account.spec.ts`) still passing, since none of the
+  visible text changed, only its position.
+
+## B3 — due-date & pregnancy settings (August 2026)
+- **Every calculation method converges on an LMP-equivalent** rather than
+  branching week/trimester/due-date math per method. `getCurrentWeek`,
+  `getTrimester`, `getDueDate` etc. all already take `lmp` as their only
+  temporal input; a `lmpFrom<Method>()` function per method is the entire
+  surface area a new method needs, and nothing downstream has to know which
+  method produced the value it's using.
+- **FIV and conception dating are NOT "day zero at the anchor date".** A
+  day-5 blastocyst transfer means the embryo is already 19 days old
+  (14 days assumed-ovulation offset + 5 days embryo age) at the moment of
+  transfer — gestational week 3, not week 1. Getting this wrong would make
+  IVF pregnancies read as younger than they are, which compounds into a
+  wrong due date and wrong week content for the rest of the pregnancy. The
+  first version of the cross-method equivalence test in
+  `lib/pregnancy.test.ts` asserted week 1 here and failed against the real
+  math — caught before merge, not after.
+- **`gestationDays` is a `Pregnancy` field, not a `Profile` field.** It's
+  meaningless without a pregnancy record (planeando-mode profiles have
+  none), and it travels with the pregnancy if a future task ever lets a
+  device hold history across pregnancies.
+- **Method-switching "never corrupts existing week data" by not having a
+  method-specific code path to get wrong.** Every method just produces a
+  new `lmpDate`, written through the exact same `pregnancy.update()`/`.add()`
+  calls that existed before B3. There's no migration, no per-method stored
+  shape, and so nothing for switching methods to corrupt.
+- **`week+day` default was scoped to the one hero label that was a bare week
+  integer** (`SEMANA {week}` → `SEMANA {weekPlusDay}`), not rolled out to
+  every week-number-bearing string in the app. `/emergencia`'s "Estoy
+  embarazada de…" sentence and the hero's big number both intentionally kept
+  `formatCompletedGestation`'s prose form ("24 semanas y 3 días") — that's a
+  sentence, not a label, and "24+3" would read as a typo there. Reason for
+  the narrow scope, stated so a future session doesn't "helpfully" widen it:
+  C1 (home screen hero + stats) is about to redesign this exact hero card,
+  and touching every occurrence now would just create merge churn against
+  that PR for no benefit.
+
+## B2 — baby identity & twins (August 2026)
+- **`babies` is `BabyIdentity[]`, not `string[]`.** A bare string array would
+  satisfy today's "just a nickname" requirement, but the task explicitly asks
+  for a data model that doesn't need a migration when twins UI (per-baby
+  fields — sex once known, individual notes) eventually lands. An object per
+  baby costs nothing today and avoids a second migration later.
+- **`lib/babies.ts` mirrors `lib/roleCopy.ts`'s shape** (a single module that
+  turns a stored value into copy, unit-tested, imported everywhere that copy
+  is needed) rather than inlining `profile.babies?.[0]?.name ?? "Tu bebé"` at
+  each call site. Same reasoning both times: one place to get the fallback
+  right, one place to test it.
+- **Unnamed twins fall back to "Tu bebé", never "Bebé 1".** Guessing a
+  1-indexed label for an unnamed baby implies an ordering/importance the data
+  doesn't actually assert (birth order isn't determined by array index until
+  someone names them in that order), and it would look broken next to a
+  correctly-named single baby. The generic fallback is honest instead.
+- **`/semana/[n]` was NOT threaded with the nickname.** It's the one page in
+  the app statically generated for all 42 weeks specifically so it precaches
+  for offline (`docs/DECISIONS.md` "PWA" section, `generateStaticParams`).
+  Reading per-device Dexie state there requires a client component, which
+  would mean either losing the static precache or wrapping just a fragment
+  in a client island — judged out of scope for this task; the home screen
+  (`app/(app)/page.tsx`) is the highest-traffic surface and covers the
+  "wherever tu bebé is generic" bar for the done-when criteria.
+- **Unrelated typing fallout, fixed in passing**: adding an array field to
+  `Profile` gave Dexie's `UpdateSpec` a `babies.${number}` dot-path key,
+  which broke the pre-existing generic `db().profile.update(id, { [key]:
+  value })` pattern in `/emergencia`'s `ContactCard` (its dynamic string key
+  no longer unified with the widened index signature). Fixed by typing the
+  update object explicitly as `Partial<Record<ContactField, string>>` rather
+  than loosening `Profile` itself.
+
+## B1 — roles (August 2026)
+- **Role is a device-local tone setting, not an access level.** It's a plain
+  optional field on `Profile` (`lib/db.ts`), separate from `MemberRole`
+  (`owner`/`partner`/`family`, `lib/server/schema.ts`) which E1 will use to
+  gate what a *different* account can see when invited into someone else's
+  pregnancy. Conflating the two would have made B1 depend on E1's invite
+  system for no reason — B1 is one person, one device, choosing how the app
+  talks to them.
+- **`lib/roleCopy.ts` is the single place role maps to phrasing.** Every
+  screen that needs role-aware copy imports from here rather than
+  hand-rolling its own `role === "mama" ? "tu" : "su"` branch — the same
+  reasoning as `lib/sync/merge.ts` being the one LWW implementation both ends
+  of A3 use. `isSelfCentered()` is the one function everything else composes
+  from, so a future role addition (if one is ever needed) only has to answer
+  one question.
+- **Role step sits between mode and date/department in onboarding**, not
+  before mode: which mode (embarazada/planeando) determines what data comes
+  next, and role doesn't change that branch, so asking mode first keeps the
+  flow shorter for the common case and avoids asking a question whose answer
+  doesn't affect anything yet.
+- **Defaults to `"mama"` everywhere it's read**, matching every other
+  "added a field after users existed" pattern in this codebase (`mode`,
+  `sanatorioName`, etc.) — an existing profile with no `role` behaves
+  exactly as before this task shipped.
+- **`PlaneandoHome` (fertility/TTC dashboard) was deliberately left
+  role-copy-untouched.** It's inherently about the mamá's own cycle data;
+  making every string there coherent for papá/acompañante/familiar roles is
+  a screen redesign, not a copy swap, and is out of scope for this task.
+  The role is still stored and available to whichever task redesigns that
+  screen next.
+- **E2E helper functions across six spec files** (`onboarding`, `account`,
+  `backup-restore`, `symptom-log`, `placeholder-gate`, `sync`) needed one
+  added line each — `page.getByRole("button", { name: "Mamá" }).click()`
+  right after the mode click — since the new step sits in the middle of
+  every existing onboarding flow they drive.
+
+## A4 — legal & consent rewrite (August 2026)
+- **Copy-only, no functional change.** `SignInCard`'s consent checkbox (A2)
+  already linked to both `/privacidad` and `/terminos`, so A4's "the consent
+  step links to both" criterion was already satisfied; this task only
+  rewrote the two legal pages themselves. `CONSENT_VERSION` is unchanged —
+  it versions what the checkbox asks the user to accept, not the standalone
+  policy pages, and that text didn't change.
+- **Neither page claims data never leaves the device anymore.** The old
+  copy ("Mi Bebé no te pide cuenta, correo ni número de teléfono… no tenemos
+  un servidor con tu historia clínica") was true for the no-account app and
+  false the moment A2/A3 shipped. Both pages now open with the conditional:
+  no account → local-only, exactly as before; account → the listed health
+  records sync, photos never do.
+- **Deletion is described honestly as partial, not oversold.** A5 (self-serve
+  "Borrar mi cuenta") hasn't shipped yet, so `/privacidad` says deletion
+  today is a WhatsApp request handled manually, with a self-serve button
+  noted as forthcoming — rather than describing the A5 flow as if it already
+  existed, which would make the policy wrong again the moment someone read
+  it literally.
+- **F1 (AI baby image) and B5 (push) are described as forthcoming/opt-in**,
+  matching their BUILD-PLAN status (not yet built) — present tense would be
+  a false claim, so both are written in the future/conditional ("cuando esté
+  disponible").
+- **"Who can see it" answers the A7/I1 metadata-only rule in advance of those
+  tasks landing**, since it's a real answer users will ask before an admin
+  panel exists: support sees account state and record counts, never the
+  content of a synced record; a companion view (E1) sees week/due date/next
+  control, never journal notes or photos.
+
+## D4 — checklist tab + 5-tab nav IA (August 2026)
+- **The 5 tabs are now Hoy · Guías · Checklist · Herramientas · Cerca tuyo.**
+  Progreso (the 42-week grid) and Eventos lost their nav slots to make room
+  without going to 6 tabs. Neither route was deleted: `/progreso` stays
+  reachable from the "todas las semanas" link on `/semana/[n]`, and `/eventos`
+  is now a card at the top of `/directorio` — the same pattern the Guías page
+  already used for its Videos sub-section, reused rather than inventing a new
+  one. E4 (Beneficios) is expected to join it there the same way once that
+  tab exists, per the BUILD-PLAN note that both live inside Cerca tuyo.
+- **The Checklist tab is mode-aware, not a single route.** `/planeando/checklist`
+  and `/herramientas/checklist` are two distinct Dexie-backed task lists (TTC
+  tasks vs. pregnancy/hospital-bag tasks), not one page filtered by mode, so
+  `BottomNav`'s `checklistHref()` picks the right one from `useProfile().mode`
+  rather than sending every user through a picker or hardcoding one mode.
+- **Checklists came out of the `/herramientas` tools list** now that they have
+  a nav tab (feature map #24's "promote out of the tools drawer") — leaving it
+  in would have meant reaching the same screen two different ways from two
+  different places, which is the kind of inconsistency the redesign is meant
+  to remove, not add.
+- **No route was removed, so no link elsewhere in the app broke** — verified by
+  grepping every `href="/progreso"` / `href="/eventos"` call site rather than
+  assuming; both existing links continue to resolve.
+
+## A5 — account management & deletion (August 2026)
+
+- **Deletion is expressed as a plan over an executor interface**
+  (`lib/server/account.ts`), not as a sequence of Drizzle calls, for the same
+  reason A3's server half is: it makes "deletion leaves zero rows for that
+  user" provable in CI with no MySQL. `account.test.ts` runs the real plan
+  against an in-memory database and greps the remaining rows for the user's id
+  and email.
+- **`TABLE_DISPOSITION` names every table in the schema and what deletion does
+  to it**, and a test asserts that list matches `schema` exactly. That is the
+  part worth keeping: E1 and B5 both add tables, and a table added without a
+  deletion rule would otherwise survive a user's "borrá todo" silently. The
+  failure now lands on whoever adds the table, which is the only moment it is
+  cheap to fix.
+- **`adminAudit` is retained, deliberately, and it is the only thing that is.**
+  It records what an administrator did, which is what makes admin access to a
+  health app defensible (§9); letting a support-requested deletion erase its
+  own evidence would defeat the point. After the `users` row is gone the ids in
+  it resolve to nobody — they are opaque UUIDs — and the table never holds
+  health content. `contentStats` is untouched for a different reason: it
+  carries no identity at all (§4.5), so there is nothing there to delete and
+  deleting it would corrupt an aggregate.
+- **Deleting an owner deletes their pregnancy's memberships and invites too.**
+  Otherwise a partner keeps a live membership pointing at a pregnancy that no
+  longer exists — a dangling read grant on health data. Asserted by test,
+  along with the converse: the partner's *own* pregnancy is untouched.
+- **The user row goes last.** There are no foreign keys here, so order is only
+  about what an interrupted deletion leaves behind: an account that can sign in
+  and retry, rather than orphaned health data with no owner left to ask for its
+  removal.
+- **The device wipe runs before the server call, not after.** ARCHITECTURE.md
+  §8 requires it to be offered in the same flow; running it first means a
+  network failure halfway through leaves a user who asked for their phone to be
+  wiped with a wiped phone. The reverse order fails in the direction that
+  exposes them.
+- **"Borrar mi cuenta" sits directly under the identity card, not in the
+  existing danger zone.** Two taps from Ajustes (open, confirm), and separate
+  from "Borrar todos mis datos" on purpose: one wipes the server, the other
+  wipes the phone, and merging them into one button is how somebody deletes the
+  thing they did not mean to.
+- **The server action takes no user id.** It comes from the session, so the
+  action cannot be aimed at another account regardless of what is posted. The
+  confirmation is `z.literal("borrar")` rather than a boolean, because an
+  unticked checkbox is absent from FormData entirely — the same shape A2 used
+  for the consent gate.
+- **"Descargar mis datos" now runs a sync pull first.** The requirement is that
+  the export includes synced data; the device is the source of truth, but a
+  record written on another phone lives only on the server until it is pulled.
+  `syncNow()` is best-effort and silent, so without an account this is a no-op
+  and the export behaves exactly as it did before.
+- **The backup section's copy was corrected, minimally.** "Tus datos viven solo
+  en este teléfono" stopped being true for signed-in users. Same treatment A2
+  gave the privacy bullets: fix the claim now, leave the full rewrite to A4.
+- **A4's `/privacidad` was corrected in the same PR.** A4 landed while this
+  branch was open and, correctly for its moment, described deletion as a
+  manual WhatsApp request with a self-serve button "forthcoming". A5 makes
+  that understatement false, so the retention, rights and contact sections now
+  say deletion is self-serve from Ajustes. A privacy policy that undersells
+  what the app actually offers is still a wrong privacy policy.
+
+## A6 — linking a local account (August 2026)
+
+- **The happy path was already true when A3 landed, and that is worth saying
+  plainly.** A local-only user's rows are all `dirty = 1` — nothing has ever
+  been accepted by a server — and singleton stores share a fixed record id, so
+  signing in pushes everything exactly once and *merges* the profile and
+  pregnancy instead of creating a second copy. A6 did not have to build an
+  upload path; it had to prove that one, and close the hole beside it.
+- **The hole: A3 had no notion of *which* account local data belongs to.**
+  Sign in as A → sync → sign out → keep using the app → sign in as B. Every row
+  touched in between is dirty, and the next sync uploads A's health records
+  into B's account. That is two taps from Ajustes, and it is one person's
+  pregnancy landing in another person's account. `syncState.accountId` plus
+  `decideAccountLink` (`lib/sync/link.ts`) is the fix: unset → adopt (the A6
+  link), same → continue, different → **refuse**.
+- **A refusal pushes nothing AND pulls nothing.** Pulling B's records onto a
+  phone holding A's would mix two people's health data on the device — the same
+  failure in the other direction — so the guard runs before both.
+- **The account is claimed before the upload, not after.** If the push is
+  interrupted halfway, the next attempt resumes the same link rather than
+  seeing an unclaimed device and starting over.
+- **Identity is learned by a probe through the existing pull route**, with
+  `since` set past every possible `serverUpdatedAt` so the page is guaranteed
+  empty. That costs one small request per sync and keeps the API surface — and
+  its whitelist — exactly where A3 left it, instead of adding a `/whoami` that
+  would need its own tests and its own auth reasoning.
+- **The refusal message never names the other account.** The person holding the
+  phone may not be the person who owns that data. Asserted by test.
+- **`SyncStatusCard` exists because silence reads as data loss.** "Did my stuff
+  make it?" is the first question anyone asks after linking an account, and an
+  app that answers it nowhere reads as an app that lost the data. It renders
+  nothing for a local-only user, and it is built entirely from `syncState` and
+  the indexed `dirty` flag — no extra requests, no extra state.
+- **`accountId` on the sync responses is the client's own user id.** It already
+  rides in the session cookie, so returning it discloses nothing new.
+- **Repaired a stray NUL byte in `lib/server/sync.ts`.** A3's `keyOf` shipped
+  with `` `${store}\0${recordId}` `` instead of a space, which git detects as a
+  binary file — so every diff of that file rendered as "Bin 11178 → 11239
+  bytes" and was unreviewable. No behavioural impact (the string is only ever a
+  Map key), but a file the reviewer cannot read is a file that changes without
+  review, which is worse than the typo.

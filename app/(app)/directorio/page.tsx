@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useProfile } from "@/lib/useProfile";
@@ -90,6 +91,22 @@ export default function CercaTuyoPage() {
           más, por departamento.
         </p>
       </header>
+
+      {/* Eventos lives inside Cerca tuyo rather than its own nav tab (D4). */}
+      <Link
+        href="/eventos"
+        className="block rounded-card bg-pastel-lavanda p-4 transition active:scale-[0.99]"
+      >
+        <span className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">
+          Eventos
+        </span>
+        <h2 className="mt-1 text-base font-extrabold text-ink">
+          Charlas, talleres y encuentros
+        </h2>
+        <p className="mt-1 text-sm font-semibold text-ink/70">
+          Para embarazadas y mamás, por departamento.
+        </p>
+      </Link>
 
       {/* Scrollable category chips */}
       <div className="-mx-4 overflow-x-auto px-4">

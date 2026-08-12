@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useProfile } from "@/lib/useProfile";
 import {
   formatCompletedGestation,
+  formatWeekPlusDay,
   getDaysRemaining,
   getDaysSinceLMP,
   getProgressFraction,
@@ -12,6 +13,18 @@ import {
 import { getWeek } from "@/lib/weeks";
 import { getDailyTip } from "@/lib/dailyTips";
 import { departmentName } from "@/lib/departments";
+import { primaryBabyName } from "@/lib/babies";
+import { babyAtWeekLabel as roleBabyAtWeekLabel, moodCheckInLabel } from "@/lib/roleCopy";
+import type { BabyIdentity, Role } from "@/lib/db";
+
+// B1 (role-aware "Tu bebé"/"El bebé") and B2 (nickname, e.g. "Silvia") each
+// shipped a `babyAtWeekLabel`. Combined here rather than in either library:
+// a nickname always wins when one is set, and the role-aware phrasing is
+// the fallback otherwise — neither library needs to know about the other.
+function babyAtWeekLabel(babies: BabyIdentity[], role: Role, week: number): string {
+  const name = primaryBabyName(babies);
+  return name ? `${name} a las ${week} semanas` : roleBabyAtWeekLabel(role, week);
+}
 import { Onboarding } from "@/components/Onboarding";
 import { PlaneandoHome } from "@/components/PlaneandoHome";
 import { LocalResourcesBlock } from "@/components/LocalResourcesBlock";
@@ -51,11 +64,17 @@ export default function InicioPage() {
   const completedLabel = profile.completed
     ? formatCompletedGestation(profile.completed)
     : null;
+  // B3: week+day ("24+3") is the default compact display, matching the
+  // carné perinatal convention — falls back to the plain week if there's no
+  // completed-gestation data yet (shouldn't happen once hasPregnancy, but
+  // keeps this defensive rather than asserting non-null).
+  const weekPlusDay = profile.completed ? formatWeekPlusDay(profile.completed) : String(week);
 
   const lmpDate = profile.lmpDate!;
+  const gestationDays = profile.gestationDays;
   const daysElapsed = getDaysSinceLMP(lmpDate);
-  const daysLeft = getDaysRemaining(lmpDate);
-  const progress = getProgressFraction(lmpDate);
+  const daysLeft = getDaysRemaining(lmpDate, Date.now(), gestationDays);
+  const progress = getProgressFraction(lmpDate, Date.now(), gestationDays);
 
   return (
     <div className="space-y-4">
@@ -69,12 +88,15 @@ export default function InicioPage() {
           rearranging this hero. */}
       <WeekHero
         week={week}
+        weekPlusDay={weekPlusDay}
         trimester={trimester}
         completedLabel={completedLabel}
         sizeComparison={info.sizeComparison}
         progress={progress}
         daysElapsed={daysElapsed}
         daysLeft={daysLeft}
+        babies={profile.babies}
+        role={profile.role}
       />
 
       {/* Next prenatal appointment reminder (in-app only) */}
@@ -94,7 +116,7 @@ export default function InicioPage() {
       <section className="rounded-card border border-line bg-white p-4">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-extrabold text-ink">
-            ¿Cómo te sentís hoy?
+            {moodCheckInLabel(profile.role)}
           </h3>
           <Link
             href="/herramientas/sintomas"
@@ -140,7 +162,7 @@ export default function InicioPage() {
           <ReadCard
             href={`/semana/${week}`}
             tone="bg-pastel-arena"
-            title={`Tu bebé a las ${week} semanas`}
+            title={babyAtWeekLabel(profile.babies, profile.role, week)}
           />
           <ReadCard
             href="/guias"
@@ -256,14 +278,18 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 function WeekHero({
   week,
+  weekPlusDay,
   trimester,
   completedLabel,
   sizeComparison,
   progress,
   daysElapsed,
   daysLeft,
+  babies,
+  role,
 }: {
   week: number;
+  weekPlusDay: string;
   trimester: number;
   completedLabel: string | null;
   sizeComparison: string;
@@ -271,6 +297,8 @@ function WeekHero({
   progress: number;
   daysElapsed: number;
   daysLeft: number;
+  babies: BabyIdentity[];
+  role: Role;
 }) {
   // Weekly render lives at /assets/semanas/bebe-<week>.webp when the founder
   // has added it (REDESIGN-PLAN.md §4); until then show the arena fallback.
@@ -326,7 +354,7 @@ function WeekHero({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={`/assets/semanas/bebe-${week}.webp`}
-              alt={`Tu bebé a las ${week} semanas`}
+              alt={babyAtWeekLabel(babies, role, week)}
               className="block h-full w-full object-cover"
               style={{ objectPosition: "center 18%" }}
               onError={() => setImgError(true)}
@@ -336,7 +364,7 @@ function WeekHero({
       </Link>
 
       <p className="mt-3 text-[11px] font-extrabold tracking-[1.6px] text-petrol">
-        SEMANA {week} · {trimester}.º TRIMESTRE
+        SEMANA {weekPlusDay} · {trimester}.º TRIMESTRE
       </p>
       <p className="mt-1 text-xl font-black text-ink">
         {completedLabel ?? `Semana ${week}`}

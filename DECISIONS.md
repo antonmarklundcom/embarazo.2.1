@@ -946,3 +946,59 @@ content because nothing in the admin code can read any.
 - **`/admin` sits outside the `(app)` route group** — no AppHeader, no
   BottomNav, no SOS pill. An admin screen wearing the app's navigation invites
   a founder to think they are looking at what a user sees.
+
+## B3 addendum — the exported due-date API, and the two week numberings
+
+B3's rationale is above; this is the **contract**, written so a session that
+has not read the diff can build against it. All of it is in
+`lib/pregnancy.ts`, pure and unit-tested.
+
+**Everything reduces to an LMP-equivalent (epoch ms).** Pick a method, get an
+`lmp`, and every other function takes it from there — nothing downstream knows
+or cares which method produced it.
+
+| Method | Function | Inputs |
+|---|---|---|
+| Última regla | *(none needed)* | the LMP itself |
+| Ecografía / FPP | `lmpFromEcografia(dueDate, gestationDays?)` | the FPP the doctor gave |
+| FIV | `lmpFromFiv(transferDate, embryoDayAtTransfer)` | transfer date + embryo day (3 or 5) |
+| Concepción | `lmpFromConception(conceptionDate)` | known ovulation/conception date |
+| (from an FPP) | `lmpFromDueDate(dueDate, gestationDays?)` | — |
+
+`DueDateMethod = "lmp" | "ecografia" | "fiv" | "conception"`.
+`gestationDays` defaults to `GESTATION_DAYS` (280) and is stored per
+pregnancy, so every function that takes it must be passed
+`pregnancy.gestationDays` rather than assuming 40 weeks.
+
+Derived, all `(lmp, now?)`:
+`getDueDate(lmp, gestationDays?)` · `getCurrentWeek` · `getRawWeek` ·
+`getTrimester(week)` · `getDaysRemaining(lmp, now?, gestationDays?)` ·
+`getDaysSinceLMP` · `getCompletedGestation` · `getProgressFraction(lmp, now?,
+gestationDays?)`.
+
+### ⚠️ There are two week numberings, and they differ by one
+
+This is the one thing to get right before rendering a week anywhere.
+
+- **`getCurrentWeek(lmp)` → the friendly week, 1-based.** At the LMP date it
+  is `1`. This is what the 42 `/semana/[n]` pages are numbered by, and what
+  every link into week content must use.
+- **`getCompletedGestation(lmp) → { weeks, days }` → completed weeks, the
+  carné perinatal convention.** At the LMP date it is `{ weeks: 0, days: 0 }`.
+  `weeks` is always `getCurrentWeek() - 1`.
+
+Two formatters, both taking a `CompletedGestation`:
+- **`formatWeekPlusDay(g)` → `"24+3"`** (or `"24"` when days is 0). Compact
+  carné notation. **This is completed weeks.** B3 makes it the default
+  display.
+- **`formatCompletedGestation(g)` → `"24 semanas y 3 días"`**. The sentence
+  form, for prose ("Estoy embarazada de…"), where `"24+3"` would read as a
+  typo.
+
+**The trap, which had already been shipped:** the home hero rendered
+`SEMANA {formatWeekPlusDay(...)}` — "SEMANA 24+3" — immediately next to a link
+to `/semana/25`. Two different week numbers for the same day, adjacent, one of
+them tappable. Fixed here by labelling the compact form as gestational age
+(`"24+3 SEMANAS"`) instead of as the app's week number. **If you render
+`formatWeekPlusDay`, do not put the word "SEMANA" in front of it**, and never
+use its `weeks` to build a `/semana/[n]` href.

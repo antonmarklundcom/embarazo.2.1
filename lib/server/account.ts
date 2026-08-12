@@ -9,6 +9,7 @@ import {
   invites,
   pregnancies,
   pregnancyMembers,
+  pushReminders,
   pushSubscriptions,
   schema,
   sessions,
@@ -58,6 +59,10 @@ export const TABLE_DISPOSITION = {
 
   // Devices and paid-for work.
   pushSubscriptions: "deleted",
+  // B5. Keyed by endpoint, not by user, so these are deleted via the user's
+  // endpoints rather than by a userId column. Missing them would leave the
+  // server poking a deleted account's phone on a schedule nobody can cancel.
+  pushReminders: "deleted",
   aiGenerations: "deleted",
 
   // Carries no identity at all (ARCHITECTURE.md §4.5) — keyed
@@ -93,6 +98,9 @@ export interface AccountDeleteExecutor {
   deleteAccounts(userId: string): Promise<number>;
   deleteSessions(userId: string): Promise<number>;
   deleteVerificationTokens(email: string | null): Promise<number>;
+  /** Endpoints this user's devices registered, needed to clear reminders. */
+  pushEndpointsOf(userId: string): Promise<string[]>;
+  deletePushReminders(endpoints: string[]): Promise<number>;
   deletePushSubscriptions(userId: string): Promise<number>;
   deleteAiGenerations(userId: string): Promise<number>;
   /** Memberships held BY the user, plus every membership OF their pregnancies. */
@@ -117,9 +125,13 @@ export async function deleteAccountData(
 ): Promise<DeletionCounts> {
   const pregnancyIds = await executor.ownedPregnancyIds(userId);
   const email = await executor.emailOf(userId);
+  // Read the endpoints before the subscriptions are deleted — afterwards
+  // there is nothing left to look them up by.
+  const endpoints = await executor.pushEndpointsOf(userId);
 
   return {
     syncRecords: await executor.deleteSyncRecords(userId),
+    pushReminders: await executor.deletePushReminders(endpoints),
     pushSubscriptions: await executor.deletePushSubscriptions(userId),
     aiGenerations: await executor.deleteAiGenerations(userId),
     invites: await executor.deleteInvites(userId, pregnancyIds),
@@ -188,6 +200,23 @@ export function drizzleAccountExecutor(
         await database
           .delete(verificationTokens)
           .where(eq(verificationTokens.identifier, email)),
+      );
+    },
+
+    async pushEndpointsOf(userId) {
+      const rows = await database
+        .select({ endpoint: pushSubscriptions.endpoint })
+        .from(pushSubscriptions)
+        .where(eq(pushSubscriptions.userId, userId));
+      return rows.map((r) => r.endpoint);
+    },
+
+    async deletePushReminders(endpoints) {
+      if (endpoints.length === 0) return 0;
+      return affected(
+        await database
+          .delete(pushReminders)
+          .where(inArray(pushReminders.endpoint, endpoints)),
       );
     },
 

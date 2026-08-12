@@ -38,6 +38,7 @@ function memoryDb() {
     invites: [],
     pushSubscriptions: [],
     aiGenerations: [],
+    pushReminders: [],
     contentStats: [],
     adminAudit: [],
   };
@@ -70,6 +71,16 @@ function memoryDb() {
     async deleteVerificationTokens(email) {
       if (!email) return 0;
       return removeWhere("verificationTokens", (r) => r.identifier === email);
+    },
+    async pushEndpointsOf(userId) {
+      return tables.pushSubscriptions!
+        .filter((r) => r.userId === userId)
+        .map((r) => r.endpoint as string);
+    },
+    async deletePushReminders(endpoints) {
+      return removeWhere("pushReminders", (r) =>
+        endpoints.includes(r.endpoint as string),
+      );
     },
     async deletePushSubscriptions(userId) {
       return removeWhere("pushSubscriptions", (r) => r.userId === userId);
@@ -153,6 +164,10 @@ function seed(db: ReturnType<typeof memoryDb>) {
     { userId: VICTIM, endpoint: "x" },
     { userId: BYSTANDER, endpoint: "y" },
   );
+  tables.pushReminders!.push(
+    { endpoint: "x", category: "recordatorios", fireAt: 1 },
+    { endpoint: "y", category: "recordatorios", fireAt: 2 },
+  );
   tables.aiGenerations!.push({ userId: VICTIM }, { userId: BYSTANDER });
 
   tables.contentStats!.push({ week: 12, contentId: "guia", day: "2026-08-12" });
@@ -208,6 +223,17 @@ describe("deleteAccountData", () => {
     expect(counts.pregnancies).toBe(1);
     expect(counts.pushSubscriptions).toBe(1);
     expect(counts.verificationTokens).toBe(1);
+    expect(counts.pushReminders).toBe(1);
+  });
+
+  it("cancels the scheduled pushes to a deleted account's devices", async () => {
+    // Reminders are keyed by endpoint, not by user id, so deleting the
+    // subscriptions is not enough — miss these and the server keeps poking a
+    // deleted account's phone on a schedule nobody can cancel.
+    const db = memoryDb();
+    seed(db);
+    await deleteAccountData(db.executor, VICTIM);
+    expect(db.tables.pushReminders!.map((r) => r.endpoint)).toEqual(["y"]);
   });
 
   it("does not touch another user's data", async () => {

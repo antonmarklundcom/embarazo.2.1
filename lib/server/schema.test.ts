@@ -118,6 +118,7 @@ describe("schema export", () => {
         "invites",
         "pregnancies",
         "pregnancyMembers",
+        "pushReminders",
         "pushSubscriptions",
         "sessions",
         "syncRecords",

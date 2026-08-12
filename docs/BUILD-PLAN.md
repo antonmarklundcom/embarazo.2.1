@@ -493,7 +493,7 @@ sections in `<SettingsGroup title="Bebé">` / `"Notificaciones"` when they
 land, reusing this component rather than inventing another grouping
 pattern.
 
-### B5 Notifications (map #7, #8) — replaces v2's P2.1 — **L**
+### B5 Notifications (map #7, #8) — replaces v2's P2.1 — **L** ✅ DONE
 Real **Web Push** via VAPID and the existing service worker, now that a
 server exists. Granular per-category opt-ins (consejos · recordatorios de
 control · avisos). Permission requested **only** from the settings toggle.
@@ -501,6 +501,23 @@ Honest copy about iOS (installed PWA required).
 **Done when:** a control reminder fires the day before on Android/Chrome;
 each category can be turned off independently; declining permission
 degrades gracefully.
+
+Shipped as `lib/push/{categories,vapid,client}.ts`, `lib/server/push.ts`,
+`/api/v1/push` (+ `/dispatch`), push handlers in `app/sw.ts` and
+`components/PushSettings.tsx` (the "Notificaciones" section B4 left open).
+Migration `drizzle/0003_*.sql` adds `pushReminders` and makes
+`pushSubscriptions.userId` nullable. **The design is the contract** — read
+DECISIONS.md "B5": the server sends **no payload**, so it knows an endpoint, a
+category and a fire time, and the service worker composes the sentence locally
+from IndexedDB. That is what lets prenatal reminders exist without the server
+reading `syncRecords.payload`, and it is why there is no new dependency
+(`web-push` exists to do encryption a bodyless push does not need; an ES256
+JWT is 30 lines of `node:crypto`, verified against node's own verifier).
+Push works **without an account**. A5's table-coverage test caught
+`pushReminders` immediately, as designed — reminders are keyed by endpoint, so
+deletion now resolves a user's endpoints before dropping their subscriptions.
+Covered by `lib/push/vapid.test.ts` (10) and `lib/push/categories.test.ts`
+(13).
 
 ---
 

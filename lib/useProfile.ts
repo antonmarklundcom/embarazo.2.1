@@ -10,13 +10,15 @@ import {
   type CompletedGestation,
 } from "./pregnancy";
 import type { Trimester } from "./types";
-import type { AppMode, BabyIdentity } from "./db";
+import type { AppMode, BabyIdentity, Role } from "./db";
 
 export interface ProfileState {
   loading: boolean;
   hasProfile: boolean;
   /** "embarazada" (default) or "planeando" — see build spec §3. */
   mode: AppMode;
+  /** Relationship role (B1). Defaults to "mama" — see lib/roleCopy.ts. */
+  role: Role;
   hasPregnancy: boolean;
   /** Baby identity/twins (B2). Empty array when no nickname has been set. */
   babies: BabyIdentity[];
@@ -52,6 +54,7 @@ export function useProfile(): ProfileState {
       hasProfile: false,
       mode: "embarazada",
       babies: [],
+      role: "mama",
       hasPregnancy: false,
     };
   }
@@ -63,16 +66,19 @@ export function useProfile(): ProfileState {
       hasProfile: false,
       mode: "embarazada",
       babies: [],
+      role: "mama",
       hasPregnancy: false,
     };
   }
 
   const mode: AppMode = profile.mode ?? "embarazada";
+  const role: Role = profile.role ?? "mama";
   const base = {
     loading: false,
     hasProfile: true,
     mode,
     babies: profile.babies ?? [],
+    role,
     department: profile.department,
     city: profile.city,
     nextAppointment: profile.nextAppointment,

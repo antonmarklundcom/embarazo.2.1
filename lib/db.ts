@@ -27,6 +27,13 @@ export interface BabyIdentity {
   name?: string;
 }
 
+// Relationship role (B1, feature map #1): who is using the app, relative to
+// the pregnancy. Drives copy tone (lib/roleCopy.ts), not access — that is
+// the separate MemberRole (owner/partner/family) E1 introduces for family
+// sharing between *different* accounts. "mama" is the default for anyone who
+// onboarded before this field existed.
+export type Role = "mama" | "papa" | "acompanante" | "familiar";
+
 export interface Profile extends Partial<SyncMeta> {
   id?: number;
   department: DepartmentSlug;
@@ -39,6 +46,9 @@ export interface Profile extends Partial<SyncMeta> {
   // no nickname yet. Plain non-indexed field — adding a second baby is just
   // pushing to this array, no Dexie schema version bump.
   babies?: BabyIdentity[];
+  // Relationship role (B1). Optional for back-compat; defaults to "mama".
+  // Plain non-indexed field, so no Dexie schema version bump is needed.
+  role?: Role;
   // Emergency mode contacts (local-only, optional, never transmitted). These
   // are plain non-indexed fields, so no Dexie schema version bump is needed.
   sanatorioName?: string;

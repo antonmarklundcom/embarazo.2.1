@@ -567,6 +567,38 @@ real client engine and real Dexie v5 in a real browser going offline and back,
 against a ~40-line fake server in the spec; the only thing left unexercised is
 the Drizzle backend itself, which is thirty lines and needs a MySQL.
 
+## B2 — baby identity & twins (August 2026)
+- **`babies` is `BabyIdentity[]`, not `string[]`.** A bare string array would
+  satisfy today's "just a nickname" requirement, but the task explicitly asks
+  for a data model that doesn't need a migration when twins UI (per-baby
+  fields — sex once known, individual notes) eventually lands. An object per
+  baby costs nothing today and avoids a second migration later.
+- **`lib/babies.ts` mirrors `lib/roleCopy.ts`'s shape** (a single module that
+  turns a stored value into copy, unit-tested, imported everywhere that copy
+  is needed) rather than inlining `profile.babies?.[0]?.name ?? "Tu bebé"` at
+  each call site. Same reasoning both times: one place to get the fallback
+  right, one place to test it.
+- **Unnamed twins fall back to "Tu bebé", never "Bebé 1".** Guessing a
+  1-indexed label for an unnamed baby implies an ordering/importance the data
+  doesn't actually assert (birth order isn't determined by array index until
+  someone names them in that order), and it would look broken next to a
+  correctly-named single baby. The generic fallback is honest instead.
+- **`/semana/[n]` was NOT threaded with the nickname.** It's the one page in
+  the app statically generated for all 42 weeks specifically so it precaches
+  for offline (`docs/DECISIONS.md` "PWA" section, `generateStaticParams`).
+  Reading per-device Dexie state there requires a client component, which
+  would mean either losing the static precache or wrapping just a fragment
+  in a client island — judged out of scope for this task; the home screen
+  (`app/(app)/page.tsx`) is the highest-traffic surface and covers the
+  "wherever tu bebé is generic" bar for the done-when criteria.
+- **Unrelated typing fallout, fixed in passing**: adding an array field to
+  `Profile` gave Dexie's `UpdateSpec` a `babies.${number}` dot-path key,
+  which broke the pre-existing generic `db().profile.update(id, { [key]:
+  value })` pattern in `/emergencia`'s `ContactCard` (its dynamic string key
+  no longer unified with the widened index signature). Fixed by typing the
+  update object explicitly as `Partial<Record<ContactField, string>>` rather
+  than loosening `Profile` itself.
+
 ## B1 — roles (August 2026)
 - **Role is a device-local tone setting, not an access level.** It's a plain
   optional field on `Profile` (`lib/db.ts`), separate from `MemberRole`

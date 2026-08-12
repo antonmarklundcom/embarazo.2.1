@@ -347,11 +347,35 @@ between *different* accounts); B1 is single-device and stores the role
 locally, so there is no second person to restrict yet — role here drives
 tone only, as the done-when criteria require.
 
-### B2 Baby identity & twins (map #2, #3) — **M**
+### B2 Baby identity & twins (map #2, #3) — **M** ✅ DONE
 Baby nickname threaded through copy ("Silvia ya mide…"); data model
 supports N babies per pregnancy now, UI for twins later.
 **Done when:** nickname appears wherever "tu bebé" is generic; adding a
 second baby requires no schema migration.
+
+Shipped as `babies?: BabyIdentity[]` on `Profile` (`lib/db.ts`) — an object
+per baby, not a bare string array, so a later task can add per-baby fields
+(e.g. sex) without a migration; index order is birth order. Plain
+non-indexed field, no Dexie version bump. `lib/babies.ts` is the single
+place that reads a `BabyIdentity[]` and produces copy
+(`primaryBabyName`, `babyAtWeekLabel`, `babyNamesList`, `isTwinsOrMore`),
+unit-tested (14 tests) — unnamed babies (including unnamed twins) fall back
+to "Tu bebé" rather than guessing an order like "Bebé 1". Onboarding gained
+an optional nickname field on the department step (embarazada mode only);
+Ajustes gained a "Nombre de tu bebé" section with add/remove rows so a
+second name (twins) is literally pushing to the array — no code change
+needed to support it. Wired into the home screen's three generic "tu bebé"
+spots: the week-hero image alt text and caption, and the "para leer hoy"
+card. `/semana/[n]` was deliberately left untouched — it's statically
+generated for all 42 weeks (offline precache), and reading per-device
+Dexie state there would mean converting it to a client component and losing
+that precache strategy; a future task can revisit if that tradeoff is
+judged worth it.
+- **Independent PR base**: this branch was cut from `main`, not from B1
+  (roles), since PRs land independently. `app/(app)/page.tsx`'s `HeroCard`/
+  `ReadCard` will conflict with B1's role-copy changes on merge — an
+  expected, easily-resolved conflict from two PRs touching the same file,
+  not a sign either task did something wrong.
 
 ### B3 Due-date & pregnancy settings (map #4, #5, #6) — **M**
 Calculation methods (LMP · ecografía · FIV · conception date), adjustable

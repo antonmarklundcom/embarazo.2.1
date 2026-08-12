@@ -25,6 +25,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
   const [dateError, setDateError] = useState("");
   const [department, setDepartment] = useState("");
   const [city, setCity] = useState("");
+  const [babyName, setBabyName] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
 
@@ -86,10 +87,12 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           createdAt: now,
         });
       }
+      const trimmedBabyName = babyName.trim();
       await db().profile.add({
         department,
         city: city.trim() || undefined,
         mode,
+        babies: trimmedBabyName ? [{ name: trimmedBabyName }] : undefined,
         role,
         createdAt: now,
       });
@@ -286,6 +289,27 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
             placeholder="Ej: Luque"
             className="mt-2 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-3 py-2 text-ink focus:border-petrol focus:outline-none"
           />
+
+          {mode === "embarazada" && (
+            <>
+              <label htmlFor="babyName" className="mt-4 block text-sm font-extrabold text-ink">
+                Nombre de tu bebé{" "}
+                <span className="font-normal text-muted">(opcional, si ya lo elegiste)</span>
+              </label>
+              <p className="mt-1 text-xs text-muted">
+                Lo usamos para personalizar la app. Si son mellizos, podés
+                agregar el segundo nombre después, desde Ajustes.
+              </p>
+              <input
+                id="babyName"
+                type="text"
+                value={babyName}
+                onChange={(e) => setBabyName(e.target.value)}
+                placeholder="Ej: Silvia"
+                className="mt-2 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-3 py-2 text-ink focus:border-petrol focus:outline-none"
+              />
+            </>
+          )}
 
           {saveError && (
             <p className="mt-3 text-sm text-terracotta">{saveError}</p>

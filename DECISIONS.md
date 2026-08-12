@@ -566,3 +566,32 @@ one user cannot write into another's records. `e2e/sync.spec.ts` (3) drives the
 real client engine and real Dexie v5 in a real browser going offline and back,
 against a ~40-line fake server in the spec; the only thing left unexercised is
 the Drizzle backend itself, which is thirty lines and needs a MySQL.
+
+## A4 — legal & consent rewrite (August 2026)
+- **Copy-only, no functional change.** `SignInCard`'s consent checkbox (A2)
+  already linked to both `/privacidad` and `/terminos`, so A4's "the consent
+  step links to both" criterion was already satisfied; this task only
+  rewrote the two legal pages themselves. `CONSENT_VERSION` is unchanged —
+  it versions what the checkbox asks the user to accept, not the standalone
+  policy pages, and that text didn't change.
+- **Neither page claims data never leaves the device anymore.** The old
+  copy ("Mi Bebé no te pide cuenta, correo ni número de teléfono… no tenemos
+  un servidor con tu historia clínica") was true for the no-account app and
+  false the moment A2/A3 shipped. Both pages now open with the conditional:
+  no account → local-only, exactly as before; account → the listed health
+  records sync, photos never do.
+- **Deletion is described honestly as partial, not oversold.** A5 (self-serve
+  "Borrar mi cuenta") hasn't shipped yet, so `/privacidad` says deletion
+  today is a WhatsApp request handled manually, with a self-serve button
+  noted as forthcoming — rather than describing the A5 flow as if it already
+  existed, which would make the policy wrong again the moment someone read
+  it literally.
+- **F1 (AI baby image) and B5 (push) are described as forthcoming/opt-in**,
+  matching their BUILD-PLAN status (not yet built) — present tense would be
+  a false claim, so both are written in the future/conditional ("cuando esté
+  disponible").
+- **"Who can see it" answers the A7/I1 metadata-only rule in advance of those
+  tasks landing**, since it's a real answer users will ask before an admin
+  panel exists: support sees account state and record counts, never the
+  content of a synced record; a companion view (E1) sees week/due date/next
+  control, never journal notes or photos.

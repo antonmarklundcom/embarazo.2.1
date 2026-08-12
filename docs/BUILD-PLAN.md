@@ -248,12 +248,29 @@ against the real handlers) and `e2e/sync.spec.ts` (3 — a real browser going
 offline and back, including that the app is completely unchanged when
 `/api/v1/sync` 404s, which is the "seguir sin cuenta" guarantee).
 
-### A4 Legal & consent rewrite — **S**
+### A4 Legal & consent rewrite — **S** ✅ DONE
 `/privacidad` and `/terminos` rewritten for the account world: what is
 stored, where, who can see it, retention, deletion, the AI feature, push.
 Marked clearly as pending lawyer review (founder task §4.5).
 **Done when:** neither page claims data never leaves the device; the
 consent step links to both.
+
+Shipped as a copy-only rewrite of `app/(app)/privacidad/page.tsx` and
+`app/(app)/terminos/page.tsx`. Both now lead with "sin cuenta todo se queda
+en tu teléfono, con cuenta esto viaja" instead of the old blanket "no te
+pedimos cuenta" claim, and privacidad gained sections for what syncs with an
+account, who can see it (companion view sees week/due date/next control
+only, never notes or photos; support sees counts, never payload — the A7/I1
+rule stated in advance of those tasks existing), retention/deletion (manual
+WhatsApp request today, self-serve button noted as forthcoming since A5
+hasn't shipped — deliberately not claiming a self-serve flow that doesn't
+exist yet), the AI baby image (F1, described as forthcoming/opt-in since it
+isn't built), and push (B5, forthcoming, opt-in per category). No functional
+change: `SignInCard`'s consent checkbox already linked to both pages (A2),
+so that "done when" criterion was already met and is preserved unchanged.
+`CONSENT_VERSION` was **not** bumped — the consent checkbox text itself
+(what the account world actually asks the user to accept) didn't change,
+only the standalone legal pages it links to.
 
 ### A5 Account management & deletion — **M**
 `/ajustes`: signed-in identity, sign out, **"Borrar mi cuenta"** deleting

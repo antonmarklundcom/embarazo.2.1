@@ -12,6 +12,7 @@ import { test, expect } from "@playwright/test";
 async function completeOnboarding(page: import("@playwright/test").Page) {
   await page.goto("/");
   await page.getByRole("button", { name: "Estoy embarazada" }).click();
+  await page.getByRole("button", { name: "Mamá" }).click();
   const lmp = new Date(Date.now() - 70 * 86400000).toISOString().slice(0, 10);
   await page.locator("#lmp").fill(lmp);
   await page.getByRole("button", { name: "Continuar" }).click();

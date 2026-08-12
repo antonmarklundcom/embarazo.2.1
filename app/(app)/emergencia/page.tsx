@@ -146,10 +146,11 @@ function ContactCard({
 
   async function save() {
     if (!row?.id) return;
-    await db().profile.update(row.id, {
+    const changes: Partial<Record<ContactField, string>> = {
       [nameKey]: name.trim(),
       [phoneKey]: phone.trim(),
-    });
+    };
+    await db().profile.update(row.id, changes);
     setEditing(false);
   }
 

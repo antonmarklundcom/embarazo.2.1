@@ -602,3 +602,123 @@ the Drizzle backend itself, which is thirty lines and needs a MySQL.
   C1 (home screen hero + stats) is about to redesign this exact hero card,
   and touching every occurrence now would just create merge churn against
   that PR for no benefit.
+
+## B2 — baby identity & twins (August 2026)
+- **`babies` is `BabyIdentity[]`, not `string[]`.** A bare string array would
+  satisfy today's "just a nickname" requirement, but the task explicitly asks
+  for a data model that doesn't need a migration when twins UI (per-baby
+  fields — sex once known, individual notes) eventually lands. An object per
+  baby costs nothing today and avoids a second migration later.
+- **`lib/babies.ts` mirrors `lib/roleCopy.ts`'s shape** (a single module that
+  turns a stored value into copy, unit-tested, imported everywhere that copy
+  is needed) rather than inlining `profile.babies?.[0]?.name ?? "Tu bebé"` at
+  each call site. Same reasoning both times: one place to get the fallback
+  right, one place to test it.
+- **Unnamed twins fall back to "Tu bebé", never "Bebé 1".** Guessing a
+  1-indexed label for an unnamed baby implies an ordering/importance the data
+  doesn't actually assert (birth order isn't determined by array index until
+  someone names them in that order), and it would look broken next to a
+  correctly-named single baby. The generic fallback is honest instead.
+- **`/semana/[n]` was NOT threaded with the nickname.** It's the one page in
+  the app statically generated for all 42 weeks specifically so it precaches
+  for offline (`docs/DECISIONS.md` "PWA" section, `generateStaticParams`).
+  Reading per-device Dexie state there requires a client component, which
+  would mean either losing the static precache or wrapping just a fragment
+  in a client island — judged out of scope for this task; the home screen
+  (`app/(app)/page.tsx`) is the highest-traffic surface and covers the
+  "wherever tu bebé is generic" bar for the done-when criteria.
+- **Unrelated typing fallout, fixed in passing**: adding an array field to
+  `Profile` gave Dexie's `UpdateSpec` a `babies.${number}` dot-path key,
+  which broke the pre-existing generic `db().profile.update(id, { [key]:
+  value })` pattern in `/emergencia`'s `ContactCard` (its dynamic string key
+  no longer unified with the widened index signature). Fixed by typing the
+  update object explicitly as `Partial<Record<ContactField, string>>` rather
+  than loosening `Profile` itself.
+
+## B1 — roles (August 2026)
+- **Role is a device-local tone setting, not an access level.** It's a plain
+  optional field on `Profile` (`lib/db.ts`), separate from `MemberRole`
+  (`owner`/`partner`/`family`, `lib/server/schema.ts`) which E1 will use to
+  gate what a *different* account can see when invited into someone else's
+  pregnancy. Conflating the two would have made B1 depend on E1's invite
+  system for no reason — B1 is one person, one device, choosing how the app
+  talks to them.
+- **`lib/roleCopy.ts` is the single place role maps to phrasing.** Every
+  screen that needs role-aware copy imports from here rather than
+  hand-rolling its own `role === "mama" ? "tu" : "su"` branch — the same
+  reasoning as `lib/sync/merge.ts` being the one LWW implementation both ends
+  of A3 use. `isSelfCentered()` is the one function everything else composes
+  from, so a future role addition (if one is ever needed) only has to answer
+  one question.
+- **Role step sits between mode and date/department in onboarding**, not
+  before mode: which mode (embarazada/planeando) determines what data comes
+  next, and role doesn't change that branch, so asking mode first keeps the
+  flow shorter for the common case and avoids asking a question whose answer
+  doesn't affect anything yet.
+- **Defaults to `"mama"` everywhere it's read**, matching every other
+  "added a field after users existed" pattern in this codebase (`mode`,
+  `sanatorioName`, etc.) — an existing profile with no `role` behaves
+  exactly as before this task shipped.
+- **`PlaneandoHome` (fertility/TTC dashboard) was deliberately left
+  role-copy-untouched.** It's inherently about the mamá's own cycle data;
+  making every string there coherent for papá/acompañante/familiar roles is
+  a screen redesign, not a copy swap, and is out of scope for this task.
+  The role is still stored and available to whichever task redesigns that
+  screen next.
+- **E2E helper functions across six spec files** (`onboarding`, `account`,
+  `backup-restore`, `symptom-log`, `placeholder-gate`, `sync`) needed one
+  added line each — `page.getByRole("button", { name: "Mamá" }).click()`
+  right after the mode click — since the new step sits in the middle of
+  every existing onboarding flow they drive.
+
+## A4 — legal & consent rewrite (August 2026)
+- **Copy-only, no functional change.** `SignInCard`'s consent checkbox (A2)
+  already linked to both `/privacidad` and `/terminos`, so A4's "the consent
+  step links to both" criterion was already satisfied; this task only
+  rewrote the two legal pages themselves. `CONSENT_VERSION` is unchanged —
+  it versions what the checkbox asks the user to accept, not the standalone
+  policy pages, and that text didn't change.
+- **Neither page claims data never leaves the device anymore.** The old
+  copy ("Mi Bebé no te pide cuenta, correo ni número de teléfono… no tenemos
+  un servidor con tu historia clínica") was true for the no-account app and
+  false the moment A2/A3 shipped. Both pages now open with the conditional:
+  no account → local-only, exactly as before; account → the listed health
+  records sync, photos never do.
+- **Deletion is described honestly as partial, not oversold.** A5 (self-serve
+  "Borrar mi cuenta") hasn't shipped yet, so `/privacidad` says deletion
+  today is a WhatsApp request handled manually, with a self-serve button
+  noted as forthcoming — rather than describing the A5 flow as if it already
+  existed, which would make the policy wrong again the moment someone read
+  it literally.
+- **F1 (AI baby image) and B5 (push) are described as forthcoming/opt-in**,
+  matching their BUILD-PLAN status (not yet built) — present tense would be
+  a false claim, so both are written in the future/conditional ("cuando esté
+  disponible").
+- **"Who can see it" answers the A7/I1 metadata-only rule in advance of those
+  tasks landing**, since it's a real answer users will ask before an admin
+  panel exists: support sees account state and record counts, never the
+  content of a synced record; a companion view (E1) sees week/due date/next
+  control, never journal notes or photos.
+
+## D4 — checklist tab + 5-tab nav IA (August 2026)
+- **The 5 tabs are now Hoy · Guías · Checklist · Herramientas · Cerca tuyo.**
+  Progreso (the 42-week grid) and Eventos lost their nav slots to make room
+  without going to 6 tabs. Neither route was deleted: `/progreso` stays
+  reachable from the "todas las semanas" link on `/semana/[n]`, and `/eventos`
+  is now a card at the top of `/directorio` — the same pattern the Guías page
+  already used for its Videos sub-section, reused rather than inventing a new
+  one. E4 (Beneficios) is expected to join it there the same way once that
+  tab exists, per the BUILD-PLAN note that both live inside Cerca tuyo.
+- **The Checklist tab is mode-aware, not a single route.** `/planeando/checklist`
+  and `/herramientas/checklist` are two distinct Dexie-backed task lists (TTC
+  tasks vs. pregnancy/hospital-bag tasks), not one page filtered by mode, so
+  `BottomNav`'s `checklistHref()` picks the right one from `useProfile().mode`
+  rather than sending every user through a picker or hardcoding one mode.
+- **Checklists came out of the `/herramientas` tools list** now that they have
+  a nav tab (feature map #24's "promote out of the tools drawer") — leaving it
+  in would have meant reaching the same screen two different ways from two
+  different places, which is the kind of inconsistency the redesign is meant
+  to remove, not add.
+- **No route was removed, so no link elsewhere in the app broke** — verified by
+  grepping every `href="/progreso"` / `href="/eventos"` call site rather than
+  assuming; both existing links continue to resolve.

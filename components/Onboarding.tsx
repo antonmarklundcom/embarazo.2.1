@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { db, type AppMode } from "@/lib/db";
+import { db, type AppMode, type Role } from "@/lib/db";
 import {
   getDueDate,
   lmpFromEcografia,
@@ -13,13 +13,18 @@ import {
   type DueDateMethod,
 } from "@/lib/pregnancy";
 import { DEPARTMENTS } from "@/lib/departments";
+import { ROLE_ONBOARDING_COPY, ROLE_ORDER } from "@/lib/roleCopy";
 import { PrivacyLine } from "./PrivacyLine";
 
-// First-run gate (build spec §3/§6): choose a mode, then collect the minimum
-// data for that flow. Rendered IN PLACE on / — no redirect, no separate route.
-// - "embarazada": due-date method + date(s) → department (city optional) → save.
-// - "planeando": department (city optional) → save (no pregnancy record).
-type Step = "mode" | "lmp" | "department";
+// First-run gate (build spec §3/§6): choose a mode, then a relationship role
+// (B1, feature map #1), then a due-date method + date(s) (B3), then
+// collect the minimum remaining data for that flow. Rendered IN PLACE on /
+// — no redirect, no separate route.
+// - "embarazada": mode → role → due-date method + date(s) → department
+//   (city, baby nickname optional) → save.
+// - "planeando": mode → role → department (city optional) → save (no
+//   pregnancy record).
+type Step = "mode" | "role" | "lmp" | "department";
 
 const METHOD_LABELS: Record<DueDateMethod, string> = {
   lmp: "Última menstruación",
@@ -31,6 +36,7 @@ const METHOD_LABELS: Record<DueDateMethod, string> = {
 export function Onboarding({ onDone }: { onDone: () => void }) {
   const [step, setStep] = useState<Step>("mode");
   const [mode, setMode] = useState<AppMode>("embarazada");
+  const [role, setRole] = useState<Role>("mama");
   const [method, setMethod] = useState<DueDateMethod>("lmp");
   const [lmp, setLmp] = useState("");
   const [dueDateInput, setDueDateInput] = useState("");
@@ -40,6 +46,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
   const [dateError, setDateError] = useState("");
   const [department, setDepartment] = useState("");
   const [city, setCity] = useState("");
+  const [babyName, setBabyName] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
 
@@ -49,7 +56,12 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
 
   function chooseMode(m: AppMode) {
     setMode(m);
-    setStep(m === "embarazada" ? "lmp" : "department");
+    setStep("role");
+  }
+
+  function chooseRole(r: Role) {
+    setRole(r);
+    setStep(mode === "embarazada" ? "lmp" : "department");
   }
 
   function resolveLmpDate(): number | null {
@@ -120,10 +132,13 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           createdAt: now,
         });
       }
+      const trimmedBabyName = babyName.trim();
       await db().profile.add({
         department,
         city: city.trim() || undefined,
         mode,
+        babies: trimmedBabyName ? [{ name: trimmedBabyName }] : undefined,
+        role,
         createdAt: now,
       });
       onDone();
@@ -176,6 +191,38 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           <p className="px-1 text-xs text-muted">
             Podés cambiar de modo cuando quieras desde Ajustes, sin perder tus datos.
           </p>
+        </div>
+      )}
+
+      {step === "role" && (
+        <div className="space-y-3">
+          <p className="px-1 text-sm font-extrabold text-ink">
+            ¿Cómo te describís vos?
+          </p>
+          {ROLE_ORDER.map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => chooseRole(r)}
+              className="block w-full rounded-card bg-white p-5 text-left shadow-soft transition active:scale-[0.99]"
+            >
+              <p className="text-base font-extrabold text-ink">
+                {ROLE_ONBOARDING_COPY[r].title}
+              </p>
+              <p className="mt-1 text-sm text-muted">{ROLE_ONBOARDING_COPY[r].desc}</p>
+            </button>
+          ))}
+          <p className="px-1 text-xs text-muted">
+            Esto ajusta cómo te habla la app. Podés cambiarlo cuando quieras
+            desde Ajustes.
+          </p>
+          <button
+            type="button"
+            onClick={() => setStep("mode")}
+            className="mt-1 min-h-[44px] w-full text-sm text-muted"
+          >
+            Volver
+          </button>
         </div>
       )}
 
@@ -304,7 +351,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           </button>
           <button
             type="button"
-            onClick={() => setStep("mode")}
+            onClick={() => setStep("role")}
             className="mt-2 min-h-[44px] w-full text-sm text-muted"
           >
             Volver
@@ -346,6 +393,27 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
             className="mt-2 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-3 py-2 text-ink focus:border-petrol focus:outline-none"
           />
 
+          {mode === "embarazada" && (
+            <>
+              <label htmlFor="babyName" className="mt-4 block text-sm font-extrabold text-ink">
+                Nombre de tu bebé{" "}
+                <span className="font-normal text-muted">(opcional, si ya lo elegiste)</span>
+              </label>
+              <p className="mt-1 text-xs text-muted">
+                Lo usamos para personalizar la app. Si son mellizos, podés
+                agregar el segundo nombre después, desde Ajustes.
+              </p>
+              <input
+                id="babyName"
+                type="text"
+                value={babyName}
+                onChange={(e) => setBabyName(e.target.value)}
+                placeholder="Ej: Silvia"
+                className="mt-2 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-3 py-2 text-ink focus:border-petrol focus:outline-none"
+              />
+            </>
+          )}
+
           {saveError && (
             <p className="mt-3 text-sm text-terracotta">{saveError}</p>
           )}
@@ -360,7 +428,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           </button>
           <button
             type="button"
-            onClick={() => setStep(mode === "embarazada" ? "lmp" : "mode")}
+            onClick={() => setStep(mode === "embarazada" ? "lmp" : "role")}
             className="mt-2 min-h-[44px] w-full text-sm text-muted"
           >
             Volver

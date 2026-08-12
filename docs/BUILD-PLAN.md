@@ -687,11 +687,28 @@ Reused for the privacy/account trust moment: ¿quién ve mis datos?
 An opt-in "así podría ser tu bebé" portrait. Joy feature; walled off from
 medical content by design (ARCHITECTURE.md §9).
 
-### F1 Generation pipeline — **M**
+### F1 Generation pipeline — **M** ✅ DONE
 `POST /api/v1/ai/baby`, **server-side only** (the API key never reaches
 the client). Parent photos are sent to the model and **not retained**.
 Result stored only if the user saves it. Explicit consent step naming what
 is sent and that it is deleted.
+
+Shipped as `lib/ai/babyImage.ts` (pure), `lib/server/aiBaby.ts`,
+`/api/v1/ai/baby` and `/herramientas/bebe-ia`. No migration — `aiGenerations`
+existed from A1. The three §10 constraints are enforced structurally and two
+are asserted **against the source**: the key is read in one server-only module
+and sent as a header (never a query string, which lands in access logs), and
+`lib/ai/babyImage.ts` — imported by client components — contains no
+`process.env` read at all; every `.values({...})` in the server module is
+scanned for photo-shaped fields, and the module is asserted to contain no
+`console.` at all, since an upstream error can quote a request containing
+someone's face. The kill switch fails closed and needs `AI_BABY_ENABLED` to be
+exactly `"true"`. The consent step is a gate — the control that sends a photo
+does not render until it is ticked, and the server independently requires
+`consent: "acepto"`. Saved images go to `photoEntries`, which never syncs: a
+generated picture of a baby is as private as a bump photo. Covered by
+`lib/ai/babyImage.test.ts` (17). **⚠️ F2 (quota) has not shipped — do not set
+`AI_BABY_ENABLED=true` in production until it does.**
 
 ### F2 Quota & cost control — **S**
 Hard per-user monthly quota in `ai_generations`, enforced server-side

@@ -272,13 +272,30 @@ so that "done when" criterion was already met and is preserved unchanged.
 (what the account world actually asks the user to accept) didn't change,
 only the standalone legal pages it links to.
 
-### A5 Account management & deletion — **M**
+### A5 Account management & deletion — **M** ✅ DONE
 `/ajustes`: signed-in identity, sign out, **"Borrar mi cuenta"** deleting
 every server row (records, memberships, invites, push subs, AI images) and
 offering a device wipe in the same flow. "Descargar mis datos" extended to
 include synced data.
 **Done when:** deletion leaves zero rows for that user, verified by a test;
 the flow is reachable in ≤2 taps from Ajustes.
+
+Shipped as `lib/server/account.ts` (`deleteAccountData` over an executor
+interface + `drizzleAccountExecutor`), `app/(app)/ajustes/actions.ts`
+(zod-whitelisted server action; the user id comes from the session, never the
+body) and `components/DeleteAccountCard.tsx`, mounted directly under the
+identity card so the flow is open → confirm. The device wipe is a checkbox in
+the same flow and runs *before* the server call, so a network failure halfway
+leaves a user who asked for a wipe with a wiped phone. The test that matters is
+not the row count but `TABLE_DISPOSITION`: it names every table in `schema` and
+what deletion does to it, and a test asserts the list matches `schema` exactly
+— so E1's and B5's new tables cannot quietly survive a "borrá todo".
+`adminAudit` is the one table deliberately retained (it is what makes admin
+access defensible, holds no health content, and its ids resolve to nobody once
+the user row is gone); `contentStats` is untouched because it carries no
+identity to begin with. "Descargar mis datos" now runs a sync pull first, so
+the export includes records written on another device. Covered by
+`lib/server/account.test.ts` (8).
 
 ### A6 Link a local account — **M**
 A user who started without an account and later signs in uploads their

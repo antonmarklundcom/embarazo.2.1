@@ -9,6 +9,34 @@ import { AccountSection } from "@/components/AccountSection";
 // Per-user content: never prerender it.
 export const dynamic = "force-dynamic";
 
-export default function AjustesPage() {
-  return <AjustesClient account={<AccountSection />} />;
+export default async function AjustesPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  // A5 lands here after deleting an account. The redirect is the only thing
+  // left to tell the user it worked — their session is gone, so there is no
+  // signed-in state to read and nothing else on the page has changed.
+  const deleted = (await searchParams).cuenta === "borrada";
+
+  return (
+    <AjustesClient
+      account={
+        <>
+          {deleted && (
+            <section className="rounded-card border border-line bg-pastel-salvia p-4">
+              <h2 className="text-[15px] font-extrabold text-ink">
+                Listo, borramos tu cuenta
+              </h2>
+              <p className="mt-1 text-sm font-semibold leading-relaxed text-ink">
+                No nos queda nada tuyo en el servidor. Podés seguir usando Mi
+                Bebé sin cuenta cuando quieras.
+              </p>
+            </section>
+          )}
+          <AccountSection />
+        </>
+      }
+    />
+  );
 }

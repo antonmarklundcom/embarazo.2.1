@@ -21,6 +21,7 @@ import {
   isUnlocked,
 } from "@/lib/crypto";
 import { exportBackup, backupFileName, importBackup } from "@/lib/backup";
+import { syncNow } from "@/lib/sync/client";
 import { PrivacyLine } from "@/components/PrivacyLine";
 import { InstallCard } from "@/components/InstallCard";
 
@@ -91,6 +92,11 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
     setBackupErr("");
     setBackupMsg("");
     try {
+      // A5: "Descargar mis datos" must include synced data. The device is the
+      // source of truth, but a record written on another phone lives only on
+      // the server until it is pulled — so pull first, then export. This is a
+      // no-op (and silent) without an account, which is the common case.
+      await syncNow();
       const blob = await exportBackup();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -613,11 +619,12 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
       <section className="rounded-card bg-white p-4 shadow-soft">
         <h2 className="text-base font-extrabold text-ink">Copia de seguridad</h2>
         <p className="mt-1 text-sm text-muted">
-          Tus datos viven solo en este teléfono: si lo perdés, lo cambiás o
-          borrás los datos del navegador, se pierden para siempre a menos que
-          tengas una copia. Descargá un archivo con todos tus datos y guardalo
-          en un lugar seguro (por ejemplo, envíatelo por WhatsApp o guardalo en
-          Google Drive).
+          Sin cuenta, tus datos viven solo en este teléfono: si lo perdés, lo
+          cambiás o borrás los datos del navegador, se pierden para siempre a
+          menos que tengas una copia. Descargá un archivo con todos tus datos y
+          guardalo en un lugar seguro (por ejemplo, envíatelo por WhatsApp o
+          guardalo en Google Drive). Si tenés cuenta, la copia incluye también
+          lo que hayas cargado desde otros aparatos.
         </p>
         {persisted === false && (
           <p className="mt-2 text-sm text-terracotta">

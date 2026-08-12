@@ -89,10 +89,13 @@ export default function PrivacidadPage() {
         <p className="text-sm leading-relaxed text-muted">
           Mientras tu cuenta exista, tus datos sincronizados se guardan en
           nuestro servidor para que sigan disponibles entre tus dispositivos.
-          Podés pedirnos borrar tu cuenta y todo lo asociado a ella —
-          registros, membresías familiares, invitaciones — escribiéndonos por
-          WhatsApp desde el botón de contacto; estamos construyendo un botón
-          de autoservicio en Ajustes para hacerlo sin pedirlo. Sin cuenta,
+          Podés borrar tu cuenta y todo lo asociado a ella — registros
+          sincronizados, embarazo, membresías familiares, invitaciones,
+          notificaciones e imágenes generadas — vos misma, desde
+          <strong> Ajustes → Borrar mi cuenta</strong>. Se borra del servidor,
+          no queda una copia nuestra, y en el mismo paso podés borrar también
+          los datos de este teléfono. Si preferís pedirlo, escribinos por
+          WhatsApp desde el botón de contacto. Sin cuenta,
           borrar los datos del sitio en tu navegador o desinstalar la app
           elimina esta información de inmediato, ahí no guardamos copia en
           ningún lado.
@@ -165,8 +168,9 @@ export default function PrivacidadPage() {
         <p className="text-sm leading-relaxed text-muted">
           Podés exportar una copia completa de tus datos (incluyendo lo
           sincronizado, si tenés cuenta) o borrar todo en cualquier momento
-          desde <strong>Ajustes</strong>. Con cuenta, además podés pedirnos
-          borrar tu cuenta y toda tu información del servidor. Nunca vendemos
+          desde <strong>Ajustes</strong>. Con cuenta, además podés borrar tu
+          cuenta y toda tu información del servidor desde ahí mismo, sin
+          pedírnoslo y sin esperar. Nunca vendemos
           ni compartimos tus datos de salud con terceros.
         </p>
       </section>
@@ -174,9 +178,9 @@ export default function PrivacidadPage() {
       <section className="space-y-2">
         <h2 className="text-base font-extrabold text-ink">Contacto</h2>
         <p className="text-sm leading-relaxed text-muted">
-          Si tenés dudas sobre esta política, o querés pedir el borrado de tu
-          cuenta, escribinos por WhatsApp desde el botón de contacto de la
-          app. Ver también las{" "}
+          Si tenés dudas sobre esta política escribinos por WhatsApp desde el
+          botón de contacto de la app. Para borrar tu cuenta no hace falta
+          escribirnos: está en <strong>Ajustes</strong>. Ver también las{" "}
           <Link href="/terminos" className="font-bold underline">
             preguntas frecuentes sobre privacidad
           </Link>{" "}

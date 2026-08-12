@@ -156,3 +156,20 @@ export function formatCompletedGestation(g: CompletedGestation): string {
 export function formatWeekPlusDay(g: CompletedGestation): string {
   return g.days > 0 ? `${g.weeks}+${g.days}` : `${g.weeks}`;
 }
+
+/**
+ * Fraction of gestation completed (C1's progress ring), 0 at the LMP date,
+ * 1 at (and past) the due date. Clamped to [0, 1] so an overdue pregnancy
+ * doesn't overshoot a full circle. Honors B3's adjustable gestation length.
+ */
+export function getProgressFraction(
+  lmp: number,
+  now: number = Date.now(),
+  gestationDays: number = GESTATION_DAYS,
+): number {
+  const elapsed = getDaysSinceLMP(lmp, now);
+  const fraction = elapsed / gestationDays;
+  if (fraction < 0) return 0;
+  if (fraction > 1) return 1;
+  return fraction;
+}

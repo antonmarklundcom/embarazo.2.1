@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useProfile } from "@/lib/useProfile";
-import { formatCompletedGestation, formatWeekPlusDay } from "@/lib/pregnancy";
+import {
+  formatCompletedGestation,
+  formatWeekPlusDay,
+  getDaysRemaining,
+  getDaysSinceLMP,
+  getProgressFraction,
+} from "@/lib/pregnancy";
 import { getWeek } from "@/lib/weeks";
 import { getDailyTip } from "@/lib/dailyTips";
 import { departmentName } from "@/lib/departments";
@@ -64,17 +70,31 @@ export default function InicioPage() {
   // keeps this defensive rather than asserting non-null).
   const weekPlusDay = profile.completed ? formatWeekPlusDay(profile.completed) : String(week);
 
+  const lmpDate = profile.lmpDate!;
+  const gestationDays = profile.gestationDays;
+  const daysElapsed = getDaysSinceLMP(lmpDate);
+  const daysLeft = getDaysRemaining(lmpDate, Date.now(), gestationDays);
+  const progress = getProgressFraction(lmpDate, Date.now(), gestationDays);
+
   return (
     <div className="space-y-4">
       <WeekStrip />
 
-      {/* Hero week card */}
-      <HeroCard
+      {/* C1: circular week hero + progress ring + stats row (map #9, #10).
+          Everything below this comment, down to the tool/reading rails, is
+          the C2–C8 slot area — each of those tasks fills in one block here
+          (weekly one-liner, size tabs, perspective switcher, obstetra card,
+          article feed, popular-this-week, shortcuts+feedback) rather than
+          rearranging this hero. */}
+      <WeekHero
         week={week}
         weekPlusDay={weekPlusDay}
         trimester={trimester}
         completedLabel={completedLabel}
         sizeComparison={info.sizeComparison}
+        progress={progress}
+        daysElapsed={daysElapsed}
+        daysLeft={daysLeft}
         babies={profile.babies}
         role={profile.role}
       />
@@ -246,12 +266,25 @@ function WeekStrip() {
   );
 }
 
-function HeroCard({
+// C1: circular hero with a progress ring, replacing the old flat banner
+// card. The ring shows gestation progress (0 at LMP, full circle at the due
+// date, clamped so an overdue pregnancy doesn't overshoot). Below it, the
+// three-stat row (semana · días transcurridos · faltan) feature map #10
+// asks for explicitly, rather than leaving those numbers implicit in prose.
+const RING_SIZE = 168;
+const RING_STROKE = 8;
+const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+
+function WeekHero({
   week,
   weekPlusDay,
   trimester,
   completedLabel,
   sizeComparison,
+  progress,
+  daysElapsed,
+  daysLeft,
   babies,
   role,
 }: {
@@ -260,57 +293,102 @@ function HeroCard({
   trimester: number;
   completedLabel: string | null;
   sizeComparison: string;
+  /** 0..1 fraction of gestation completed. */
+  progress: number;
+  daysElapsed: number;
+  daysLeft: number;
   babies: BabyIdentity[];
   role: Role;
 }) {
   // Weekly render lives at /assets/semanas/bebe-<week>.webp when the founder
   // has added it (REDESIGN-PLAN.md §4); until then show the arena fallback.
   const [imgError, setImgError] = useState(false);
+  const dashOffset = RING_CIRCUMFERENCE * (1 - progress);
+
   return (
-    <Link
-      href={`/semana/${week}`}
-      className="relative block overflow-hidden rounded-card bg-pastel-arena shadow-soft transition active:scale-[0.99]"
-    >
-      {imgError ? (
-        <div className="flex h-[220px] items-center justify-center">
-          <span className="text-[110px] font-black leading-none text-white">
-            {week}
-          </span>
+    <div className="rounded-card bg-white p-5 text-center shadow-soft">
+      <Link
+        href={`/semana/${week}`}
+        aria-label={`Semana ${week}, detalles`}
+        className="relative mx-auto block transition active:scale-[0.97]"
+        style={{ width: RING_SIZE, height: RING_SIZE }}
+      >
+        <svg
+          width={RING_SIZE}
+          height={RING_SIZE}
+          viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
+          className="absolute inset-0 -rotate-90"
+          aria-hidden
+        >
+          <circle
+            cx={RING_SIZE / 2}
+            cy={RING_SIZE / 2}
+            r={RING_RADIUS}
+            fill="none"
+            stroke="#EFE7DA"
+            strokeWidth={RING_STROKE}
+          />
+          <circle
+            cx={RING_SIZE / 2}
+            cy={RING_SIZE / 2}
+            r={RING_RADIUS}
+            fill="none"
+            stroke="#C96342"
+            strokeWidth={RING_STROKE}
+            strokeLinecap="round"
+            strokeDasharray={RING_CIRCUMFERENCE}
+            strokeDashoffset={dashOffset}
+          />
+        </svg>
+        <div
+          className="absolute overflow-hidden rounded-full bg-pastel-arena"
+          style={{ inset: RING_STROKE + 6 }}
+        >
+          {imgError ? (
+            <div className="flex h-full items-center justify-center">
+              <span className="text-5xl font-black leading-none text-white">
+                {week}
+              </span>
+            </div>
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`/assets/semanas/bebe-${week}.webp`}
+              alt={babyAtWeekLabel(babies, role, week)}
+              className="block h-full w-full object-cover"
+              style={{ objectPosition: "center 18%" }}
+              onError={() => setImgError(true)}
+            />
+          )}
         </div>
-      ) : (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={`/assets/semanas/bebe-${week}.webp`}
-          alt={babyAtWeekLabel(babies, role, week)}
-          className="block h-[260px] w-full object-cover"
-          style={{ objectPosition: "center 18%" }}
-          onError={() => setImgError(true)}
-        />
-      )}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(50,46,41,0) 46%, rgba(50,46,41,0.55) 100%)",
-        }}
-      />
-      <div className="absolute inset-x-4 bottom-4 flex items-end justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-extrabold tracking-[1.6px] text-[#FBE9D8]">
-            SEMANA {weekPlusDay} · {trimester}.º TRIMESTRE
-          </p>
-          <p className="mt-1 text-2xl font-black text-white">
-            {completedLabel ?? `Semana ${week}`}
-          </p>
-          <p className="mt-0.5 text-xs font-bold text-white/85">
-            Del tamaño de {sizeComparison}
-          </p>
-        </div>
-        <span className="whitespace-nowrap rounded-full bg-white px-4 py-2 text-[13px] font-extrabold text-ink">
-          Detalles
-        </span>
+      </Link>
+
+      <p className="mt-3 text-[11px] font-extrabold tracking-[1.6px] text-petrol">
+        SEMANA {weekPlusDay} · {trimester}.º TRIMESTRE
+      </p>
+      <p className="mt-1 text-xl font-black text-ink">
+        {completedLabel ?? `Semana ${week}`}
+      </p>
+      <p className="mt-0.5 text-xs font-bold text-muted">
+        Del tamaño de {sizeComparison}
+      </p>
+
+      {/* Three-stat row (feature map #10): semana · días transcurridos · faltan. */}
+      <div className="mt-4 grid grid-cols-3 gap-2 border-t border-line pt-3.5">
+        <HeroStat value={String(week)} label="Semana" />
+        <HeroStat value={String(daysElapsed)} label="Días pasados" />
+        <HeroStat value={String(daysLeft)} label="Faltan" />
       </div>
-    </Link>
+    </div>
+  );
+}
+
+function HeroStat({ value, label }: { value: string; label: string }) {
+  return (
+    <div>
+      <p className="text-lg font-black text-ink">{value}</p>
+      <p className="text-[11px] font-semibold text-muted">{label}</p>
+    </div>
   );
 }
 
@@ -442,7 +520,7 @@ function HomeSkeleton() {
   return (
     <div className="space-y-4">
       <div className="h-12 w-full animate-pulse rounded-tile bg-black/5" />
-      <div className="h-[260px] animate-pulse rounded-card bg-black/5" />
+      <div className="h-[340px] animate-pulse rounded-card bg-black/5" />
       <div className="grid grid-cols-2 gap-3">
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className="h-20 animate-pulse rounded-tile bg-black/5" />

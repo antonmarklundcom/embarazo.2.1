@@ -13,6 +13,7 @@ import {
   getDaysSinceLMP,
   getCompletedGestation,
   formatCompletedGestation,
+  getProgressFraction,
   formatWeekPlusDay,
   GESTATION_DAYS,
 } from "./pregnancy";
@@ -121,6 +122,24 @@ describe("getCompletedGestation", () => {
   });
   it("is 0 weeks 0 days at the LMP date", () => {
     expect(getCompletedGestation(0, 0)).toEqual({ weeks: 0, days: 0 });
+  });
+});
+
+describe("getProgressFraction", () => {
+  it("is 0 at the LMP date", () => {
+    expect(getProgressFraction(0, 0)).toBe(0);
+  });
+  it("is 1 at the due date", () => {
+    expect(getProgressFraction(0, GESTATION_DAYS * DAY)).toBe(1);
+  });
+  it("is 0.5 halfway through", () => {
+    expect(getProgressFraction(0, (GESTATION_DAYS / 2) * DAY)).toBe(0.5);
+  });
+  it("clamps at 1 past the due date (overdue)", () => {
+    expect(getProgressFraction(0, 400 * DAY)).toBe(1);
+  });
+  it("clamps at 0 before the LMP date", () => {
+    expect(getProgressFraction(0, -5 * DAY)).toBe(0);
   });
 });
 

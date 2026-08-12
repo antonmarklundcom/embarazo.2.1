@@ -686,3 +686,62 @@ the Drizzle backend itself, which is thirty lines and needs a MySQL.
 - **No route was removed, so no link elsewhere in the app broke** — verified by
   grepping every `href="/progreso"` / `href="/eventos"` call site rather than
   assuming; both existing links continue to resolve.
+## A5 — account management & deletion (August 2026)
+
+- **Deletion is expressed as a plan over an executor interface**
+  (`lib/server/account.ts`), not as a sequence of Drizzle calls, for the same
+  reason A3's server half is: it makes "deletion leaves zero rows for that
+  user" provable in CI with no MySQL. `account.test.ts` runs the real plan
+  against an in-memory database and greps the remaining rows for the user's id
+  and email.
+- **`TABLE_DISPOSITION` names every table in the schema and what deletion does
+  to it**, and a test asserts that list matches `schema` exactly. That is the
+  part worth keeping: E1 and B5 both add tables, and a table added without a
+  deletion rule would otherwise survive a user's "borrá todo" silently. The
+  failure now lands on whoever adds the table, which is the only moment it is
+  cheap to fix.
+- **`adminAudit` is retained, deliberately, and it is the only thing that is.**
+  It records what an administrator did, which is what makes admin access to a
+  health app defensible (§9); letting a support-requested deletion erase its
+  own evidence would defeat the point. After the `users` row is gone the ids in
+  it resolve to nobody — they are opaque UUIDs — and the table never holds
+  health content. `contentStats` is untouched for a different reason: it
+  carries no identity at all (§4.5), so there is nothing there to delete and
+  deleting it would corrupt an aggregate.
+- **Deleting an owner deletes their pregnancy's memberships and invites too.**
+  Otherwise a partner keeps a live membership pointing at a pregnancy that no
+  longer exists — a dangling read grant on health data. Asserted by test,
+  along with the converse: the partner's *own* pregnancy is untouched.
+- **The user row goes last.** There are no foreign keys here, so order is only
+  about what an interrupted deletion leaves behind: an account that can sign in
+  and retry, rather than orphaned health data with no owner left to ask for its
+  removal.
+- **The device wipe runs before the server call, not after.** ARCHITECTURE.md
+  §8 requires it to be offered in the same flow; running it first means a
+  network failure halfway through leaves a user who asked for their phone to be
+  wiped with a wiped phone. The reverse order fails in the direction that
+  exposes them.
+- **"Borrar mi cuenta" sits directly under the identity card, not in the
+  existing danger zone.** Two taps from Ajustes (open, confirm), and separate
+  from "Borrar todos mis datos" on purpose: one wipes the server, the other
+  wipes the phone, and merging them into one button is how somebody deletes the
+  thing they did not mean to.
+- **The server action takes no user id.** It comes from the session, so the
+  action cannot be aimed at another account regardless of what is posted. The
+  confirmation is `z.literal("borrar")` rather than a boolean, because an
+  unticked checkbox is absent from FormData entirely — the same shape A2 used
+  for the consent gate.
+- **"Descargar mis datos" now runs a sync pull first.** The requirement is that
+  the export includes synced data; the device is the source of truth, but a
+  record written on another phone lives only on the server until it is pulled.
+  `syncNow()` is best-effort and silent, so without an account this is a no-op
+  and the export behaves exactly as it did before.
+- **The backup section's copy was corrected, minimally.** "Tus datos viven solo
+  en este teléfono" stopped being true for signed-in users. Same treatment A2
+  gave the privacy bullets: fix the claim now, leave the full rewrite to A4.
+- **A4's `/privacidad` was corrected in the same PR.** A4 landed while this
+  branch was open and, correctly for its moment, described deletion as a
+  manual WhatsApp request with a self-serve button "forthcoming". A5 makes
+  that understatement false, so the retention, rights and contact sections now
+  say deletion is self-serve from Ajustes. A privacy policy that undersells
+  what the app actually offers is still a wrong privacy policy.

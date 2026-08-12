@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 
-// DRAFT terms of use — the founder/legal counsel must review and finalize
-// this before public launch (see docs/REVIEW-AND-LAUNCH-PLAN.md §4.6).
+// Terms of use for the account world (v3 pivot — accounts + sync). See
+// DECISIONS.md "v3 pivot". DRAFT — pending lawyer review before public
+// launch (see docs/REVIEW-AND-LAUNCH-PLAN.md §4.5).
 export const metadata: Metadata = {
   title: "Términos de uso",
   description: "Condiciones de uso de Mi Bebé.",
 };
 
-const LAST_UPDATED = "8 de julio de 2026";
+const LAST_UPDATED = "12 de agosto de 2026";
 
 export default function TerminosPage() {
   return (
@@ -31,14 +32,30 @@ export default function TerminosPage() {
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-base font-extrabold text-ink">Uso de la app</h2>
+        <h2 className="text-base font-extrabold text-ink">Uso de la app, con o sin cuenta</h2>
         <p className="text-sm leading-relaxed text-muted">
-          Mi Bebé es gratuita y no requiere crear una cuenta. Al usarla, aceptás
-          estos términos y nuestra{" "}
+          Mi Bebé es gratuita. Podés usarla sin crear una cuenta — &ldquo;seguir
+          sin cuenta&rdquo; es una forma completa de usar la app, no un modo
+          reducido — o crear una cuenta con Google (o Facebook, cuando esté
+          disponible) para sincronizar tus datos entre dispositivos. Al usarla,
+          aceptás estos términos y nuestra{" "}
           <a href="/privacidad" className="underline">
             política de privacidad
-          </a>. Podés dejar de usarla y borrar tus datos en cualquier momento
-          desde Ajustes.
+          </a>. Si creás una cuenta, además aceptás explícitamente que
+          guardemos tus datos de salud del embarazo en nuestro servidor, en el
+          paso de permiso de la pantalla de cuenta.
+        </p>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-base font-extrabold text-ink">Tu cuenta</h2>
+        <p className="text-sm leading-relaxed text-muted">
+          Sos responsable de mantener el acceso a la cuenta con la que iniciás
+          sesión (Google o Facebook). Podés cerrar sesión, borrar tu cuenta y
+          todos tus datos del servidor, o dejar de usar la app en cualquier
+          momento desde Ajustes. Si compartís tu embarazo con tu pareja o
+          familia, sos responsable de a quién le das ese acceso; podés
+          revocarlo cuando quieras.
         </p>
       </section>
 
@@ -52,6 +69,18 @@ export default function TerminosPage() {
           orientativa: para tu situación específica, consultá a un
           profesional del derecho o a la institución correspondiente (IPS,
           Registro Civil, MSPBS).
+        </p>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-base font-extrabold text-ink">La imagen de bebé con IA</h2>
+        <p className="text-sm leading-relaxed text-muted">
+          Cuando esté disponible, &ldquo;así podría ser tu bebé&rdquo; es una
+          función de entretenimiento opcional generada por inteligencia
+          artificial a partir de fotos que vos subís voluntariamente. No es
+          una predicción real de la apariencia de tu bebé ni tiene ningún fin
+          médico. El uso está sujeto a un cupo mensual y puede desactivarse en
+          cualquier momento.
         </p>
       </section>
 
@@ -82,9 +111,16 @@ export default function TerminosPage() {
         <p className="text-sm leading-relaxed text-muted">
           Podemos actualizar estos términos a medida que la app crece. Los
           cambios importantes se reflejarán en esta página con su fecha de
-          actualización.
+          actualización; si cambiamos qué datos guardamos con cuenta, también
+          actualizamos el paso de permiso y te pedimos aceptarlo de nuevo.
         </p>
       </section>
+
+      <p className="text-[11px] leading-relaxed text-muted">
+        Este texto describe honestamente el funcionamiento actual y planeado
+        de la app. No reemplaza asesoría legal formal; está pendiente de
+        revisión por un abogado antes del lanzamiento público.
+      </p>
     </article>
   );
 }

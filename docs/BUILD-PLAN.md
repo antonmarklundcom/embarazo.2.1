@@ -248,20 +248,54 @@ against the real handlers) and `e2e/sync.spec.ts` (3 — a real browser going
 offline and back, including that the app is completely unchanged when
 `/api/v1/sync` 404s, which is the "seguir sin cuenta" guarantee).
 
-### A4 Legal & consent rewrite — **S**
+### A4 Legal & consent rewrite — **S** ✅ DONE
 `/privacidad` and `/terminos` rewritten for the account world: what is
 stored, where, who can see it, retention, deletion, the AI feature, push.
 Marked clearly as pending lawyer review (founder task §4.5).
 **Done when:** neither page claims data never leaves the device; the
 consent step links to both.
 
-### A5 Account management & deletion — **M**
+Shipped as a copy-only rewrite of `app/(app)/privacidad/page.tsx` and
+`app/(app)/terminos/page.tsx`. Both now lead with "sin cuenta todo se queda
+en tu teléfono, con cuenta esto viaja" instead of the old blanket "no te
+pedimos cuenta" claim, and privacidad gained sections for what syncs with an
+account, who can see it (companion view sees week/due date/next control
+only, never notes or photos; support sees counts, never payload — the A7/I1
+rule stated in advance of those tasks existing), retention/deletion (manual
+WhatsApp request today, self-serve button noted as forthcoming since A5
+hasn't shipped — deliberately not claiming a self-serve flow that doesn't
+exist yet), the AI baby image (F1, described as forthcoming/opt-in since it
+isn't built), and push (B5, forthcoming, opt-in per category). No functional
+change: `SignInCard`'s consent checkbox already linked to both pages (A2),
+so that "done when" criterion was already met and is preserved unchanged.
+`CONSENT_VERSION` was **not** bumped — the consent checkbox text itself
+(what the account world actually asks the user to accept) didn't change,
+only the standalone legal pages it links to.
+
+### A5 Account management & deletion — **M** ✅ DONE
 `/ajustes`: signed-in identity, sign out, **"Borrar mi cuenta"** deleting
 every server row (records, memberships, invites, push subs, AI images) and
 offering a device wipe in the same flow. "Descargar mis datos" extended to
 include synced data.
 **Done when:** deletion leaves zero rows for that user, verified by a test;
 the flow is reachable in ≤2 taps from Ajustes.
+
+Shipped as `lib/server/account.ts` (`deleteAccountData` over an executor
+interface + `drizzleAccountExecutor`), `app/(app)/ajustes/actions.ts`
+(zod-whitelisted server action; the user id comes from the session, never the
+body) and `components/DeleteAccountCard.tsx`, mounted directly under the
+identity card so the flow is open → confirm. The device wipe is a checkbox in
+the same flow and runs *before* the server call, so a network failure halfway
+leaves a user who asked for a wipe with a wiped phone. The test that matters is
+not the row count but `TABLE_DISPOSITION`: it names every table in `schema` and
+what deletion does to it, and a test asserts the list matches `schema` exactly
+— so E1's and B5's new tables cannot quietly survive a "borrá todo".
+`adminAudit` is the one table deliberately retained (it is what makes admin
+access defensible, holds no health content, and its ids resolve to nobody once
+the user row is gone); `contentStats` is untouched because it carries no
+identity to begin with. "Descargar mis datos" now runs a sync pull first, so
+the export includes records written on another device. Covered by
+`lib/server/account.test.ts` (8).
 
 ### A6 Link a local account — **M**
 A user who started without an account and later signs in uploads their
@@ -296,24 +330,112 @@ test asserts no route returns payload contents.
 
 ## Phase B — onboarding & profile (feature map 1–8)
 
-### B1 Roles (map #1) — **M**
+### B1 Roles (map #1) — **M** ✅ DONE
 `mamá / papá / acompañante / familiar o amiga` in onboarding and editable
 later; drives tone and which home content shows. Non-owner roles get a
 read-only shell.
 **Done when:** every role reaches a coherent home screen; role is synced.
 
-### B2 Baby identity & twins (map #2, #3) — **M**
+Shipped as a new onboarding step between mode and date/department
+(`components/Onboarding.tsx`), a `role?: Role` field on `Profile`
+(`lib/db.ts` — plain non-indexed field, no Dexie version bump, same pattern
+as `sanatorioName` etc.), and `lib/roleCopy.ts`: the single place that maps
+a role to phrasing (`ROLE_LABELS`, `ROLE_ONBOARDING_COPY`,
+`pregnancyPossessive`, `babyAtWeekLabel`, `moodCheckInLabel`), unit-tested
+(9 tests). Editable later from a new "¿Cómo te describís vos?" section in
+`/ajustes`, next to the existing mode switcher. Wired into the home screen's
+most prominent role-sensitive strings: the week-hero image alt text and
+caption, the "para leer hoy" card, and the daily mood check-in header
+(second person for mamá, third person otherwise). `role` defaults to
+`"mama"` everywhere it's read (`useProfile`, both `db().profile.add` call
+sites) so existing profiles without the field keep their current behaviour
+exactly. Synced automatically — `profile` is already in `SYNCED_STORES`
+(A3) and the whole row travels as the opaque payload, so no sync-layer
+change was needed for "role is synced".
+
+**Scope boundary, stated explicitly**: "every role reaches a coherent home
+screen" was interpreted as the pregnancy ("embarazada" mode) home screen,
+the flagship surface. `PlaneandoHome` (the fertility/TTC dashboard) is
+inherently about the mamá's own cycle data and was left role-copy-untouched
+— rewriting it per-role is judged out of scope for an M task and better
+suited to whichever future task actually redesigns that screen. The "read
+mostly-only shell" language for non-owner roles is E1's job (family sharing
+between *different* accounts); B1 is single-device and stores the role
+locally, so there is no second person to restrict yet — role here drives
+tone only, as the done-when criteria require.
+
+### B2 Baby identity & twins (map #2, #3) — **M** ✅ DONE
 Baby nickname threaded through copy ("Silvia ya mide…"); data model
 supports N babies per pregnancy now, UI for twins later.
 **Done when:** nickname appears wherever "tu bebé" is generic; adding a
 second baby requires no schema migration.
 
-### B3 Due-date & pregnancy settings (map #4, #5, #6) — **M**
+Shipped as `babies?: BabyIdentity[]` on `Profile` (`lib/db.ts`) — an object
+per baby, not a bare string array, so a later task can add per-baby fields
+(e.g. sex) without a migration; index order is birth order. Plain
+non-indexed field, no Dexie version bump. `lib/babies.ts` is the single
+place that reads a `BabyIdentity[]` and produces copy
+(`primaryBabyName`, `babyAtWeekLabel`, `babyNamesList`, `isTwinsOrMore`),
+unit-tested (14 tests) — unnamed babies (including unnamed twins) fall back
+to "Tu bebé" rather than guessing an order like "Bebé 1". Onboarding gained
+an optional nickname field on the department step (embarazada mode only);
+Ajustes gained a "Nombre de tu bebé" section with add/remove rows so a
+second name (twins) is literally pushing to the array — no code change
+needed to support it. Wired into the home screen's three generic "tu bebé"
+spots: the week-hero image alt text and caption, and the "para leer hoy"
+card. `/semana/[n]` was deliberately left untouched — it's statically
+generated for all 42 weeks (offline precache), and reading per-device
+Dexie state there would mean converting it to a client component and losing
+that precache strategy; a future task can revisit if that tradeoff is
+judged worth it.
+- **Independent PR base**: this branch was cut from `main`, not from B1
+  (roles), since PRs land independently. `app/(app)/page.tsx`'s `HeroCard`/
+  `ReadCard` will conflict with B1's role-copy changes on merge — an
+  expected, easily-resolved conflict from two PRs touching the same file,
+  not a sign either task did something wrong.
+
+### B3 Due-date & pregnancy settings (map #4, #5, #6) — **M** ✅ DONE
 Calculation methods (LMP · ecografía · FIV · conception date), adjustable
 pregnancy length, `week+day` display **as the default**, separate planned
 delivery date.
 **Done when:** each method produces the correct FPP with unit tests;
 switching method never corrupts existing week data.
+
+Shipped as four `lmpFrom*` functions in `lib/pregnancy.ts` — `lmpFromEcografia`
+(alias of the existing `lmpFromDueDate`, kept as a separate named function so
+call sites read as "which method" not "which formula"), `lmpFromFiv`
+(transfer date − (14 + embryo day), standard obstetric convention for day-3/
+day-5 transfers), and `lmpFromConception` (conception date − 14-day luteal
+offset) — every method converges on an LMP-equivalent, since week/trimester/
+due-date math is already defined purely in terms of LMP, so adding a method
+never touches that math. `getDueDate`/`lmpFromDueDate`/`getDaysRemaining` all
+gained an optional `gestationDays` param (default `GESTATION_DAYS`=280) for
+the adjustable-length requirement. Unit-tested (16 new tests in
+`lib/pregnancy.test.ts`), including that FIV/conception dating correctly
+starts gestational age ahead of zero (a day-5 transfer is already 19 days/
+week 3 at the moment of transfer, not "day zero" — a bug this exact test
+class exists to catch).
+
+`Pregnancy` (`lib/db.ts`) gained `method`, `gestationDays`, and
+`plannedDeliveryDate` — all optional, plain non-indexed fields, no Dexie
+version bump. Onboarding's binary "LMP vs. due date" checkbox became a
+4-option method selector (`components/Onboarding.tsx`); Ajustes gained a
+"Duración del embarazo" + "Fecha de parto planificada" section, separate
+from the existing LMP/due-date editor. **"Switching method never corrupts
+existing week data"** holds by construction, not by a special code path:
+every method's output is just a new `lmpDate` written through the same
+`db().pregnancy.update`/`.add` calls the pre-B3 editor already used — there
+is nothing method-specific stored that could go stale.
+
+`week+day` as the default: `formatWeekPlusDay` (e.g. "24+3", days omitted
+when zero) applied to the home hero's small overline
+(`SEMANA {weekPlusDay} · {trimestre}`). The big hero number and
+`/emergencia`'s "Estoy embarazada de…" line keep the existing sentence form
+(`formatCompletedGestation`, "24 semanas y 3 días") — that's prose, not a
+label, and the compact form would read oddly there. A full hero-card
+redesign is C1's job; this task only swapped the one label that was a bare
+week integer into the week+day default, to avoid churn against C1's
+upcoming PR.
 
 ### B4 Ajustes restructure — **S** ✅ DONE
 Group the growing settings into sections (cuenta · bebé · embarazo ·
@@ -409,10 +531,26 @@ precached in `app/sw.ts` alongside the weeks/guías so it works fully offline
 from first install. Linked from the herramientas grid and the home screen's
 tools grid. See DECISIONS.md "D3" for the verdict-conservatism rules and why
 there's no API route at all.
-### D4 Checklist as its own tab (map #24) + nav IA
+### D4 Checklist as its own tab (map #24) + nav IA — **S** ✅ DONE
 Promote checklists to the bottom nav. Resolves the open 5-tab question:
 proposed **Hoy · Guías · Checklist · Herramientas · Cerca tuyo**, with
 Eventos and Beneficios living inside Cerca tuyo.
+
+Shipped as a `BottomNav.tsx` rewrite: the 5 tabs are now `/` (Hoy),
+`/guias` (Guías), a mode-aware checklist tab, `/herramientas`, and
+`/directorio` (Cerca tuyo). Progreso and Eventos lost their nav slots but
+neither route was removed — Progreso stays reachable from the week-detail
+page's existing "todas las semanas" link, and Eventos is now a card at the
+top of `/directorio` (pattern copied from the existing Guías→Videos card),
+ready for Beneficios (E4) to join it the same way once that tab exists. The
+Checklist tab is mode-aware (`checklistHref()` in `BottomNav.tsx`, driven by
+`useProfile().mode`): `/planeando/checklist` in planeando mode,
+`/herramientas/checklist` otherwise — the two are different Dexie-backed
+task lists (TTC vs. pregnancy), not one page with a filter, so the nav tab
+deep-links to the right one instead of routing through a picker. The
+duplicate "Checklists" entry in the `/herramientas` tools list was removed
+now that it has its own tab (feature map #24's "promote out of the tools
+drawer").
 ### D5 Directory category banners (map #26)
 Image banner + count per category ("Sanatorios · 24 lugares"); server-side
 filtering and pagination when listings pass ~100.

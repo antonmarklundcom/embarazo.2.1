@@ -53,11 +53,6 @@ const TOOLS = [
     desc: "Seguí tu evolución con un gráfico simple.",
   },
   {
-    href: "/herramientas/checklist",
-    title: "Checklists",
-    desc: "Bolso para el sanatorio y trámites después del nacimiento.",
-  },
-  {
     href: "/guias",
     title: "Guías",
     desc: "Artículos sobre el embarazo, revisados y pensados para Paraguay.",

@@ -2,26 +2,51 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { db, type AppMode } from "@/lib/db";
-import { getDueDate, lmpFromDueDate, getRawWeek, MAX_WEEK } from "@/lib/pregnancy";
+import { db, type AppMode, type Role } from "@/lib/db";
+import {
+  getDueDate,
+  lmpFromEcografia,
+  lmpFromFiv,
+  lmpFromConception,
+  getRawWeek,
+  MAX_WEEK,
+  type DueDateMethod,
+} from "@/lib/pregnancy";
 import { DEPARTMENTS } from "@/lib/departments";
+import { ROLE_ONBOARDING_COPY, ROLE_ORDER } from "@/lib/roleCopy";
 import { PrivacyLine } from "./PrivacyLine";
 
-// First-run gate (build spec §3/§6): choose a mode, then collect the minimum
-// data for that flow. Rendered IN PLACE on / — no redirect, no separate route.
-// - "embarazada": LMP or FPP date → department (city optional) → save.
-// - "planeando": department (city optional) → save (no pregnancy record).
-type Step = "mode" | "lmp" | "department";
+// First-run gate (build spec §3/§6): choose a mode, then a relationship role
+// (B1, feature map #1), then a due-date method + date(s) (B3), then
+// collect the minimum remaining data for that flow. Rendered IN PLACE on /
+// — no redirect, no separate route.
+// - "embarazada": mode → role → due-date method + date(s) → department
+//   (city, baby nickname optional) → save.
+// - "planeando": mode → role → department (city optional) → save (no
+//   pregnancy record).
+type Step = "mode" | "role" | "lmp" | "department";
+
+const METHOD_LABELS: Record<DueDateMethod, string> = {
+  lmp: "Última menstruación",
+  ecografia: "Ecografía (fecha probable de parto)",
+  fiv: "FIV (transferencia de embrión)",
+  conception: "Fecha de concepción conocida",
+};
 
 export function Onboarding({ onDone }: { onDone: () => void }) {
   const [step, setStep] = useState<Step>("mode");
   const [mode, setMode] = useState<AppMode>("embarazada");
-  const [useDueDate, setUseDueDate] = useState(false);
+  const [role, setRole] = useState<Role>("mama");
+  const [method, setMethod] = useState<DueDateMethod>("lmp");
   const [lmp, setLmp] = useState("");
   const [dueDateInput, setDueDateInput] = useState("");
+  const [fivTransferDate, setFivTransferDate] = useState("");
+  const [fivEmbryoDay, setFivEmbryoDay] = useState<3 | 5>(5);
+  const [conceptionDateInput, setConceptionDateInput] = useState("");
   const [dateError, setDateError] = useState("");
   const [department, setDepartment] = useState("");
   const [city, setCity] = useState("");
+  const [babyName, setBabyName] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
 
@@ -31,16 +56,44 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
 
   function chooseMode(m: AppMode) {
     setMode(m);
-    setStep(m === "embarazada" ? "lmp" : "department");
+    setStep("role");
+  }
+
+  function chooseRole(r: Role) {
+    setRole(r);
+    setStep(mode === "embarazada" ? "lmp" : "department");
   }
 
   function resolveLmpDate(): number | null {
-    if (useDueDate) {
-      if (!dueDateInput) return null;
-      return lmpFromDueDate(new Date(`${dueDateInput}T00:00:00`).getTime());
+    switch (method) {
+      case "lmp":
+        return lmp ? new Date(`${lmp}T00:00:00`).getTime() : null;
+      case "ecografia":
+        return dueDateInput
+          ? lmpFromEcografia(new Date(`${dueDateInput}T00:00:00`).getTime())
+          : null;
+      case "fiv":
+        return fivTransferDate
+          ? lmpFromFiv(new Date(`${fivTransferDate}T00:00:00`).getTime(), fivEmbryoDay)
+          : null;
+      case "conception":
+        return conceptionDateInput
+          ? lmpFromConception(new Date(`${conceptionDateInput}T00:00:00`).getTime())
+          : null;
     }
-    if (!lmp) return null;
-    return new Date(`${lmp}T00:00:00`).getTime();
+  }
+
+  function canContinueFromLmp(): boolean {
+    switch (method) {
+      case "lmp":
+        return !!lmp;
+      case "ecografia":
+        return !!dueDateInput;
+      case "fiv":
+        return !!fivTransferDate;
+      case "conception":
+        return !!conceptionDateInput;
+    }
   }
 
   function continueFromLmp() {
@@ -75,13 +128,17 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         await db().pregnancy.add({
           lmpDate,
           dueDate: getDueDate(lmpDate),
+          method,
           createdAt: now,
         });
       }
+      const trimmedBabyName = babyName.trim();
       await db().profile.add({
         department,
         city: city.trim() || undefined,
         mode,
+        babies: trimmedBabyName ? [{ name: trimmedBabyName }] : undefined,
+        role,
         createdAt: now,
       });
       onDone();
@@ -137,22 +194,60 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         </div>
       )}
 
+      {step === "role" && (
+        <div className="space-y-3">
+          <p className="px-1 text-sm font-extrabold text-ink">
+            ¿Cómo te describís vos?
+          </p>
+          {ROLE_ORDER.map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => chooseRole(r)}
+              className="block w-full rounded-card bg-white p-5 text-left shadow-soft transition active:scale-[0.99]"
+            >
+              <p className="text-base font-extrabold text-ink">
+                {ROLE_ONBOARDING_COPY[r].title}
+              </p>
+              <p className="mt-1 text-sm text-muted">{ROLE_ONBOARDING_COPY[r].desc}</p>
+            </button>
+          ))}
+          <p className="px-1 text-xs text-muted">
+            Esto ajusta cómo te habla la app. Podés cambiarlo cuando quieras
+            desde Ajustes.
+          </p>
+          <button
+            type="button"
+            onClick={() => setStep("mode")}
+            className="mt-1 min-h-[44px] w-full text-sm text-muted"
+          >
+            Volver
+          </button>
+        </div>
+      )}
+
       {step === "lmp" && (
         <div className="rounded-card bg-white p-5 shadow-soft">
-          <label className="flex items-start gap-2 text-sm text-ink">
-            <input
-              type="checkbox"
-              checked={useDueDate}
-              onChange={(e) => {
-                setUseDueDate(e.target.checked);
-                setDateError("");
-              }}
-              className="mt-0.5 h-5 w-5 shrink-0 rounded border-black/20 accent-petrol"
-            />
-            <span>No sé mi última regla — usar fecha probable de parto</span>
+          <label htmlFor="method" className="block text-sm font-extrabold text-ink">
+            ¿Cómo sabés tu fecha?
           </label>
+          <select
+            id="method"
+            value={method}
+            onChange={(e) => {
+              setMethod(e.target.value as DueDateMethod);
+              setDateError("");
+            }}
+            className="mt-2 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-3 py-2 text-ink focus:border-petrol focus:outline-none"
+          >
+            {(Object.keys(METHOD_LABELS) as DueDateMethod[]).map((m) => (
+              <option key={m} value={m}>
+                {METHOD_LABELS[m]}
+              </option>
+            ))}
+          </select>
 
-          {!useDueDate ? (
+          {method === "lmp" && (
             <>
               <label htmlFor="lmp" className="mt-4 block text-sm font-extrabold text-ink">
                 ¿Cuándo fue el primer día de tu última menstruación?
@@ -171,7 +266,9 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
                 className="mt-3 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-3 py-2 text-ink focus:border-petrol focus:outline-none"
               />
             </>
-          ) : (
+          )}
+
+          {method === "ecografia" && (
             <>
               <label htmlFor="due" className="mt-4 block text-sm font-extrabold text-ink">
                 ¿Cuál es tu fecha probable de parto?
@@ -190,13 +287,63 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
             </>
           )}
 
+          {method === "fiv" && (
+            <>
+              <label htmlFor="fivDate" className="mt-4 block text-sm font-extrabold text-ink">
+                ¿Cuándo fue la transferencia del embrión?
+              </label>
+              <input
+                id="fivDate"
+                type="date"
+                value={fivTransferDate}
+                max={today}
+                onChange={(e) => setFivTransferDate(e.target.value)}
+                className="mt-2 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-3 py-2 text-ink focus:border-petrol focus:outline-none"
+              />
+              <label htmlFor="fivDay" className="mt-4 block text-sm font-extrabold text-ink">
+                ¿Embrión de qué día?
+              </label>
+              <select
+                id="fivDay"
+                value={fivEmbryoDay}
+                onChange={(e) => setFivEmbryoDay(Number(e.target.value) as 3 | 5)}
+                className="mt-2 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-3 py-2 text-ink focus:border-petrol focus:outline-none"
+              >
+                <option value={5}>Día 5 (blastocisto)</option>
+                <option value={3}>Día 3</option>
+              </select>
+            </>
+          )}
+
+          {method === "conception" && (
+            <>
+              <label
+                htmlFor="conception"
+                className="mt-4 block text-sm font-extrabold text-ink"
+              >
+                ¿Cuál fue la fecha de concepción?
+              </label>
+              <p className="mt-1 text-xs text-muted">
+                Por ejemplo, si seguiste tu ovulación con precisión.
+              </p>
+              <input
+                id="conception"
+                type="date"
+                value={conceptionDateInput}
+                max={today}
+                onChange={(e) => setConceptionDateInput(e.target.value)}
+                className="mt-3 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-3 py-2 text-ink focus:border-petrol focus:outline-none"
+              />
+            </>
+          )}
+
           {dateError && (
             <p className="mt-2 text-sm text-terracotta">{dateError}</p>
           )}
 
           <button
             type="button"
-            disabled={useDueDate ? !dueDateInput : !lmp}
+            disabled={!canContinueFromLmp()}
             onClick={continueFromLmp}
             className="mt-4 min-h-[44px] w-full rounded-tile bg-petrol px-4 py-2.5 text-sm font-medium text-white transition active:scale-[0.98] disabled:opacity-40"
           >
@@ -204,7 +351,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           </button>
           <button
             type="button"
-            onClick={() => setStep("mode")}
+            onClick={() => setStep("role")}
             className="mt-2 min-h-[44px] w-full text-sm text-muted"
           >
             Volver
@@ -246,6 +393,27 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
             className="mt-2 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-3 py-2 text-ink focus:border-petrol focus:outline-none"
           />
 
+          {mode === "embarazada" && (
+            <>
+              <label htmlFor="babyName" className="mt-4 block text-sm font-extrabold text-ink">
+                Nombre de tu bebé{" "}
+                <span className="font-normal text-muted">(opcional, si ya lo elegiste)</span>
+              </label>
+              <p className="mt-1 text-xs text-muted">
+                Lo usamos para personalizar la app. Si son mellizos, podés
+                agregar el segundo nombre después, desde Ajustes.
+              </p>
+              <input
+                id="babyName"
+                type="text"
+                value={babyName}
+                onChange={(e) => setBabyName(e.target.value)}
+                placeholder="Ej: Silvia"
+                className="mt-2 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-3 py-2 text-ink focus:border-petrol focus:outline-none"
+              />
+            </>
+          )}
+
           {saveError && (
             <p className="mt-3 text-sm text-terracotta">{saveError}</p>
           )}
@@ -260,7 +428,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           </button>
           <button
             type="button"
-            onClick={() => setStep(mode === "embarazada" ? "lmp" : "mode")}
+            onClick={() => setStep(mode === "embarazada" ? "lmp" : "role")}
             className="mt-2 min-h-[44px] w-full text-sm text-muted"
           >
             Volver

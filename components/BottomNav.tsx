@@ -2,19 +2,36 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useProfile } from "@/lib/useProfile";
 
 // Fixed bottom tab bar — "Mi Bebé" design: terracotta active state,
-// white bar over line border. 5 tabs kept (see REDESIGN-PLAN.md §2).
-const TABS = [
-  { href: "/", label: "Inicio", icon: HomeIcon },
-  { href: "/progreso", label: "Progreso", icon: TimelineIcon },
-  { href: "/herramientas", label: "Herramientas", icon: ToolsIcon },
-  { href: "/directorio", label: "Cerca tuyo", icon: MapIcon },
-  { href: "/eventos", label: "Eventos", icon: CalendarIcon },
-];
+// white bar over line border.
+//
+// D4 nav IA: Hoy · Guías · Checklist · Herramientas · Cerca tuyo. Checklist
+// promoted out of the tools drawer into its own tab (feature map #24);
+// Eventos (and, once it ships, Beneficios) now live inside Cerca tuyo
+// instead of taking a nav slot. Progreso (the 42-week grid) is reachable
+// from the week hero / week detail pages, not from the nav, to keep 5 tabs.
+//
+// The checklist tab is mode-aware: "planeando" mode has its own checklist
+// route (fertility/TTC tasks) distinct from the pregnancy one, and both are
+// real Dexie-backed pages a nav tab should deep-link to directly rather than
+// via an intermediate picker.
+function checklistHref(mode: "embarazada" | "planeando"): string {
+  return mode === "planeando" ? "/planeando/checklist" : "/herramientas/checklist";
+}
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { mode } = useProfile();
+
+  const TABS = [
+    { href: "/", label: "Hoy", icon: HomeIcon },
+    { href: "/guias", label: "Guías", icon: BookIcon },
+    { href: checklistHref(mode), label: "Checklist", icon: ChecklistIcon },
+    { href: "/herramientas", label: "Herramientas", icon: ToolsIcon },
+    { href: "/directorio", label: "Cerca tuyo", icon: MapIcon },
+  ];
 
   function isActive(href: string): boolean {
     if (href === "/") return pathname === "/";
@@ -61,10 +78,20 @@ function HomeIcon({ active }: IconProps) {
     </svg>
   );
 }
-function TimelineIcon({ active }: IconProps) {
+function BookIcon({ active }: IconProps) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M6 3v18M6 7h6a3 3 0 0 1 0 6H6M6 17h9" stroke={stroke(active)} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 4.5h6a2.5 2.5 0 0 1 2 1 2.5 2.5 0 0 1 2-1h6v14h-6a2 2 0 0 0-2 1 2 2 0 0 0-2-1H4z" stroke={stroke(active)} strokeWidth="1.7" strokeLinejoin="round" />
+      <path d="M12 5.5v14" stroke={stroke(active)} strokeWidth="1.7" />
+    </svg>
+  );
+}
+function ChecklistIcon({ active }: IconProps) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="3.5" y="4" width="17" height="16" rx="2" stroke={stroke(active)} strokeWidth="1.7" />
+      <path d="m6.5 9 1.6 1.6L10.5 8M6.5 15.5l1.6 1.6 2.4-2.6" stroke={stroke(active)} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M13 9h5M13 15.5h5" stroke={stroke(active)} strokeWidth="1.7" strokeLinecap="round" />
     </svg>
   );
 }
@@ -80,14 +107,6 @@ function MapIcon({ active }: IconProps) {
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
       <path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11z" stroke={stroke(active)} strokeWidth="1.7" strokeLinejoin="round" />
       <circle cx="12" cy="10" r="2.4" stroke={stroke(active)} strokeWidth="1.7" />
-    </svg>
-  );
-}
-function CalendarIcon({ active }: IconProps) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <rect x="3.5" y="5" width="17" height="15" rx="2" stroke={stroke(active)} strokeWidth="1.7" />
-      <path d="M3.5 9.5h17M8 3v3M16 3v3" stroke={stroke(active)} strokeWidth="1.7" strokeLinecap="round" />
     </svg>
   );
 }

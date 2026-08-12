@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AccountCard } from "@/components/AccountCard";
+import { DeleteAccountCard } from "@/components/DeleteAccountCard";
 import { getSession, isAuthAvailable } from "@/lib/server/auth";
 
 // BUILD-PLAN A2 — the account block on /ajustes.
@@ -17,7 +18,19 @@ import { getSession, isAuthAvailable } from "@/lib/server/auth";
 export async function AccountSection() {
   const session = await getSession();
 
-  if (session) return <AccountCard session={session} />;
+  if (session) {
+    return (
+      <>
+        <AccountCard session={session} />
+        {/* A5: deletion sits directly under the identity it deletes, so it is
+            two taps from Ajustes and impossible to miss. It is deliberately
+            NOT down in the "borrar todos mis datos" danger zone — that one
+            wipes the phone, this one wipes the server, and conflating them is
+            how a user deletes the wrong thing. */}
+        <DeleteAccountCard />
+      </>
+    );
+  }
 
   if (!isAuthAvailable()) {
     return (

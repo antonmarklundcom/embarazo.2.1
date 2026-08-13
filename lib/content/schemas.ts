@@ -98,7 +98,25 @@ export const ArticleSchema = z.object({
   author: z.string().min(1),
   reviewedBy: z.string().min(1).optional(),
   cluster: z.string().min(1).optional(),
-});
+  // C6 — the weeks this guía is for (feature map #15). Both optional and both
+  // required together: an article with no range is *always* relevant (señales
+  // de alarma, dengue) and shows up as a fallback, which is a different thing
+  // from an article whose range someone half-filled in.
+  fromWeek: z.number().int().min(1).max(42).optional(),
+  toWeek: z.number().int().min(1).max(42).optional(),
+})
+  .refine(
+    (article) =>
+      (article.fromWeek === undefined) === (article.toWeek === undefined),
+    "poné fromWeek y toWeek juntos, o ninguno de los dos (sin rango = la guía sirve para todo el embarazo)",
+  )
+  .refine(
+    (article) =>
+      article.fromWeek === undefined ||
+      article.toWeek === undefined ||
+      article.fromWeek <= article.toWeek,
+    "el rango de semanas está al revés: fromWeek tiene que ser menor o igual que toWeek",
+  );
 export type Article = z.infer<typeof ArticleSchema>;
 
 /**

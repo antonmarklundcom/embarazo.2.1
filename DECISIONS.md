@@ -1424,3 +1424,37 @@ direction of spending less.
   expressed through the env var the card is already tied to rather than through
   a second per-entry flag that would let 41 reviewed notes ship beside one
   unreviewed one under the same byline.
+
+## C6 — week-linked article feed + read time (August 2026)
+
+- **The old rail was three cards pointing at two destinations.** "Para leer hoy"
+  had one week-detail card (which the hero already links to) and two cards both
+  going to `/guias`. C6 replaces it rather than adding beside it: a home screen
+  that offers the same destination three times teaches the user that the rail is
+  decoration.
+- **An unranged article is relevant to the whole pregnancy, not unclassified.**
+  Señales de alarma and dengue have no `fromWeek`/`toWeek` and stay in the pool
+  as fallbacks, sorting last. That is what stops week 17 — named specifically by
+  no guía — from showing an empty rail, and it is the honest description of
+  those articles rather than a hack. The schema requires the two fields
+  *together*, so "no range" cannot be confused with "somebody filled in half a
+  range".
+- **Ties keep the file's order.** With eight articles and more coming, what
+  leads the rail is an editorial decision; making it depend on the file's order
+  means a content editor changes it by moving an entry, instead of discovering
+  an invisible rule about dates or slugs.
+- **Read time is computed, never stored.** A stored figure is a number somebody
+  has to remember to update, and the first edit that skips it makes every other
+  figure untrustworthy. 180 wpm rather than the 200–265 usually quoted for
+  English: this is Spanish, read on a phone, and these guías are practical
+  list-heavy text. The test that earns its place is the `<li>` one — stripping
+  tags without inserting a space glues list items into one word and silently
+  halves the read time of exactly the articles that are mostly lists.
+- **A real cost, recorded rather than absorbed quietly.** Filtering by week
+  happens on the device, so the whole of `articles.json` — including ~13 kB of
+  HTML the home screen never renders — is now in the client bundle, and the home
+  route went 12.7 kB → 20.5 kB (171 kB → 192 kB First Load). The fix is a
+  build-time index of slug/title/range/minutes with the bodies left server-side;
+  that is a generated file plus a freshness check, which is real machinery and
+  belongs in G3's budget pass rather than being smuggled into a content task.
+  It is written into G3 so it cannot be forgotten.

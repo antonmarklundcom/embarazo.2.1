@@ -630,8 +630,34 @@ Covered by `lib/seed/obstetraNotes.test.ts` (8) and `e2e/obstetra-card.spec.ts`
 (1, which asserts whichever side of the gate the build is on — **both sides were
 run**: with the reviewer unset the card is absent, with one set it renders with
 the byline).
-### C6 Week-linked article feed + read time (map #15, #17)
+### C6 Week-linked article feed + read time (map #15, #17) — ✅ DONE
 Articles keyed to the current week; read-time computed from word count.
+
+Shipped as `lib/articles/{forWeek,readTime}.ts` (both pure),
+`components/WeekArticleFeed.tsx`, optional `fromWeek`/`toWeek` on
+`ArticleSchema`, and a read-time line on `/guias` and each guía. It **replaces**
+the old "Para leer hoy" rail, whose three cards pointed at two destinations
+(the week page and `/guias`, twice). Now week 34 is offered the bolso del
+sanatorio, week 38 the trámites guía, week 8 the control prenatal one.
+**An article with no range is relevant to the whole pregnancy** (señales de
+alarma, dengue) and stays in the pool as a fallback, sorting last — that is what
+stops week 17, which no guía names specifically, from showing an empty rail, and
+a test asserts every week 1–42 has something. Ties keep the file's order, so a
+content editor changes what leads by moving an entry rather than by discovering
+an invisible rule. Read time is **computed from the body, never stored** — a
+stored figure is one somebody must remember to update — at 180 wpm (Spanish, on
+a phone, practical list-heavy text), never zero, and the tag-stripping is tested
+against the `<li>uno</li><li>dos</li>` case that would otherwise halve every
+list-heavy guía. Covered by `lib/articles/readTime.test.ts` (7),
+`lib/articles/forWeek.test.ts` (8) and `e2e/article-feed.spec.ts` (2).
+
+**Cost recorded for G3:** filtering by week happens on the device, so
+`lib/seed/articles.json` is now in the client bundle — the home route went from
+12.7 kB / 171 kB First Load to 20.5 kB / 192 kB, and ~13 kB of that is article
+HTML the home screen never renders. The fix is a build-time index carrying only
+slug/title/range/minutes, which is real machinery (a generated file plus a
+freshness check) and belongs in G3's budget pass rather than smuggled into a
+content task.
 ### C7 Popular this week (map #16)
 `/api/v1/stats` counters keyed `(week, content_id, day)` — **no user id,
 no IP retained**; zod whitelist + tests like the other routes.
@@ -870,6 +896,10 @@ tracking beyond what the account inherently implies; disclosed in
 ### G3 Performance & offline budget
 The home screen grew a lot in Phase C. Re-check 3G budget, precache only
 current ±1 week images, lazy-load the rest, verify Lighthouse.
+**Known item from C6:** the home bundle carries the full `articles.json`,
+including ~13 kB of article HTML it never renders, because the week filter runs
+on the device. Build a client-side article index (slug · title · week range ·
+read minutes) and keep the bodies server-side.
 
 ### G4 Founder-content integration
 Wire in the real directory, videos, events and articles once they exist,

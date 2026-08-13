@@ -1237,3 +1237,70 @@ because they are properties of the code rather than of any one call.
 - **Quota is NOT enforced here.** That is F2, and it is the reason the
   `quotaMonth` column is written on every row from day one. F1 without F2 is
   spendable; do not enable `AI_BABY_ENABLED` in production until F2 ships.
+
+## F2 — quota & cost control (August 2026)
+
+F1 shipped a pipeline that spends real money per call. F2 is what stands
+between an env var and a Google bill, so every choice here is made in the
+direction of spending less.
+
+- **Two limits, not one, because they fail differently.** The per-user monthly
+  quota (`AI_BABY_MONTHLY_QUOTA`, default 3) stops one person burning the
+  budget. The global monthly ceiling (`AI_BABY_MONTHLY_SPEND_CEILING_USD`,
+  default $50) stops a thousand people doing it between one look at the
+  dashboard and the next — a quota alone is only a ceiling if you already know
+  how many users you have. Both are env vars so either can be cut without a
+  deploy (BUILD-PLAN F2), and I4 will make them panel controls.
+- **Every wrong value means less spending, never more.** Unset, empty,
+  negative, non-numeric and `Infinity` all fall back to the conservative
+  default. An **empty** variable is "not configured" rather than `0`, because
+  `.env.example` ships these keys empty and reading that as zero would make a
+  half-filled env file look like a broken feature instead of one on its
+  documented defaults. A typed `0` is still honoured — it is the softest kill
+  switch there is, turning the feature off without touching `AI_BABY_ENABLED`
+  or breaking the screen that explains what the feature is.
+- **The default ceiling is deliberately below the plan's own worst case.**
+  BUILD-PLAN sizes 1 000 maxed-out users at ≈$120/month; the default is $50.
+  The default exists to protect a deployment where somebody enabled the feature
+  and forgot the ceiling, and in that situation stopping early is correct.
+- **"Cannot be bypassed by a client" is a property of the inputs.** The
+  decision reads the user id from the session and everything else from the
+  `aiGenerations` table the pipeline itself writes. There is no number in a
+  request body that participates, so there is nothing to forge. `GET
+  /api/v1/ai/baby` exists only so the screen can say "te quedan 2 de 3" and
+  stop offering a button the server will refuse; it is a courtesy, and the POST
+  re-checks regardless.
+- **The pending row is the reservation: reserve → count → refuse-and-release.**
+  Count-then-reserve is the obvious order and it is wrong — two requests
+  arriving together both read the pre-request count and both proceed. Reserving
+  first means each sees the other. The cost is that a genuine tie can refuse
+  both, which is the right direction to fail: refusing a request that would have
+  fitted (the user retries and it works) rather than spending money that was not
+  there. Asserted in `aiBaby.test.ts` with two `Promise.all` requests against a
+  quota of one remaining.
+- **In-flight generations count against the ceiling at the configured price.**
+  A `pending` row has no recorded cost yet and may well end up with one.
+  Counting only settled rows would let a burst of simultaneous requests each
+  read a spend total from before the burst and all go through.
+- **A refusal deletes its reservation; a failure keeps its row.** Nothing was
+  sent and nothing was spent when a limit refuses, so leaving the row would put
+  a non-event into I4's failure count and into next month's arithmetic. A
+  generation the model *did* receive keeps its row, exactly as F1 designed —
+  that one may have cost money.
+- **A failed generation does not consume the user's month.** `countForUser`
+  excludes `failed` rows: charging someone for an image they never received is
+  indefensible in a feature whose whole point is delight. The abuse it opens —
+  forcing upstream failures on purpose — is bounded by the route's per-IP rate
+  limit and by the ceiling, which counts money rather than attempts.
+- **The ceiling is reported before the quota, and reads as unavailability.**
+  When the global budget is gone, "ya usaste tus 3 imágenes" would be a lie:
+  the user has generations left and next month will not fix it. `429` for the
+  quota (yours, act on it next month), `503` for the ceiling (ours, not
+  something to explain to somebody who cannot do anything about it) — its
+  message is deliberately identical to the kill switch's.
+- **Database access goes through `QuotaStore`**, the same shape as A5's
+  deletion executor and for the same reason: "the quota cannot be exceeded" is
+  provable in CI against an in-memory store, with no MySQL. `lib/ai/quota.ts`
+  holds the arithmetic and reads no environment variable directly — it is
+  imported by the client screen, and a module a client component imports must
+  never reach for a secret (asserted against the source, like F1's).

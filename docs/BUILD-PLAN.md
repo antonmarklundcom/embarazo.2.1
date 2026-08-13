@@ -707,10 +707,10 @@ exactly `"true"`. The consent step is a gate — the control that sends a photo
 does not render until it is ticked, and the server independently requires
 `consent: "acepto"`. Saved images go to `photoEntries`, which never syncs: a
 generated picture of a baby is as private as a bump photo. Covered by
-`lib/ai/babyImage.test.ts` (17). **⚠️ F2 (quota) has not shipped — do not set
-`AI_BABY_ENABLED=true` in production until it does.**
+`lib/ai/babyImage.test.ts` (17). **⚠️ Resolved: F2 shipped, so
+`AI_BABY_ENABLED=true` is now safe within the configured ceiling.**
 
-### F2 Quota & cost control — **S**
+### F2 Quota & cost control — **S** ✅ DONE
 Hard per-user monthly quota in `ai_generations`, enforced server-side
 before any API call, plus a global kill switch env var.
 
@@ -734,6 +734,29 @@ place.
 **Done when:** quota cannot be bypassed by a client; input photos are
 provably not stored; the feature can be switched off with one env var; the
 result is labelled entertainment everywhere it appears.
+
+Shipped as `lib/ai/quota.ts` (pure), the `QuotaStore` interface in
+`lib/server/aiBaby.ts`, and `GET /api/v1/ai/baby`. No migration — `quotaMonth`
+and `costUsdMicros` were written on every row from F1 for exactly this.
+**Two independent limits**: a per-user monthly quota
+(`AI_BABY_MONTHLY_QUOTA`, default 3) and a global monthly spend ceiling
+(`AI_BABY_MONTHLY_SPEND_CEILING_USD`, default $50) — one person cannot burn the
+budget, and a thousand people cannot burn it between two looks at the dashboard.
+Both fail **closed**: unset, empty, negative or malformed falls back to the
+conservative default, never to "unlimited". The decision reads only the
+`aiGenerations` table, so there is no client-supplied number in it to bypass.
+The F1 pending row is now also the **reservation**: the order is reserve →
+count → refuse-and-release, never count → reserve, so two simultaneous requests
+see each other; the failure direction is refusing a request that would have
+fitted, never spending money that was not there. In-flight (`pending`) rows
+count against the ceiling at the configured price, since a burst that reads a
+pre-burst total would sail past it. A refusal **deletes** its reservation —
+nothing was sent and nothing was spent, so it must not show up as a failure in
+I4's numbers. Covered by `lib/ai/quota.test.ts` (16),
+`lib/server/aiBaby.test.ts` (12 — including the two-at-once and in-flight
+cases, against an in-memory store, no MySQL), `app/api/v1/ai/baby/route.test.ts`
+(4) and `e2e/ai-baby.spec.ts` (2). **`AI_BABY_ENABLED` is now safe to set in
+production**, within the ceiling — I4 turns both limits into panel controls.
 
 ---
 

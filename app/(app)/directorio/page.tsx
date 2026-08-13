@@ -11,6 +11,8 @@ import {
 } from "@/lib/directoryCategories";
 import type { DirectoryCategory, DirectoryListing } from "@/lib/types";
 import { filterDirectory } from "@/lib/directoryFilter";
+import { LISTINGS_PER_PAGE, categoryBanners } from "@/lib/directoryBanners";
+import { DirectoryBanners } from "@/components/DirectoryBanners";
 import { SponsoredBadge } from "@/components/SponsoredBadge";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { businessWhatsApp, waLink } from "@/lib/whatsapp";
@@ -43,11 +45,20 @@ export default function CercaTuyoPage() {
   const [category, setCategory] = useState<CategoryFilter>("todos");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
+  // D5: how many listings each category has been expanded to. Client-side,
+  // because J3 left these routes with no parameters at all — see DECISIONS.
+  const [shown, setShown] = useState<Record<string, number>>({});
 
   // Default to stored department once it loads.
   useEffect(() => {
     if (profile.department) setDepartment(profile.department);
   }, [profile.department]);
+
+  // A changed filter means a different list; carrying the old "ver más" count
+  // over would drop somebody into the middle of a list she has not scrolled.
+  useEffect(() => {
+    setShown({});
+  }, [department, debounced, category]);
 
   // Debounce search (300ms, build spec §6).
   useEffect(() => {
@@ -92,6 +103,10 @@ export default function CercaTuyoPage() {
       .map((k) => [k, map.get(k)!] as const);
   }, [listings]);
 
+  // D5: counts are of what she would see if she tapped — after the department
+  // and the search, never before.
+  const banners = useMemo(() => categoryBanners(listings), [listings]);
+
   const businessWa = useMemo(
     () =>
       BUSINESS_WA
@@ -128,6 +143,19 @@ export default function CercaTuyoPage() {
           Para embarazadas y mamás, por departamento.
         </p>
       </Link>
+
+      {/* D5: category banners with a real count. Only for "Todos" — once a
+          category is chosen the grid would be a one-tile menu of where you
+          already are. */}
+      {category === "todos" && (
+        <DirectoryBanners
+          banners={banners}
+          onPick={(picked) => {
+            setCategory(picked);
+            setShown({});
+          }}
+        />
+      )}
 
       {/* Scrollable category chips */}
       <div className="-mx-4 overflow-x-auto px-4">
@@ -203,9 +231,23 @@ export default function CercaTuyoPage() {
                 {directoryCategoryLabel(cat)}
               </h2>
             )}
-            {items.map((l) => (
+            {items.slice(0, shown[cat] ?? LISTINGS_PER_PAGE).map((l) => (
               <ListingCard key={l.id} listing={l} />
             ))}
+            {items.length > (shown[cat] ?? LISTINGS_PER_PAGE) && (
+              <button
+                type="button"
+                onClick={() =>
+                  setShown((current) => ({
+                    ...current,
+                    [cat]: (current[cat] ?? LISTINGS_PER_PAGE) + LISTINGS_PER_PAGE,
+                  }))
+                }
+                className="min-h-[44px] w-full rounded-tile border border-line bg-white text-sm font-extrabold text-petrol"
+              >
+                Ver más ({items.length - (shown[cat] ?? LISTINGS_PER_PAGE)} más)
+              </button>
+            )}
           </section>
         ))}
       </div>

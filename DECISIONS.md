@@ -1580,3 +1580,32 @@ guarantee is only as good as the data that cannot exist.
   is missing". Call sites build `meta` from literals, so a throw is a
   programming error caught by a test rather than a runtime surprise for an
   administrator.
+## D5 — directory category banners (August 2026)
+
+- **A category with nothing in it gets no banner.** Today every listing is
+  gated (Z1), so the obvious implementation — one banner per category from
+  `DIRECTORY_CATEGORIES` — would ship a grid of nine tiles reading "0 lugares",
+  which is precisely the impression Z1's warm empty state exists to avoid.
+  Banners are derived from the listings, not from the category list.
+- **The count is post-filter.** It counts what she would see if she tapped,
+  after the department and the search box, because a banner promising "24
+  lugares" that opens onto three teaches her not to trust any number in the app.
+  The banner list is computed from the already-filtered array rather than
+  re-deriving the filter, so the two cannot disagree.
+- **The photograph is optional and self-healing.** Each banner points at
+  `/assets/directorio/<category>.webp` and falls back to a pastel block on
+  error, the same pattern as the week hero. That ships "image banner" before
+  licensed photography exists without inventing anything: the grid looks
+  deliberate now and lights up with no code change when G4 adds the files.
+- **Server-side filtering and pagination are deliberately not built**, though
+  the task line asks for them "when listings pass ~100". They would re-introduce
+  exactly the query parameters J3 removed to keep the Play listing's "No data
+  collected" honest, and the single cached response is what makes the directory
+  work offline at all. Paging is client-side (10 per category, "ver más"), which
+  is fine at 100 listings and still fine at 500 because the route already
+  returns everything. If the payload ever genuinely outgrows one response, that
+  is H3's "directory at scale" problem and it should be solved without
+  parameters — e.g. a per-department static file — rather than by walking back
+  J3.
+- **The "ver más" count resets when a filter changes.** Carrying it over would
+  drop somebody into the middle of a list she has never scrolled.

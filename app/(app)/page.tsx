@@ -35,6 +35,7 @@ import { PerspectiveSwitcher } from "@/components/PerspectiveSwitcher";
 import { ObstetraCard } from "@/components/ObstetraCard";
 import { WeekArticleFeed } from "@/components/WeekArticleFeed";
 import { PopularThisWeek } from "@/components/PopularThisWeek";
+import { HomeShortcuts } from "@/components/HomeShortcuts";
 import { RoadmapSection } from "@/components/RoadmapSection";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { PrivacyLine } from "@/components/PrivacyLine";
@@ -104,6 +105,10 @@ export default function InicioPage() {
         babies={profile.babies}
         role={profile.role}
       />
+
+      {/* C8: one-tap access to emergencia · carné · próximo control, and the
+          feedback path (map #18, #19). */}
+      <HomeShortcuts week={week} />
 
       {/* C2: the weekly one-liner (map #11). Renders nothing for a week with
           no line yet. */}

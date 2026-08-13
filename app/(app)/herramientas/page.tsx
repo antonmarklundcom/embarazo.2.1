@@ -1,77 +1,118 @@
 import Link from "next/link";
 import { PUBLISHED_VIDEOS } from "@/lib/seed/videos";
+import { ToolIcon, type ToolIconName } from "@/components/ToolIcon";
 
-const TOOLS = [
+// BUILD-PLAN D1 — illustrated tools grid (feature map #20).
+//
+// This screen was eleven stacked text cards, each with a title and a sentence:
+// a wall of prose you read rather than a set of things you reach for. The grid
+// is three per row, so the whole toolbox is visible on one phone screen without
+// scrolling, and each tool is found by shape and colour before it is read.
+//
+// The sentences are not deleted — they move into `sr-only` text, so a screen
+// reader still gets "Cronómetro de contracciones: medí duración e intervalo
+// cuando empiecen las contracciones" while a sighted user gets a tile.
+
+interface Tool {
+  href: string;
+  title: string;
+  desc: string;
+  icon: ToolIconName;
+  tone: string;
+}
+
+const TOOLS: Tool[] = [
   {
     href: "/emergencia",
     title: "Emergencia",
     desc: "Números de emergencia, señales de alarma y tus contactos, sin internet.",
-  },
-  {
-    href: "/herramientas/resumen",
-    title: "Resumen para mi control",
-    desc: "Organizá tus datos en una hoja para mostrarle a tu médico/a.",
+    icon: "emergency",
+    tone: "bg-pastel-rosa",
   },
   {
     href: "/herramientas/comer",
-    title: "¿Puedo comer...?",
+    title: "¿Puedo comer…?",
     desc: "Buscá un alimento o bebida y mirá si podés comerlo, con qué cuidado.",
+    icon: "food",
+    tone: "bg-pastel-salvia",
   },
   {
     href: "/herramientas/carne",
     title: "Carné perinatal",
     desc: "Llevá una copia en fotos de tu carné y tus datos clave, siempre con vos.",
+    icon: "carne",
+    tone: "bg-pastel-celeste",
   },
   {
-    href: "/derechos",
-    title: "Tus derechos y beneficios",
-    desc: "Licencia, subsidio de IPS, gratuidad y ayudas: qué te corresponde según tu situación.",
+    href: "/herramientas/pataditas",
+    title: "Pataditas",
+    desc: "Registrá los movimientos de tu bebé y conocé su ritmo.",
+    icon: "feet",
+    tone: "bg-pastel-arena",
+  },
+  {
+    href: "/herramientas/contracciones",
+    title: "Contracciones",
+    desc: "Medí duración e intervalo cuando empiecen las contracciones.",
+    icon: "timer",
+    tone: "bg-pastel-lavanda",
   },
   {
     href: "/herramientas/sintomas",
     title: "Síntomas y ánimo",
     desc: "Registrá cómo te sentís y tus síntomas, día a día.",
+    icon: "symptoms",
+    tone: "bg-pastel-rosa",
+  },
+  {
+    href: "/herramientas/peso",
+    title: "Peso",
+    desc: "Seguí tu evolución con un gráfico simple.",
+    icon: "scale",
+    tone: "bg-pastel-celeste",
   },
   {
     href: "/herramientas/fotos",
     title: "Diario de fotos",
     desc: "Seguí el crecimiento de tu panza, solo en tu teléfono.",
+    icon: "camera",
+    tone: "bg-pastel-salvia",
   },
   {
-    href: "/herramientas/pataditas",
-    title: "Contador de pataditas",
-    desc: "Registrá los movimientos de tu bebé y conocé su ritmo.",
+    href: "/herramientas/resumen",
+    title: "Resumen del control",
+    desc: "Organizá tus datos en una hoja para mostrarle a tu médico/a.",
+    icon: "summary",
+    tone: "bg-pastel-arena",
   },
   {
-    href: "/herramientas/contracciones",
-    title: "Cronómetro de contracciones",
-    desc: "Medí duración e intervalo cuando empiecen las contracciones.",
-  },
-  {
-    href: "/herramientas/peso",
-    title: "Registro de peso",
-    desc: "Seguí tu evolución con un gráfico simple.",
+    href: "/derechos",
+    title: "Tus derechos",
+    desc: "Licencia, subsidio de IPS, gratuidad y ayudas: qué te corresponde según tu situación.",
+    icon: "rights",
+    tone: "bg-pastel-lavanda",
   },
   {
     href: "/guias",
     title: "Guías",
     desc: "Artículos sobre el embarazo, revisados y pensados para Paraguay.",
+    icon: "guides",
+    tone: "bg-pastel-celeste",
   },
 ];
 
+const VIDEOS: Tool = {
+  href: "/guias/videos",
+  title: "Videos",
+  desc: "Galería de videos educativos, filtrable por tema y trimestre.",
+  icon: "video",
+  tone: "bg-pastel-rosa",
+};
+
 export default function HerramientasPage() {
-  // The video gallery is hidden until real videos.ts entries replace the
-  // placeholder YouTube IDs (see lib/seed/videos.ts).
-  const tools = PUBLISHED_VIDEOS.length > 0
-    ? [
-        ...TOOLS,
-        {
-          href: "/guias/videos",
-          title: "Videos",
-          desc: "Galería de videos educativos, filtrable por tema y trimestre.",
-        },
-      ]
-    : TOOLS;
+  // The video gallery stays hidden until real entries replace the placeholder
+  // YouTube ids (Z1, `lib/seed/videos.ts`).
+  const tools = PUBLISHED_VIDEOS.length > 0 ? [...TOOLS, VIDEOS] : TOOLS;
 
   return (
     <div className="space-y-4">
@@ -81,15 +122,24 @@ export default function HerramientasPage() {
           Todo funciona sin internet y se guarda solo en tu teléfono.
         </p>
       </header>
-      <div className="space-y-3">
-        {tools.map((t) => (
+
+      <div className="grid grid-cols-3 gap-3">
+        {tools.map((tool) => (
           <Link
-            key={t.href}
-            href={t.href}
-            className="block rounded-card bg-white p-4 shadow-soft transition active:scale-[0.99]"
+            key={tool.href}
+            href={tool.href}
+            className="flex min-h-[112px] flex-col items-center justify-start gap-2 rounded-card border border-line bg-white p-3 text-center transition active:scale-[0.97]"
           >
-            <h2 className="text-base font-extrabold text-ink">{t.title}</h2>
-            <p className="mt-1 text-sm text-muted">{t.desc}</p>
+            <span
+              className={`flex h-11 w-11 items-center justify-center rounded-full ${tool.tone}`}
+            >
+              <ToolIcon name={tool.icon} />
+            </span>
+            <span className="text-[12px] font-extrabold leading-tight text-ink">
+              {tool.title}
+            </span>
+            {/* Kept for screen readers and for anyone who needs the sentence. */}
+            <span className="sr-only">{tool.desc}</span>
           </Link>
         ))}
       </div>

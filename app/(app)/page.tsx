@@ -29,10 +29,19 @@ import { Onboarding } from "@/components/Onboarding";
 import { PlaneandoHome } from "@/components/PlaneandoHome";
 import { LocalResourcesBlock } from "@/components/LocalResourcesBlock";
 import { AppointmentBanner } from "@/components/AppointmentBanner";
+import { WeeklyLineCard } from "@/components/WeeklyLineCard";
+import { SizeTabs } from "@/components/SizeTabs";
+import { PerspectiveSwitcher } from "@/components/PerspectiveSwitcher";
+import { ObstetraCard } from "@/components/ObstetraCard";
+import { WeekArticleFeed } from "@/components/WeekArticleFeed";
+import { PopularThisWeek } from "@/components/PopularThisWeek";
+import { HomeShortcuts } from "@/components/HomeShortcuts";
 import { RoadmapSection } from "@/components/RoadmapSection";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { PrivacyLine } from "@/components/PrivacyLine";
 import { InstallCard } from "@/components/InstallCard";
+// D1: one icon set, shared with the herramientas grid so the two cannot drift.
+import { ToolIcon, type ToolIconName } from "@/components/ToolIcon";
 
 // "Hoy" screen — Mi Bebé design 1a (docs/REDESIGN-PLAN.md §2): week strip,
 // photo hero with fallback, tip, mood check-in, herramientas grid, reading
@@ -99,6 +108,25 @@ export default function InicioPage() {
         role={profile.role}
       />
 
+      {/* C8: one-tap access to emergencia · carné · próximo control, and the
+          feedback path (map #18, #19). */}
+      <HomeShortcuts week={week} />
+
+      {/* C2: the weekly one-liner (map #11). Renders nothing for a week with
+          no line yet. */}
+      <WeeklyLineCard week={week} />
+
+      {/* C3: size comparison tabs (map #12) — tamaño / pie / mano. */}
+      <SizeTabs week={week} />
+
+      {/* C4: same week, three entrances (map #13). Opens on the user's own
+          role; nothing is hidden by role. */}
+      <PerspectiveSwitcher week={week} role={profile.role} />
+
+      {/* C5: one bylined note per week (map #14). Renders only when a real
+          medical reviewer is configured — the byline IS the gate. */}
+      <ObstetraCard week={week} />
+
       {/* Next prenatal appointment reminder (in-app only) */}
       <AppointmentBanner date={profile.nextAppointment} />
 
@@ -150,32 +178,14 @@ export default function InicioPage() {
         </div>
       </section>
 
-      {/* Reading rail */}
-      <section aria-labelledby="para-leer" className="space-y-2.5 pt-1">
-        <h2
-          id="para-leer"
-          className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol"
-        >
-          Para leer hoy
-        </h2>
-        <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
-          <ReadCard
-            href={`/semana/${week}`}
-            tone="bg-pastel-arena"
-            title={babyAtWeekLabel(profile.babies, profile.role, week)}
-          />
-          <ReadCard
-            href="/guias"
-            tone="bg-pastel-rosa"
-            title="Cambios en tu cuerpo esta semana"
-          />
-          <ReadCard
-            href="/guias"
-            tone="bg-pastel-celeste"
-            title="Guías para leer con calma"
-          />
-        </div>
-      </section>
+      {/* C6: guías that are actually about this week, with read time
+          (map #15, #17). Replaces the old rail, whose three cards pointed at
+          two destinations. */}
+      <WeekArticleFeed week={week} />
+
+      {/* C7: aggregate counts, no identity anywhere (map #16). Renders
+          nothing when there is no data. */}
+      <PopularThisWeek />
 
       {/* Rights & benefits navigator */}
       <Link
@@ -434,7 +444,7 @@ function ToolCard({
   href: string;
   title: string;
   subtitle: string;
-  icon: "feet" | "timer" | "scale" | "camera" | "food";
+  icon: ToolIconName;
 }) {
   return (
     <Link
@@ -446,79 +456,6 @@ function ToolCard({
         <p className="text-[15px] font-extrabold text-ink">{title}</p>
         <p className="truncate text-xs font-semibold text-muted">{subtitle}</p>
       </div>
-    </Link>
-  );
-}
-
-function ToolIcon({ name }: { name: "feet" | "timer" | "scale" | "camera" | "food" }) {
-  const common = {
-    width: 24,
-    height: 24,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "#322E29",
-    strokeWidth: 1.6,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-    "aria-hidden": true,
-  };
-  switch (name) {
-    case "feet":
-      return (
-        <svg {...common}>
-          <path d="M10 17c-2 1.5-4.5 1.2-5.5-.5C3.4 14.7 4.5 12 7 10.5S12.6 9 13.5 10.8C14.5 12.5 12 15.5 10 17Z" />
-          <circle cx="16.5" cy="6.5" r="2" />
-          <circle cx="20" cy="11" r="1.2" />
-        </svg>
-      );
-    case "timer":
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="13" r="8" />
-          <path d="M12 9v4l2.5 2.5" />
-          <path d="M10 2h4" />
-        </svg>
-      );
-    case "scale":
-      return (
-        <svg {...common}>
-          <rect x="3" y="4" width="18" height="16" rx="3" />
-          <path d="M8.5 8.5c1-1.3 2.1-2 3.5-2s2.5.7 3.5 2l-2.3 2.3a1.7 1.7 0 0 1-2.4 0Z" />
-        </svg>
-      );
-    case "camera":
-      return (
-        <svg {...common}>
-          <path d="M4 8h16M4 8v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M9 4h6l1 4H8Z" />
-          <circle cx="12" cy="14" r="2.4" />
-        </svg>
-      );
-    case "food":
-      return (
-        <svg {...common}>
-          <path d="M6 3v7a2.5 2.5 0 0 0 5 0V3M8.5 3v7" />
-          <path d="M16 3c-1.5 1.5-2 3-2 5s1 3 2 3v10" />
-        </svg>
-      );
-  }
-}
-
-function ReadCard({
-  href,
-  tone,
-  title,
-}: {
-  href: string;
-  tone: string;
-  title: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`flex w-[200px] shrink-0 flex-col justify-end rounded-card ${tone} p-3.5 transition active:scale-[0.98]`}
-      style={{ minHeight: 120 }}
-    >
-      <p className="text-sm font-extrabold leading-snug text-ink">{title}</p>
     </Link>
   );
 }

@@ -7,6 +7,10 @@ import {
   EventItemSchema,
   VideoItemSchema,
   FoodEntrySchema,
+  WeeklyLineSchema,
+  LimbSizeSchema,
+  PerspectiveBandSchema,
+  ObstetraNoteSchema,
   validateContentArray,
 } from "../lib/content/schemas.ts";
 
@@ -51,6 +55,78 @@ const checks: Check[] = [];
   const raw = (readJson("lib/seed/placements.json") as { placements: unknown[] })
     .placements;
   checks.push(validateContentArray("lib/seed/placements.json", raw, AdPlacementSchema));
+}
+{
+  // C2 weekly one-liner. Keyed by week rather than by id, so the duplicate
+  // check catches "two entries for semana 24" — the failure mode of a file
+  // that is edited a week at a time.
+  try {
+    const raw = readJson("lib/seed/weeklyLines.json") as unknown[];
+    checks.push(
+      validateContentArray(
+        "lib/seed/weeklyLines.json",
+        raw,
+        WeeklyLineSchema,
+        (entry) => String(entry.week),
+      ),
+    );
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    // Not created yet — the app falls back to showing no line at all.
+  }
+}
+{
+  // C3 foot/hand sizes. Keyed by week: this file is edited a week at a time,
+  // so the duplicate worth catching is "two entries for semana 24".
+  try {
+    const raw = readJson("lib/seed/limbSizes.json") as unknown[];
+    checks.push(
+      validateContentArray(
+        "lib/seed/limbSizes.json",
+        raw,
+        LimbSizeSchema,
+        (entry) => String(entry.week),
+      ),
+    );
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    // Not created yet — the card falls back to the single "tamaño" tab.
+  }
+}
+{
+  // C4 perspective bands. Keyed by the range itself, so two identical ranges
+  // are a duplicate while a narrower override of a wider band is not.
+  try {
+    const raw = readJson("lib/seed/perspectives.json") as unknown[];
+    checks.push(
+      validateContentArray(
+        "lib/seed/perspectives.json",
+        raw,
+        PerspectiveBandSchema,
+        (band) => `${band.fromWeek}-${band.toWeek}`,
+      ),
+    );
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    // Not created yet — the switcher does not render at all.
+  }
+}
+{
+  // C5 "de la obstetra" notes, keyed by week.
+  try {
+    const raw = readJson("lib/seed/obstetraNotes.json") as unknown[];
+    checks.push(
+      validateContentArray(
+        "lib/seed/obstetraNotes.json",
+        raw,
+        ObstetraNoteSchema,
+        (entry) => String(entry.week),
+      ),
+    );
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    // Not created yet — the card does not render.
+  }
 }
 {
   // D3 food lookup — validated the same way as everything else.

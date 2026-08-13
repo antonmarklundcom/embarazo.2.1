@@ -34,6 +34,7 @@ import { SizeTabs } from "@/components/SizeTabs";
 import { PerspectiveSwitcher } from "@/components/PerspectiveSwitcher";
 import { ObstetraCard } from "@/components/ObstetraCard";
 import { WeekArticleFeed } from "@/components/WeekArticleFeed";
+import { PopularThisWeek } from "@/components/PopularThisWeek";
 import { RoadmapSection } from "@/components/RoadmapSection";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { PrivacyLine } from "@/components/PrivacyLine";
@@ -174,6 +175,10 @@ export default function InicioPage() {
           (map #15, #17). Replaces the old rail, whose three cards pointed at
           two destinations. */}
       <WeekArticleFeed week={week} />
+
+      {/* C7: aggregate counts, no identity anywhere (map #16). Renders
+          nothing when there is no data. */}
+      <PopularThisWeek />
 
       {/* Rights & benefits navigator */}
       <Link

@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { GET as placementsGET } from "./placements/route";
 import { GET as directoryGET } from "./directory/route";
 import { GET as goGET } from "./go/[id]/route";
+import { GET as statsGET } from "./stats/route";
 
 function req(path: string): NextRequest {
   return new NextRequest(`http://localhost${path}`);
@@ -101,6 +102,25 @@ describe("/api/v1/go/[id] attribution is the id and nothing else (J3)", () => {
   });
 });
 
+// C7 added a route after J3 shipped, so it is held to the same rule here
+// rather than only in its own test file: the promise is about every route, not
+// about the three that existed when the promise was made.
+describe("/api/v1/stats takes no parameters either (J3, extended by C7)", () => {
+  it("rejects a week, a department and anything else", async () => {
+    for (const param of ["week=24", "department=capital", "userId=u1"]) {
+      const res = await statsGET(req(`/api/v1/stats?${param}`));
+      expect(res.status, `${param} must be rejected`).toBe(400);
+    }
+  });
+
+  it("answers an empty list when no database is configured", async () => {
+    // Local-only mode is a supported configuration, not a broken one.
+    const res = await statsGET(req("/api/v1/stats"));
+    expect(res.status).toBe(200);
+    expect((await res.json()).popular).toEqual([]);
+  });
+});
+
 describe("no route transmits a location- or health-derived parameter (J3)", () => {
   it("is asserted against the source of every caller", async () => {
     // The routes rejecting a parameter is only half of it: a client that keeps
@@ -125,7 +145,8 @@ describe("no route transmits a location- or health-derived parameter (J3)", () =
     for (const file of sources) {
       if (file.endsWith("api.test.ts")) continue;
       const source = readFileSync(file, "utf8");
-      for (const match of source.matchAll(/\/api\/v1\/(go\/[^"`'\s]*|directory[^"`'\s]*|placements[^"`'\s]*)/g)) {
+      // `stats` added by C7 — the scan grows with the routes it protects.
+      for (const match of source.matchAll(/\/api\/v1\/(go\/[^"`'\s]*|directory[^"`'\s]*|placements[^"`'\s]*|stats[^"`'\s]*)/g)) {
         if (match[0].includes("?")) offenders.push(`${file}: ${match[0]}`);
       }
     }

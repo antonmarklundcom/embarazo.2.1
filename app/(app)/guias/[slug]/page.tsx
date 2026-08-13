@@ -5,6 +5,7 @@ import { getArticles } from "@/lib/wordpress";
 import { getArticleBySlug } from "@/lib/seed/articles";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { readTimeLabel } from "@/lib/articles/readTime";
+import { RecordContentView } from "@/components/RecordContentView";
 
 // Statically generate the guías so they precache for offline (spec §9).
 export async function generateStaticParams() {
@@ -34,6 +35,10 @@ export default async function GuiaDetailPage({
 
   return (
     <article className="space-y-4">
+      {/* C7: counts this read. Client-side on purpose — these pages are
+          prerendered, and a count written during the build counts the build. */}
+      <RecordContentView contentId={article.slug} />
+
       <Link href="/guias" className="text-sm text-petrol">
         ← Guías
       </Link>

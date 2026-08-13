@@ -1,0 +1,51 @@
+[
+  {
+    "fromWeek": 1,
+    "toWeek": 6,
+    "vos": "Todavía no se nota nada por fuera y por dentro está pasando todo. Si podés, empezá el ácido fólico y pedí turno para el primer control: cuanto antes arranca el seguimiento, más tranquila va a ser el resto.",
+    "pareja": "Es la etapa en la que más fácil es sentirse afuera, porque no hay panza ni pataditas. Lo que sirve de verdad es acompañarla al primer control y encargarte de una cosa concreta de la casa sin que te la pidan.",
+    "familia": "Puede que todavía no lo cuente a nadie, y eso es decisión suya. Lo más útil ahora es no adelantarse a preguntar ni a contar, y estar disponible cuando ella quiera hablar."
+  },
+  {
+    "fromWeek": 7,
+    "toWeek": 12,
+    "vos": "Náuseas, sueño y olores que antes te daban igual: es la etapa más pesada para muchas y no significa que algo ande mal. Comé de a poco y seguido, y no te exijas el ritmo de siempre.",
+    "pareja": "El cansancio y las náuseas son reales aunque no se vean. Cocinar, hacer los mandados y bajar el ruido de la casa vale más que cualquier consejo, y no fumes adentro.",
+    "familia": "Si la ves rechazar comida o cancelar planes, no lo tomes como algo personal. Ofrecé ayuda concreta — llevar algo hecho, quedarte con los otros chicos — en vez de preguntar cómo se siente diez veces."
+  },
+  {
+    "fromWeek": 13,
+    "toWeek": 18,
+    "vos": "Para muchas es la etapa más llevadera: vuelve algo de energía y la panza empieza a notarse. Buen momento para ordenar lo práctico — dónde querés tener al bebé, qué dice tu trabajo, qué te corresponde.",
+    "pareja": "Ya se puede escuchar el latido en los controles: si podés ir a uno solo, que sea este. Hablarle a la panza suena ridículo la primera vez y es de las pocas cosas que el bebé sí registra.",
+    "familia": "Suele ser cuando se cuenta la noticia. Alegrarse sin opinar sobre el cuerpo, el nombre ni cómo debería parir es, literalmente, el mejor regalo de esta etapa."
+  },
+  {
+    "fromWeek": 19,
+    "toWeek": 24,
+    "vos": "Llegan las primeras pataditas claras y la ecografía grande. Empezá a registrar cuándo se mueve más: conocer su ritmo es lo que después te deja notar un cambio a tiempo.",
+    "pareja": "Ya vas a poder sentir las pataditas con la mano, aunque el bebé se calle justo cuando la apoyás. Es también el momento de hablar en serio de plata, de licencias y de quién hace qué cuando nazca.",
+    "familia": "Si querés regalar algo, preguntá primero: en esta etapa hace falta más ayuda con el traslado a los controles que otro ajuar de recién nacido."
+  },
+  {
+    "fromWeek": 25,
+    "toWeek": 30,
+    "vos": "El cuerpo empieza a pesar: acidez, piernas hinchadas, sueño cortado. Dormí de costado con una almohada entre las piernas, y aprendé de memoria las señales de alarma.",
+    "pareja": "El bebé ya reconoce tu voz. Del lado práctico: aprendete el camino al sanatorio, guardá los teléfonos y enterate de qué pasa si te toca decidir algo sin ella.",
+    "familia": "Preguntar «¿ya tenés todo listo?» agrega presión y no ayuda. Ofrecer llevar a un control, cocinar para el freezer o cuidar a los otros chicos, sí."
+  },
+  {
+    "fromWeek": 31,
+    "toWeek": 36,
+    "vos": "Los controles se hacen más seguidos y el bolso ya puede estar armado. Las contracciones de práctica son normales: irregulares, sin ritmo y sin dolor que aumente.",
+    "pareja": "Tu trabajo del último mes es logística: bolso en la puerta, documentos y carné perinatal a mano, nafta cargada y un plan B para llegar. Preguntale cómo quiere que la acompañes en el parto, antes y no ese día.",
+    "familia": "Este es el momento de organizarse para después, no para el día del parto: turnos para cocinar, para el mercado y para escuchar. Las visitas al sanatorio pueden esperar."
+  },
+  {
+    "fromWeek": 37,
+    "toWeek": 42,
+    "vos": "Desde ahora el bebé puede nacer cualquier día y eso es normal. Ante contracciones regulares y cada vez más seguidas, pérdida de líquido o sangrado, contactá a tu sanatorio: confiá en lo que sentís.",
+    "pareja": "Tené el teléfono con sonido las 24 horas y avisá en tu trabajo. El día del parto tu tarea es simple y agotadora: estar, sostener y hablar con el equipo cuando ella no pueda.",
+    "familia": "La fecha probable es una estimación, no una cita: preguntar «¿todavía nada?» todos los días cansa. Esperá el aviso, y cuando llegue, mandá comida antes que visitas."
+  }
+]

@@ -550,17 +550,114 @@ Playwright screenshot at a phone viewport (390×844) in addition to the
 automated gates — the ring renders correctly, no layout shift against the
 skeleton placeholder (`HomeSkeleton`'s height was adjusted to match the
 taller circular hero + stats row).
-### C2 Weekly one-liner (map #11)
+### C2 Weekly one-liner (map #11) — ✅ DONE
 One concrete "what is happening now" sentence per week; 42 strings, code
 ships with a graceful fallback so content can land later.
-### C3 Size comparison tabs (map #12)
+
+Shipped as `lib/seed/weeklyLines.json` (42 strings, es-PY voseo),
+`lib/seed/weeklyLines.ts` (`weeklyLine(week) → string | null`) and
+`components/WeeklyLineCard.tsx`, mounted as the first block in C1's slot area —
+directly under the hero, above the appointment banner and the tip, because it
+is the two-second answer. **The fallback is a real path, not a comment**: an
+unknown week renders *nothing* — no empty card, no "próximamente" — since the
+strings and the code that shows them land on different schedules and a gap
+nobody can see beats a promise. The line is deliberately not `milestone` from
+`lib/weeks.ts`: that stays the paragraph on the week detail page, this is the
+single line the home screen leads with, and the schema enforces the difference
+with a 110-character cap whose error message says where longer text belongs.
+Content follows G1 — validated JSON, keyed by week so "two entries for semana
+24" is a CI failure, checked at import time and in `npm run validate:content`
+— and runs through Z1's `publishedOnly` gate so a week left as placeholder text
+mid-content-pass falls back instead of shipping. Covered by
+`lib/seed/weeklyLines.test.ts` (11, including the voseo check) and
+`e2e/weekly-line.spec.ts` (1).
+### C3 Size comparison tabs (map #12) — ✅ DONE
 Tabs for tamaño / pie / mano, keeping the Paraguayan comparisons and cm/g.
-### C4 Perspective switcher (map #13)
+
+Shipped as `lib/seed/limbSizes.json` (weeks 9–42), `lib/seed/limbSizes.ts` and
+`components/SizeTabs.tsx`, mounted in C1's slot area. The "tamaño" tab is
+served by `lib/weeks.ts`, unchanged — the Paraguayan comparisons (mandioca,
+mamón, chipa) are the thing this product exists to have, so C3 adds tabs
+*beside* them rather than a new size vocabulary. **A tab whose data does not
+exist is not rendered**: before week 9 there is no foot to measure, so the card
+degrades to the single tab it has always been able to show instead of a panel
+of dashes. Real `role="tablist"` semantics with arrow-key movement, and the
+active tab is resolved by lookup rather than trusted from state, so a week that
+loses a tab cannot render an empty panel. The data risk (a decimal point in the
+wrong place claiming an 18 cm foot) is handled in three places: a schema range
+cap with an error message that names the likely cause, a monotonicity test that
+catches a transposed digit a range check would pass, and a test that pins week
+40 near a real newborn's ~8 cm. Measurements are formatted "8,2 cm" — es-PY
+writes the decimal comma, and this is a number read aloud to somebody else.
+Covered by `lib/seed/limbSizes.test.ts` (11) and `e2e/size-tabs.spec.ts` (2).
+### C4 Perspective switcher (map #13) — ✅ DONE
 Same week, three entrances: para vos / para tu pareja / para la familia.
-### C5 "De la obstetra" (map #14)
+
+Shipped as `lib/seed/perspectives.json`, `lib/seed/perspectives.ts` and
+`components/PerspectiveSwitcher.tsx` in C1's slot area. It exists because an app
+that only ever addresses the pregnant person leaves the two people most likely
+to be reading over her shoulder with nothing concrete to do. **Content is stored
+as week ranges, narrowest wins** — seven bands of real writing ship today, and a
+later content pass deepens any single week by adding `{fromWeek: 24, toWeek: 24}`
+with no code change. That was chosen over 126 per-week strings written in one
+sitting, which would have been filler, and filler here is worse than a paragraph
+that holds for six weeks (DECISIONS.md "C4"). B1's role picks the **opening**
+tab — a papá does not tap past "para vos" every week — but nothing is hidden by
+role: the pregnant user reading the pareja tab, and showing it to somebody, is
+half of what the block is for. `selectBand` is exported and tested directly, so
+the override rule is verified rather than re-implemented in a test. Covered by
+`lib/seed/perspectives.test.ts` (9, including full 1–42 coverage with no gap or
+overlap) and `e2e/perspective.spec.ts` (2).
+### C5 "De la obstetra" (map #14) — ✅ DONE
 One bylined expert card per week, tied to `NEXT_PUBLIC_MEDICAL_REVIEWER`.
-### C6 Week-linked article feed + read time (map #15, #17)
+
+Shipped as `lib/seed/obstetraNotes.json` (42 notes),
+`lib/seed/obstetraNotes.ts` and `components/ObstetraCard.tsx` in C1's slot area.
+**The byline is the gate, not a decoration**: with no configured reviewer the
+card does not render at all — not unsigned, not under a generic "el equipo
+médico", which is exactly the claim Z2 removed from `MedicalReviewByline`. It
+branches on the same `isPlaceholderReviewer` the build check uses, so there is
+one definition of "there is no reviewer" rather than two, and a source scan
+asserts no fallback byline can be added later. Content is the **Paraguayan
+prenatal calendar** — laboratorio inicial, the 11–14 and 18–22 ecografías, the
+24–28 curva de azúcar, dTpa at 27–36, estreptococo B at 35–37, the carné
+perinatal, factor Rh — because fixed local windows are what a translated global
+app gets wrong. Those windows are asserted at the weeks a user would look them
+up, so a content edit cannot quietly move the ecografía morfológica. **The 42
+strings are drafts awaiting a signature** and cannot reach a user before there
+is one; signing them off is part of what the founder's reviewer is agreeing to.
+Covered by `lib/seed/obstetraNotes.test.ts` (8) and `e2e/obstetra-card.spec.ts`
+(1, which asserts whichever side of the gate the build is on — **both sides were
+run**: with the reviewer unset the card is absent, with one set it renders with
+the byline).
+### C6 Week-linked article feed + read time (map #15, #17) — ✅ DONE
 Articles keyed to the current week; read-time computed from word count.
+
+Shipped as `lib/articles/{forWeek,readTime}.ts` (both pure),
+`components/WeekArticleFeed.tsx`, optional `fromWeek`/`toWeek` on
+`ArticleSchema`, and a read-time line on `/guias` and each guía. It **replaces**
+the old "Para leer hoy" rail, whose three cards pointed at two destinations
+(the week page and `/guias`, twice). Now week 34 is offered the bolso del
+sanatorio, week 38 the trámites guía, week 8 the control prenatal one.
+**An article with no range is relevant to the whole pregnancy** (señales de
+alarma, dengue) and stays in the pool as a fallback, sorting last — that is what
+stops week 17, which no guía names specifically, from showing an empty rail, and
+a test asserts every week 1–42 has something. Ties keep the file's order, so a
+content editor changes what leads by moving an entry rather than by discovering
+an invisible rule. Read time is **computed from the body, never stored** — a
+stored figure is one somebody must remember to update — at 180 wpm (Spanish, on
+a phone, practical list-heavy text), never zero, and the tag-stripping is tested
+against the `<li>uno</li><li>dos</li>` case that would otherwise halve every
+list-heavy guía. Covered by `lib/articles/readTime.test.ts` (7),
+`lib/articles/forWeek.test.ts` (8) and `e2e/article-feed.spec.ts` (2).
+
+**Cost recorded for G3:** filtering by week happens on the device, so
+`lib/seed/articles.json` is now in the client bundle — the home route went from
+12.7 kB / 171 kB First Load to 20.5 kB / 192 kB, and ~13 kB of that is article
+HTML the home screen never renders. The fix is a build-time index carrying only
+slug/title/range/minutes, which is real machinery (a generated file plus a
+freshness check) and belongs in G3's budget pass rather than smuggled into a
+content task.
 ### C7 Popular this week (map #16) — ✅ DONE
 `/api/v1/stats` counters keyed `(week, content_id, day)` — **no user id,
 no IP retained**; zod whitelist + tests like the other routes.
@@ -732,10 +829,10 @@ exactly `"true"`. The consent step is a gate — the control that sends a photo
 does not render until it is ticked, and the server independently requires
 `consent: "acepto"`. Saved images go to `photoEntries`, which never syncs: a
 generated picture of a baby is as private as a bump photo. Covered by
-`lib/ai/babyImage.test.ts` (17). **⚠️ F2 (quota) has not shipped — do not set
-`AI_BABY_ENABLED=true` in production until it does.**
+`lib/ai/babyImage.test.ts` (17). **⚠️ Resolved: F2 shipped, so
+`AI_BABY_ENABLED=true` is now safe within the configured ceiling.**
 
-### F2 Quota & cost control — **S**
+### F2 Quota & cost control — **S** ✅ DONE
 Hard per-user monthly quota in `ai_generations`, enforced server-side
 before any API call, plus a global kill switch env var.
 
@@ -759,6 +856,29 @@ place.
 **Done when:** quota cannot be bypassed by a client; input photos are
 provably not stored; the feature can be switched off with one env var; the
 result is labelled entertainment everywhere it appears.
+
+Shipped as `lib/ai/quota.ts` (pure), the `QuotaStore` interface in
+`lib/server/aiBaby.ts`, and `GET /api/v1/ai/baby`. No migration — `quotaMonth`
+and `costUsdMicros` were written on every row from F1 for exactly this.
+**Two independent limits**: a per-user monthly quota
+(`AI_BABY_MONTHLY_QUOTA`, default 3) and a global monthly spend ceiling
+(`AI_BABY_MONTHLY_SPEND_CEILING_USD`, default $50) — one person cannot burn the
+budget, and a thousand people cannot burn it between two looks at the dashboard.
+Both fail **closed**: unset, empty, negative or malformed falls back to the
+conservative default, never to "unlimited". The decision reads only the
+`aiGenerations` table, so there is no client-supplied number in it to bypass.
+The F1 pending row is now also the **reservation**: the order is reserve →
+count → refuse-and-release, never count → reserve, so two simultaneous requests
+see each other; the failure direction is refusing a request that would have
+fitted, never spending money that was not there. In-flight (`pending`) rows
+count against the ceiling at the configured price, since a burst that reads a
+pre-burst total would sail past it. A refusal **deletes** its reservation —
+nothing was sent and nothing was spent, so it must not show up as a failure in
+I4's numbers. Covered by `lib/ai/quota.test.ts` (16),
+`lib/server/aiBaby.test.ts` (12 — including the two-at-once and in-flight
+cases, against an in-memory store, no MySQL), `app/api/v1/ai/baby/route.test.ts`
+(4) and `e2e/ai-baby.spec.ts` (2). **`AI_BABY_ENABLED` is now safe to set in
+production**, within the ceiling — I4 turns both limits into panel controls.
 
 ---
 
@@ -801,6 +921,10 @@ tracking beyond what the account inherently implies; disclosed in
 ### G3 Performance & offline budget
 The home screen grew a lot in Phase C. Re-check 3G budget, precache only
 current ±1 week images, lazy-load the rest, verify Lighthouse.
+**Known item from C6:** the home bundle carries the full `articles.json`,
+including ~13 kB of article HTML it never renders, because the week filter runs
+on the device. Build a client-side article index (slug · title · week range ·
+read minutes) and keep the bodies server-side.
 
 ### G4 Founder-content integration
 Wire in the real directory, videos, events and articles once they exist,

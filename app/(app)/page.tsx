@@ -29,6 +29,11 @@ import { Onboarding } from "@/components/Onboarding";
 import { PlaneandoHome } from "@/components/PlaneandoHome";
 import { LocalResourcesBlock } from "@/components/LocalResourcesBlock";
 import { AppointmentBanner } from "@/components/AppointmentBanner";
+import { WeeklyLineCard } from "@/components/WeeklyLineCard";
+import { SizeTabs } from "@/components/SizeTabs";
+import { PerspectiveSwitcher } from "@/components/PerspectiveSwitcher";
+import { ObstetraCard } from "@/components/ObstetraCard";
+import { WeekArticleFeed } from "@/components/WeekArticleFeed";
 import { PopularThisWeek } from "@/components/PopularThisWeek";
 import { RoadmapSection } from "@/components/RoadmapSection";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
@@ -100,9 +105,20 @@ export default function InicioPage() {
         role={profile.role}
       />
 
-      {/* C7: aggregate counts, no identity anywhere (map #16). Renders
-          nothing when there is no data. */}
-      <PopularThisWeek />
+      {/* C2: the weekly one-liner (map #11). Renders nothing for a week with
+          no line yet. */}
+      <WeeklyLineCard week={week} />
+
+      {/* C3: size comparison tabs (map #12) — tamaño / pie / mano. */}
+      <SizeTabs week={week} />
+
+      {/* C4: same week, three entrances (map #13). Opens on the user's own
+          role; nothing is hidden by role. */}
+      <PerspectiveSwitcher week={week} role={profile.role} />
+
+      {/* C5: one bylined note per week (map #14). Renders only when a real
+          medical reviewer is configured — the byline IS the gate. */}
+      <ObstetraCard week={week} />
 
       {/* Next prenatal appointment reminder (in-app only) */}
       <AppointmentBanner date={profile.nextAppointment} />
@@ -155,32 +171,14 @@ export default function InicioPage() {
         </div>
       </section>
 
-      {/* Reading rail */}
-      <section aria-labelledby="para-leer" className="space-y-2.5 pt-1">
-        <h2
-          id="para-leer"
-          className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol"
-        >
-          Para leer hoy
-        </h2>
-        <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
-          <ReadCard
-            href={`/semana/${week}`}
-            tone="bg-pastel-arena"
-            title={babyAtWeekLabel(profile.babies, profile.role, week)}
-          />
-          <ReadCard
-            href="/guias"
-            tone="bg-pastel-rosa"
-            title="Cambios en tu cuerpo esta semana"
-          />
-          <ReadCard
-            href="/guias"
-            tone="bg-pastel-celeste"
-            title="Guías para leer con calma"
-          />
-        </div>
-      </section>
+      {/* C6: guías that are actually about this week, with read time
+          (map #15, #17). Replaces the old rail, whose three cards pointed at
+          two destinations. */}
+      <WeekArticleFeed week={week} />
+
+      {/* C7: aggregate counts, no identity anywhere (map #16). Renders
+          nothing when there is no data. */}
+      <PopularThisWeek />
 
       {/* Rights & benefits navigator */}
       <Link
@@ -506,26 +504,6 @@ function ToolIcon({ name }: { name: "feet" | "timer" | "scale" | "camera" | "foo
         </svg>
       );
   }
-}
-
-function ReadCard({
-  href,
-  tone,
-  title,
-}: {
-  href: string;
-  tone: string;
-  title: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`flex w-[200px] shrink-0 flex-col justify-end rounded-card ${tone} p-3.5 transition active:scale-[0.98]`}
-      style={{ minHeight: 120 }}
-    >
-      <p className="text-sm font-extrabold leading-snug text-ink">{title}</p>
-    </Link>
-  );
 }
 
 function HomeSkeleton() {

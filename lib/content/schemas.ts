@@ -98,8 +98,119 @@ export const ArticleSchema = z.object({
   author: z.string().min(1),
   reviewedBy: z.string().min(1).optional(),
   cluster: z.string().min(1).optional(),
-});
+  // C6 — the weeks this guía is for (feature map #15). Both optional and both
+  // required together: an article with no range is *always* relevant (señales
+  // de alarma, dengue) and shows up as a fallback, which is a different thing
+  // from an article whose range someone half-filled in.
+  fromWeek: z.number().int().min(1).max(42).optional(),
+  toWeek: z.number().int().min(1).max(42).optional(),
+})
+  .refine(
+    (article) =>
+      (article.fromWeek === undefined) === (article.toWeek === undefined),
+    "poné fromWeek y toWeek juntos, o ninguno de los dos (sin rango = la guía sirve para todo el embarazo)",
+  )
+  .refine(
+    (article) =>
+      article.fromWeek === undefined ||
+      article.toWeek === undefined ||
+      article.fromWeek <= article.toWeek,
+    "el rango de semanas está al revés: fromWeek tiene que ser menor o igual que toWeek",
+  );
 export type Article = z.infer<typeof ArticleSchema>;
+
+/**
+ * C2 — the weekly one-liner (feature map #11): one concrete "what is happening
+ * now" sentence per week, shown under the home hero.
+ *
+ * The length cap is a content rule with teeth: the block is one line on a
+ * 360 px phone, and a paragraph pasted in here would push the rest of the home
+ * screen down instead of failing. `milestone` in `lib/weeks.ts` is where the
+ * longer version belongs.
+ */
+export const WeeklyLineSchema = z.object({
+  week: z
+    .number()
+    .int()
+    .min(1, "la semana tiene que estar entre 1 y 42")
+    .max(42, "la semana tiene que estar entre 1 y 42"),
+  line: z
+    .string()
+    .min(1)
+    .max(
+      110,
+      "la frase de la semana tiene que entrar en una línea (máximo 110 caracteres) — si necesitás más, va en el 'milestone' de lib/weeks.ts",
+    ),
+});
+export type WeeklyLine = z.infer<typeof WeeklyLineSchema>;
+
+/**
+ * C3 — foot and hand measurements per week (feature map #12), the two tabs
+ * beside "tamaño". Optional per side: a week may have a foot figure and no
+ * hand one, and the tab for the missing side simply does not appear.
+ *
+ * The upper bounds are sanity rails, not medicine: a newborn foot is ~8 cm, so
+ * a `18` typed instead of `1.8` is a CI failure rather than a card claiming
+ * the baby has a foot the size of a forearm.
+ */
+const limbCmSchema = z
+  .number()
+  .positive()
+  .max(12, "medida en cm fuera de rango para un pie o una mano — ¿faltó la coma decimal?");
+
+export const LimbSizeSchema = z
+  .object({
+    week: z.number().int().min(1).max(42),
+    footCm: limbCmSchema.optional(),
+    footComparison: z.string().min(1).max(60).optional(),
+    handCm: limbCmSchema.optional(),
+    handComparison: z.string().min(1).max(60).optional(),
+  })
+  .refine(
+    (entry) => entry.footCm !== undefined || entry.handCm !== undefined,
+    "una entrada sin pie ni mano no sirve para nada — borrala en vez de dejarla vacía",
+  );
+export type LimbSize = z.infer<typeof LimbSizeSchema>;
+
+/**
+ * C4 — the perspective switcher (feature map #13): the same week explained
+ * three ways.
+ *
+ * Entries are **week ranges**, not weeks, and the narrowest range containing a
+ * week wins. That is what lets this ship as seven bands of real writing today
+ * and be deepened one week at a time later — adding `{fromWeek: 24, toWeek: 24}`
+ * overrides the band for that week with no code change. A per-week file of 126
+ * strings written in one sitting would be filler, and filler is worse here than
+ * a paragraph that holds for six weeks.
+ */
+export const PerspectiveBandSchema = z
+  .object({
+    fromWeek: z.number().int().min(1).max(42),
+    toWeek: z.number().int().min(1).max(42),
+    vos: z.string().min(1).max(400),
+    pareja: z.string().min(1).max(400),
+    familia: z.string().min(1).max(400),
+  })
+  .refine(
+    (band) => band.fromWeek <= band.toWeek,
+    "el rango está al revés: fromWeek tiene que ser menor o igual que toWeek",
+  );
+export type PerspectiveBand = z.infer<typeof PerspectiveBandSchema>;
+
+/**
+ * C5 — the "de la obstetra" card (feature map #14): one bylined note per week.
+ *
+ * The byline is `NEXT_PUBLIC_MEDICAL_REVIEWER`, so **every string here is a
+ * draft awaiting a real reviewer's signature** and the card does not render at
+ * all until one is configured (Z2's rule: never claim a medical review that has
+ * not happened). The cap keeps a note to something a person reads standing up
+ * with a phone in one hand.
+ */
+export const ObstetraNoteSchema = z.object({
+  week: z.number().int().min(1).max(42),
+  note: z.string().min(1).max(320),
+});
+export type ObstetraNote = z.infer<typeof ObstetraNoteSchema>;
 
 export const VideoItemSchema = z.object({
   id: idSchema,

@@ -33,6 +33,8 @@ import { RoadmapSection } from "@/components/RoadmapSection";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { PrivacyLine } from "@/components/PrivacyLine";
 import { InstallCard } from "@/components/InstallCard";
+// D1: one icon set, shared with the herramientas grid so the two cannot drift.
+import { ToolIcon, type ToolIconName } from "@/components/ToolIcon";
 
 // "Hoy" screen — Mi Bebé design 1a (docs/REDESIGN-PLAN.md §2): week strip,
 // photo hero with fallback, tip, mood check-in, herramientas grid, reading
@@ -434,7 +436,7 @@ function ToolCard({
   href: string;
   title: string;
   subtitle: string;
-  icon: "feet" | "timer" | "scale" | "camera" | "food";
+  icon: ToolIconName;
 }) {
   return (
     <Link
@@ -448,59 +450,6 @@ function ToolCard({
       </div>
     </Link>
   );
-}
-
-function ToolIcon({ name }: { name: "feet" | "timer" | "scale" | "camera" | "food" }) {
-  const common = {
-    width: 24,
-    height: 24,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "#322E29",
-    strokeWidth: 1.6,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-    "aria-hidden": true,
-  };
-  switch (name) {
-    case "feet":
-      return (
-        <svg {...common}>
-          <path d="M10 17c-2 1.5-4.5 1.2-5.5-.5C3.4 14.7 4.5 12 7 10.5S12.6 9 13.5 10.8C14.5 12.5 12 15.5 10 17Z" />
-          <circle cx="16.5" cy="6.5" r="2" />
-          <circle cx="20" cy="11" r="1.2" />
-        </svg>
-      );
-    case "timer":
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="13" r="8" />
-          <path d="M12 9v4l2.5 2.5" />
-          <path d="M10 2h4" />
-        </svg>
-      );
-    case "scale":
-      return (
-        <svg {...common}>
-          <rect x="3" y="4" width="18" height="16" rx="3" />
-          <path d="M8.5 8.5c1-1.3 2.1-2 3.5-2s2.5.7 3.5 2l-2.3 2.3a1.7 1.7 0 0 1-2.4 0Z" />
-        </svg>
-      );
-    case "camera":
-      return (
-        <svg {...common}>
-          <path d="M4 8h16M4 8v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M9 4h6l1 4H8Z" />
-          <circle cx="12" cy="14" r="2.4" />
-        </svg>
-      );
-    case "food":
-      return (
-        <svg {...common}>
-          <path d="M6 3v7a2.5 2.5 0 0 0 5 0V3M8.5 3v7" />
-          <path d="M16 3c-1.5 1.5-2 3-2 5s1 3 2 3v10" />
-        </svg>
-      );
-  }
 }
 
 function ReadCard({

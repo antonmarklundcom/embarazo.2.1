@@ -21,7 +21,13 @@ export type ToolIconName =
   | "symptoms"
   | "guides"
   | "video"
-  | "checklist";
+  | "checklist"
+  // D2
+  | "names"
+  | "kegel"
+  | "sleep"
+  | "diary"
+  | "dental";
 
 export function ToolIcon({
   name,
@@ -128,6 +134,39 @@ export function ToolIcon({
         <svg {...common}>
           <rect x="3" y="5" width="18" height="14" rx="3" />
           <path d="M10.5 9.5 15 12l-4.5 2.5v-5Z" />
+        </svg>
+      );
+    case "names":
+      return (
+        <svg {...common}>
+          <path d="M12 20s-7-4.2-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.8-7 9-7 9Z" />
+        </svg>
+      );
+    case "kegel":
+      return (
+        <svg {...common}>
+          <path d="M12 4c4 0 7 2.7 7 6.5S16 20 12 20s-7-5.7-7-9.5S8 4 12 4Z" />
+          <path d="M9 11.5c1-1 2-1.5 3-1.5s2 .5 3 1.5" />
+        </svg>
+      );
+    case "sleep":
+      return (
+        <svg {...common}>
+          <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
+          <path d="M15 4h4l-4 4h4" />
+        </svg>
+      );
+    case "diary":
+      return (
+        <svg {...common}>
+          <path d="M6 3h11a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+          <path d="M8 3v18M11.5 8h4M11.5 12h4" />
+        </svg>
+      );
+    case "dental":
+      return (
+        <svg {...common}>
+          <path d="M12 4c2 0 2.5-1 4.5-1S20 4.5 20 7.5c0 3-1.2 4.5-1.8 7.5-.5 2.5-.7 5-2.2 5s-1.5-4-4-4-2.5 4-4 4-1.7-2.5-2.2-5C5.2 12 4 10.5 4 7.5 4 4.5 5.5 3 7.5 3S10 4 12 4Z" />
         </svg>
       );
     case "checklist":

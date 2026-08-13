@@ -29,6 +29,9 @@ const pageRoutes: string[] = [
   // E6: the questions people ask before trusting an app with a pregnancy.
   // Needing signal to read the answer is a bad first impression.
   "/preguntas",
+  // D2: the dental screen is pure reading with no state, and the place it is
+  // most useful is a waiting room with no signal.
+  "/herramientas/dental",
   ...Array.from(
     { length: MAX_WEEK - MIN_WEEK + 1 },
     (_, i) => `/semana/${MIN_WEEK + i}`,

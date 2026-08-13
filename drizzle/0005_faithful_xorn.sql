@@ -1,0 +1,1 @@
+ALTER TABLE `syncRecords` MODIFY COLUMN `store` enum('profile','pregnancy','journalEntries','kickSessions','contractionEntries','weightEntries','checklistState','cycles','cycleSettings','clinical','sleepEntries','favoriteNames') NOT NULL;

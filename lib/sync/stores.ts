@@ -27,6 +27,12 @@ export const SYNCED_STORES = [
   "cycles",
   "cycleSettings",
   "clinical",
+  // D2. Both are ordinary preference-ish data with no photo and no free text
+  // beyond a name the user typed on purpose, so §4.4 has nothing against them
+  // travelling — and a favourite names list that does not survive a new phone
+  // is the one people would be angriest to lose.
+  "sleepEntries",
+  "favoriteNames",
 ] as const;
 
 export type SyncedStore = (typeof SYNCED_STORES)[number];
@@ -80,6 +86,9 @@ export function isSingletonStore(store: SyncedStore): boolean {
  */
 export const NATURAL_KEY_FIELDS: Partial<Record<SyncedStore, string>> = {
   checklistState: "key",
+  // D2: the name IS the identity. Favouriting "Arami" on the phone and on the
+  // tablet has to be one record, or a re-sync gives you the same name twice.
+  favoriteNames: "name",
 };
 
 /**

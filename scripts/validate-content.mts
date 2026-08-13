@@ -12,6 +12,7 @@ import {
   PerspectiveBandSchema,
   ObstetraNoteSchema,
   FaqEntrySchema,
+  BabyNameSchema,
   validateContentArray,
 } from "../lib/content/schemas.ts";
 
@@ -137,6 +138,19 @@ const checks: Check[] = [];
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     // Not created yet — the accordion renders nothing.
+  }
+}
+{
+  // D2 name picker. Keyed by the name itself — the same name twice is the
+  // failure mode of a list that grows by pasting.
+  try {
+    const raw = readJson("lib/seed/names.json") as unknown[];
+    checks.push(
+      validateContentArray("lib/seed/names.json", raw, BabyNameSchema, (n) => n.name),
+    );
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    // Not created yet — the picker shows its empty state.
   }
 }
 {

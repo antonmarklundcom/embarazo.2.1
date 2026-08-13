@@ -1238,6 +1238,264 @@ because they are properties of the code rather than of any one call.
   `quotaMonth` column is written on every row from day one. F1 without F2 is
   spendable; do not enable `AI_BABY_ENABLED` in production until F2 ships.
 
+## F2 — quota & cost control (August 2026)
+
+F1 shipped a pipeline that spends real money per call. F2 is what stands
+between an env var and a Google bill, so every choice here is made in the
+direction of spending less.
+
+- **Two limits, not one, because they fail differently.** The per-user monthly
+  quota (`AI_BABY_MONTHLY_QUOTA`, default 3) stops one person burning the
+  budget. The global monthly ceiling (`AI_BABY_MONTHLY_SPEND_CEILING_USD`,
+  default $50) stops a thousand people doing it between one look at the
+  dashboard and the next — a quota alone is only a ceiling if you already know
+  how many users you have. Both are env vars so either can be cut without a
+  deploy (BUILD-PLAN F2), and I4 will make them panel controls.
+- **Every wrong value means less spending, never more.** Unset, empty,
+  negative, non-numeric and `Infinity` all fall back to the conservative
+  default. An **empty** variable is "not configured" rather than `0`, because
+  `.env.example` ships these keys empty and reading that as zero would make a
+  half-filled env file look like a broken feature instead of one on its
+  documented defaults. A typed `0` is still honoured — it is the softest kill
+  switch there is, turning the feature off without touching `AI_BABY_ENABLED`
+  or breaking the screen that explains what the feature is.
+- **The default ceiling is deliberately below the plan's own worst case.**
+  BUILD-PLAN sizes 1 000 maxed-out users at ≈$120/month; the default is $50.
+  The default exists to protect a deployment where somebody enabled the feature
+  and forgot the ceiling, and in that situation stopping early is correct.
+- **"Cannot be bypassed by a client" is a property of the inputs.** The
+  decision reads the user id from the session and everything else from the
+  `aiGenerations` table the pipeline itself writes. There is no number in a
+  request body that participates, so there is nothing to forge. `GET
+  /api/v1/ai/baby` exists only so the screen can say "te quedan 2 de 3" and
+  stop offering a button the server will refuse; it is a courtesy, and the POST
+  re-checks regardless.
+- **The pending row is the reservation: reserve → count → refuse-and-release.**
+  Count-then-reserve is the obvious order and it is wrong — two requests
+  arriving together both read the pre-request count and both proceed. Reserving
+  first means each sees the other. The cost is that a genuine tie can refuse
+  both, which is the right direction to fail: refusing a request that would have
+  fitted (the user retries and it works) rather than spending money that was not
+  there. Asserted in `aiBaby.test.ts` with two `Promise.all` requests against a
+  quota of one remaining.
+- **In-flight generations count against the ceiling at the configured price.**
+  A `pending` row has no recorded cost yet and may well end up with one.
+  Counting only settled rows would let a burst of simultaneous requests each
+  read a spend total from before the burst and all go through.
+- **A refusal deletes its reservation; a failure keeps its row.** Nothing was
+  sent and nothing was spent when a limit refuses, so leaving the row would put
+  a non-event into I4's failure count and into next month's arithmetic. A
+  generation the model *did* receive keeps its row, exactly as F1 designed —
+  that one may have cost money.
+- **A failed generation does not consume the user's month.** `countForUser`
+  excludes `failed` rows: charging someone for an image they never received is
+  indefensible in a feature whose whole point is delight. The abuse it opens —
+  forcing upstream failures on purpose — is bounded by the route's per-IP rate
+  limit and by the ceiling, which counts money rather than attempts.
+- **The ceiling is reported before the quota, and reads as unavailability.**
+  When the global budget is gone, "ya usaste tus 3 imágenes" would be a lie:
+  the user has generations left and next month will not fix it. `429` for the
+  quota (yours, act on it next month), `503` for the ceiling (ours, not
+  something to explain to somebody who cannot do anything about it) — its
+  message is deliberately identical to the kill switch's.
+- **Database access goes through `QuotaStore`**, the same shape as A5's
+  deletion executor and for the same reason: "the quota cannot be exceeded" is
+  provable in CI against an in-memory store, with no MySQL. `lib/ai/quota.ts`
+  holds the arithmetic and reads no environment variable directly — it is
+  imported by the client screen, and a module a client component imports must
+  never reach for a secret (asserted against the source, like F1's).
+
+## C2 — the weekly one-liner (August 2026)
+
+- **It is not `milestone`.** `lib/weeks.ts` already ships a paragraph per week,
+  and the obvious move — render the first sentence of it — was rejected: the
+  paragraph is written for the week detail page, where there is room to explain,
+  and truncating prose produces sentences nobody wrote. C2 is a separate string
+  written for one line under the hero. The schema caps it at 110 characters and
+  the error message names `milestone` as where longer text belongs, so the
+  distinction survives the next content edit.
+- **The fallback is a real path, not a comment.** BUILD-PLAN asks for 42 strings
+  *and* for the code to ship without them. `weeklyLine()` returns `null` and the
+  card returns `null` — no empty card, no "próximamente". A gap the user cannot
+  see is better than a promise the content schedule may not keep, and it is what
+  lets a week be rewritten by deleting it.
+- **Keyed by week, not by id.** Every other seed file is keyed by `id`, but this
+  one is edited a week at a time, so the duplicate-detection failure worth
+  catching is "two entries for semana 24". `validateContentArray`'s `getKey`
+  already supports it (articles use `slug`), so this needed no new machinery.
+- **Gated with `publishedOnly`, not `reviewedOnly`.** These are editorial
+  strings of the same class as the `milestone`/`tip` content that has shipped
+  since the investor MVP, not invented businesses with dead phone numbers, so
+  the reviewer gate D3 uses would hide all 42 for a claim nobody is making —
+  the medical-review claim on this screen is `NEXT_PUBLIC_MEDICAL_REVIEWER`'s
+  job (Z2), and C5 is the task that ties bylined content to it. The placeholder
+  gate still runs, so a week left as "(placeholder) escribir esto" during a
+  content pass falls back to showing nothing.
+- **It lives in its own component, mounted with one line in `page.tsx`.** C2–C8
+  all land in the same slot area; a block per file means each PR touches one
+  line of the shared file instead of a growing block of it.
+
+## C3 — size comparison tabs (August 2026)
+
+- **The "tamaño" tab is the existing content, untouched.** `lib/weeks.ts` has
+  carried `sizeComparison` + `lengthCm`/`weightG` since the investor MVP, and
+  those comparisons — mandioca, mamón, chipa — are the thing this product exists
+  to have rather than a fruit list translated from a Swedish app. C3 adds two
+  tabs *beside* them; it does not introduce a second size vocabulary that would
+  immediately drift from the first.
+- **A tab with no data is not rendered.** Before week 9 there is genuinely no
+  foot to measure. The card drops to a single tab rather than showing a panel of
+  dashes, which is the same instinct as C2's null line: absence beats a
+  placeholder. The active tab is also resolved by *lookup* (`find ?? tabs[0]`)
+  rather than trusted from state, so a week that loses a tab cannot leave the
+  panel pointing at nothing.
+- **Three separate defences against a misplaced decimal point.** A card that
+  confidently tells a pregnant woman her baby has an 18 cm foot is worse than no
+  card. So: the schema caps a limb at 12 cm with an error message naming the
+  likely cause ("¿faltó la coma decimal?"); a test asserts the series only ever
+  grows, which catches a transposed digit that a range check passes; and a test
+  pins week 40 near a real newborn's ~8 cm, so the whole column cannot shift
+  without failing.
+- **"8,2 cm", with a comma.** es-PY writes the decimal separator as a comma, and
+  this is a number a user reads aloud to somebody else. `formatCm` is one
+  function so the next surface that shows a measurement cannot render "8.2".
+- **The disclaimer is part of the card, not a footnote elsewhere.** "Son
+  promedios aproximados… lo que dice tu control prenatal vale más que cualquier
+  tabla" sits under the tabs, because the failure mode of a biometry card is a
+  user comparing it against her own ecografía and worrying.
+
+## C4 — the perspective switcher (August 2026)
+
+- **Week ranges, narrowest wins — not 126 per-week strings.** "Same week, three
+  entrances" reads as 42 × 3 strings, and writing them in one sitting would have
+  produced filler nobody can detect with a test. Seven bands of real writing ship
+  instead, and the selection rule makes deepening cheap: adding
+  `{fromWeek: 24, toWeek: 24, …}` overrides that week and nothing else changes.
+  The honest cost, recorded rather than hidden: the block currently changes every
+  six weeks rather than every week, which a user checking in weekly will notice.
+  That is a content backlog item, not a code one, and the code is already shaped
+  for it.
+- **`selectBand` is exported.** The override rule is invisible until somebody
+  uses it, which is exactly the kind of rule that gets re-implemented in a test
+  and then tested against itself. Exporting the pure selector means the test
+  drives the real function, in both file orders, so the answer cannot depend on
+  where an override was pasted.
+- **The role picks the opening tab, not the visible tabs.** B1 already asked who
+  the user is, so a papá should not tap past "para vos" every week. But hiding
+  the other two would break the actual use: the pregnant user reading "para tu
+  pareja" and handing over the phone is half of why this exists. `acompanante`
+  opens on the pareja tab because what a birth companion does — logistics, being
+  there, talking to the team — is what that tab describes, whatever the
+  relationship is.
+- **The three tabs must say three different things**, asserted per band. Three
+  tabs that paraphrase each other are worse than one tab, because they promise
+  depth and then waste three taps proving there isn't any.
+
+## C5 — "de la obstetra" (August 2026)
+
+- **The byline is the gate.** With `NEXT_PUBLIC_MEDICAL_REVIEWER` unset the card
+  does not render — not unsigned, not under a generic "el equipo médico de Mi
+  Bebé". That generic fallback is precisely what Z2 found and removed from
+  `MedicalReviewByline`, and it matters more here than anywhere else in the app:
+  this is the one block whose entire value is that a named gineco-obstetra
+  stands behind the sentence. An unsigned version is the app claiming authority
+  it does not have, on prenatal advice.
+- **One definition of "there is no reviewer".** The card branches on
+  `isPlaceholderReviewer` from `lib/launchChecks.ts` — the same helper Z2's
+  build check uses — rather than testing the env var itself. Two definitions
+  would drift, and the drift would be silent in the direction of showing the
+  card. The env var is read at module scope like `MedicalReviewByline` does, so
+  the decision is inlined at build time.
+- **A source scan, because the failure is something a future edit *adds*.** The
+  test asserts the component contains no fallback byline text and no literal
+  "Dra. …" string, with comments stripped so the comment explaining the rule
+  does not trip it. A future "let's show it with a generic byline for now" fails
+  a test instead of shipping.
+- **The content is the Paraguayan prenatal calendar, and the tests pin it.**
+  Laboratorio inicial, translucencia nucal at 11–14, morfológica at 18–22, curva
+  de azúcar at 24–28, dTpa at 27–36, estreptococo B at 35–37, anti-D at 28, the
+  carné perinatal. Those fixed windows are what a translated global app gets
+  wrong, so each is asserted at the week a user would look it up — a content
+  edit cannot quietly move the morfológica.
+- **All 42 strings are drafts awaiting a signature, and are labelled as such in
+  the loader.** They cannot reach a user before there is a reviewer, and when
+  there is one, signing off on them is part of what she is agreeing to. This is
+  the same shape as D3's food data (`reviewedBy` unset ⇒ nothing renders),
+  expressed through the env var the card is already tied to rather than through
+  a second per-entry flag that would let 41 reviewed notes ship beside one
+  unreviewed one under the same byline.
+
+## C6 — week-linked article feed + read time (August 2026)
+
+- **The old rail was three cards pointing at two destinations.** "Para leer hoy"
+  had one week-detail card (which the hero already links to) and two cards both
+  going to `/guias`. C6 replaces it rather than adding beside it: a home screen
+  that offers the same destination three times teaches the user that the rail is
+  decoration.
+- **An unranged article is relevant to the whole pregnancy, not unclassified.**
+  Señales de alarma and dengue have no `fromWeek`/`toWeek` and stay in the pool
+  as fallbacks, sorting last. That is what stops week 17 — named specifically by
+  no guía — from showing an empty rail, and it is the honest description of
+  those articles rather than a hack. The schema requires the two fields
+  *together*, so "no range" cannot be confused with "somebody filled in half a
+  range".
+- **Ties keep the file's order.** With eight articles and more coming, what
+  leads the rail is an editorial decision; making it depend on the file's order
+  means a content editor changes it by moving an entry, instead of discovering
+  an invisible rule about dates or slugs.
+- **Read time is computed, never stored.** A stored figure is a number somebody
+  has to remember to update, and the first edit that skips it makes every other
+  figure untrustworthy. 180 wpm rather than the 200–265 usually quoted for
+  English: this is Spanish, read on a phone, and these guías are practical
+  list-heavy text. The test that earns its place is the `<li>` one — stripping
+  tags without inserting a space glues list items into one word and silently
+  halves the read time of exactly the articles that are mostly lists.
+- **A real cost, recorded rather than absorbed quietly.** Filtering by week
+  happens on the device, so the whole of `articles.json` — including ~13 kB of
+  HTML the home screen never renders — is now in the client bundle, and the home
+  route went 12.7 kB → 20.5 kB (171 kB → 192 kB First Load). The fix is a
+  build-time index of slug/title/range/minutes with the bodies left server-side;
+  that is a generated file plus a freshness check, which is real machinery and
+  belongs in G3's budget pass rather than being smuggled into a content task.
+  It is written into G3 so it cannot be forgotten.
+
+## C7 — popular this week (August 2026)
+
+- **The week is not on the wire, and that contradicts C7's own line in the
+  plan.** BUILD-PLAN specifies counters keyed `(week, content_id, day)`, written
+  before J3 existed. J3 then removed `week` from three routes because it is
+  derived from the due date — health data — and transmitting it turns the Play
+  listing's "No data collected" into a false statement
+  (`docs/ANDROID-LAUNCH.md` §3.1). A task specified earlier does not get to undo
+  a promise made later, so the POST body is one field and the `week` column is
+  written as `0`, the "not applicable" value A1 already defined for it.
+  Consequence, stated plainly: "esta semana" means the last seven days rather
+  than "week 24 of pregnancy". That is also the better product answer — what
+  other mothers are reading *right now* — but it is a change to the spec and is
+  recorded as one.
+- **J3's source scan was extended rather than sidestepped.** The scan in
+  `app/api/v1/api.test.ts` listed three routes by name, so a new route was
+  invisible to it. C7 adds `stats` to the pattern and adds the no-parameters
+  test beside the other three. The promise is about every route, not about the
+  ones that existed when it was made.
+- **No session, anywhere in the route.** Asserted against the source. This is
+  not an omission awaiting accounts: the counter must work for a user with no
+  account (the majority path), and reading a session would put an identity next
+  to a table that deliberately has no identity column (§4.5).
+- **The body is validated before the database is consulted.** The first version
+  returned 204 early when `DATABASE_URL` was unset, which meant a local-only
+  deployment silently *accepted* a body carrying a week. The whitelist is a
+  promise about what the route accepts, not about what it happens to store, so
+  a request with an extra field is now a 400 in every configuration. Caught by
+  the e2e, which is why that test exists.
+- **An empty rail renders nothing.** A "lo más leído" box with no entries on a
+  new app is a billboard announcing that nobody is here. It also drops ids that
+  no longer resolve to a published guía — the counter outlives the content, and
+  a dead link is worse than a shorter list.
+- **The view is counted from the client, not during prerender.** The guía pages
+  are statically generated for offline precache; counting server-side would
+  count the build.
+
 ## C8 — shortcuts + feedback, and a dead number found behind three buttons
 
 - **The defect.** Three screens shipped

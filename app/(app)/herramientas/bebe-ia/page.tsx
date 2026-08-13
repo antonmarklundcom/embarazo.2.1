@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   AI_BABY_CONSENT_POINTS,
@@ -42,8 +42,15 @@ async function fileToPhoto(file: File): Promise<ParentPhoto | null> {
   }
 }
 
+interface QuotaSnapshot {
+  quota: number;
+  used: number;
+  remaining: number;
+}
+
 export default function BebeIaPage() {
   const [available, setAvailable] = useState<boolean | null>(null);
+  const [quota, setQuota] = useState<QuotaSnapshot | null>(null);
   const [consented, setConsented] = useState(false);
   const [photos, setPhotos] = useState<ParentPhoto[]>([]);
   const [image, setImage] = useState<GeneratedImage | null>(null);
@@ -52,13 +59,24 @@ export default function BebeIaPage() {
   const [saved, setSaved] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    // One HEAD-ish probe: with AI_BABY_ENABLED unset the route 404s and this
-    // screen says so instead of offering a button that cannot work.
-    void fetch("/api/v1/ai/baby", { method: "POST", body: "{}" })
-      .then((res) => setAvailable(res.status !== 404))
-      .catch(() => setAvailable(false));
+  // F2. One GET answers both questions: with AI_BABY_ENABLED unset the route
+  // 404s and this screen says so instead of offering a button that cannot
+  // work, and when it is on, the body says how many generations are left.
+  // The count is a courtesy — the server checks it again on every POST.
+  const loadQuota = useCallback(async () => {
+    try {
+      const res = await fetch("/api/v1/ai/baby", { cache: "no-store" });
+      setAvailable(res.status !== 404);
+      if (!res.ok) return;
+      setQuota((await res.json()) as QuotaSnapshot);
+    } catch {
+      setAvailable(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadQuota();
+  }, [loadQuota]);
 
   async function onPick(event: React.ChangeEvent<HTMLInputElement>) {
     setError("");
@@ -104,6 +122,9 @@ export default function BebeIaPage() {
       // second tap re-picks them rather than silently re-sending a face.
       setPhotos([]);
       if (fileInput.current) fileInput.current.value = "";
+      // Whether it worked or not, the count moved (a refused request releases
+      // its reservation, a failed one does not consume the month).
+      void loadQuota();
     }
   }
 
@@ -188,9 +209,16 @@ export default function BebeIaPage() {
               {photos.length === 1 ? "1 foto lista" : `${photos.length} fotos listas`}.
             </p>
           )}
+          {quota && (
+            <p className="mt-2 text-sm text-muted">
+              {quota.remaining > 0
+                ? `Te ${quota.remaining === 1 ? "queda" : "quedan"} ${quota.remaining} de ${quota.quota} ${quota.quota === 1 ? "imagen" : "imágenes"} este mes.`
+                : "Ya usaste todas tus imágenes de este mes. Podés volver a probar el mes que viene."}
+            </p>
+          )}
           <button
             type="button"
-            disabled={busy || photos.length === 0}
+            disabled={busy || photos.length === 0 || quota?.remaining === 0}
             onClick={() => void generate()}
             className="mt-3 min-h-[44px] w-full rounded-tile bg-terracotta px-4 py-2.5 text-sm font-extrabold text-white disabled:opacity-50"
           >

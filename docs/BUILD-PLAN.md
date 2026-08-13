@@ -550,9 +550,27 @@ Playwright screenshot at a phone viewport (390×844) in addition to the
 automated gates — the ring renders correctly, no layout shift against the
 skeleton placeholder (`HomeSkeleton`'s height was adjusted to match the
 taller circular hero + stats row).
-### C2 Weekly one-liner (map #11)
+### C2 Weekly one-liner (map #11) — ✅ DONE
 One concrete "what is happening now" sentence per week; 42 strings, code
 ships with a graceful fallback so content can land later.
+
+Shipped as `lib/seed/weeklyLines.json` (42 strings, es-PY voseo),
+`lib/seed/weeklyLines.ts` (`weeklyLine(week) → string | null`) and
+`components/WeeklyLineCard.tsx`, mounted as the first block in C1's slot area —
+directly under the hero, above the appointment banner and the tip, because it
+is the two-second answer. **The fallback is a real path, not a comment**: an
+unknown week renders *nothing* — no empty card, no "próximamente" — since the
+strings and the code that shows them land on different schedules and a gap
+nobody can see beats a promise. The line is deliberately not `milestone` from
+`lib/weeks.ts`: that stays the paragraph on the week detail page, this is the
+single line the home screen leads with, and the schema enforces the difference
+with a 110-character cap whose error message says where longer text belongs.
+Content follows G1 — validated JSON, keyed by week so "two entries for semana
+24" is a CI failure, checked at import time and in `npm run validate:content`
+— and runs through Z1's `publishedOnly` gate so a week left as placeholder text
+mid-content-pass falls back instead of shipping. Covered by
+`lib/seed/weeklyLines.test.ts` (11, including the voseo check) and
+`e2e/weekly-line.spec.ts` (1).
 ### C3 Size comparison tabs (map #12)
 Tabs for tamaño / pie / mano, keeping the Paraguayan comparisons and cm/g.
 ### C4 Perspective switcher (map #13)

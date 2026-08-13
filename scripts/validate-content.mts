@@ -7,6 +7,7 @@ import {
   EventItemSchema,
   VideoItemSchema,
   FoodEntrySchema,
+  WeeklyLineSchema,
   validateContentArray,
 } from "../lib/content/schemas.ts";
 
@@ -51,6 +52,25 @@ const checks: Check[] = [];
   const raw = (readJson("lib/seed/placements.json") as { placements: unknown[] })
     .placements;
   checks.push(validateContentArray("lib/seed/placements.json", raw, AdPlacementSchema));
+}
+{
+  // C2 weekly one-liner. Keyed by week rather than by id, so the duplicate
+  // check catches "two entries for semana 24" — the failure mode of a file
+  // that is edited a week at a time.
+  try {
+    const raw = readJson("lib/seed/weeklyLines.json") as unknown[];
+    checks.push(
+      validateContentArray(
+        "lib/seed/weeklyLines.json",
+        raw,
+        WeeklyLineSchema,
+        (entry) => String(entry.week),
+      ),
+    );
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    // Not created yet — the app falls back to showing no line at all.
+  }
 }
 {
   // D3 food lookup — validated the same way as everything else.

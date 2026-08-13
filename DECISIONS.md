@@ -1609,3 +1609,31 @@ guarantee is only as good as the data that cannot exist.
   J3.
 - **The "ver más" count resets when a filter changes.** Carrying it over would
   drop somebody into the middle of a list she has never scrolled.
+## E2 — share card + bump frame (August 2026)
+
+- **"Only the week leaves" is a type, not a discipline.** `ShareCardContent` has
+  three fields: week, wordmark, fixed tagline. The due date, FPP, department,
+  sanatorio, baby nickname, weight and symptoms are not *unused* by the drawing
+  code — they are unreachable from it. This is the same instinct as E1's
+  companion snapshot: a guarantee enforced by a shape survives the next edit;
+  one enforced by care does not. `SHARE_FORBIDDEN_FIELDS` is asserted against
+  the drawing module's source so the next field added to the card fails a test.
+- **The baby's nickname is deliberately not on the card**, even though B2 has
+  it and it would look lovely. The plan's line is "health details never leave
+  beyond the week number", a name is not ours to publish on her behalf, and she
+  can type it in the caption if she wants it there.
+- **No request exists in the share path, and that is asserted rather than
+  stated.** A bump photo is the most private thing in this app; the property
+  worth testing is not "we don't upload it" but "there is no code here that
+  could". The e2e watches for any non-GET request during the share and expects
+  none — the home screen's ordinary GETs for placements are not what that guards.
+- **`canShare({files})` rather than `navigator.share` existing.** Several
+  browsers expose the API and reject files; calling `share()` there either
+  throws or shares a URL, and a share that silently sends nothing is worse than
+  a download. When files are refused, the PNG is offered as a download with a
+  findable name (`mi-bebe-semana-24.png`).
+- **A dismissed share sheet is not an error.** `AbortError` is what the browser
+  raises when the user changes her mind, and showing "no pudimos compartir"
+  because somebody tapped outside the sheet trains people to distrust the app.
+- **`cover` maths, not a stretch.** A squashed bump photo is exactly the kind of
+  detail that makes somebody close the screen instead of sharing.

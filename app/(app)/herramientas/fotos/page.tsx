@@ -6,6 +6,7 @@ import { db, type PhotoEntry } from "@/lib/db";
 import { useProfile } from "@/lib/useProfile";
 import { downscaleImage } from "@/lib/images";
 import { PrivacyLine } from "@/components/PrivacyLine";
+import { ShareCard } from "@/components/ShareCard";
 
 export default function FotosPage() {
   const profile = useProfile();
@@ -181,6 +182,15 @@ function PhotoViewer({
             className="max-h-full max-w-full rounded-card object-contain"
           />
         )}
+      </div>
+      {/* E2: the bump frame. Composited on this device, from this blob — the
+          photo has no path to our server, here or anywhere. */}
+      <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+        <ShareCard
+          week={photo.week}
+          photo={photo.blob}
+          label="Compartir con marco"
+        />
       </div>
       <button
         type="button"

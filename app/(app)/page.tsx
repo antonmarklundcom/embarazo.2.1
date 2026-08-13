@@ -36,6 +36,7 @@ import { ObstetraCard } from "@/components/ObstetraCard";
 import { WeekArticleFeed } from "@/components/WeekArticleFeed";
 import { PopularThisWeek } from "@/components/PopularThisWeek";
 import { HomeShortcuts } from "@/components/HomeShortcuts";
+import { ShareCard } from "@/components/ShareCard";
 import { RoadmapSection } from "@/components/RoadmapSection";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { PrivacyLine } from "@/components/PrivacyLine";
@@ -107,6 +108,11 @@ export default function InicioPage() {
         babies={profile.babies}
         role={profile.role}
       />
+
+      {/* E2: share the week card (map #30). Drawn on the device; the image
+          carries the week number and nothing else. Sits directly under the
+          hero, which is the card it shares. */}
+      <ShareCard week={week} label="Compartir mi semana" />
 
       {/* C8: one-tap access to emergencia · carné · próximo control, and the
           feedback path (map #18, #19). */}

@@ -15,7 +15,7 @@ test("the home screen shows the line for the current week", async ({ page }) => 
   await page.locator("#dep").selectOption({ index: 1 });
   await page.getByRole("button", { name: "Empezar" }).click();
 
-  const block = page.getByRole("region", { name: "Esta semana" });
+  const block = page.getByRole("region", { name: "Esta semana", exact: true });
   await expect(block).toBeVisible();
   await expect(block).toContainText("Abre y cierra las manitos");
 

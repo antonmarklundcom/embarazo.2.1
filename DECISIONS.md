@@ -1237,3 +1237,32 @@ because they are properties of the code rather than of any one call.
 - **Quota is NOT enforced here.** That is F2, and it is the reason the
   `quotaMonth` column is written on every row from day one. F1 without F2 is
   spendable; do not enable `AI_BABY_ENABLED` in production until F2 ships.
+
+## C3 — size comparison tabs (August 2026)
+
+- **The "tamaño" tab is the existing content, untouched.** `lib/weeks.ts` has
+  carried `sizeComparison` + `lengthCm`/`weightG` since the investor MVP, and
+  those comparisons — mandioca, mamón, chipa — are the thing this product exists
+  to have rather than a fruit list translated from a Swedish app. C3 adds two
+  tabs *beside* them; it does not introduce a second size vocabulary that would
+  immediately drift from the first.
+- **A tab with no data is not rendered.** Before week 9 there is genuinely no
+  foot to measure. The card drops to a single tab rather than showing a panel of
+  dashes, which is the same instinct as C2's null line: absence beats a
+  placeholder. The active tab is also resolved by *lookup* (`find ?? tabs[0]`)
+  rather than trusted from state, so a week that loses a tab cannot leave the
+  panel pointing at nothing.
+- **Three separate defences against a misplaced decimal point.** A card that
+  confidently tells a pregnant woman her baby has an 18 cm foot is worse than no
+  card. So: the schema caps a limb at 12 cm with an error message naming the
+  likely cause ("¿faltó la coma decimal?"); a test asserts the series only ever
+  grows, which catches a transposed digit that a range check passes; and a test
+  pins week 40 near a real newborn's ~8 cm, so the whole column cannot shift
+  without failing.
+- **"8,2 cm", with a comma.** es-PY writes the decimal separator as a comma, and
+  this is a number a user reads aloud to somebody else. `formatCm` is one
+  function so the next surface that shows a measurement cannot render "8.2".
+- **The disclaimer is part of the card, not a footnote elsewhere.** "Son
+  promedios aproximados… lo que dice tu control prenatal vale más que cualquier
+  tabla" sits under the tabs, because the failure mode of a biometry card is a
+  user comparing it against her own ecografía and worrying.

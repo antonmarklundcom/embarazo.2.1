@@ -663,10 +663,31 @@ rather than buried. Revocation is immediate because `isNull(revokedAt)` is
 inside the membership query and the role is never cached anywhere. Invite codes
 are single-use — a link forwarded from a WhatsApp group must not let a second
 person into somebody's pregnancy. Covered by `lib/sharing/fields.test.ts` (12).
-### E2 Share card + bump frame (map #30) — **M**
+### E2 Share card + bump frame (map #30) — **M** — ✅ DONE
 Web Share API from the week hero; canvas-rendered week card and a bump
 photo frame. Health details never leave beyond the week number; the photo
 is composited **on device**.
+
+Shipped as `lib/share/{card,draw}.ts` and `components/ShareCard.tsx`, mounted
+under the home hero (week card) and inside the photo viewer (bump frame).
+**The privacy rule is expressed as a whitelist, not as care taken at each call
+site**: `ShareCardContent` has exactly three fields — week, wordmark, fixed
+tagline — so the due date, the FPP, the department, the sanatorio, the baby's
+nickname, weight and symptoms are not merely unused, they are unavailable. A
+future "just add the due date, it's cute" is a change to that type, which is
+where somebody notices it. Two source-scan tests hold the other half: the
+drawing and sharing path contains no `fetch`, no `XMLHttpRequest` and no URL of
+ours, and the drawing module mentions none of `SHARE_FORBIDDEN_FIELDS`.
+
+The fallback is the part that will actually run for most users: several
+browsers expose `navigator.share` but refuse files, so `canShareFiles` asks
+`canShare({files})` rather than sniffing, and hands the PNG over as a download
+when the answer is no — a share that silently sends nothing is worse than a
+download. The bump photo is read from IndexedDB, drawn with `cover` maths (a
+squashed bump photo is the kind of detail that makes somebody not share it) and
+never leaves the page. Covered by `lib/share/share.test.ts` (11) and
+`e2e/share-card.spec.ts` (2 — the download path, asserting **no non-GET request
+of any kind** during the share).
 ### E3 Invite a friend (map #31)
 "Invitá a una amiga" sharing the install link; doubles as the test-round
 feedback path.

@@ -550,9 +550,27 @@ Playwright screenshot at a phone viewport (390×844) in addition to the
 automated gates — the ring renders correctly, no layout shift against the
 skeleton placeholder (`HomeSkeleton`'s height was adjusted to match the
 taller circular hero + stats row).
-### C2 Weekly one-liner (map #11)
+### C2 Weekly one-liner (map #11) — ✅ DONE
 One concrete "what is happening now" sentence per week; 42 strings, code
 ships with a graceful fallback so content can land later.
+
+Shipped as `lib/seed/weeklyLines.json` (42 strings, es-PY voseo),
+`lib/seed/weeklyLines.ts` (`weeklyLine(week) → string | null`) and
+`components/WeeklyLineCard.tsx`, mounted as the first block in C1's slot area —
+directly under the hero, above the appointment banner and the tip, because it
+is the two-second answer. **The fallback is a real path, not a comment**: an
+unknown week renders *nothing* — no empty card, no "próximamente" — since the
+strings and the code that shows them land on different schedules and a gap
+nobody can see beats a promise. The line is deliberately not `milestone` from
+`lib/weeks.ts`: that stays the paragraph on the week detail page, this is the
+single line the home screen leads with, and the schema enforces the difference
+with a 110-character cap whose error message says where longer text belongs.
+Content follows G1 — validated JSON, keyed by week so "two entries for semana
+24" is a CI failure, checked at import time and in `npm run validate:content`
+— and runs through Z1's `publishedOnly` gate so a week left as placeholder text
+mid-content-pass falls back instead of shipping. Covered by
+`lib/seed/weeklyLines.test.ts` (11, including the voseo check) and
+`e2e/weekly-line.spec.ts` (1).
 ### C3 Size comparison tabs (map #12) — ✅ DONE
 Tabs for tamaño / pie / mano, keeping the Paraguayan comparisons and cm/g.
 
@@ -724,10 +742,10 @@ exactly `"true"`. The consent step is a gate — the control that sends a photo
 does not render until it is ticked, and the server independently requires
 `consent: "acepto"`. Saved images go to `photoEntries`, which never syncs: a
 generated picture of a baby is as private as a bump photo. Covered by
-`lib/ai/babyImage.test.ts` (17). **⚠️ F2 (quota) has not shipped — do not set
-`AI_BABY_ENABLED=true` in production until it does.**
+`lib/ai/babyImage.test.ts` (17). **⚠️ Resolved: F2 shipped, so
+`AI_BABY_ENABLED=true` is now safe within the configured ceiling.**
 
-### F2 Quota & cost control — **S**
+### F2 Quota & cost control — **S** ✅ DONE
 Hard per-user monthly quota in `ai_generations`, enforced server-side
 before any API call, plus a global kill switch env var.
 
@@ -751,6 +769,29 @@ place.
 **Done when:** quota cannot be bypassed by a client; input photos are
 provably not stored; the feature can be switched off with one env var; the
 result is labelled entertainment everywhere it appears.
+
+Shipped as `lib/ai/quota.ts` (pure), the `QuotaStore` interface in
+`lib/server/aiBaby.ts`, and `GET /api/v1/ai/baby`. No migration — `quotaMonth`
+and `costUsdMicros` were written on every row from F1 for exactly this.
+**Two independent limits**: a per-user monthly quota
+(`AI_BABY_MONTHLY_QUOTA`, default 3) and a global monthly spend ceiling
+(`AI_BABY_MONTHLY_SPEND_CEILING_USD`, default $50) — one person cannot burn the
+budget, and a thousand people cannot burn it between two looks at the dashboard.
+Both fail **closed**: unset, empty, negative or malformed falls back to the
+conservative default, never to "unlimited". The decision reads only the
+`aiGenerations` table, so there is no client-supplied number in it to bypass.
+The F1 pending row is now also the **reservation**: the order is reserve →
+count → refuse-and-release, never count → reserve, so two simultaneous requests
+see each other; the failure direction is refusing a request that would have
+fitted, never spending money that was not there. In-flight (`pending`) rows
+count against the ceiling at the configured price, since a burst that reads a
+pre-burst total would sail past it. A refusal **deletes** its reservation —
+nothing was sent and nothing was spent, so it must not show up as a failure in
+I4's numbers. Covered by `lib/ai/quota.test.ts` (16),
+`lib/server/aiBaby.test.ts` (12 — including the two-at-once and in-flight
+cases, against an in-memory store, no MySQL), `app/api/v1/ai/baby/route.test.ts`
+(4) and `e2e/ai-baby.spec.ts` (2). **`AI_BABY_ENABLED` is now safe to set in
+production**, within the ceiling — I4 turns both limits into panel controls.
 
 ---
 

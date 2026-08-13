@@ -31,6 +31,7 @@ export type {
   VideoItem,
   FoodEntry,
   FoodVerdict,
+  WeeklyLine,
   LimbSize,
 } from "./content/schemas";
 import type { DirectoryCategorySchema } from "./content/schemas";

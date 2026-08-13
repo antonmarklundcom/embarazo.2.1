@@ -29,6 +29,7 @@ import { Onboarding } from "@/components/Onboarding";
 import { PlaneandoHome } from "@/components/PlaneandoHome";
 import { LocalResourcesBlock } from "@/components/LocalResourcesBlock";
 import { AppointmentBanner } from "@/components/AppointmentBanner";
+import { WeeklyLineCard } from "@/components/WeeklyLineCard";
 import { SizeTabs } from "@/components/SizeTabs";
 import { RoadmapSection } from "@/components/RoadmapSection";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
@@ -99,6 +100,10 @@ export default function InicioPage() {
         babies={profile.babies}
         role={profile.role}
       />
+
+      {/* C2: the weekly one-liner (map #11). Renders nothing for a week with
+          no line yet. */}
+      <WeeklyLineCard week={week} />
 
       {/* C3: size comparison tabs (map #12) — tamaño / pie / mano. */}
       <SizeTabs week={week} />

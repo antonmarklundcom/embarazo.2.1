@@ -34,6 +34,7 @@ export type {
   WeeklyLine,
   LimbSize,
   PerspectiveBand,
+  ObstetraNote,
 } from "./content/schemas";
 import type { DirectoryCategorySchema } from "./content/schemas";
 import type { z } from "zod";

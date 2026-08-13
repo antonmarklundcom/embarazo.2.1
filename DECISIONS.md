@@ -1390,3 +1390,37 @@ direction of spending less.
 - **The three tabs must say three different things**, asserted per band. Three
   tabs that paraphrase each other are worse than one tab, because they promise
   depth and then waste three taps proving there isn't any.
+
+## C5 — "de la obstetra" (August 2026)
+
+- **The byline is the gate.** With `NEXT_PUBLIC_MEDICAL_REVIEWER` unset the card
+  does not render — not unsigned, not under a generic "el equipo médico de Mi
+  Bebé". That generic fallback is precisely what Z2 found and removed from
+  `MedicalReviewByline`, and it matters more here than anywhere else in the app:
+  this is the one block whose entire value is that a named gineco-obstetra
+  stands behind the sentence. An unsigned version is the app claiming authority
+  it does not have, on prenatal advice.
+- **One definition of "there is no reviewer".** The card branches on
+  `isPlaceholderReviewer` from `lib/launchChecks.ts` — the same helper Z2's
+  build check uses — rather than testing the env var itself. Two definitions
+  would drift, and the drift would be silent in the direction of showing the
+  card. The env var is read at module scope like `MedicalReviewByline` does, so
+  the decision is inlined at build time.
+- **A source scan, because the failure is something a future edit *adds*.** The
+  test asserts the component contains no fallback byline text and no literal
+  "Dra. …" string, with comments stripped so the comment explaining the rule
+  does not trip it. A future "let's show it with a generic byline for now" fails
+  a test instead of shipping.
+- **The content is the Paraguayan prenatal calendar, and the tests pin it.**
+  Laboratorio inicial, translucencia nucal at 11–14, morfológica at 18–22, curva
+  de azúcar at 24–28, dTpa at 27–36, estreptococo B at 35–37, anti-D at 28, the
+  carné perinatal. Those fixed windows are what a translated global app gets
+  wrong, so each is asserted at the week a user would look it up — a content
+  edit cannot quietly move the morfológica.
+- **All 42 strings are drafts awaiting a signature, and are labelled as such in
+  the loader.** They cannot reach a user before there is a reviewer, and when
+  there is one, signing off on them is part of what she is agreeing to. This is
+  the same shape as D3's food data (`reviewedBy` unset ⇒ nothing renders),
+  expressed through the env var the card is already tied to rather than through
+  a second per-entry flag that would let 41 reviewed notes ship beside one
+  unreviewed one under the same byline.

@@ -179,6 +179,21 @@ export const PerspectiveBandSchema = z
   );
 export type PerspectiveBand = z.infer<typeof PerspectiveBandSchema>;
 
+/**
+ * C5 — the "de la obstetra" card (feature map #14): one bylined note per week.
+ *
+ * The byline is `NEXT_PUBLIC_MEDICAL_REVIEWER`, so **every string here is a
+ * draft awaiting a real reviewer's signature** and the card does not render at
+ * all until one is configured (Z2's rule: never claim a medical review that has
+ * not happened). The cap keeps a note to something a person reads standing up
+ * with a phone in one hand.
+ */
+export const ObstetraNoteSchema = z.object({
+  week: z.number().int().min(1).max(42),
+  note: z.string().min(1).max(320),
+});
+export type ObstetraNote = z.infer<typeof ObstetraNoteSchema>;
+
 export const VideoItemSchema = z.object({
   id: idSchema,
   title: z.string().min(1),

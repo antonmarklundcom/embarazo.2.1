@@ -608,8 +608,28 @@ half of what the block is for. `selectBand` is exported and tested directly, so
 the override rule is verified rather than re-implemented in a test. Covered by
 `lib/seed/perspectives.test.ts` (9, including full 1–42 coverage with no gap or
 overlap) and `e2e/perspective.spec.ts` (2).
-### C5 "De la obstetra" (map #14)
+### C5 "De la obstetra" (map #14) — ✅ DONE
 One bylined expert card per week, tied to `NEXT_PUBLIC_MEDICAL_REVIEWER`.
+
+Shipped as `lib/seed/obstetraNotes.json` (42 notes),
+`lib/seed/obstetraNotes.ts` and `components/ObstetraCard.tsx` in C1's slot area.
+**The byline is the gate, not a decoration**: with no configured reviewer the
+card does not render at all — not unsigned, not under a generic "el equipo
+médico", which is exactly the claim Z2 removed from `MedicalReviewByline`. It
+branches on the same `isPlaceholderReviewer` the build check uses, so there is
+one definition of "there is no reviewer" rather than two, and a source scan
+asserts no fallback byline can be added later. Content is the **Paraguayan
+prenatal calendar** — laboratorio inicial, the 11–14 and 18–22 ecografías, the
+24–28 curva de azúcar, dTpa at 27–36, estreptococo B at 35–37, the carné
+perinatal, factor Rh — because fixed local windows are what a translated global
+app gets wrong. Those windows are asserted at the weeks a user would look them
+up, so a content edit cannot quietly move the ecografía morfológica. **The 42
+strings are drafts awaiting a signature** and cannot reach a user before there
+is one; signing them off is part of what the founder's reviewer is agreeing to.
+Covered by `lib/seed/obstetraNotes.test.ts` (8) and `e2e/obstetra-card.spec.ts`
+(1, which asserts whichever side of the gate the build is on — **both sides were
+run**: with the reviewer unset the card is absent, with one set it renders with
+the byline).
 ### C6 Week-linked article feed + read time (map #15, #17)
 Articles keyed to the current week; read-time computed from word count.
 ### C7 Popular this week (map #16)

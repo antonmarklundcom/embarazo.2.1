@@ -32,6 +32,7 @@ import { AppointmentBanner } from "@/components/AppointmentBanner";
 import { WeeklyLineCard } from "@/components/WeeklyLineCard";
 import { SizeTabs } from "@/components/SizeTabs";
 import { PerspectiveSwitcher } from "@/components/PerspectiveSwitcher";
+import { ObstetraCard } from "@/components/ObstetraCard";
 import { RoadmapSection } from "@/components/RoadmapSection";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { PrivacyLine } from "@/components/PrivacyLine";
@@ -112,6 +113,10 @@ export default function InicioPage() {
       {/* C4: same week, three entrances (map #13). Opens on the user's own
           role; nothing is hidden by role. */}
       <PerspectiveSwitcher week={week} role={profile.role} />
+
+      {/* C5: one bylined note per week (map #14). Renders only when a real
+          medical reviewer is configured — the byline IS the gate. */}
+      <ObstetraCard week={week} />
 
       {/* Next prenatal appointment reminder (in-app only) */}
       <AppointmentBanner date={profile.nextAppointment} />

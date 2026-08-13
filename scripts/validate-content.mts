@@ -10,6 +10,7 @@ import {
   WeeklyLineSchema,
   LimbSizeSchema,
   PerspectiveBandSchema,
+  ObstetraNoteSchema,
   validateContentArray,
 } from "../lib/content/schemas.ts";
 
@@ -108,6 +109,23 @@ const checks: Check[] = [];
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     // Not created yet — the switcher does not render at all.
+  }
+}
+{
+  // C5 "de la obstetra" notes, keyed by week.
+  try {
+    const raw = readJson("lib/seed/obstetraNotes.json") as unknown[];
+    checks.push(
+      validateContentArray(
+        "lib/seed/obstetraNotes.json",
+        raw,
+        ObstetraNoteSchema,
+        (entry) => String(entry.week),
+      ),
+    );
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    // Not created yet — the card does not render.
   }
 }
 {

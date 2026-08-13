@@ -1257,3 +1257,48 @@ because they are properties of the code rather than of any one call.
 - **The e2e checks the geometry, not the class name.** `grid-cols-3` in a
   className proves nothing about what renders; the test reads bounding boxes and
   asserts the first three tiles share a top edge and the fourth does not.
+
+## D2 — five new tools (August 2026)
+
+- **The diary writes to `journalEntries`, not to a new store.** A note is a
+  note: two stores would mean two places to look for what she wrote, two things
+  to export, and two things to encrypt. PIN encryption, soft deletes and sync
+  already work on that store (A3), and the encrypted-note rule is not one anyone
+  should re-implement. The difference between "Síntomas y ánimo" and "Diario" is
+  the *form* — structured checkboxes versus a blank page — not the data, and a
+  diary entry is simply a row with no mood and no symptoms.
+- **Kegel is driven by elapsed wall-clock time, through a pure function.** A
+  chain of `setTimeout`s is the obvious implementation and it desynchronises the
+  moment the screen locks, which is exactly when somebody is doing these — lying
+  down, phone face-down. `kegelStepAt(level, elapsed)` is tested at the 60-second
+  mark for that reason. The levels are data so the medical reviewer can change
+  them without touching the screen, and a test asserts rest ≥ hold: resting less
+  than you contract is fatigue training, which is the opposite of the point.
+- **The name picker searches meanings and folds accents.** Both come from the
+  same observation: a mother looking for a Guaraní name usually knows she wants
+  "luna" or "flor" before she knows it is spelled Yasy or Yvoty, and nobody types
+  the tilde in Ñasaindy on a phone keyboard. A picker that only matches exact
+  spelling would hide precisely the names this tool exists to surface.
+- **Favourites are keyed by the name, not by a catalogue id.** The list will grow
+  and be edited; a favourite must survive a name being renumbered, and
+  favouriting "Arami" on the phone and on the tablet has to be one record, or a
+  re-sync hands back the same name twice. `NATURAL_KEY_FIELDS` already had the
+  mechanism from the checklist.
+- **Sleep is a log, not a tracker.** No microphone, no accelerometer, no score:
+  she knows how badly she slept, and a "sleep score" from a phone on a bedside
+  table is fiction. What she does not have is the seven-night picture to show at
+  her next control, so the summary is phrased for exactly that. Averages skip
+  missing nights rather than counting them as zero — she slept those nights, she
+  just did not open the app, and "0 h" is a number worth worrying about for no
+  reason.
+- **Dental is static and precached.** There is nothing to time, count or log; the
+  whole value is correcting two beliefs that cost teeth here ("estando
+  embarazada no te podés atender", "sangrar es normal del embarazo") and saying
+  which treatments are safe. The place it gets read is a waiting room with no
+  signal, so it is precached alongside D3's food lookup.
+- **Two new synced stores, and the enum migration that comes with them.** Dexie
+  v6 is additive and both stores carry sync bookkeeping from birth, so unlike v5
+  there is no backfill. `drizzle/0005` widens `syncRecords.store`; §4.4 has
+  nothing against either travelling — no photos, no free text beyond a name the
+  user typed on purpose — and a favourite-names list that does not survive a new
+  phone is the one people would be angriest to lose.

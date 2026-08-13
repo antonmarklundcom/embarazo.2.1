@@ -26,6 +26,9 @@ const pageRoutes: string[] = [
   // comer...?" works fully offline from first install, not just after a
   // visit — it's meant to be reachable with zero network, ever.
   "/herramientas/comer",
+  // D2: the dental screen is pure reading with no state, and the place it is
+  // most useful is a waiting room with no signal.
+  "/herramientas/dental",
   ...Array.from(
     { length: MAX_WEEK - MIN_WEEK + 1 },
     (_, i) => `/semana/${MIN_WEEK + i}`,

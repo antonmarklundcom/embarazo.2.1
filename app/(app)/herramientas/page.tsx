@@ -44,6 +44,20 @@ const TOOLS: Tool[] = [
     tone: "bg-pastel-celeste",
   },
   {
+    href: "/herramientas/nombres",
+    title: "Nombres",
+    desc: "Nombres en guaraní, español y bíblicos, con su significado. Guardá tus favoritos.",
+    icon: "names",
+    tone: "bg-pastel-lavanda",
+  },
+  {
+    href: "/herramientas/kegel",
+    title: "Kegel",
+    desc: "Ejercicios de piso pélvico, con el tiempo contado por vos.",
+    icon: "kegel",
+    tone: "bg-pastel-rosa",
+  },
+  {
     href: "/herramientas/pataditas",
     title: "Pataditas",
     desc: "Registrá los movimientos de tu bebé y conocé su ritmo.",
@@ -77,6 +91,27 @@ const TOOLS: Tool[] = [
     desc: "Seguí el crecimiento de tu panza, solo en tu teléfono.",
     icon: "camera",
     tone: "bg-pastel-salvia",
+  },
+  {
+    href: "/herramientas/sueno",
+    title: "Sueño",
+    desc: "Anotá cómo dormís y llevá la semana a tu control.",
+    icon: "sleep",
+    tone: "bg-pastel-celeste",
+  },
+  {
+    href: "/herramientas/diario",
+    title: "Diario",
+    desc: "Escribí lo que quieras guardar de estos meses, cifrado con tu PIN.",
+    icon: "diary",
+    tone: "bg-pastel-salvia",
+  },
+  {
+    href: "/herramientas/dental",
+    title: "Salud dental",
+    desc: "Encías que sangran, qué se puede hacer en el dentista y cuándo consultar.",
+    icon: "dental",
+    tone: "bg-pastel-arena",
   },
   {
     href: "/herramientas/resumen",

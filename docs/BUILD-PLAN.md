@@ -592,10 +592,47 @@ shared component, so the home grid and the toolbox cannot drift apart. Z1's
 video gate is preserved. Covered by `e2e/tools-grid.spec.ts` (3, one asserting
 the three-per-row geometry from real bounding boxes rather than from the class
 name).
-### D2 New tools (map #21)
+### D2 New tools (map #21) — ✅ DONE
 Kegel (timed exercises), **name picker with Guaraní names**, dental
 health, diary, sleep. Name picker is the sharing magnet — build its share
 card with E2.
+
+Shipped as `/herramientas/{kegel,nombres,sueno,diario,dental}`, with the pure
+halves in `lib/tools/{kegel,sleep}.ts` and `lib/seed/names.ts`. Dexie **v6**
+adds `sleepEntries` and `favoriteNames` (additive; both carry sync bookkeeping
+from birth, so no backfill), both are in `SYNCED_STORES`, and migration
+`drizzle/0005_*.sql` widens the `syncRecords.store` enum accordingly.
+
+- **Kegel** runs off wall-clock elapsed time through a pure `kegelStepAt`, not a
+  chain of `setTimeout`s: a phone that locks the screen throttles timers, and a
+  woman who unlocks it should see where she actually is. Levels are data, so the
+  reviewer can change them without touching the screen; a test asserts rest is
+  never shorter than the hold, which is the difference between pelvic-floor work
+  and fatigue training.
+- **Nombres** is the one this app can have and a translated global app cannot:
+  20 Guaraní names with their meanings (Arami, Yvoty, Panambi, Ñasaindy)
+  alongside español and bíblico. Search matches the **meaning** as well as the
+  name, and folds accents — somebody knows they want "luna" before they know how
+  to spell Yasy, and nobody types the tilde in Ñasaindy on a phone. Favourites
+  are keyed by the name itself so the same name favourited on two devices is one
+  record.
+- **Sueño** is a log, not a tracker: no microphone, no accelerometer, no score.
+  Averages are taken over the nights that exist rather than treating a missing
+  night as zero, one row per night (logging twice corrects it), and the summary
+  is phrased as something to show at the next control.
+- **Diario** writes to `journalEntries` — the store "Síntomas y ánimo" already
+  uses — rather than a new one: a note is a note, and PIN encryption, soft
+  deletes and sync already work there. The difference between the two screens is
+  the form, not the data.
+- **Dental** is deliberately static and precached: the value is entirely in
+  correcting "estando embarazada no te podés atender" and "sangrar es normal",
+  and the place it is read is a waiting room with no signal.
+
+Covered by `lib/tools/kegel.test.ts` (10), `lib/tools/sleep.test.ts` (8),
+`lib/seed/names.test.ts` (8) and `e2e/new-tools.spec.ts` (5).
+
+**Branched from D1, not from `main`** — it adds five tiles to the grid D1
+introduced, so the two must land in order.
 ### D3 Food lookup (map #23) — the single most valuable content asset — **M** — ✅ DONE
 "¿Puedo comer…?" searchable database with a safe/caution/avoid verdict and
 a one-line reason: tereré, mate, carne asada, chorizo, quesú Paraguay,

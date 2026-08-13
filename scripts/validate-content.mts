@@ -7,6 +7,7 @@ import {
   EventItemSchema,
   VideoItemSchema,
   FoodEntrySchema,
+  BabyNameSchema,
   validateContentArray,
 } from "../lib/content/schemas.ts";
 
@@ -51,6 +52,19 @@ const checks: Check[] = [];
   const raw = (readJson("lib/seed/placements.json") as { placements: unknown[] })
     .placements;
   checks.push(validateContentArray("lib/seed/placements.json", raw, AdPlacementSchema));
+}
+{
+  // D2 name picker. Keyed by the name itself — the same name twice is the
+  // failure mode of a list that grows by pasting.
+  try {
+    const raw = readJson("lib/seed/names.json") as unknown[];
+    checks.push(
+      validateContentArray("lib/seed/names.json", raw, BabyNameSchema, (n) => n.name),
+    );
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    // Not created yet — the picker shows its empty state.
+  }
 }
 {
   // D3 food lookup — validated the same way as everything else.

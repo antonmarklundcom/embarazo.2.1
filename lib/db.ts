@@ -119,6 +119,28 @@ export interface WeightEntry extends Partial<SyncMeta> {
   kg: number;
 }
 
+// D2 — sleep log. One row per night, keyed by the date you woke up, so a
+// 23:00→06:00 night is a single entry rather than two half-nights.
+export interface SleepEntry extends Partial<SyncMeta> {
+  id?: number;
+  /** Epoch ms, midnight of the morning you woke up. */
+  date: number;
+  /** Minutes actually slept, as the user estimates them. */
+  minutes: number;
+  /** 1 = terrible, 5 = great. Deliberately coarse; nobody rates sleep to 10%. */
+  quality: number;
+  /** Optional: what got in the way (acidez, calor, baño, ansiedad…). */
+  reasons?: string[];
+}
+
+// D2 — favourite baby names. The name itself, not an id: the list can grow,
+// and a favourite must not break when a name is retired from the catalogue.
+export interface FavoriteName extends Partial<SyncMeta> {
+  id?: number;
+  name: string;
+  createdAt: number;
+}
+
 export interface ChecklistStateRow extends Partial<SyncMeta> {
   id?: number;
   key: string;
@@ -232,6 +254,8 @@ export class MiBebeDB extends Dexie {
   cycleSettings!: Table<CycleSettings, number>;
   carnePhotos!: Table<CarnePhoto, number>;
   clinical!: Table<ClinicalInfo, number>;
+  sleepEntries!: Table<SleepEntry, number>;
+  favoriteNames!: Table<FavoriteName, number>;
   syncState!: Table<SyncStateRow, string>;
   conflicts!: Table<ConflictRow, number>;
 
@@ -315,6 +339,14 @@ export class MiBebeDB extends Dexie {
           }
         }
       });
+
+    // v6 (D2): sleep log and favourite names. Additive — no existing store is
+    // touched — and both carry sync bookkeeping from the start, so they need no
+    // backfill upgrade the way v5's stores did.
+    this.version(6).stores({
+      sleepEntries: "++id, date, &uid, updatedAt, dirty",
+      favoriteNames: "++id, &name, &uid, updatedAt, dirty",
+    });
 
     this.registerSyncHooks();
   }

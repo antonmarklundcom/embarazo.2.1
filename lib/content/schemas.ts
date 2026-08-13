@@ -101,6 +101,26 @@ export const ArticleSchema = z.object({
 });
 export type Article = z.infer<typeof ArticleSchema>;
 
+/**
+ * D2 — the name picker's catalogue (feature map #21).
+ *
+ * `origin` is a small closed set rather than free text because it is the filter
+ * the screen is built on, and because "guaraní" being a first-class category
+ * beside "español" is the point of shipping this at all: it is the one name
+ * list a Paraguayan mother cannot get from a translated global app.
+ */
+export const NameOriginSchema = z.enum(["guarani", "espanol", "biblico"]);
+export type NameOrigin = z.infer<typeof NameOriginSchema>;
+
+export const BabyNameSchema = z.object({
+  name: z.string().min(1).max(40),
+  origin: NameOriginSchema,
+  // f / m / u — "u" is for names used for anyone, not a placeholder.
+  gender: z.enum(["f", "m", "u"]),
+  meaning: z.string().min(1).max(160),
+});
+export type BabyName = z.infer<typeof BabyNameSchema>;
+
 export const VideoItemSchema = z.object({
   id: idSchema,
   title: z.string().min(1),

@@ -1,0 +1,314 @@
+[
+  {
+    "name": "Arami",
+    "origin": "guarani",
+    "gender": "f",
+    "meaning": "Un pedacito de cielo"
+  },
+  {
+    "name": "Yvoty",
+    "origin": "guarani",
+    "gender": "f",
+    "meaning": "Flor: es también como se dice a alguien querido"
+  },
+  {
+    "name": "Panambi",
+    "origin": "guarani",
+    "gender": "f",
+    "meaning": "Mariposa"
+  },
+  {
+    "name": "Yasy",
+    "origin": "guarani",
+    "gender": "f",
+    "meaning": "La luna"
+  },
+  {
+    "name": "Kuarahy",
+    "origin": "guarani",
+    "gender": "m",
+    "meaning": "El sol, que en guaraní también nombra al día"
+  },
+  {
+    "name": "Ñasaindy",
+    "origin": "guarani",
+    "gender": "f",
+    "meaning": "Luz de luna"
+  },
+  {
+    "name": "Mainumby",
+    "origin": "guarani",
+    "gender": "f",
+    "meaning": "Picaflor"
+  },
+  {
+    "name": "Aramí",
+    "origin": "guarani",
+    "gender": "f",
+    "meaning": "Cielito"
+  },
+  {
+    "name": "Tupã",
+    "origin": "guarani",
+    "gender": "m",
+    "meaning": "Dios del trueno en la cosmovisión guaraní"
+  },
+  {
+    "name": "Ñande",
+    "origin": "guarani",
+    "gender": "u",
+    "meaning": "Nuestro, lo de todos"
+  },
+  {
+    "name": "Guyra",
+    "origin": "guarani",
+    "gender": "u",
+    "meaning": "Pájaro, ave"
+  },
+  {
+    "name": "Kuñataĩ",
+    "origin": "guarani",
+    "gender": "f",
+    "meaning": "Muchacha joven"
+  },
+  {
+    "name": "Jasy Rendy",
+    "origin": "guarani",
+    "gender": "f",
+    "meaning": "Resplandor de la luna"
+  },
+  {
+    "name": "Amambay",
+    "origin": "guarani",
+    "gender": "f",
+    "meaning": "Helecho; también un departamento del país"
+  },
+  {
+    "name": "Ysapy",
+    "origin": "guarani",
+    "gender": "f",
+    "meaning": "El rocío de la mañana"
+  },
+  {
+    "name": "Takuara",
+    "origin": "guarani",
+    "gender": "u",
+    "meaning": "Caña, bambú: firme y flexible"
+  },
+  {
+    "name": "Pyhare",
+    "origin": "guarani",
+    "gender": "u",
+    "meaning": "La noche"
+  },
+  {
+    "name": "Ka'aguy",
+    "origin": "guarani",
+    "gender": "u",
+    "meaning": "Monte, bosque"
+  },
+  {
+    "name": "Ara",
+    "origin": "guarani",
+    "gender": "u",
+    "meaning": "El cielo y el tiempo, a la vez"
+  },
+  {
+    "name": "Porã",
+    "origin": "guarani",
+    "gender": "u",
+    "meaning": "Bello, bueno, como debe ser"
+  },
+  {
+    "name": "Sofía",
+    "origin": "espanol",
+    "gender": "f",
+    "meaning": "Sabiduría"
+  },
+  {
+    "name": "Valentina",
+    "origin": "espanol",
+    "gender": "f",
+    "meaning": "Valiente, con salud"
+  },
+  {
+    "name": "Camila",
+    "origin": "espanol",
+    "gender": "f",
+    "meaning": "La que está delante de Dios"
+  },
+  {
+    "name": "Lucía",
+    "origin": "espanol",
+    "gender": "f",
+    "meaning": "Luz, la que nació con la luz del día"
+  },
+  {
+    "name": "Emilia",
+    "origin": "espanol",
+    "gender": "f",
+    "meaning": "Esforzada, trabajadora"
+  },
+  {
+    "name": "Renata",
+    "origin": "espanol",
+    "gender": "f",
+    "meaning": "Nacida de nuevo"
+  },
+  {
+    "name": "Julieta",
+    "origin": "espanol",
+    "gender": "f",
+    "meaning": "De raíz joven"
+  },
+  {
+    "name": "Martina",
+    "origin": "espanol",
+    "gender": "f",
+    "meaning": "Dedicada a Marte"
+  },
+  {
+    "name": "Mateo",
+    "origin": "espanol",
+    "gender": "m",
+    "meaning": "Regalo de Dios"
+  },
+  {
+    "name": "Santiago",
+    "origin": "espanol",
+    "gender": "m",
+    "meaning": "El que suplanta"
+  },
+  {
+    "name": "Benjamín",
+    "origin": "espanol",
+    "gender": "m",
+    "meaning": "Hijo de la mano derecha"
+  },
+  {
+    "name": "Thiago",
+    "origin": "espanol",
+    "gender": "m",
+    "meaning": "Forma brasileña de Santiago"
+  },
+  {
+    "name": "Lautaro",
+    "origin": "espanol",
+    "gender": "m",
+    "meaning": "Nombre mapuche, muy usado en el Cono Sur"
+  },
+  {
+    "name": "Facundo",
+    "origin": "espanol",
+    "gender": "m",
+    "meaning": "Elocuente, el que habla bien"
+  },
+  {
+    "name": "Joaquín",
+    "origin": "espanol",
+    "gender": "m",
+    "meaning": "Dios establecerá"
+  },
+  {
+    "name": "Ignacio",
+    "origin": "espanol",
+    "gender": "m",
+    "meaning": "Fuego, el que enciende"
+  },
+  {
+    "name": "Gael",
+    "origin": "espanol",
+    "gender": "m",
+    "meaning": "Generoso"
+  },
+  {
+    "name": "Bruno",
+    "origin": "espanol",
+    "gender": "m",
+    "meaning": "De piel morena"
+  },
+  {
+    "name": "Isabella",
+    "origin": "espanol",
+    "gender": "f",
+    "meaning": "Promesa de Dios"
+  },
+  {
+    "name": "Alma",
+    "origin": "espanol",
+    "gender": "f",
+    "meaning": "Alma, espíritu"
+  },
+  {
+    "name": "Ana",
+    "origin": "biblico",
+    "gender": "f",
+    "meaning": "Llena de gracia"
+  },
+  {
+    "name": "María",
+    "origin": "biblico",
+    "gender": "f",
+    "meaning": "La elegida, la amada"
+  },
+  {
+    "name": "Sara",
+    "origin": "biblico",
+    "gender": "f",
+    "meaning": "Princesa"
+  },
+  {
+    "name": "Raquel",
+    "origin": "biblico",
+    "gender": "f",
+    "meaning": "Oveja, mansedumbre"
+  },
+  {
+    "name": "Ruth",
+    "origin": "biblico",
+    "gender": "f",
+    "meaning": "Compañera, amiga fiel"
+  },
+  {
+    "name": "Elías",
+    "origin": "biblico",
+    "gender": "m",
+    "meaning": "El Señor es mi Dios"
+  },
+  {
+    "name": "Samuel",
+    "origin": "biblico",
+    "gender": "m",
+    "meaning": "Dios escuchó"
+  },
+  {
+    "name": "Daniel",
+    "origin": "biblico",
+    "gender": "m",
+    "meaning": "Dios es mi juez"
+  },
+  {
+    "name": "Gabriel",
+    "origin": "biblico",
+    "gender": "m",
+    "meaning": "Fuerza de Dios"
+  },
+  {
+    "name": "David",
+    "origin": "biblico",
+    "gender": "m",
+    "meaning": "Amado, el querido"
+  },
+  {
+    "name": "Noa",
+    "origin": "biblico",
+    "gender": "u",
+    "meaning": "Descanso, consuelo"
+  },
+  {
+    "name": "Emanuel",
+    "origin": "biblico",
+    "gender": "m",
+    "meaning": "Dios con nosotros"
+  }
+]

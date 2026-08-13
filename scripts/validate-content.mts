@@ -7,6 +7,7 @@ import {
   EventItemSchema,
   VideoItemSchema,
   FoodEntrySchema,
+  ObstetraNoteSchema,
   validateContentArray,
 } from "../lib/content/schemas.ts";
 
@@ -51,6 +52,23 @@ const checks: Check[] = [];
   const raw = (readJson("lib/seed/placements.json") as { placements: unknown[] })
     .placements;
   checks.push(validateContentArray("lib/seed/placements.json", raw, AdPlacementSchema));
+}
+{
+  // C5 "de la obstetra" notes, keyed by week.
+  try {
+    const raw = readJson("lib/seed/obstetraNotes.json") as unknown[];
+    checks.push(
+      validateContentArray(
+        "lib/seed/obstetraNotes.json",
+        raw,
+        ObstetraNoteSchema,
+        (entry) => String(entry.week),
+      ),
+    );
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    // Not created yet — the card does not render.
+  }
 }
 {
   // D3 food lookup — validated the same way as everything else.

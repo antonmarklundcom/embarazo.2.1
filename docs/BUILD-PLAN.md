@@ -561,9 +561,34 @@ Same week, three entrances: para vos / para tu pareja / para la familia.
 One bylined expert card per week, tied to `NEXT_PUBLIC_MEDICAL_REVIEWER`.
 ### C6 Week-linked article feed + read time (map #15, #17)
 Articles keyed to the current week; read-time computed from word count.
-### C7 Popular this week (map #16)
+### C7 Popular this week (map #16) — ✅ DONE
 `/api/v1/stats` counters keyed `(week, content_id, day)` — **no user id,
 no IP retained**; zod whitelist + tests like the other routes.
+
+Shipped as `lib/stats/contentStats.ts` (pure wire format), `lib/server/stats.ts`,
+`/api/v1/stats`, `components/RecordContentView.tsx` and
+`components/PopularThisWeek.tsx`. No migration — `contentStats` existed from A1.
+
+**One deliberate deviation from the line above, and it is the whole design
+note:** this task was specified before J3, and its `(week, content_id, day)` key
+would have put the pregnancy week — health data derived from the due date — back
+on the wire, which is exactly the parameter J3 stripped from three other routes
+so the Play listing can keep saying "No data collected". So **the week is not
+transmitted**. The POST body is one field (`contentId`), `.strict()`, and the
+`week` column is written as `0` — the "not applicable" value A1 already defined.
+"Esta semana" therefore means the last seven days, which is also the better
+product answer: what other mothers are reading *right now*. J3's source scan was
+extended to cover `/api/v1/stats`, so the promise now grows with the routes
+rather than describing only the three that existed when it was made.
+
+No session is read anywhere — this counter works without an account, which is
+the majority path, and reading a session would put an identity beside a table
+that has no identity column. The IP is a one-minute in-memory rate-limit key and
+reaches nothing. With no database the route answers an empty list and the rail
+does not render: an empty "lo más leído" box on a new app is a billboard saying
+nobody is here. Covered by `lib/stats/contentStats.test.ts` (10, including
+source scans that the route never reads a session and the recorder sends only
+the id), the extended `app/api/v1/api.test.ts` (12) and `e2e/stats.spec.ts` (3).
 ### C8 Shortcuts + feedback card (map #18, #19)
 Quick actions (emergencia · carné · próximo control) and
 "¿Cómo te está yendo?" routing to WhatsApp feedback during testing.

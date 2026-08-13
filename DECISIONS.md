@@ -1237,3 +1237,40 @@ because they are properties of the code rather than of any one call.
 - **Quota is NOT enforced here.** That is F2, and it is the reason the
   `quotaMonth` column is written on every row from day one. F1 without F2 is
   spendable; do not enable `AI_BABY_ENABLED` in production until F2 ships.
+
+## C7 — popular this week (August 2026)
+
+- **The week is not on the wire, and that contradicts C7's own line in the
+  plan.** BUILD-PLAN specifies counters keyed `(week, content_id, day)`, written
+  before J3 existed. J3 then removed `week` from three routes because it is
+  derived from the due date — health data — and transmitting it turns the Play
+  listing's "No data collected" into a false statement
+  (`docs/ANDROID-LAUNCH.md` §3.1). A task specified earlier does not get to undo
+  a promise made later, so the POST body is one field and the `week` column is
+  written as `0`, the "not applicable" value A1 already defined for it.
+  Consequence, stated plainly: "esta semana" means the last seven days rather
+  than "week 24 of pregnancy". That is also the better product answer — what
+  other mothers are reading *right now* — but it is a change to the spec and is
+  recorded as one.
+- **J3's source scan was extended rather than sidestepped.** The scan in
+  `app/api/v1/api.test.ts` listed three routes by name, so a new route was
+  invisible to it. C7 adds `stats` to the pattern and adds the no-parameters
+  test beside the other three. The promise is about every route, not about the
+  ones that existed when it was made.
+- **No session, anywhere in the route.** Asserted against the source. This is
+  not an omission awaiting accounts: the counter must work for a user with no
+  account (the majority path), and reading a session would put an identity next
+  to a table that deliberately has no identity column (§4.5).
+- **The body is validated before the database is consulted.** The first version
+  returned 204 early when `DATABASE_URL` was unset, which meant a local-only
+  deployment silently *accepted* a body carrying a week. The whitelist is a
+  promise about what the route accepts, not about what it happens to store, so
+  a request with an extra field is now a 400 in every configuration. Caught by
+  the e2e, which is why that test exists.
+- **An empty rail renders nothing.** A "lo más leído" box with no entries on a
+  new app is a billboard announcing that nobody is here. It also drops ids that
+  no longer resolve to a published guía — the counter outlives the content, and
+  a dead link is worse than a shorter list.
+- **The view is counted from the client, not during prerender.** The guía pages
+  are statically generated for offline precache; counting server-side would
+  count the build.

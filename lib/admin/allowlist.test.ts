@@ -3,7 +3,12 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 import { adminEmails, isAdminEmail } from "./allowlist";
-import { ADMIN_ACTIONS } from "./audit";
+import {
+  ADMIN_ACTIONS,
+  AUDIT_META_SCHEMAS,
+  FORBIDDEN_AUDIT_META_FIELDS,
+  parseAuditMeta,
+} from "./audit";
 
 // BUILD-PLAN A7. The allowlist tests are ordinary; the source-scan at the
 // bottom is the one that carries the task's hardest requirement.
@@ -128,5 +133,74 @@ describe("the panel cannot render health content (ARCHITECTURE.md §9)", () => {
         ).toBe(false);
       }
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// `adminAudit.meta` (August 2026 review follow-up)
+// ---------------------------------------------------------------------------
+//
+// `adminAudit` is the one table A5's deletion retains, so a careless payload
+// here outlives the user it describes. The shape is now constrained, and — as
+// with E1's FORBIDDEN_COMPANION_FIELDS — the constraint is asserted against the
+// source rather than against a comment.
+
+describe("audit meta has a declared shape per action", () => {
+  it("covers every action, exactly", () => {
+    // Same guarantee as A5's TABLE_DISPOSITION: a new action cannot appear
+    // without someone deciding what it may record.
+    expect(Object.keys(AUDIT_META_SCHEMAS).sort()).toEqual([...ADMIN_ACTIONS].sort());
+  });
+
+  it("accepts what the real call sites send", () => {
+    expect(parseAuditMeta("invite_revoked", { code: "ABCD234567" })).toEqual({
+      code: "ABCD234567",
+    });
+    expect(
+      parseAuditMeta("user_deleted", { counts: { syncRecords: 37, users: 1 } }),
+    ).toEqual({ counts: { syncRecords: 37, users: 1 } });
+    expect(parseAuditMeta("user_viewed", undefined)).toEqual({});
+  });
+
+  it("rejects an extra key rather than storing it", () => {
+    expect(() =>
+      parseAuditMeta("invite_revoked", { code: "ABCD234567", email: "a@b.com" }),
+    ).toThrow(/inválido/);
+    expect(() => parseAuditMeta("user_viewed", { week: 24 })).toThrow(/inválido/);
+  });
+
+  it("rejects a payload of the wrong type", () => {
+    expect(() => parseAuditMeta("user_deleted", { counts: "muchas" })).toThrow();
+    expect(() => parseAuditMeta("invite_extended", { code: "X" })).toThrow();
+  });
+
+  it("declares no forbidden field in any schema", () => {
+    // The panel cannot read health content (A7), so none of these can be
+    // populated today. The assertion exists so the next person's mistake is a
+    // failing test rather than a permanent row.
+    const source = readFileSync(
+      join(process.cwd(), "lib", "admin", "audit.ts"),
+      "utf8",
+    );
+    const schemas = source.slice(
+      source.indexOf("export const AUDIT_META_SCHEMAS"),
+      source.indexOf("export const FORBIDDEN_AUDIT_META_FIELDS"),
+    );
+    expect(schemas.length).toBeGreaterThan(50);
+    for (const field of FORBIDDEN_AUDIT_META_FIELDS) {
+      expect(
+        new RegExp(`\\b${field}\\s*:`).test(schemas),
+        `an audit payload must not carry "${field}"`,
+      ).toBe(false);
+    }
+  });
+
+  it("is enforced by recordAudit, not left to the call sites", () => {
+    const source = readFileSync(
+      join(process.cwd(), "lib", "server", "admin.ts"),
+      "utf8",
+    );
+    const fn = source.slice(source.indexOf("export async function recordAudit"));
+    expect(fn.slice(0, fn.indexOf("\n}"))).toContain("parseAuditMeta");
   });
 });

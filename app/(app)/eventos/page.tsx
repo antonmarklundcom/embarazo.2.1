@@ -5,11 +5,13 @@ import { useProfile } from "@/lib/useProfile";
 import { DEPARTMENTS, departmentName } from "@/lib/departments";
 import { PUBLISHED_EVENTS } from "@/lib/seed/events";
 import type { EventItem, EventType } from "@/lib/types";
-import { waLink } from "@/lib/whatsapp";
+import { businessWhatsApp, waLink } from "@/lib/whatsapp";
 import { SponsoredBadge } from "@/components/SponsoredBadge";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 
-const BUSINESS_WA = process.env.NEXT_PUBLIC_BUSINESS_WHATSAPP || "+595000000000";
+// C8: see the note in app/(app)/directorio/page.tsx — the old
+// `|| "+595000000000"` fallback was a dead number behind a live button.
+const BUSINESS_WA = businessWhatsApp(process.env.NEXT_PUBLIC_BUSINESS_WHATSAPP);
 
 const TYPE_LABELS: Record<EventType, string> = {
   charla: "Charla",
@@ -53,10 +55,12 @@ export default function EventosPage() {
 
   const businessWa = useMemo(
     () =>
-      waLink(
-        BUSINESS_WA,
-        "Hola! Estoy usando Mi Bebé y quiero contarles de un evento para embarazadas o mamás.",
-      ),
+      BUSINESS_WA
+        ? waLink(
+            BUSINESS_WA,
+            "Hola! Estoy usando Mi Bebé y quiero contarles de un evento para embarazadas o mamás.",
+          )
+        : null,
     [],
   );
 
@@ -97,9 +101,11 @@ export default function EventosPage() {
             Estamos armando la agenda de charlas y talleres. ¿Organizás uno o
             conocés alguno? Contanos y lo sumamos.
           </p>
-          <div className="mt-3 flex justify-center">
-            <WhatsAppButton href={businessWa} label="Escribinos por WhatsApp" />
-          </div>
+          {businessWa && (
+            <div className="mt-3 flex justify-center">
+              <WhatsAppButton href={businessWa} label="Escribinos por WhatsApp" />
+            </div>
+          )}
         </div>
       )}
 

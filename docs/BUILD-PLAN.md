@@ -564,9 +564,33 @@ Articles keyed to the current week; read-time computed from word count.
 ### C7 Popular this week (map #16)
 `/api/v1/stats` counters keyed `(week, content_id, day)` — **no user id,
 no IP retained**; zod whitelist + tests like the other routes.
-### C8 Shortcuts + feedback card (map #18, #19)
+### C8 Shortcuts + feedback card (map #18, #19) — ✅ DONE
 Quick actions (emergencia · carné · próximo control) and
 "¿Cómo te está yendo?" routing to WhatsApp feedback during testing.
+
+Shipped as `components/HomeShortcuts.tsx` in C1's slot area: three tiles for the
+screens you cannot go looking for when you suddenly need them, and the feedback
+card for the testing round.
+
+**Also found and fixed while here — a Z1-class defect in shipped code.** Three
+screens carried `process.env.NEXT_PUBLIC_BUSINESS_WHATSAPP || "+595000000000"`,
+so with the variable unset (its state today) every one of those buttons opened a
+WhatsApp chat with nobody. One of them was **"Contactar a mi sanatorio" on the
+contractions screen** — a dead number offered to a woman timing contractions,
+and *our* number was never the right destination for "mi sanatorio" anyway. Now:
+`businessWhatsApp()` in `lib/whatsapp.ts` is the single way to ask for that
+number and answers `null` for the all-zero fallback, Z1's `+595 981 000 0xx`
+seed range, and anything that is not a real `+595` number; the directorio and
+eventos empty states drop the button entirely when there is none; and the
+contractions screen uses **the sanatorio number the user saved herself**
+(`/emergencia`), falling back to the emergency screen with the national numbers
+rather than to us. `useProfile` exposes `sanatorioPhone` for that.
+
+The feedback pre-fill names the week, unlike J3's directory pre-fill: the
+difference is that this text goes into a message the user reads before pressing
+send, with no server in the path — J3's case sent the week through `/api/v1/go`
+on every tap. Covered by `lib/whatsapp.test.ts` (7) and `e2e/shortcuts.spec.ts`
+(3, one of which sweeps four screens for a `wa.me/5950…` link).
 
 **Phase done when:** the home screen renders every block with real data
 for any week 1–42, offline, in the pastel language, with no layout shift.

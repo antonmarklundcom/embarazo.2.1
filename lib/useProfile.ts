@@ -26,6 +26,8 @@ export interface ProfileState {
   department?: string;
   city?: string;
   nextAppointment?: number;
+  /** C8: the sanatorio number the user saved on /emergencia, if any. */
+  sanatorioPhone?: string;
   lmpDate?: number;
   dueDate?: number;
   week?: number;
@@ -89,6 +91,7 @@ export function useProfile(): ProfileState {
     department: profile.department,
     city: profile.city,
     nextAppointment: profile.nextAppointment,
+    sanatorioPhone: profile.sanatorioPhone,
   };
 
   // "Planeando" users (and any profile without a pregnancy record yet) have no

@@ -1237,3 +1237,35 @@ because they are properties of the code rather than of any one call.
 - **Quota is NOT enforced here.** That is F2, and it is the reason the
   `quotaMonth` column is written on every row from day one. F1 without F2 is
   spendable; do not enable `AI_BABY_ENABLED` in production until F2 ships.
+
+## C8 — shortcuts + feedback, and a dead number found behind three buttons
+
+- **The defect.** Three screens shipped
+  `process.env.NEXT_PUBLIC_BUSINESS_WHATSAPP || "+595000000000"`. With the
+  variable unset — its state today, and in CI — that is a live button opening a
+  WhatsApp chat with nobody: exactly the failure Z1 exists to prevent, hiding in
+  a fallback rather than in seed data, which is why Z1's deep string scan never
+  saw it. The worst instance was **"Contactar a mi sanatorio" on the
+  contractions screen**, offered to a woman timing contractions.
+- **Two things were wrong with that button, and both are fixed.** The number was
+  a placeholder, *and* Mi Bebé's own business number was never the right
+  destination for "mi sanatorio". It now uses the sanatorio number the user
+  saved herself on `/emergencia`, and when she has not saved one it offers the
+  emergency screen — which carries the national numbers — instead of a WhatsApp
+  chat with us.
+- **`businessWhatsApp()` is the only way to ask for the number**, and it returns
+  `null` rather than something unreachable: the all-zero fallback, Z1's
+  `+595 981 000 0xx` seed range, and anything that is not a real `+595` number
+  all fail it. Call sites branch on the null — no number, no button. A "contanos
+  cómo te va" button that opens a chat with nobody is worse than no button,
+  because the user thinks she has been heard.
+- **The feedback pre-fill names the week, and J3's directory pre-fill does
+  not.** That looks inconsistent and is not: J3 removed the week because the tap
+  went through `/api/v1/go`, so *our server* learned the gestational week of
+  everyone who tapped. Here the link is `wa.me` directly from the device, the
+  text lands in a message the user reads before pressing send, and the week is
+  the single most useful piece of context for answering her. No server is in the
+  path, and nothing is transmitted unless she sends it.
+- **The e2e sweeps four screens for `wa.me/5950…`** rather than testing the
+  helper only. The helper being right is not the property that matters; no
+  screen offering a dead number is.

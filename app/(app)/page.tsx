@@ -29,6 +29,7 @@ import { Onboarding } from "@/components/Onboarding";
 import { PlaneandoHome } from "@/components/PlaneandoHome";
 import { LocalResourcesBlock } from "@/components/LocalResourcesBlock";
 import { AppointmentBanner } from "@/components/AppointmentBanner";
+import { HomeShortcuts } from "@/components/HomeShortcuts";
 import { RoadmapSection } from "@/components/RoadmapSection";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { PrivacyLine } from "@/components/PrivacyLine";
@@ -98,6 +99,10 @@ export default function InicioPage() {
         babies={profile.babies}
         role={profile.role}
       />
+
+      {/* C8: one-tap access to emergencia · carné · próximo control, and the
+          feedback path (map #18, #19). */}
+      <HomeShortcuts week={week} />
 
       {/* Next prenatal appointment reminder (in-app only) */}
       <AppointmentBanner date={profile.nextAppointment} />

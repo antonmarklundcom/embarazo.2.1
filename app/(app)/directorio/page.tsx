@@ -13,8 +13,13 @@ import type { DirectoryCategory, DirectoryListing } from "@/lib/types";
 import { filterDirectory } from "@/lib/directoryFilter";
 import { SponsoredBadge } from "@/components/SponsoredBadge";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { businessWhatsApp, waLink } from "@/lib/whatsapp";
 
-const BUSINESS_WA = process.env.NEXT_PUBLIC_BUSINESS_WHATSAPP || "+595000000000";
+// C8: `|| "+595000000000"` used to stand here. With the env var unset — its
+// state today — that button opened a chat with nobody, which is the failure Z1
+// exists to prevent. `businessWhatsApp` answers null instead, and the button is
+// not rendered.
+const BUSINESS_WA = businessWhatsApp(process.env.NEXT_PUBLIC_BUSINESS_WHATSAPP);
 
 // "Todos" + every broadened category (build spec §6).
 type CategoryFilter = "todos" | DirectoryCategory;
@@ -89,9 +94,12 @@ export default function CercaTuyoPage() {
 
   const businessWa = useMemo(
     () =>
-      `https://wa.me/${BUSINESS_WA.replace(/[^\d]/g, "")}?text=${encodeURIComponent(
-        "Hola! Estoy usando Mi Bebé y me gustaría recomendar o consultar por un lugar en mi zona.",
-      )}`,
+      BUSINESS_WA
+        ? waLink(
+            BUSINESS_WA,
+            "Hola! Estoy usando Mi Bebé y me gustaría recomendar o consultar por un lugar en mi zona.",
+          )
+        : null,
     [],
   );
 
@@ -178,9 +186,11 @@ export default function CercaTuyoPage() {
             Estamos armando el directorio con lugares reales y confirmados, uno
             por uno. ¿Conocés uno que debería estar? Contanos.
           </p>
-          <div className="mt-3 flex justify-center">
-            <WhatsAppButton href={businessWa} label="Escribinos por WhatsApp" />
-          </div>
+          {businessWa && (
+            <div className="mt-3 flex justify-center">
+              <WhatsAppButton href={businessWa} label="Escribinos por WhatsApp" />
+            </div>
+          )}
         </div>
       )}
 

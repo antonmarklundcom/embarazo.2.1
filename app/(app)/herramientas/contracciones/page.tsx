@@ -1,13 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
 import { useProfile } from "@/lib/useProfile";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
-import { waLink, defaultPrefill } from "@/lib/whatsapp";
+import { waLink, defaultPrefill, businessWhatsApp } from "@/lib/whatsapp";
 
-const BUSINESS_WA = process.env.NEXT_PUBLIC_BUSINESS_WHATSAPP || "+595000000000";
+// C8 — this button said "Contactar a mi sanatorio" and opened a chat with
+// `+595000000000`: Mi Bebé's own (unset) business number, on the screen a woman
+// uses while timing contractions. Two things were wrong, and both are fixed
+// below: the number was a placeholder, and *our* number was never the right
+// destination for "mi sanatorio" in the first place. It now uses the sanatorio
+// number the user saved herself (/emergencia), and falls back to the emergency
+// screen — which carries the national numbers — when she has not saved one.
+const BUSINESS_WA = businessWhatsApp(process.env.NEXT_PUBLIC_BUSINESS_WHATSAPP);
 
 function fmtClock(ts: number): string {
   return new Date(ts).toLocaleTimeString("es-PY", {
@@ -59,7 +67,12 @@ export default function ContraccionesPage() {
   const elapsed =
     runningStart !== null ? Math.round((Date.now() - runningStart) / 1000) : 0;
 
-  const waHref = waLink(BUSINESS_WA, defaultPrefill(profile.week));
+  const sanatorio = profile.sanatorioPhone?.trim();
+  const waHref = sanatorio
+    ? waLink(sanatorio, defaultPrefill(profile.week))
+    : BUSINESS_WA
+      ? waLink(BUSINESS_WA, defaultPrefill(profile.week))
+      : null;
 
   return (
     <div className="space-y-5">
@@ -92,11 +105,20 @@ export default function ContraccionesPage() {
         )}
       </div>
 
-      <WhatsAppButton
-        href={waHref}
-        label="Contactar a mi sanatorio"
-        className="w-full"
-      />
+      {waHref ? (
+        <WhatsAppButton
+          href={waHref}
+          label={sanatorio ? "Contactar a mi sanatorio" : "Escribinos por WhatsApp"}
+          className="w-full"
+        />
+      ) : (
+        <Link
+          href="/emergencia"
+          className="block w-full rounded-tile bg-terracotta px-4 py-3 text-center text-sm font-extrabold text-white transition active:scale-[0.99]"
+        >
+          Números de emergencia y qué decir
+        </Link>
+      )}
 
       {entries && entries.length > 0 && (
         <section>

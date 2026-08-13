@@ -1237,3 +1237,33 @@ because they are properties of the code rather than of any one call.
 - **Quota is NOT enforced here.** That is F2, and it is the reason the
   `quotaMonth` column is written on every row from day one. F1 without F2 is
   spendable; do not enable `AI_BABY_ENABLED` in production until F2 ships.
+
+## C2 — the weekly one-liner (August 2026)
+
+- **It is not `milestone`.** `lib/weeks.ts` already ships a paragraph per week,
+  and the obvious move — render the first sentence of it — was rejected: the
+  paragraph is written for the week detail page, where there is room to explain,
+  and truncating prose produces sentences nobody wrote. C2 is a separate string
+  written for one line under the hero. The schema caps it at 110 characters and
+  the error message names `milestone` as where longer text belongs, so the
+  distinction survives the next content edit.
+- **The fallback is a real path, not a comment.** BUILD-PLAN asks for 42 strings
+  *and* for the code to ship without them. `weeklyLine()` returns `null` and the
+  card returns `null` — no empty card, no "próximamente". A gap the user cannot
+  see is better than a promise the content schedule may not keep, and it is what
+  lets a week be rewritten by deleting it.
+- **Keyed by week, not by id.** Every other seed file is keyed by `id`, but this
+  one is edited a week at a time, so the duplicate-detection failure worth
+  catching is "two entries for semana 24". `validateContentArray`'s `getKey`
+  already supports it (articles use `slug`), so this needed no new machinery.
+- **Gated with `publishedOnly`, not `reviewedOnly`.** These are editorial
+  strings of the same class as the `milestone`/`tip` content that has shipped
+  since the investor MVP, not invented businesses with dead phone numbers, so
+  the reviewer gate D3 uses would hide all 42 for a claim nobody is making —
+  the medical-review claim on this screen is `NEXT_PUBLIC_MEDICAL_REVIEWER`'s
+  job (Z2), and C5 is the task that ties bylined content to it. The placeholder
+  gate still runs, so a week left as "(placeholder) escribir esto" during a
+  content pass falls back to showing nothing.
+- **It lives in its own component, mounted with one line in `page.tsx`.** C2–C8
+  all land in the same slot area; a block per file means each PR touches one
+  line of the shared file instead of a growing block of it.

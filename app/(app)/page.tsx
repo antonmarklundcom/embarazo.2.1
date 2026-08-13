@@ -29,6 +29,7 @@ import { Onboarding } from "@/components/Onboarding";
 import { PlaneandoHome } from "@/components/PlaneandoHome";
 import { LocalResourcesBlock } from "@/components/LocalResourcesBlock";
 import { AppointmentBanner } from "@/components/AppointmentBanner";
+import { WeeklyLineCard } from "@/components/WeeklyLineCard";
 import { RoadmapSection } from "@/components/RoadmapSection";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { PrivacyLine } from "@/components/PrivacyLine";
@@ -98,6 +99,10 @@ export default function InicioPage() {
         babies={profile.babies}
         role={profile.role}
       />
+
+      {/* C2: the weekly one-liner (map #11). Renders nothing for a week with
+          no line yet. */}
+      <WeeklyLineCard week={week} />
 
       {/* Next prenatal appointment reminder (in-app only) */}
       <AppointmentBanner date={profile.nextAppointment} />

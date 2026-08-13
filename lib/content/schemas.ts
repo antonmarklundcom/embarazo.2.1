@@ -101,6 +101,31 @@ export const ArticleSchema = z.object({
 });
 export type Article = z.infer<typeof ArticleSchema>;
 
+/**
+ * C2 — the weekly one-liner (feature map #11): one concrete "what is happening
+ * now" sentence per week, shown under the home hero.
+ *
+ * The length cap is a content rule with teeth: the block is one line on a
+ * 360 px phone, and a paragraph pasted in here would push the rest of the home
+ * screen down instead of failing. `milestone` in `lib/weeks.ts` is where the
+ * longer version belongs.
+ */
+export const WeeklyLineSchema = z.object({
+  week: z
+    .number()
+    .int()
+    .min(1, "la semana tiene que estar entre 1 y 42")
+    .max(42, "la semana tiene que estar entre 1 y 42"),
+  line: z
+    .string()
+    .min(1)
+    .max(
+      110,
+      "la frase de la semana tiene que entrar en una línea (máximo 110 caracteres) — si necesitás más, va en el 'milestone' de lib/weeks.ts",
+    ),
+});
+export type WeeklyLine = z.infer<typeof WeeklyLineSchema>;
+
 export const VideoItemSchema = z.object({
   id: idSchema,
   title: z.string().min(1),

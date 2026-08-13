@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { getArticles } from "@/lib/wordpress";
 import { getArticleBySlug } from "@/lib/seed/articles";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
+import { readTimeLabel } from "@/lib/articles/readTime";
+import { RecordContentView } from "@/components/RecordContentView";
 
 // Statically generate the guías so they precache for offline (spec §9).
 export async function generateStaticParams() {
@@ -33,6 +35,10 @@ export default async function GuiaDetailPage({
 
   return (
     <article className="space-y-4">
+      {/* C7: counts this read. Client-side on purpose — these pages are
+          prerendered, and a count written during the build counts the build. */}
+      <RecordContentView contentId={article.slug} />
+
       <Link href="/guias" className="text-sm text-petrol">
         ← Guías
       </Link>
@@ -46,8 +52,9 @@ export default async function GuiaDetailPage({
         <h1 className="mt-1 text-2xl font-black tracking-tight text-ink">
           {article.title}
         </h1>
-        <div className="mt-2">
+        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
           <MedicalReviewByline />
+          <span className="text-xs text-muted">{readTimeLabel(article.html)}</span>
         </div>
       </header>
 

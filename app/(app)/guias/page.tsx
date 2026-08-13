@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getArticles } from "@/lib/wordpress";
 import { PUBLISHED_VIDEOS } from "@/lib/seed/videos";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
+import { readTimeLabel } from "@/lib/articles/readTime";
 
 export const metadata: Metadata = {
   title: "Guías",
@@ -70,6 +71,10 @@ export default async function GuiasPage() {
                   </h3>
                   <p className="mt-1 text-sm font-semibold text-muted">
                     {a.excerpt}
+                  </p>
+                  {/* C6 (map #17): computed from the body, never stored. */}
+                  <p className="mt-2 text-[11px] font-bold text-muted">
+                    {readTimeLabel(a.html)}
                   </p>
                 </div>
               </Link>

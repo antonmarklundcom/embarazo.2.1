@@ -17,6 +17,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${appUrl}/guias`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${appUrl}/derechos`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${appUrl}/directorio`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
+    { url: `${appUrl}/preguntas`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${appUrl}/privacidad`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
     { url: `${appUrl}/terminos`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
   ];

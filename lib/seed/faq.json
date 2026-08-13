@@ -1,0 +1,56 @@
+[
+  {
+    "id": "faq-quien-ve-mis-datos",
+    "topic": "privacidad",
+    "question": "¿Quién ve mis datos?",
+    "answer": "Sin cuenta, nadie: todo lo que anotás queda guardado en tu teléfono y no sale de ahí. Con cuenta, tus registros viajan cifrados a nuestro servidor para que los tengas en otro aparato, y solo vos podés verlos. Si compartís el embarazo con tu pareja o tu familia, esa persona ve únicamente la semana, la fecha probable de parto, el próximo control y el nombre del bebé si lo pusiste. Nunca tus notas, tus síntomas ni tus fotos."
+  },
+  {
+    "id": "faq-notas-fotos",
+    "topic": "privacidad",
+    "question": "¿Mis fotos y mis notas se suben a algún lado?",
+    "answer": "Las fotos —las de tu panza y las de tu carné— nunca salen del teléfono. No se sincronizan ni siquiera si tenés cuenta. Las notas del diario sí se sincronizan con tu cuenta, y si les ponés un PIN se guardan cifradas con una clave que solo existe en tu teléfono: ni nosotros podemos leerlas."
+  },
+  {
+    "id": "faq-borro-la-app",
+    "topic": "privacidad",
+    "question": "¿Qué pasa si borro la app?",
+    "answer": "Si nunca creaste una cuenta, se borra todo y no hay forma de recuperarlo: por eso conviene descargar la copia de seguridad desde Ajustes y guardarla en un lugar seguro. Si tenés cuenta, volvés a entrar en otro teléfono y tus registros vuelven, salvo las fotos, que solo estaban acá."
+  },
+  {
+    "id": "faq-borrar-cuenta",
+    "topic": "cuenta",
+    "question": "¿Puedo borrar mi cuenta y todo lo que guardé?",
+    "answer": "Sí, desde Ajustes, en dos toques. Se borran todos tus registros del servidor, tus invitaciones a la familia, tus notificaciones y las imágenes que hayas generado. En el mismo paso podés borrar también lo que está en este teléfono. No queda una copia esperando: borrar significa borrar."
+  },
+  {
+    "id": "faq-sin-cuenta",
+    "topic": "cuenta",
+    "question": "¿Tengo que crear una cuenta?",
+    "answer": "No. La app funciona completa sin cuenta y sin internet. La cuenta sirve para dos cosas: tener tus datos en más de un aparato y compartir el embarazo con tu pareja o tu familia. Si no las necesitás, «seguir sin cuenta» no es una versión recortada."
+  },
+  {
+    "id": "faq-sin-internet",
+    "topic": "app",
+    "question": "¿Funciona sin internet?",
+    "answer": "Sí. Las semanas, las guías, los números de emergencia y las herramientas funcionan sin señal, incluso la primera vez que abrís la app. Lo único que necesita internet es sincronizar con tu cuenta y abrir el directorio actualizado."
+  },
+  {
+    "id": "faq-cuanto-cuesta",
+    "topic": "app",
+    "question": "¿Cuánto cuesta?",
+    "answer": "Nada. La app es gratis y no tiene avisos que se abren encima de lo que estás leyendo. Algunos lugares del directorio pueden estar patrocinados, y cuando lo están dice «Patrocinado»."
+  },
+  {
+    "id": "faq-revisa-obstetra",
+    "topic": "salud",
+    "question": "¿Una obstetra revisa esta información?",
+    "answer": "El contenido médico lo revisa la profesional cuyo nombre aparece al pie de las guías. Si no ves un nombre ahí, es porque todavía no terminamos esa revisión y preferimos decirlo antes que dar a entender lo contrario. En cualquier caso, la app acompaña: no reemplaza a tu control prenatal ni hace diagnósticos."
+  },
+  {
+    "id": "faq-emergencia",
+    "topic": "salud",
+    "question": "¿Puedo usar la app en una emergencia?",
+    "answer": "La pantalla de Emergencia funciona sin internet y tiene los números que necesitás, qué decir cuando llamás y tus contactos guardados. Pero ante sangrado, pérdida de líquido, dolor fuerte, fiebre o menos movimientos del bebé, lo primero es llamar a tu sanatorio o ir a la guardia. La app es para tener la información a mano, no para decidir por vos."
+  }
+]

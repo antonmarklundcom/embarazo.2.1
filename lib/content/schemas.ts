@@ -101,6 +101,26 @@ export const ArticleSchema = z.object({
 });
 export type Article = z.infer<typeof ArticleSchema>;
 
+/**
+ * E6 — the FAQ (feature map #29).
+ *
+ * Topics are a closed set because the accordion is embedded in more than one
+ * place and each embed asks for the topics it is the right screen for — the
+ * privacy page shows `privacidad` + `cuenta`, and nobody has to remember to
+ * update a second list when a question is added.
+ */
+export const FaqTopicSchema = z.enum(["privacidad", "cuenta", "app", "salud"]);
+export type FaqTopic = z.infer<typeof FaqTopicSchema>;
+
+export const FaqEntrySchema = z.object({
+  id: idSchema,
+  topic: FaqTopicSchema,
+  question: z.string().min(1).max(120),
+  // Long enough to answer honestly, short enough that nobody scrolls past it.
+  answer: z.string().min(1).max(700),
+});
+export type FaqEntry = z.infer<typeof FaqEntrySchema>;
+
 export const VideoItemSchema = z.object({
   id: idSchema,
   title: z.string().min(1),

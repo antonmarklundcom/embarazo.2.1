@@ -676,9 +676,33 @@ the `PUBLISHED_*` gate until real partners exist.
 ### E5 "Qué necesitás de verdad" (map #25)
 Not a price comparator (no Prisjakt equivalent in PY): a curated needs
 list with realistic ₲ ranges and where to buy in Asunción.
-### E6 FAQ accordion (map #29)
+### E6 FAQ accordion (map #29) — ✅ DONE
 Reused for the privacy/account trust moment: ¿quién ve mis datos?
 ¿qué pasa si borro la app? ¿la obstetra revisa esto?
+
+Shipped as `lib/seed/faq.json` (9 questions, validated per G1),
+`components/FaqAccordion.tsx`, a `/preguntas` page and the same accordion
+embedded on `/privacidad` — the "reused for the trust moment" the task line
+asks for, done by **topic filtering** rather than by a second copy of the text:
+somebody reading a privacy policy is exactly who has these questions, and one
+source means the two cannot drift.
+
+**The answers are tested against what the app actually does**, including the
+uncomfortable parts: photos never sync (§4.4), the companion sees week · FPP ·
+próximo control · nombre and *"nunca tus notas"* (E1), no-account data is
+unrecoverable without the backup (A5/A4), and — the one worth having —
+*"si no ves un nombre ahí, es porque todavía no terminamos esa revisión"*,
+which is Z2's rule written as prose instead of a confident sentence that would
+have to be walked back. A test asserts each of those phrases.
+
+The accordion is real buttons with `aria-expanded`/`aria-controls` and labelled
+regions rather than a styled `<details>`, and **more than one answer can be open
+at once** — an accordion that closes the previous answer is a nice animation and
+a bad experience for somebody comparing "¿quién ve mis datos?" with "¿qué pasa
+si borro la app?". `/preguntas` is precached and in the sitemap. Also fixed
+while here: `/privacidad` linked "preguntas frecuentes sobre privacidad" to
+`/terminos`, where they were not. Covered by `lib/seed/faq.test.ts` (11) and
+`e2e/faq.spec.ts` (2, which check the ARIA contract rather than the animation).
 
 ---
 

@@ -7,6 +7,7 @@ import {
   EventItemSchema,
   VideoItemSchema,
   FoodEntrySchema,
+  FaqEntrySchema,
   validateContentArray,
 } from "../lib/content/schemas.ts";
 
@@ -51,6 +52,16 @@ const checks: Check[] = [];
   const raw = (readJson("lib/seed/placements.json") as { placements: unknown[] })
     .placements;
   checks.push(validateContentArray("lib/seed/placements.json", raw, AdPlacementSchema));
+}
+{
+  // E6 FAQ.
+  try {
+    const raw = readJson("lib/seed/faq.json") as unknown[];
+    checks.push(validateContentArray("lib/seed/faq.json", raw, FaqEntrySchema));
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    // Not created yet — the accordion renders nothing.
+  }
 }
 {
   // D3 food lookup — validated the same way as everything else.

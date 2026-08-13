@@ -571,8 +571,25 @@ Content follows G1 — validated JSON, keyed by week so "two entries for semana
 mid-content-pass falls back instead of shipping. Covered by
 `lib/seed/weeklyLines.test.ts` (11, including the voseo check) and
 `e2e/weekly-line.spec.ts` (1).
-### C3 Size comparison tabs (map #12)
+### C3 Size comparison tabs (map #12) — ✅ DONE
 Tabs for tamaño / pie / mano, keeping the Paraguayan comparisons and cm/g.
+
+Shipped as `lib/seed/limbSizes.json` (weeks 9–42), `lib/seed/limbSizes.ts` and
+`components/SizeTabs.tsx`, mounted in C1's slot area. The "tamaño" tab is
+served by `lib/weeks.ts`, unchanged — the Paraguayan comparisons (mandioca,
+mamón, chipa) are the thing this product exists to have, so C3 adds tabs
+*beside* them rather than a new size vocabulary. **A tab whose data does not
+exist is not rendered**: before week 9 there is no foot to measure, so the card
+degrades to the single tab it has always been able to show instead of a panel
+of dashes. Real `role="tablist"` semantics with arrow-key movement, and the
+active tab is resolved by lookup rather than trusted from state, so a week that
+loses a tab cannot render an empty panel. The data risk (a decimal point in the
+wrong place claiming an 18 cm foot) is handled in three places: a schema range
+cap with an error message that names the likely cause, a monotonicity test that
+catches a transposed digit a range check would pass, and a test that pins week
+40 near a real newborn's ~8 cm. Measurements are formatted "8,2 cm" — es-PY
+writes the decimal comma, and this is a number read aloud to somebody else.
+Covered by `lib/seed/limbSizes.test.ts` (11) and `e2e/size-tabs.spec.ts` (2).
 ### C4 Perspective switcher (map #13)
 Same week, three entrances: para vos / para tu pareja / para la familia.
 ### C5 "De la obstetra" (map #14)

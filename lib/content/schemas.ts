@@ -126,6 +126,34 @@ export const WeeklyLineSchema = z.object({
 });
 export type WeeklyLine = z.infer<typeof WeeklyLineSchema>;
 
+/**
+ * C3 — foot and hand measurements per week (feature map #12), the two tabs
+ * beside "tamaño". Optional per side: a week may have a foot figure and no
+ * hand one, and the tab for the missing side simply does not appear.
+ *
+ * The upper bounds are sanity rails, not medicine: a newborn foot is ~8 cm, so
+ * a `18` typed instead of `1.8` is a CI failure rather than a card claiming
+ * the baby has a foot the size of a forearm.
+ */
+const limbCmSchema = z
+  .number()
+  .positive()
+  .max(12, "medida en cm fuera de rango para un pie o una mano — ¿faltó la coma decimal?");
+
+export const LimbSizeSchema = z
+  .object({
+    week: z.number().int().min(1).max(42),
+    footCm: limbCmSchema.optional(),
+    footComparison: z.string().min(1).max(60).optional(),
+    handCm: limbCmSchema.optional(),
+    handComparison: z.string().min(1).max(60).optional(),
+  })
+  .refine(
+    (entry) => entry.footCm !== undefined || entry.handCm !== undefined,
+    "una entrada sin pie ni mano no sirve para nada — borrala en vez de dejarla vacía",
+  );
+export type LimbSize = z.infer<typeof LimbSizeSchema>;
+
 export const VideoItemSchema = z.object({
   id: idSchema,
   title: z.string().min(1),

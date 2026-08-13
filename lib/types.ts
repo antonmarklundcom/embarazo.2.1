@@ -32,6 +32,7 @@ export type {
   FoodEntry,
   FoodVerdict,
   WeeklyLine,
+  LimbSize,
 } from "./content/schemas";
 import type { DirectoryCategorySchema } from "./content/schemas";
 import type { z } from "zod";

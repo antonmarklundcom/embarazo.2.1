@@ -8,6 +8,7 @@ import {
   VideoItemSchema,
   FoodEntrySchema,
   WeeklyLineSchema,
+  LimbSizeSchema,
   validateContentArray,
 } from "../lib/content/schemas.ts";
 
@@ -70,6 +71,24 @@ const checks: Check[] = [];
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     // Not created yet — the app falls back to showing no line at all.
+  }
+}
+{
+  // C3 foot/hand sizes. Keyed by week: this file is edited a week at a time,
+  // so the duplicate worth catching is "two entries for semana 24".
+  try {
+    const raw = readJson("lib/seed/limbSizes.json") as unknown[];
+    checks.push(
+      validateContentArray(
+        "lib/seed/limbSizes.json",
+        raw,
+        LimbSizeSchema,
+        (entry) => String(entry.week),
+      ),
+    );
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    // Not created yet — the card falls back to the single "tamaño" tab.
   }
 }
 {

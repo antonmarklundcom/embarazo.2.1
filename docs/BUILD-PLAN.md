@@ -721,8 +721,23 @@ for any week 1–42, offline, in the pastel language, with no layout shift.
 
 ## Phase D — tools & content surfaces (feature map 20–24, 26)
 
-### D1 Illustrated tools grid (map #20)
+### D1 Illustrated tools grid (map #20) — ✅ DONE
 3-per-row grid with illustrations replacing the current text list.
+
+Shipped as `components/ToolIcon.tsx` (one line-art set, one stroke weight, one
+colour) and a rewritten `/herramientas`. The screen was eleven stacked text
+cards — a wall of prose you read rather than a set of things you reach for; the
+grid puts the whole toolbox on one phone screen, found by shape and colour
+before it is read. **The sentences are not deleted**: they move into `sr-only`
+text, so a screen reader still hears "Cronómetro de contracciones: medí duración
+e intervalo…" and the tile stays a tile. Icons are drawn rather than imported —
+an icon font or sprite is another request on a screen that must work offline
+from first install, and a borrowed set brings a visual language that is not this
+app's. The five icons that lived inline in `app/(app)/page.tsx` moved into the
+shared component, so the home grid and the toolbox cannot drift apart. Z1's
+video gate is preserved. Covered by `e2e/tools-grid.spec.ts` (3, one asserting
+the three-per-row geometry from real bounding boxes rather than from the class
+name).
 ### D2 New tools (map #21)
 Kegel (timed exercises), **name picker with Guaraní names**, dental
 health, diary, sleep. Name picker is the sharing magnet — build its share

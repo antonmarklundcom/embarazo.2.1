@@ -1527,3 +1527,23 @@ direction of spending less.
 - **The e2e sweeps four screens for `wa.me/5950…`** rather than testing the
   helper only. The helper being right is not the property that matters; no
   screen offering a dead number is.
+
+## D1 — illustrated tools grid (August 2026)
+
+- **The sentences moved to `sr-only`, they were not deleted.** Eleven tools ×
+  one sentence each is a wall of prose, but the sentences are genuinely useful
+  to a screen-reader user, for whom "Contracciones" alone is thinner than
+  "Cronómetro de contracciones: medí duración e intervalo cuando empiecen". The
+  tile is for the eye, the sentence is for the accessible name, and neither
+  audience loses.
+- **The icons are drawn in-repo, not imported.** An icon font or an SVG sprite
+  is another network request on a screen that must work offline from first
+  install, and a borrowed set (Material, Feather) brings a visual language that
+  is not this app's pastel one. One stroke weight, one colour, one viewBox.
+- **The five icons that lived inline in the home screen moved into the shared
+  component.** Two grids with two copies of the same five icons drift the first
+  time one of them is touched, and the home grid and the toolbox are the two
+  places a user compares directly.
+- **The e2e checks the geometry, not the class name.** `grid-cols-3` in a
+  className proves nothing about what renders; the test reads bounding boxes and
+  asserts the first three tiles share a top edge and the fourth does not.

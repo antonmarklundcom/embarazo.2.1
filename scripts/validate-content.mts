@@ -11,6 +11,7 @@ import {
   LimbSizeSchema,
   PerspectiveBandSchema,
   ObstetraNoteSchema,
+  FaqEntrySchema,
   validateContentArray,
 } from "../lib/content/schemas.ts";
 
@@ -126,6 +127,16 @@ const checks: Check[] = [];
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     // Not created yet — the card does not render.
+  }
+}
+{
+  // E6 FAQ.
+  try {
+    const raw = readJson("lib/seed/faq.json") as unknown[];
+    checks.push(validateContentArray("lib/seed/faq.json", raw, FaqEntrySchema));
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    // Not created yet — the accordion renders nothing.
   }
 }
 {

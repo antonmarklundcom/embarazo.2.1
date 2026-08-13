@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { FaqAccordion } from "@/components/FaqAccordion";
 import Link from "next/link";
 
 // Privacy policy for the account world (v3 pivot — accounts + sync). See
@@ -180,13 +181,24 @@ export default function PrivacidadPage() {
         <p className="text-sm leading-relaxed text-muted">
           Si tenés dudas sobre esta política escribinos por WhatsApp desde el
           botón de contacto de la app. Para borrar tu cuenta no hace falta
-          escribirnos: está en <strong>Ajustes</strong>. Ver también las{" "}
-          <Link href="/terminos" className="font-bold underline">
-            preguntas frecuentes sobre privacidad
-          </Link>{" "}
-          en la sección de ayuda.
+          escribirnos: está en <strong>Ajustes</strong>.
         </p>
       </section>
+
+      {/* E6: the same answers as /preguntas, asked for by topic. This is the
+          trust moment BUILD-PLAN names — somebody reading a privacy policy is
+          exactly who has these questions. */}
+      <FaqAccordion
+        topics={["privacidad", "cuenta"]}
+        title="Preguntas frecuentes"
+      />
+      <p className="text-sm text-muted">
+        Hay más en{" "}
+        <Link href="/preguntas" className="font-bold underline">
+          preguntas frecuentes
+        </Link>
+        .
+      </p>
 
       <p className="text-[11px] leading-relaxed text-muted">
         Este texto describe honestamente el funcionamiento actual y planeado

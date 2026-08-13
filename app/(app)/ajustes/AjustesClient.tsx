@@ -716,6 +716,18 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
       <PushSettings groupTitle="Notificaciones" />
 
       <SettingsGroup title="Privacidad">
+      {/* E6: the trust questions, one tap from where somebody is already
+          thinking about their data. */}
+      <Link
+        href="/preguntas"
+        className="block rounded-card bg-white p-4 shadow-soft transition active:scale-[0.99]"
+      >
+        <h2 className="text-base font-extrabold text-ink">Preguntas frecuentes</h2>
+        <p className="mt-1 text-sm text-muted">
+          Quién ve tus datos, qué pasa si borrás la app, si hace falta una
+          cuenta.
+        </p>
+      </Link>
       {/* Optional PIN */}
       <section className="rounded-card bg-white p-4 shadow-soft">
         <h2 className="text-base font-extrabold text-ink">PIN opcional</h2>

@@ -26,6 +26,9 @@ const pageRoutes: string[] = [
   // comer...?" works fully offline from first install, not just after a
   // visit — it's meant to be reachable with zero network, ever.
   "/herramientas/comer",
+  // E6: the questions people ask before trusting an app with a pregnancy.
+  // Needing signal to read the answer is a bad first impression.
+  "/preguntas",
   ...Array.from(
     { length: MAX_WEEK - MIN_WEEK + 1 },
     (_, i) => `/semana/${MIN_WEEK + i}`,

@@ -1658,3 +1658,29 @@ guarantee is only as good as the data that cannot exist.
   "Link copiado"; where the user dismisses the sheet (`AbortError`) nothing is
   said, because telling somebody an action failed when she cancelled it is how
   an app teaches people to distrust its messages.
+## E6 — FAQ accordion (August 2026)
+
+- **One source, embedded by topic.** BUILD-PLAN asks for the FAQ to be "reused
+  for the privacy/account trust moment", so the accordion takes a list of topics
+  and each screen asks for the ones it is the right screen for. The alternative
+  — a FAQ page plus a hand-written paragraph on `/privacidad` — drifts the first
+  time an answer changes, and the answer that changes will be a privacy one.
+- **The answers are asserted against the app's behaviour, including the
+  awkward parts.** Photos never sync; a companion sees four fields and "nunca
+  tus notas"; without an account there is no recovery beyond the backup file;
+  and the medical review is described as *unfinished* — "si no ves un nombre
+  ahí, es porque todavía no terminamos esa revisión". That last one is Z2's rule
+  as prose, and it is the sentence most likely to be quietly "improved" later,
+  so a test pins it.
+- **Real buttons, not a styled `<details>`.** `aria-expanded`, `aria-controls`
+  and a labelled region are what a screen reader needs to announce
+  expanded/collapsed; `<details>` still does that inconsistently across the
+  browsers this app must run in, and this is the screen where a distrustful
+  reader is most likely to be using assistive tech or a very old phone.
+- **Several answers can be open at once.** Closing the previous one is a nicer
+  animation and a worse reading experience for the exact comparison this FAQ
+  exists to support ("¿quién ve mis datos?" against "¿qué pasa si borro la
+  app?").
+- **Found and fixed while here:** `/privacidad` linked the words "preguntas
+  frecuentes sobre privacidad" to `/terminos`, where no such section exists. It
+  now points at `/preguntas`, which does.

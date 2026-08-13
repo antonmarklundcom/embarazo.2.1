@@ -43,6 +43,7 @@ import { PrivacyLine } from "@/components/PrivacyLine";
 import { InstallCard } from "@/components/InstallCard";
 // D1: one icon set, shared with the herramientas grid so the two cannot drift.
 import { ToolIcon, type ToolIconName } from "@/components/ToolIcon";
+import { InviteFriend } from "@/components/InviteFriend";
 
 // "Hoy" screen — Mi Bebé design 1a (docs/REDESIGN-PLAN.md §2): week strip,
 // photo hero with fallback, tip, mood check-in, herramientas grid, reading
@@ -230,6 +231,8 @@ export default function InicioPage() {
       </Link>
 
       {/* Install prompt (P1.1) — hides itself once installed/unavailable */}
+      <InviteFriend />
+
       <InstallCard />
 
       {/* Roadmap placeholders (build spec §8) */}

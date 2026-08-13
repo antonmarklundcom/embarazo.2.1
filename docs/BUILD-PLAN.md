@@ -873,9 +873,23 @@ squashed bump photo is the kind of detail that makes somebody not share it) and
 never leaves the page. Covered by `lib/share/share.test.ts` (11) and
 `e2e/share-card.spec.ts` (2 — the download path, asserting **no non-GET request
 of any kind** during the share).
-### E3 Invite a friend (map #31)
+### E3 Invite a friend (map #31) — ✅ DONE
 "Invitá a una amiga" sharing the install link; doubles as the test-round
 feedback path.
+
+Shipped as `lib/share/invite.ts` and `components/InviteFriend.tsx`, on `/ajustes`
+and the home screen. The message carries a fixed sentence and the app's URL —
+**never the week, never the due date**: an invitation is the one message in the
+app addressed to somebody who is not the user, and it gets forwarded, so
+"estoy en la semana 24" would publish her pregnancy to whoever it reaches next.
+That rule is enforced as `INVITE_FORBIDDEN_PATTERNS` (patterns, not words: the
+copy legitimately says "semana a semana" *about the app*, and a bare ban would
+have failed on honest copy), with a test that the tempting personalisation is
+caught and the shipped copy is not. **With `NEXT_PUBLIC_APP_URL` unset the card
+does not render** — an invitation to nowhere is worse than no button — and
+`navigator.share` falls back to copying the link rather than failing silently.
+Covered by `lib/share/invite.test.ts` (7) and `e2e/invite.spec.ts` (1, run on
+**both** sides of the URL gate).
 ### E4 Beneficios tab (map #27)
 Browsable deals surface — **no pop-ups, no interstitials**. Hidden behind
 the `PUBLISHED_*` gate until real partners exist.

@@ -623,9 +623,33 @@ deep-links to the right one instead of routing through a picker. The
 duplicate "Checklists" entry in the `/herramientas` tools list was removed
 now that it has its own tab (feature map #24's "promote out of the tools
 drawer").
-### D5 Directory category banners (map #26)
+### D5 Directory category banners (map #26) — ✅ DONE
 Image banner + count per category ("Sanatorios · 24 lugares"); server-side
 filtering and pagination when listings pass ~100.
+
+Shipped as `lib/directoryBanners.ts` (pure) and
+`components/DirectoryBanners.tsx`, wired into `/directorio`. Two rules, both
+about not lying: a category with no listings **gets no banner** (nine tiles
+reading "0 lugares" is the exact opposite of Z1's honest empty state, and with
+every listing gated today that is what the naive version would render), and the
+count is of what she would see *after* the department and the search — a banner
+promising 24 that opens onto three is worse than no number.
+
+Each banner shows `/assets/directorio/<category>.webp` when it exists and a
+pastel block when it does not, the same fallback-on-error pattern as the week
+hero. That is what lets "image banner" ship before licensed photography exists:
+deliberate today, lights up on its own when G4 drops the files in, nothing
+invented in between.
+
+**The second half of the line above is deliberately not built.** Server-side
+filtering and pagination would re-introduce exactly the query parameters J3
+removed so the Play listing can keep saying "No data collected" — and the
+single cached response is what makes the directory work offline. Paging is
+client-side instead (10 per category, "ver más"), which is honest at 100
+listings and stays honest at 500 because the route already returns everything.
+`H3` is where "directory at scale" lives if that ever stops being true.
+Covered by `lib/directoryBanners.test.ts` (7) and
+`e2e/directory-banners.spec.ts` (1).
 ### D6 Training classes (map #22)
 Stage-filtered classes with duration + equipment. Short, downloadable,
 `sin equipo`. **Lowest priority in this phase** — needs video assets.

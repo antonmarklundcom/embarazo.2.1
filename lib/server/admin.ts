@@ -16,7 +16,7 @@ import {
   users,
 } from "./schema";
 import { isAdminEmail } from "@/lib/admin/allowlist";
-import { type AdminAction } from "@/lib/admin/audit";
+import { parseAuditMeta, type AdminAction } from "@/lib/admin/audit";
 
 export { ADMIN_ACTIONS, type AdminAction } from "@/lib/admin/audit";
 
@@ -110,12 +110,17 @@ export async function recordAudit(
     meta?: Record<string, unknown>;
   },
 ): Promise<void> {
+  // The shape is checked here rather than trusted from the call site: this is
+  // the one table A5's deletion retains, so a careless payload outlives the
+  // user it describes (see lib/admin/audit.ts).
+  const meta = parseAuditMeta(entry.action, entry.meta);
+
   await database.insert(adminAudit).values({
     id: crypto.randomUUID(),
     actorUserId: entry.actorUserId,
     action: entry.action,
     targetUserId: entry.targetUserId ?? null,
-    meta: entry.meta ?? null,
+    meta: Object.keys(meta).length > 0 ? meta : null,
   });
 }
 

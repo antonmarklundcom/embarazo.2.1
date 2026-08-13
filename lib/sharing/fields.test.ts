@@ -12,6 +12,7 @@ import {
   generateInviteCode,
   isLiveMembership,
   isValidInviteCode,
+  snapshotShouldBeDropped,
   type CompanionSnapshot,
 } from "./fields";
 
@@ -146,5 +147,31 @@ describe("invite codes", () => {
   it("has enough entropy that guessing is not a strategy", () => {
     // 31^10 ≈ 8.2e14. A pregnancy behind a guessable code is not acceptable.
     expect(31 ** INVITE_CODE_LENGTH).toBeGreaterThan(1e14);
+  });
+});
+
+
+describe("the snapshot does not outlive the last companion", () => {
+  it("is dropped when the last non-owner membership is revoked", () => {
+    expect(snapshotShouldBeDropped(0)).toBe(true);
+  });
+
+  it("survives while anyone else still has access", () => {
+    expect(snapshotShouldBeDropped(1)).toBe(false);
+    expect(snapshotShouldBeDropped(2)).toBe(false);
+  });
+
+  it("is deleted by revokeMembership itself, not by a cleanup job", () => {
+    // Asserted against the source for the same reason the field list is: this
+    // is a property of the code path, and a cleanup that runs "later" is a
+    // window in which the row exists with nobody entitled to it.
+    const source = readFileSync(
+      join(process.cwd(), "lib", "server", "sharing.ts"),
+      "utf8",
+    );
+    const fn = source.slice(source.indexOf("export async function revokeMembership"));
+    const body = fn.slice(0, fn.indexOf("\n}"));
+    expect(body).toContain("snapshotShouldBeDropped");
+    expect(body).toContain(".delete(companionSnapshots)");
   });
 });

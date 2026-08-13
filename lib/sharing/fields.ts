@@ -138,3 +138,24 @@ export function isValidInviteCode(value: string): boolean {
 
 /** Invites expire; a link in a WhatsApp thread should not work forever. */
 export const INVITE_TTL_DAYS = 14;
+
+// ---------------------------------------------------------------------------
+// Snapshot lifetime (August 2026 review follow-up)
+// ---------------------------------------------------------------------------
+
+/**
+ * Whether the companion snapshot should be deleted after a revocation.
+ *
+ * E1's whole argument is that "a companion sees nothing else" holds because the
+ * data a companion could see does not exist anywhere else — not because a
+ * filter hides it. A snapshot left behind after the last companion is revoked
+ * is that argument's loose end: unreadable today, and one future bug away from
+ * being readable. `pregnancyId` is the primary key of `companionSnapshots`, so
+ * a re-invited companion simply causes the owner's device to publish it again.
+ *
+ * Owners are not counted: an owner's membership is not what the snapshot is
+ * for, and a pregnancy always has one.
+ */
+export function snapshotShouldBeDropped(activeNonOwnerMemberships: number): boolean {
+  return activeNonOwnerMemberships === 0;
+}

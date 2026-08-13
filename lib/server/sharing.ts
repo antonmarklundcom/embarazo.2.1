@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, ne } from "drizzle-orm";
 
 import type { Database } from "./db";
 import {
@@ -12,6 +12,7 @@ import {
 import {
   INVITE_TTL_DAYS,
   generateInviteCode,
+  snapshotShouldBeDropped,
   type CompanionSnapshot,
   type MemberRole,
 } from "@/lib/sharing/fields";
@@ -113,6 +114,19 @@ export async function membershipsOf(
     );
 }
 
+/**
+ * Revoke one membership, and drop the snapshot when the last companion goes.
+ *
+ * Revoking made the snapshot unreadable — every read goes through an active
+ * membership — but left the row sitting there: week, due date, next control and
+ * baby name for a pregnancy nobody is allowed to see. E1's own argument is that
+ * "nothing else" is enforced by the data not existing rather than by a filter,
+ * and a retained snapshot is that argument's one loose end. So when the last
+ * non-owner membership is revoked, the row goes.
+ *
+ * The count is taken *after* the update, in the same call, so the decision is
+ * made on the state the revocation produced rather than on the state before it.
+ */
 export async function revokeMembership(
   database: Database,
   pregnancyId: string,
@@ -127,6 +141,23 @@ export async function revokeMembership(
         eq(pregnancyMembers.userId, userId),
       ),
     );
+
+  const remaining = await database
+    .select({ userId: pregnancyMembers.userId })
+    .from(pregnancyMembers)
+    .where(
+      and(
+        eq(pregnancyMembers.pregnancyId, pregnancyId),
+        isNull(pregnancyMembers.revokedAt),
+        ne(pregnancyMembers.role, "owner"),
+      ),
+    );
+
+  if (snapshotShouldBeDropped(remaining.length)) {
+    await database
+      .delete(companionSnapshots)
+      .where(eq(companionSnapshots.pregnancyId, pregnancyId));
+  }
 }
 
 // ---------------------------------------------------------------------------

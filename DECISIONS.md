@@ -1237,3 +1237,36 @@ because they are properties of the code rather than of any one call.
 - **Quota is NOT enforced here.** That is F2, and it is the reason the
   `quotaMonth` column is written on every row from day one. F1 without F2 is
   spendable; do not enable `AI_BABY_ENABLED` in production until F2 ships.
+
+## Review follow-ups — snapshot lifetime and audit meta (August 2026)
+
+Two items the Opus review left open. Both are about the same instinct: a
+guarantee is only as good as the data that cannot exist.
+
+- **`revokeMembership` now deletes the companion snapshot when the last
+  non-owner membership goes.** Revoking already made the snapshot unreadable —
+  every read passes through an active membership — but the row stayed: week,
+  due date, next control and baby name for a pregnancy nobody is entitled to
+  see. E1's whole argument is that "nothing else" holds because the data does
+  not exist rather than because a filter hides it, and a retained snapshot was
+  that argument's one loose end. It is deleted **inside the revocation**, not by
+  a cleanup job: "later" is a window in which the row exists with nobody
+  entitled to it. Owners are not counted (a pregnancy always has one, and the
+  snapshot is not for them), and `pregnancyId` is the table's primary key, so a
+  re-invited companion just causes the owner's device to publish it again. The
+  rule is a pure function so it is tested directly, and a source scan asserts
+  the delete lives in `revokeMembership` rather than somewhere hopeful.
+- **`adminAudit.meta` has a declared shape per action.** It was free-form json
+  in the one table A5's deletion deliberately retains — so a careless payload
+  outlives the user it describes, permanently. Each action now has a `.strict()`
+  zod schema (an unexpected key is a rejected write, not a stored surprise),
+  `AUDIT_META_SCHEMAS` is asserted to cover `ADMIN_ACTIONS` exactly (the same
+  guarantee A5's `TABLE_DISPOSITION` gives for tables: a new action cannot
+  appear without someone deciding what it may record), and
+  `FORBIDDEN_AUDIT_META_FIELDS` is asserted **against the source** of the schema
+  block, exactly as E1 asserts `FORBIDDEN_COMPANION_FIELDS`. Validation lives in
+  `recordAudit`, not at the call sites, and **throws**: every mutating action
+  must be audited (§9), so "the audit failed" may not quietly become "the audit
+  is missing". Call sites build `meta` from literals, so a throw is a
+  programming error caught by a test rather than a runtime surprise for an
+  administrator.

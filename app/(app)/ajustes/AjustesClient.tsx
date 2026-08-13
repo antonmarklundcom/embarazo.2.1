@@ -27,6 +27,7 @@ import { refreshReminders } from "@/lib/push/client";
 import { syncNow } from "@/lib/sync/client";
 import { PrivacyLine } from "@/components/PrivacyLine";
 import { InstallCard } from "@/components/InstallCard";
+import { InviteFriend } from "@/components/InviteFriend";
 
 function toDateInput(ts?: number): string {
   if (!ts) return "";
@@ -798,6 +799,11 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
         </p>
       </section>
       </SettingsGroup>
+
+      {/* E3: the growth surface that matters here — a WhatsApp message from
+          somebody you trust, not a store search. Renders nothing when there is
+          no app URL to send anyone to. */}
+      <InviteFriend />
 
       <SettingsGroup title="Datos">
       {/* Backup / restore */}

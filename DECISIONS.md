@@ -1304,3 +1304,25 @@ direction of spending less.
   holds the arithmetic and reads no environment variable directly — it is
   imported by the client screen, and a module a client component imports must
   never reach for a secret (asserted against the source, like F1's).
+
+## E3 — invitá a una amiga (August 2026)
+
+- **The invitation carries the app's URL and nothing of hers.** It is the one
+  message in this app addressed to somebody who is not the user, and it gets
+  forwarded — "mirá, estoy en la semana 24" publishes her pregnancy to whoever
+  the message reaches next. Tempting, and disallowed.
+- **The rule is patterns, not banned words.** The copy legitimately says "semana
+  a semana" *about the app*, so a bare "semana" ban would either fail on honest
+  copy or push somebody into rewording it for the wrong reason. What is banned
+  is a number attached to her — `semana 24`, `FPP …` — plus the fields that are
+  hers alone. A test checks both directions: the shipped copy passes, and
+  `"${INVITE_TEXT} Estoy en la semana 24!"` fails.
+- **No `NEXT_PUBLIC_APP_URL`, no card.** That is the state of every local build,
+  of CI, and of any deployment before the domain exists. An invitation to
+  nowhere is worse than no button, and a `https?://` check means a half-filled
+  env var ("mibebe.com.py") cannot produce a broken link either.
+- **Clipboard fallback, and a dismissed sheet is not an error.** Where
+  `navigator.share` does not exist the link goes to the clipboard with a visible
+  "Link copiado"; where the user dismisses the sheet (`AbortError`) nothing is
+  said, because telling somebody an action failed when she cancelled it is how
+  an app teaches people to distrust its messages.

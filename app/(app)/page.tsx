@@ -33,6 +33,7 @@ import { RoadmapSection } from "@/components/RoadmapSection";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { PrivacyLine } from "@/components/PrivacyLine";
 import { InstallCard } from "@/components/InstallCard";
+import { InviteFriend } from "@/components/InviteFriend";
 
 // "Hoy" screen — Mi Bebé design 1a (docs/REDESIGN-PLAN.md §2): week strip,
 // photo hero with fallback, tip, mood check-in, herramientas grid, reading
@@ -214,6 +215,8 @@ export default function InicioPage() {
       </Link>
 
       {/* Install prompt (P1.1) — hides itself once installed/unavailable */}
+      <InviteFriend />
+
       <InstallCard />
 
       {/* Roadmap placeholders (build spec §8) */}

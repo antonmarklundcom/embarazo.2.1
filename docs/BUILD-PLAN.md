@@ -590,8 +590,24 @@ catches a transposed digit a range check would pass, and a test that pins week
 40 near a real newborn's ~8 cm. Measurements are formatted "8,2 cm" — es-PY
 writes the decimal comma, and this is a number read aloud to somebody else.
 Covered by `lib/seed/limbSizes.test.ts` (11) and `e2e/size-tabs.spec.ts` (2).
-### C4 Perspective switcher (map #13)
+### C4 Perspective switcher (map #13) — ✅ DONE
 Same week, three entrances: para vos / para tu pareja / para la familia.
+
+Shipped as `lib/seed/perspectives.json`, `lib/seed/perspectives.ts` and
+`components/PerspectiveSwitcher.tsx` in C1's slot area. It exists because an app
+that only ever addresses the pregnant person leaves the two people most likely
+to be reading over her shoulder with nothing concrete to do. **Content is stored
+as week ranges, narrowest wins** — seven bands of real writing ship today, and a
+later content pass deepens any single week by adding `{fromWeek: 24, toWeek: 24}`
+with no code change. That was chosen over 126 per-week strings written in one
+sitting, which would have been filler, and filler here is worse than a paragraph
+that holds for six weeks (DECISIONS.md "C4"). B1's role picks the **opening**
+tab — a papá does not tap past "para vos" every week — but nothing is hidden by
+role: the pregnant user reading the pareja tab, and showing it to somebody, is
+half of what the block is for. `selectBand` is exported and tested directly, so
+the override rule is verified rather than re-implemented in a test. Covered by
+`lib/seed/perspectives.test.ts` (9, including full 1–42 coverage with no gap or
+overlap) and `e2e/perspective.spec.ts` (2).
 ### C5 "De la obstetra" (map #14)
 One bylined expert card per week, tied to `NEXT_PUBLIC_MEDICAL_REVIEWER`.
 ### C6 Week-linked article feed + read time (map #15, #17)

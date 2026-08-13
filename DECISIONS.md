@@ -1237,3 +1237,30 @@ because they are properties of the code rather than of any one call.
 - **Quota is NOT enforced here.** That is F2, and it is the reason the
   `quotaMonth` column is written on every row from day one. F1 without F2 is
   spendable; do not enable `AI_BABY_ENABLED` in production until F2 ships.
+
+## C4 — the perspective switcher (August 2026)
+
+- **Week ranges, narrowest wins — not 126 per-week strings.** "Same week, three
+  entrances" reads as 42 × 3 strings, and writing them in one sitting would have
+  produced filler nobody can detect with a test. Seven bands of real writing ship
+  instead, and the selection rule makes deepening cheap: adding
+  `{fromWeek: 24, toWeek: 24, …}` overrides that week and nothing else changes.
+  The honest cost, recorded rather than hidden: the block currently changes every
+  six weeks rather than every week, which a user checking in weekly will notice.
+  That is a content backlog item, not a code one, and the code is already shaped
+  for it.
+- **`selectBand` is exported.** The override rule is invisible until somebody
+  uses it, which is exactly the kind of rule that gets re-implemented in a test
+  and then tested against itself. Exporting the pure selector means the test
+  drives the real function, in both file orders, so the answer cannot depend on
+  where an override was pasted.
+- **The role picks the opening tab, not the visible tabs.** B1 already asked who
+  the user is, so a papá should not tap past "para vos" every week. But hiding
+  the other two would break the actual use: the pregnant user reading "para tu
+  pareja" and handing over the phone is half of why this exists. `acompanante`
+  opens on the pareja tab because what a birth companion does — logistics, being
+  there, talking to the team — is what that tab describes, whatever the
+  relationship is.
+- **The three tabs must say three different things**, asserted per band. Three
+  tabs that paraphrase each other are worse than one tab, because they promise
+  depth and then waste three taps proving there isn't any.

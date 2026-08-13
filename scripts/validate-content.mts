@@ -7,6 +7,7 @@ import {
   EventItemSchema,
   VideoItemSchema,
   FoodEntrySchema,
+  PerspectiveBandSchema,
   validateContentArray,
 } from "../lib/content/schemas.ts";
 
@@ -51,6 +52,24 @@ const checks: Check[] = [];
   const raw = (readJson("lib/seed/placements.json") as { placements: unknown[] })
     .placements;
   checks.push(validateContentArray("lib/seed/placements.json", raw, AdPlacementSchema));
+}
+{
+  // C4 perspective bands. Keyed by the range itself, so two identical ranges
+  // are a duplicate while a narrower override of a wider band is not.
+  try {
+    const raw = readJson("lib/seed/perspectives.json") as unknown[];
+    checks.push(
+      validateContentArray(
+        "lib/seed/perspectives.json",
+        raw,
+        PerspectiveBandSchema,
+        (band) => `${band.fromWeek}-${band.toWeek}`,
+      ),
+    );
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    // Not created yet — the switcher does not render at all.
+  }
 }
 {
   // D3 food lookup — validated the same way as everything else.

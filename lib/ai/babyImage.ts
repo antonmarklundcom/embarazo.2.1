@@ -143,7 +143,12 @@ export type GenerationFailure =
   | "disabled"
   | "invalid"
   | "upstream"
-  | "no-image";
+  | "no-image"
+  // F2. Two limits, two messages: one the user can act on ("el mes que
+  // viene"), one they cannot and which therefore reads as unavailability
+  // rather than as their fault.
+  | "quota-exceeded"
+  | "ceiling-exceeded";
 
 export type GenerationResult =
   | { ok: true; image: GeneratedImage }
@@ -154,4 +159,10 @@ export const FAILURE_MESSAGE: Record<GenerationFailure, string> = {
   invalid: "No pudimos usar esas fotos. Probá con otras.",
   upstream: "No pudimos generar la imagen. Probá de nuevo en un rato.",
   "no-image": "El servicio no devolvió una imagen. Probá de nuevo.",
+  "quota-exceeded":
+    "Ya usaste todas tus imágenes de este mes. Podés volver a probar el mes que viene.",
+  // Deliberately the same sentence as `disabled`: that we ran out of budget
+  // this month is our problem, not something to explain to a user who cannot
+  // do anything about it.
+  "ceiling-exceeded": "Esta función no está disponible ahora mismo.",
 };

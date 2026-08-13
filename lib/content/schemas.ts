@@ -102,6 +102,59 @@ export const ArticleSchema = z.object({
 export type Article = z.infer<typeof ArticleSchema>;
 
 /**
+ * C2 — the weekly one-liner (feature map #11): one concrete "what is happening
+ * now" sentence per week, shown under the home hero.
+ *
+ * The length cap is a content rule with teeth: the block is one line on a
+ * 360 px phone, and a paragraph pasted in here would push the rest of the home
+ * screen down instead of failing. `milestone` in `lib/weeks.ts` is where the
+ * longer version belongs.
+ */
+export const WeeklyLineSchema = z.object({
+  week: z
+    .number()
+    .int()
+    .min(1, "la semana tiene que estar entre 1 y 42")
+    .max(42, "la semana tiene que estar entre 1 y 42"),
+  line: z
+    .string()
+    .min(1)
+    .max(
+      110,
+      "la frase de la semana tiene que entrar en una línea (máximo 110 caracteres) — si necesitás más, va en el 'milestone' de lib/weeks.ts",
+    ),
+});
+export type WeeklyLine = z.infer<typeof WeeklyLineSchema>;
+
+/**
+ * C3 — foot and hand measurements per week (feature map #12), the two tabs
+ * beside "tamaño". Optional per side: a week may have a foot figure and no
+ * hand one, and the tab for the missing side simply does not appear.
+ *
+ * The upper bounds are sanity rails, not medicine: a newborn foot is ~8 cm, so
+ * a `18` typed instead of `1.8` is a CI failure rather than a card claiming
+ * the baby has a foot the size of a forearm.
+ */
+const limbCmSchema = z
+  .number()
+  .positive()
+  .max(12, "medida en cm fuera de rango para un pie o una mano — ¿faltó la coma decimal?");
+
+export const LimbSizeSchema = z
+  .object({
+    week: z.number().int().min(1).max(42),
+    footCm: limbCmSchema.optional(),
+    footComparison: z.string().min(1).max(60).optional(),
+    handCm: limbCmSchema.optional(),
+    handComparison: z.string().min(1).max(60).optional(),
+  })
+  .refine(
+    (entry) => entry.footCm !== undefined || entry.handCm !== undefined,
+    "una entrada sin pie ni mano no sirve para nada — borrala en vez de dejarla vacía",
+  );
+export type LimbSize = z.infer<typeof LimbSizeSchema>;
+
+/**
  * C4 — the perspective switcher (feature map #13): the same week explained
  * three ways.
  *

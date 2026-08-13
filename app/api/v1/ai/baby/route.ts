@@ -3,16 +3,22 @@ import { z } from "zod";
 
 import { getSession, isAuthAvailable } from "@/lib/server/auth";
 import { dbOrNull } from "@/lib/server/db";
-import { generateBabyImage, isConfigured } from "@/lib/server/aiBaby";
+import {
+  drizzleQuotaStore,
+  generateBabyImage,
+  isConfigured,
+  quotaSnapshot,
+} from "@/lib/server/aiBaby";
 import { clientKeyFromHeaders, isRateLimited } from "@/lib/rateLimit";
 import {
   ACCEPTED_MIME,
   FAILURE_MESSAGE,
   PHOTO_PROBLEM_MESSAGE,
   validatePhotos,
+  type GenerationFailure,
 } from "@/lib/ai/babyImage";
 
-// BUILD-PLAN F1 — POST /api/v1/ai/baby.
+// BUILD-PLAN F1 — POST /api/v1/ai/baby, and F2 — GET for the quota.
 //
 // Requires a session, because this costs real money per call and an anonymous
 // endpoint that spends money is a bill waiting to happen. Requires an explicit
@@ -46,11 +52,62 @@ const RequestSchema = z
   })
   .strict();
 
+/**
+ * F2 — one status per failure, chosen so the client can tell the three cases
+ * apart without parsing Spanish: the feature is gone (404), you are out of
+ * generations (429), or it broke (502/503).
+ */
+const STATUS_FOR: Record<GenerationFailure, number> = {
+  disabled: 404,
+  invalid: 400,
+  upstream: 502,
+  "no-image": 502,
+  "quota-exceeded": 429,
+  // Not the user's doing and not permanent: the budget resets next month, and
+  // 503 is what a monitor should be able to see without reading a body.
+  "ceiling-exceeded": 503,
+};
+
 function unavailable() {
   return NextResponse.json(
     { error: FAILURE_MESSAGE.disabled },
     { status: 404, headers: HEADERS },
   );
+}
+
+/**
+ * F2 — how many generations this user has left this month.
+ *
+ * Takes no parameters at all, like every other route since J3: the user id
+ * comes from the session, and a client-supplied count is not a count. The
+ * screen uses it to say "te quedan 2 de 3" and to stop offering a button that
+ * the server is going to refuse — it is **not** the enforcement. Enforcement
+ * happens in `generateBabyImage`, against the same table, on every POST.
+ */
+export async function GET(req: NextRequest) {
+  if (!isConfigured() || !isAuthAvailable()) return unavailable();
+
+  const database = dbOrNull();
+  if (!database) return unavailable();
+
+  for (const key of req.nextUrl.searchParams.keys()) {
+    return NextResponse.json(
+      { error: `parámetro no permitido: ${key}` },
+      { status: 400, headers: HEADERS },
+    );
+  }
+
+  const session = await getSession();
+  const userId = session?.user?.id;
+  if (!userId) {
+    return NextResponse.json(
+      { error: "sesión requerida" },
+      { status: 401, headers: HEADERS },
+    );
+  }
+
+  const snapshot = await quotaSnapshot(drizzleQuotaStore(database), userId);
+  return NextResponse.json(snapshot, { headers: HEADERS });
 }
 
 export async function POST(req: NextRequest) {
@@ -105,12 +162,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const result = await generateBabyImage(database, userId, parsed.data.photos);
+  const result = await generateBabyImage(
+    drizzleQuotaStore(database),
+    userId,
+    parsed.data.photos,
+  );
 
   if (!result.ok) {
     return NextResponse.json(
       { error: FAILURE_MESSAGE[result.failure] },
-      { status: result.failure === "disabled" ? 404 : 502, headers: HEADERS },
+      { status: STATUS_FOR[result.failure], headers: HEADERS },
     );
   }
 

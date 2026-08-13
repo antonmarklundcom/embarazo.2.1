@@ -1238,6 +1238,159 @@ because they are properties of the code rather than of any one call.
   `quotaMonth` column is written on every row from day one. F1 without F2 is
   spendable; do not enable `AI_BABY_ENABLED` in production until F2 ships.
 
+## F2 — quota & cost control (August 2026)
+
+F1 shipped a pipeline that spends real money per call. F2 is what stands
+between an env var and a Google bill, so every choice here is made in the
+direction of spending less.
+
+- **Two limits, not one, because they fail differently.** The per-user monthly
+  quota (`AI_BABY_MONTHLY_QUOTA`, default 3) stops one person burning the
+  budget. The global monthly ceiling (`AI_BABY_MONTHLY_SPEND_CEILING_USD`,
+  default $50) stops a thousand people doing it between one look at the
+  dashboard and the next — a quota alone is only a ceiling if you already know
+  how many users you have. Both are env vars so either can be cut without a
+  deploy (BUILD-PLAN F2), and I4 will make them panel controls.
+- **Every wrong value means less spending, never more.** Unset, empty,
+  negative, non-numeric and `Infinity` all fall back to the conservative
+  default. An **empty** variable is "not configured" rather than `0`, because
+  `.env.example` ships these keys empty and reading that as zero would make a
+  half-filled env file look like a broken feature instead of one on its
+  documented defaults. A typed `0` is still honoured — it is the softest kill
+  switch there is, turning the feature off without touching `AI_BABY_ENABLED`
+  or breaking the screen that explains what the feature is.
+- **The default ceiling is deliberately below the plan's own worst case.**
+  BUILD-PLAN sizes 1 000 maxed-out users at ≈$120/month; the default is $50.
+  The default exists to protect a deployment where somebody enabled the feature
+  and forgot the ceiling, and in that situation stopping early is correct.
+- **"Cannot be bypassed by a client" is a property of the inputs.** The
+  decision reads the user id from the session and everything else from the
+  `aiGenerations` table the pipeline itself writes. There is no number in a
+  request body that participates, so there is nothing to forge. `GET
+  /api/v1/ai/baby` exists only so the screen can say "te quedan 2 de 3" and
+  stop offering a button the server will refuse; it is a courtesy, and the POST
+  re-checks regardless.
+- **The pending row is the reservation: reserve → count → refuse-and-release.**
+  Count-then-reserve is the obvious order and it is wrong — two requests
+  arriving together both read the pre-request count and both proceed. Reserving
+  first means each sees the other. The cost is that a genuine tie can refuse
+  both, which is the right direction to fail: refusing a request that would have
+  fitted (the user retries and it works) rather than spending money that was not
+  there. Asserted in `aiBaby.test.ts` with two `Promise.all` requests against a
+  quota of one remaining.
+- **In-flight generations count against the ceiling at the configured price.**
+  A `pending` row has no recorded cost yet and may well end up with one.
+  Counting only settled rows would let a burst of simultaneous requests each
+  read a spend total from before the burst and all go through.
+- **A refusal deletes its reservation; a failure keeps its row.** Nothing was
+  sent and nothing was spent when a limit refuses, so leaving the row would put
+  a non-event into I4's failure count and into next month's arithmetic. A
+  generation the model *did* receive keeps its row, exactly as F1 designed —
+  that one may have cost money.
+- **A failed generation does not consume the user's month.** `countForUser`
+  excludes `failed` rows: charging someone for an image they never received is
+  indefensible in a feature whose whole point is delight. The abuse it opens —
+  forcing upstream failures on purpose — is bounded by the route's per-IP rate
+  limit and by the ceiling, which counts money rather than attempts.
+- **The ceiling is reported before the quota, and reads as unavailability.**
+  When the global budget is gone, "ya usaste tus 3 imágenes" would be a lie:
+  the user has generations left and next month will not fix it. `429` for the
+  quota (yours, act on it next month), `503` for the ceiling (ours, not
+  something to explain to somebody who cannot do anything about it) — its
+  message is deliberately identical to the kill switch's.
+- **Database access goes through `QuotaStore`**, the same shape as A5's
+  deletion executor and for the same reason: "the quota cannot be exceeded" is
+  provable in CI against an in-memory store, with no MySQL. `lib/ai/quota.ts`
+  holds the arithmetic and reads no environment variable directly — it is
+  imported by the client screen, and a module a client component imports must
+  never reach for a secret (asserted against the source, like F1's).
+
+## C2 — the weekly one-liner (August 2026)
+
+- **It is not `milestone`.** `lib/weeks.ts` already ships a paragraph per week,
+  and the obvious move — render the first sentence of it — was rejected: the
+  paragraph is written for the week detail page, where there is room to explain,
+  and truncating prose produces sentences nobody wrote. C2 is a separate string
+  written for one line under the hero. The schema caps it at 110 characters and
+  the error message names `milestone` as where longer text belongs, so the
+  distinction survives the next content edit.
+- **The fallback is a real path, not a comment.** BUILD-PLAN asks for 42 strings
+  *and* for the code to ship without them. `weeklyLine()` returns `null` and the
+  card returns `null` — no empty card, no "próximamente". A gap the user cannot
+  see is better than a promise the content schedule may not keep, and it is what
+  lets a week be rewritten by deleting it.
+- **Keyed by week, not by id.** Every other seed file is keyed by `id`, but this
+  one is edited a week at a time, so the duplicate-detection failure worth
+  catching is "two entries for semana 24". `validateContentArray`'s `getKey`
+  already supports it (articles use `slug`), so this needed no new machinery.
+- **Gated with `publishedOnly`, not `reviewedOnly`.** These are editorial
+  strings of the same class as the `milestone`/`tip` content that has shipped
+  since the investor MVP, not invented businesses with dead phone numbers, so
+  the reviewer gate D3 uses would hide all 42 for a claim nobody is making —
+  the medical-review claim on this screen is `NEXT_PUBLIC_MEDICAL_REVIEWER`'s
+  job (Z2), and C5 is the task that ties bylined content to it. The placeholder
+  gate still runs, so a week left as "(placeholder) escribir esto" during a
+  content pass falls back to showing nothing.
+- **It lives in its own component, mounted with one line in `page.tsx`.** C2–C8
+  all land in the same slot area; a block per file means each PR touches one
+  line of the shared file instead of a growing block of it.
+
+## C3 — size comparison tabs (August 2026)
+
+- **The "tamaño" tab is the existing content, untouched.** `lib/weeks.ts` has
+  carried `sizeComparison` + `lengthCm`/`weightG` since the investor MVP, and
+  those comparisons — mandioca, mamón, chipa — are the thing this product exists
+  to have rather than a fruit list translated from a Swedish app. C3 adds two
+  tabs *beside* them; it does not introduce a second size vocabulary that would
+  immediately drift from the first.
+- **A tab with no data is not rendered.** Before week 9 there is genuinely no
+  foot to measure. The card drops to a single tab rather than showing a panel of
+  dashes, which is the same instinct as C2's null line: absence beats a
+  placeholder. The active tab is also resolved by *lookup* (`find ?? tabs[0]`)
+  rather than trusted from state, so a week that loses a tab cannot leave the
+  panel pointing at nothing.
+- **Three separate defences against a misplaced decimal point.** A card that
+  confidently tells a pregnant woman her baby has an 18 cm foot is worse than no
+  card. So: the schema caps a limb at 12 cm with an error message naming the
+  likely cause ("¿faltó la coma decimal?"); a test asserts the series only ever
+  grows, which catches a transposed digit that a range check passes; and a test
+  pins week 40 near a real newborn's ~8 cm, so the whole column cannot shift
+  without failing.
+- **"8,2 cm", with a comma.** es-PY writes the decimal separator as a comma, and
+  this is a number a user reads aloud to somebody else. `formatCm` is one
+  function so the next surface that shows a measurement cannot render "8.2".
+- **The disclaimer is part of the card, not a footnote elsewhere.** "Son
+  promedios aproximados… lo que dice tu control prenatal vale más que cualquier
+  tabla" sits under the tabs, because the failure mode of a biometry card is a
+  user comparing it against her own ecografía and worrying.
+
+## C4 — the perspective switcher (August 2026)
+
+- **Week ranges, narrowest wins — not 126 per-week strings.** "Same week, three
+  entrances" reads as 42 × 3 strings, and writing them in one sitting would have
+  produced filler nobody can detect with a test. Seven bands of real writing ship
+  instead, and the selection rule makes deepening cheap: adding
+  `{fromWeek: 24, toWeek: 24, …}` overrides that week and nothing else changes.
+  The honest cost, recorded rather than hidden: the block currently changes every
+  six weeks rather than every week, which a user checking in weekly will notice.
+  That is a content backlog item, not a code one, and the code is already shaped
+  for it.
+- **`selectBand` is exported.** The override rule is invisible until somebody
+  uses it, which is exactly the kind of rule that gets re-implemented in a test
+  and then tested against itself. Exporting the pure selector means the test
+  drives the real function, in both file orders, so the answer cannot depend on
+  where an override was pasted.
+- **The role picks the opening tab, not the visible tabs.** B1 already asked who
+  the user is, so a papá should not tap past "para vos" every week. But hiding
+  the other two would break the actual use: the pregnant user reading "para tu
+  pareja" and handing over the phone is half of why this exists. `acompanante`
+  opens on the pareja tab because what a birth companion does — logistics, being
+  there, talking to the team — is what that tab describes, whatever the
+  relationship is.
+- **The three tabs must say three different things**, asserted per band. Three
+  tabs that paraphrase each other are worse than one tab, because they promise
+  depth and then waste three taps proving there isn't any.
+
 ## C5 — "de la obstetra" (August 2026)
 
 - **The byline is the gate.** With `NEXT_PUBLIC_MEDICAL_REVIEWER` unset the card

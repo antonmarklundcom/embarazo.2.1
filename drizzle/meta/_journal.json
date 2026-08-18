@@ -43,6 +43,13 @@
       "when": 1786613034288,
       "tag": "0005_faithful_xorn",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1787050856559,
+      "tag": "0006_cute_lucky_pierre",
+      "breakpoints": true
     }
   ]
 }

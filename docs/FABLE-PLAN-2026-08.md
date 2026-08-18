@@ -81,7 +81,7 @@ e2e covers both paths.
 "K1 — account-first onboarding". The invite step ships with it: an E1 code now
 travels as a `/familia?codigo=…` link over WhatsApp.
 
-### K2 Companion experience — **L** [OPUS]
+### K2 Companion experience — **L** [OPUS] ✅ DONE
 Today a companion sees week · FPP · próximo control · nombre and has no
 reason to open the app twice. Add, for signed-in `partner`/`family`
 members:
@@ -99,6 +99,10 @@ table), documented as a bounded §4.3 exception like E1 was.
 (week hero + para-tu-pareja content + shared checklist + ánimo button);
 the mamá sees received ánimos; family role sees content but not the
 checklist assignments; revocation still cuts everything instantly.
+**Status:** done — `claude/k2-companion`. See DECISIONS.md "K2 — the companion
+experience". Two new tables (`companionTasks`, `companionCheers`), both
+id-only and both in A5's `TABLE_DISPOSITION`; the companion view is fetched
+and never cached, which is what keeps revocation instant.
 
 ### K3 Sharing levels — **M** [OPUS]
 Owner opt-in toggles in `/familia`: share **peso**, **pataditas**,

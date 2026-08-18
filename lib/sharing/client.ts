@@ -2,7 +2,13 @@
 
 import { db, notDeleted } from "@/lib/db";
 import { getCurrentWeek } from "@/lib/pregnancy";
-import { buildSnapshot, type CompanionSnapshot, type MemberRole } from "./fields";
+import {
+  buildSnapshot,
+  type CompanionSnapshot,
+  type MemberRole,
+  type SharedTask,
+} from "./fields";
+import type { CheerId } from "./cheers";
 
 // BUILD-PLAN E1 — the owner's device is what publishes the companion view.
 //
@@ -13,11 +19,25 @@ import { buildSnapshot, type CompanionSnapshot, type MemberRole } from "./fields
 
 const URL_PATH = "/api/v1/sharing";
 
+export interface ReceivedCheer {
+  cheerId: string;
+  createdAt: number;
+  seenAt: number | null;
+}
+
 export interface SharedView {
   pregnancyId: string;
   role: MemberRole;
   snapshot: CompanionSnapshot | null;
   members?: { userId: string; role: MemberRole; createdAt: string }[];
+  /**
+   * K2. Absent for a `family` member, and absent is not the same as empty: the
+   * server declines to say whether anything is assigned, rather than saying
+   * "nothing is".
+   */
+  tasks?: SharedTask[];
+  /** K2. The owner's own inbox of ánimos; never present on a companion view. */
+  cheers?: ReceivedCheer[];
 }
 
 /**
@@ -125,4 +145,59 @@ export async function revokeMember(
   } catch {
     return false;
   }
+}
+
+// ---------------------------------------------------------------------------
+// K2 — shared checklist items and ánimos
+// ---------------------------------------------------------------------------
+
+/**
+ * Every call below returns a boolean rather than throwing, like the E1 calls
+ * above it. A companion is on a phone in Paraguay: offline is the normal case,
+ * not the error case, and the UI reverts its optimistic state instead of
+ * showing a stack trace.
+ */
+async function post(body: unknown): Promise<boolean> {
+  try {
+    const res = await fetch(URL_PATH, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/** Owner: put a checklist item on the pareja's list. */
+export function assignTaskToPartner(itemKey: string): Promise<boolean> {
+  return post({ action: "assign-task", itemKey });
+}
+
+/** Owner: take it back off. */
+export function unassignTaskFromPartner(itemKey: string): Promise<boolean> {
+  return post({ action: "unassign-task", itemKey });
+}
+
+/** Partner: tick or un-tick an item the owner assigned. */
+export function setSharedTaskDone(
+  pregnancyId: string,
+  itemKey: string,
+  done: boolean,
+): Promise<boolean> {
+  return post({ action: "complete-task", pregnancyId, itemKey, done });
+}
+
+/** Companion: send one ánimo. */
+export function sendCheer(
+  pregnancyId: string,
+  cheerId: CheerId,
+): Promise<boolean> {
+  return post({ action: "cheer", pregnancyId, cheerId });
+}
+
+/** Owner: acknowledge everything currently in the inbox. */
+export function markCheersSeen(): Promise<boolean> {
+  return post({ action: "cheers-seen" });
 }

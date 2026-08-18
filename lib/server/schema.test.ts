@@ -5,6 +5,8 @@ import {
   PUSH_CATEGORIES,
   SYNCED_STORES,
   aiGenerations,
+  companionCheers,
+  companionTasks,
   contentStats,
   schema,
   syncRecords,
@@ -107,6 +109,34 @@ describe("role and category vocabularies", () => {
   });
 });
 
+describe("K2's two new companion tables stay ids-and-timestamps (§4.3)", () => {
+  it("companionTasks stores a key, never a label or a note", () => {
+    expect(columnNames(companionTasks).sort()).toEqual(
+      ["id", "pregnancyId", "itemKey", "doneAt", "updatedAt"].sort(),
+    );
+    const columns = columnNames(companionTasks).map((c) => c.toLowerCase());
+    for (const forbidden of ["label", "text", "note", "comment", "message", "title"]) {
+      expect(
+        columns.some((c) => c.includes(forbidden)),
+        `companionTasks must not carry a "${forbidden}" column`,
+      ).toBe(false);
+    }
+  });
+
+  it("companionCheers stores which button was pressed, never what was written", () => {
+    expect(columnNames(companionCheers).sort()).toEqual(
+      ["id", "pregnancyId", "fromUserId", "cheerId", "createdAt", "seenAt"].sort(),
+    );
+    const columns = columnNames(companionCheers).map((c) => c.toLowerCase());
+    for (const forbidden of ["text", "note", "body", "message", "comment"]) {
+      expect(
+        columns.some((c) => c.includes(forbidden)),
+        `companionCheers must not carry a "${forbidden}" column`,
+      ).toBe(false);
+    }
+  });
+});
+
 describe("schema export", () => {
   it("includes every table the adapter and app need", () => {
     expect(Object.keys(schema).sort()).toEqual(
@@ -115,6 +145,8 @@ describe("schema export", () => {
         "adminAudit",
         "aiGenerations",
         "companionSnapshots",
+        "companionCheers",
+        "companionTasks",
         "contentStats",
         "invites",
         "pregnancies",

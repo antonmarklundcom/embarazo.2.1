@@ -336,6 +336,52 @@ export const companionCheers = mysqlTable(
   }),
 );
 
+/**
+ * K4 — the index of a user's backed-up photos (ARCHITECTURE.md §4.4, amended).
+ *
+ * §4.4 used to say photos never leave the device. K4 turns that into an
+ * **explicit opt-in**, and this is the row that exists for a photo that has
+ * been uploaded. The bytes are not here — they are in object storage under
+ * `fotos/{userId}/{store}/{recordId}` — and neither is anything about the
+ * pregnancy.
+ *
+ * `payload` is the SAME opaque envelope as `syncRecords.payload` (§4.3): the
+ * photo's own metadata (which week the bump photo is from, when it was taken)
+ * as JSON the server never queries into, never indexes and never uses for
+ * anything. A bump photo's week is health data; putting it in a column would
+ * have been a third §4.3 exception, and this one is not needed — the server
+ * has no reason to know it, it only has to hand it back.
+ *
+ * So what the server learns from this table is: *this account has N objects,
+ * of these sizes, of these types, changed at these times.* That is the honest
+ * cost of "sign in and your photos are back", and the consent copy says it.
+ *
+ * `objectKey` is stored rather than recomputed so deletion is a fact about a
+ * row rather than a re-derivation that could drift from what was written.
+ */
+export const photoBlobs = mysqlTable(
+  "photoBlobs",
+  {
+    userId: varchar("userId", { length: 255 }).notNull(),
+    /** "photoEntries" | "carnePhotos" — see lib/photos/keys.ts. */
+    store: varchar("store", { length: 32 }).notNull(),
+    recordId: varchar("recordId", { length: 64 }).notNull(),
+    objectKey: varchar("objectKey", { length: 512 }).notNull(),
+    contentType: varchar("contentType", { length: 64 }).notNull(),
+    bytes: int("bytes").notNull(),
+    /** Opaque to the server, exactly like syncRecords.payload (§4.3). */
+    payload: json("payload"),
+    updatedAt: bigint("updatedAt", { mode: "number" }).notNull(),
+    /** Soft delete, so a second device learns the photo is gone. */
+    deletedAt: bigint("deletedAt", { mode: "number" }),
+    serverUpdatedAt: bigint("serverUpdatedAt", { mode: "number" }).notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.userId, table.store, table.recordId] }),
+    byUser: index("photoBlobs_user_idx").on(table.userId, table.serverUpdatedAt),
+  }),
+);
+
 // ---------------------------------------------------------------------------
 // Sync (A3)
 // ---------------------------------------------------------------------------
@@ -558,6 +604,7 @@ export const schema = {
   companionSnapshots,
   companionTasks,
   companionCheers,
+  photoBlobs,
   syncRecords,
   pushSubscriptions,
   pushReminders,

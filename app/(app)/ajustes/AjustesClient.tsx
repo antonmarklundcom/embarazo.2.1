@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { db, wipeAllData, type AppMode, type BabyIdentity, type Role } from "@/lib/db";
 import { clearOnboardingDraft } from "@/lib/onboarding/draftStorage";
 import { CompanionReminderSettings } from "@/components/CompanionReminderSettings";
+import { PhotoBackupSettings } from "@/components/PhotoBackupSettings";
 import { companionViewOf, useSharedViews } from "@/lib/sharing/useSharedViews";
 import {
   combineDateTime,
@@ -766,6 +767,11 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
 
       {/* K8: only rendered when this device is accompanying somebody. */}
       <CompanionReminderSettings view={companionView} />
+
+      {/* K4: renders nothing when the deployment has no photo storage or the
+          user has no account — an opt-in for something that cannot happen is a
+          broken switch, not a choice. */}
+      <PhotoBackupSettings groupTitle="Tus fotos" />
 
       <SettingsGroup title="Privacidad">
       {/* E6: the trust questions, one tap from where somebody is already

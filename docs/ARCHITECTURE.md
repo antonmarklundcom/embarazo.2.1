@@ -120,9 +120,25 @@ it is what the privacy policy must say:
    payload`) where `payload` is JSON the server never queries into, never
    indexes, and never uses for targeting. This keeps client-side
    encryption of the payload a future option rather than a rewrite.
-4. **Photos do not leave the device in v1.** Belly photos and carné photos
-   stay in IndexedDB and in the local backup file. Uploading them is a
-   separate, explicitly opt-in feature and is not in the current plan.
+4. **Photos leave the device only if the user turns backup on.** *(Amended by
+   Phase K4, August 2026 — this clause used to read "photos do not leave the
+   device in v1".)* Belly photos and carné photos stay in IndexedDB and in the
+   local backup file **by default**. "Copia de tus fotos" in Ajustes is an
+   explicit, per-account opt-in, off unless she turns it on, and the rules that
+   make it acceptable are part of the contract:
+   - The bytes go to **S3-compatible object storage**, never to MySQL and never
+     through our own server: the browser PUTs to a **presigned URL for one
+     object, valid for minutes**. Objects are private; there is no public read.
+   - The index row (`photoBlobs`) records that an object exists, its size and
+     its type. The photo's own metadata — which week a bump photo is from —
+     rides in an **opaque `payload`**, exactly like §4.3's envelope. The server
+     never learns it.
+   - **`/admin` cannot reach a photo at all** (§9), asserted against the admin
+     source by test.
+   - A photo reaches a companion only if the owner turned on K3's `fotos`
+     sharing level, which is a separate opt-in from this one.
+   - **Turning backup off deletes the server copies immediately**, and account
+     deletion removes every object as well as every row (§8).
 5. **Aggregate stats are never joined to a user.** The "popular this week"
    counters (`/api/v1/stats`) write only `(week, content_id, day)` — no
    user id, no session, no IP retained.
@@ -162,7 +178,8 @@ Device                                   Server (Hostinger + MySQL)
 │  guías; NetworkFirst APIs    │         │ /api/v1/stats    anonymous      │
 │  /offline nav fallback       │         │ /api/v1/ai/baby  quota'd        │
 │                              │         │ /api/v1/{placements,directory, │
-│ Photos: NEVER uploaded (v1)  │         │   go/[id],health}              │
+│ Photos: opt-in only (K4)     │────────▶│ /api/v1/photos  presigned URLs │
+│  bytes → object storage      │  PUT    │   → S3-compatible bucket       │
 └──────────────────────────────┘         └────────────────────────────────┘
 ```
 

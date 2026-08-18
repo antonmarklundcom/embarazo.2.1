@@ -27,6 +27,8 @@ interface Row {
 }
 
 function memoryDb() {
+  /** K4: object keys the plan asked the store to delete. */
+  const deletedObjects: string[] = [];
   const tables: Record<string, Row[]> = {
     users: [],
     accounts: [],
@@ -42,6 +44,7 @@ function memoryDb() {
     companionSnapshots: [],
     companionTasks: [],
     companionCheers: [],
+    photoBlobs: [],
     contentStats: [],
     adminAudit: [],
   };
@@ -113,6 +116,14 @@ function memoryDb() {
         pregnancyIds.includes(r.pregnancyId as string),
       );
     },
+    async deletePhotoBlobs(userId) {
+      // The real executor deletes the OBJECT before the row; the in-memory one
+      // records that it happened so the test can assert both went.
+      for (const row of tables.photoBlobs!.filter((r) => r.userId === userId)) {
+        deletedObjects.push(row.objectKey as string);
+      }
+      return removeWhere("photoBlobs", (r) => r.userId === userId);
+    },
     async deleteCompanionTasks(pregnancyIds) {
       return removeWhere("companionTasks", (r) =>
         pregnancyIds.includes(r.pregnancyId as string),
@@ -136,7 +147,7 @@ function memoryDb() {
     },
   };
 
-  return { tables, executor };
+  return { tables, executor, deletedObjects };
 }
 
 const VICTIM = "user-a";
@@ -206,6 +217,28 @@ function seed(db: ReturnType<typeof memoryDb>) {
     { id: "c3", pregnancyId: "preg-b", fromUserId: BYSTANDER, cheerId: "gracias" },
   );
 
+  // K4. Two of the victim's photos and one of the bystander's.
+  tables.photoBlobs!.push(
+    {
+      userId: VICTIM,
+      store: "photoEntries",
+      recordId: "p1",
+      objectKey: `fotos/${VICTIM}/photoEntries/p1`,
+    },
+    {
+      userId: VICTIM,
+      store: "carnePhotos",
+      recordId: "p2",
+      objectKey: `fotos/${VICTIM}/carnePhotos/p2`,
+    },
+    {
+      userId: BYSTANDER,
+      store: "photoEntries",
+      recordId: "p3",
+      objectKey: `fotos/${BYSTANDER}/photoEntries/p3`,
+    },
+  );
+
   tables.aiGenerations!.push({ userId: VICTIM }, { userId: BYSTANDER });
 
   tables.contentStats!.push({ week: 12, contentId: "guia", day: "2026-08-12" });
@@ -249,6 +282,33 @@ describe("K2 — tasks and cheers go with the account", () => {
     seed(db);
     await deleteAccountData(db.executor, VICTIM);
     expect(db.tables.companionCheers!.map((r) => r.id)).toEqual(["c3"]);
+  });
+});
+
+describe("K4 — account deletion leaves zero blobs", () => {
+  it("deletes the objects, not only the rows that point at them", async () => {
+    // The task's own acceptance criterion. Dropping the index while leaving the
+    // bytes in a bucket is the worst of both outcomes: unreachable through the
+    // app, still sitting on somebody's disk.
+    const db = memoryDb();
+    seed(db);
+
+    await deleteAccountData(db.executor, VICTIM);
+
+    expect(db.tables.photoBlobs!.map((r) => r.recordId)).toEqual(["p3"]);
+    expect(db.deletedObjects.sort()).toEqual(
+      [
+        `fotos/${VICTIM}/photoEntries/p1`,
+        `fotos/${VICTIM}/carnePhotos/p2`,
+      ].sort(),
+    );
+  });
+
+  it("does not touch another account's photos", async () => {
+    const db = memoryDb();
+    seed(db);
+    await deleteAccountData(db.executor, VICTIM);
+    expect(db.deletedObjects.some((key) => key.includes(BYSTANDER))).toBe(false);
   });
 });
 

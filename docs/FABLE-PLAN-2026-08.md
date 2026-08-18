@@ -117,7 +117,7 @@ partner-only restriction (familia never sees these).
 levels". `peso` and `pataditas` carry data today; `fotos` records and enforces
 the preference, and K4 is what will have anything to publish under it.
 
-### K4 Photo backup & restore — **L** [OPUS]
+### K4 Photo backup & restore — **L** [OPUS] ✅ DONE
 Amends ARCHITECTURE.md §4.4 ("photos never leave the device") into an
 **explicit opt-in**: bump photos + carné photos upload for account
 holders who turn it on. Design constraints:
@@ -133,6 +133,12 @@ holders who turn it on. Design constraints:
 **Done when:** opt-in → photos restored on a second device after sign-in;
 opt-out stops uploads and deletes server copies; account deletion leaves
 zero blobs; the consent copy says exactly what is stored.
+**Status:** done — `claude/k4-photo-backup`. See DECISIONS.md "K4 — opt-in
+photo backup". ARCHITECTURE.md §4.4 is amended in place. S3-compatible
+storage with hand-rolled SigV4 presigning (no SDK); the photo's own metadata
+rides an opaque payload rather than becoming a third §4.3 exception.
+New env: `PHOTO_STORAGE_ENDPOINT` · `_BUCKET` · `_REGION` · `_ACCESS_KEY` ·
+`_SECRET_KEY`. Unset = the feature does not exist, and the app is whole.
 
 ### K5 Honest Play data safety — **S** [SONNET]
 Rewrite `docs/ANDROID-LAUNCH.md` §3.1's Data-safety answers for the

@@ -2255,3 +2255,88 @@ scans `app/admin` for any mention of the photo pipeline and fails on all of it.
   it**, in her words. §4.4 used to promise the opposite; this is what replaces
   that promise, and vagueness here would be the dishonest kind of amendment.
 - Home First Load JS unchanged at 215 kB — none of this is on the home screen.
+
+## K9 / F3 — symptom insight (August 2026)
+
+"Tus dolores de cabeza aparecen los días que dormís mal." One observation,
+computed entirely on the device from data she already logged, phrased so it can
+never be read as a diagnosis.
+
+### Code that computes and copy that claims are kept apart
+
+`lib/insights/patterns.ts` produces a **finding** — a symptom and four counts —
+and never a sentence. The words live in `lib/seed/insights.json`, so a medical
+reviewer can read every sentence the app will ever say about somebody's symptoms
+in one sitting, without reading TypeScript. That is what the task means by
+"reviewed phrasing", and it is the separation C5 made between an obstetra's note
+and the code that places it. The schema lives in `lib/content/schemas.ts` and the
+file is checked by `npm run validate:content` (G1), like every other seed.
+
+**The byline is the gate**, as it is for C5 and for a sharper reason: this block
+says something about a specific person's symptoms. Unsigned, it would be the app
+volunteering an interpretation of somebody's body with nobody's name on the
+phrasing. With no `NEXT_PUBLIC_MEDICAL_REVIEWER` it does not render.
+
+### Silence is the default, and it is not a failure state
+
+Most of this module is thresholds, and they are deliberately blunt:
+
+- fewer than **10 logged days** → nothing, however strong the signal. A test
+  feeds it nine perfect days and asserts silence.
+- a symptom seen fewer than **3 times** is not a pattern, it is a Tuesday.
+- each side of a comparison needs **4 days**, or there is nothing to compare.
+- the gap must be **30 percentage points**. A p-value over a fortnight of
+  self-reported check-ins would be false precision; the honest version of "is
+  this real?" at this sample size is "only say it when it is obvious". A test
+  feeds it 5-of-7 versus 4-of-7 — a real-looking number nobody should act on —
+  and asserts silence.
+
+And no empty state: no "todavía no encontramos patrones" box turning every quiet
+week into a small report that the app looked and found nothing.
+
+A pregnancy app that manufactures a pattern out of four entries is teaching
+somebody to believe things that are not there, about her own body, during a
+pregnancy. Every threshold is that sentence.
+
+### Two symptoms are never analysed
+
+`NEVER_ANALYSED` = `["Otros", "Contracciones"]`.
+
+- **"Otros"** is a bucket. "Tus otros aparecen los días que dormís mal" is
+  nonsense, and worse, nonsense that looks like a finding.
+- **"Contracciones"** is the one entry on the list that can be an alarm sign. A
+  pattern line about contractions would read as reassurance about something
+  whose entire safety story is "if they are regular before 37 weeks, call".
+  `/emergencia` owns that conversation and a trends card must not join it.
+
+### What the language may say, asserted rather than trusted
+
+`insights.test.ts` is the guardrail around the review, not a formality. Every
+template is scanned for causal language (`porque`, `causa`, `provoca`, `debido
+a`…) and for diagnostic or reassuring language — **`es normal` above all**,
+which is the most dangerous sentence a pregnancy app can produce: a clinical
+judgement, and the one a user will remember instead of calling. Every `line`
+must talk about what she *wrote down* ("anotaste"), not about her body, and
+every `hint` must point at her control, because the useful thing to do with a
+pattern is tell the person who can act on it.
+
+### Smaller decisions
+
+- **Local days, and one row per day.** A late-night check-in and the next
+  morning's sleep entry are different days; UTC bucketing would move a 21:00
+  Asunción entry to tomorrow. Three check-ins on one bad day count once, or a
+  bad day logged three times outweighs a week of quiet ones.
+- **The worst mood of a day wins.** "How was today" is not an average.
+- **Days with no mood are in neither mood group.** "She did not say" is not
+  "she felt fine", and treating it as the latter is how a comparison invents a
+  difference.
+- **`renderInsight` returns null rather than a brace.** A sentence with
+  `{withDays}` in it, about somebody's symptoms, is worse than no sentence — and
+  `0` renders as `0`, because "en 0 de los otros 7 días" is the most informative
+  half of the line.
+- **`SYMPTOMS` moved out of the page into `lib/symptoms.ts`.** The insight logic
+  has to reason about the same list the check-in offers, and two copies of a
+  vocabulary is how one of them grows an option the other has never heard of.
+- **Nothing here is fetched or sent.** It is arithmetic over rows already on the
+  phone, and notes are never read — encrypted or not, they are no part of any
+  finding.

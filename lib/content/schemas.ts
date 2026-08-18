@@ -206,6 +206,28 @@ export type PerspectiveBand = z.infer<typeof PerspectiveBandSchema>;
  * not happened). The cap keeps a note to something a person reads standing up
  * with a phone in one hand.
  */
+/**
+ * K9 / F3 — the sentences the symptom-insight card may say.
+ *
+ * A seed file rather than strings in a component **so a medical reviewer can
+ * read every sentence the app will ever say about somebody's symptoms in one
+ * sitting**, without reading TypeScript. Same separation C5 made between an
+ * obstetra's note and the code that places it, and the same gate: the card does
+ * not render at all without `NEXT_PUBLIC_MEDICAL_REVIEWER`.
+ *
+ * `line` states what she logged; `hint` points at her control. Neither may
+ * contain causal or diagnostic language — asserted in `lib/seed/insights.test.ts`,
+ * which is where the review guardrails live.
+ */
+export const InsightTemplateSchema = z
+  .object({
+    id: z.enum(["sleep", "mood", "frequent"]),
+    line: z.string().min(10).max(240),
+    hint: z.string().min(10).max(200),
+  })
+  .strict();
+export type InsightTemplate = z.infer<typeof InsightTemplateSchema>;
+
 export const ObstetraNoteSchema = z.object({
   week: z.number().int().min(1).max(42),
   note: z.string().min(1).max(320),

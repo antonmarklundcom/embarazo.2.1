@@ -121,6 +121,13 @@ describe("/api/v1/stats takes no parameters either (J3, extended by C7)", () => 
   });
 });
 
+// K1's /api/v1/auth-status is held to the same rule, but its handler imports
+// `lib/server/auth.ts` (and therefore next-auth), which does not load under
+// vitest's node environment. Its boundary behaviour — the parameter rejection,
+// the response shape and the no-store header — is asserted against a real build
+// in `e2e/onboarding.spec.ts` instead, and its client-side parser is unit-tested
+// in `lib/auth/status.test.ts`. The source scan below still covers it.
+
 describe("no route transmits a location- or health-derived parameter (J3)", () => {
   it("is asserted against the source of every caller", async () => {
     // The routes rejecting a parameter is only half of it: a client that keeps
@@ -139,14 +146,19 @@ describe("no route transmits a location- or health-derived parameter (J3)", () =
     const sources = [
       ...filesUnder(join(process.cwd(), "app")),
       ...filesUnder(join(process.cwd(), "components")),
+      // K1 put a route's path in a lib module (`lib/auth/status.ts`), so the
+      // scan follows it there — a whitelist enforced only over the directories
+      // that happened to hold call sites is a whitelist with a way around it.
+      ...filesUnder(join(process.cwd(), "lib")),
     ].filter((f) => f.endsWith(".tsx") || f.endsWith(".ts"));
 
     const offenders: string[] = [];
     for (const file of sources) {
       if (file.endsWith("api.test.ts")) continue;
       const source = readFileSync(file, "utf8");
-      // `stats` added by C7 — the scan grows with the routes it protects.
-      for (const match of source.matchAll(/\/api\/v1\/(go\/[^"`'\s]*|directory[^"`'\s]*|placements[^"`'\s]*|stats[^"`'\s]*)/g)) {
+      // `stats` added by C7, `auth-status` by K1 — the scan grows with the
+      // routes it protects.
+      for (const match of source.matchAll(/\/api\/v1\/(go\/[^"`'\s]*|directory[^"`'\s]*|placements[^"`'\s]*|stats[^"`'\s]*|auth-status[^"`'\s]*)/g)) {
         if (match[0].includes("?")) offenders.push(`${file}: ${match[0]}`);
       }
     }

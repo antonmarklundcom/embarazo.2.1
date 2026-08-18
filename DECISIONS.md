@@ -1750,3 +1750,105 @@ family-first.** Consequences worth recording here rather than only there:
   onboarding still said "No te pedimos cuenta" and `/familia` was linked
   from nowhere. Committing to the built direction and wiring it into the
   front door beats any new feature.
+
+## K1 — account-first onboarding (August 2026)
+
+**The flow.** `mode → role → fecha → departamento → cuenta → nombre del bebé →
+invitación`, per `docs/FABLE-PLAN-2026-08.md` §3. Two of those steps are new and
+one moved: the account step is new, the invite step is new, and the baby's
+nickname left the departamento form to stand on its own after the account — it
+is the first *warm* question the app asks, and asking it next to a department
+dropdown wasted it.
+
+- **The device row is written when the departamento step is left, not at the
+  end.** This is the load-bearing decision. The account step can navigate the
+  browser to Google, and a user who never comes back must still have a working,
+  fully answered app on her phone rather than a half-filled form and nothing in
+  IndexedDB. It also means the account she creates next has local data to adopt
+  (A6's `decideAccountLink` → *adopt*), instead of signing in to an empty
+  pregnancy and syncing nothing.
+- **That broke the first-run gate, and the fix is worth stating.** `app/(app)/
+  page.tsx` used to ask "is there a profile?" to decide whether to show
+  onboarding. Since K1 the answer becomes yes *in the middle of the flow*, which
+  threw the user out onto Hoy at the account step. The gate now asks "is there a
+  profile **and** no onboarding in progress?", and "done" is final — only the
+  flow ends the flow. It is deliberately still re-derived rather than latched on
+  first render: a second device that pulls a profile down over sync (A3) has no
+  draft, was never mid-flow, and must leave the first-run screen the moment the
+  pull lands. `e2e/sync.spec.ts` is what catches getting that backwards.
+- **A draft is written only once something has been answered**
+  (`isBlankAnswers`). An empty draft would claim a device is mid-flow when it is
+  merely rendering the first screen — which is exactly what the second device
+  above does for a moment. Going all the way back to the first step drops the
+  draft again, for the same reason.
+- **The draft is a shape with a version and a TTL, parsed with zod, and every
+  failure returns null** (`lib/onboarding/progress.ts`). Bad JSON, an old
+  version, an unknown step, an extra key, an expired timestamp — and a timestamp
+  *from the future*, because a clock that moved backwards would otherwise pin a
+  draft forever. The fallback is always "start onboarding from the top", which
+  is a working state, so there is no reason to half-trust what was read.
+  A test asserts the draft's key set exactly, because localStorage is the one
+  store the PIN never encrypts: it may hold what the user just typed into this
+  flow and nothing else.
+- **The step machine is pure and unit-tested, separately from React.** "Signing
+  in mid-onboarding resumes where it left off" is a property of the machine and
+  the draft — the OAuth round trip is a full page load, and nothing in a React
+  tree survives it. `resumeStep` exists because a stored step can leave the
+  flow: signing in *adds* the invite step, switching to "planeando" *removes*
+  the fecha and bebé steps, and landing on a step that is not in the flow would
+  render an empty screen.
+- **`from` on `startSignIn` is a closed set of destinations, not a
+  `redirectTo`.** The action is a public POST endpoint; a caller-supplied
+  redirect target is an open redirect waiting for somebody to forget to
+  validate it. `onboarding → "/"`, everything else `→ "/ajustes"` as before.
+- **`/api/v1/auth-status` exists because the onboarding is a client
+  component.** It cannot call `getSession()` or read `process.env`, and the two
+  alternatives were worse: a `NEXT_PUBLIC_AUTH_ENABLED` flag would be a second
+  source of truth for something `isAuthAvailable()` already decides (and the day
+  they disagree, the flow shows a Google button that cannot work on a screen
+  with no way out), while mounting `next-auth/react`'s SessionProvider would put
+  Auth.js's client half in every page's bundle for one boolean. The route
+  discloses which providers a deployment has configured — already visible to
+  anyone who opens `/cuenta` — and whether *the caller's own* cookie is live.
+  No name, no email, no user id, no health data, `no-store`, and it takes no
+  parameters, like every route since J3. **It is not a §4.3 exception**: nothing
+  it returns is health data, so it needs no whitelist-by-shape treatment; the
+  E1 mechanism stays reserved for things that are.
+  Its handler imports next-auth, which does not load under vitest, so its
+  boundary behaviour is asserted against a real build in
+  `e2e/onboarding.spec.ts` and its client-side parser is unit-tested. The
+  parser's rule is that *anything* unrecognised — an offline first run, a 404, a
+  proxy's HTML error page — reads as "local-only, signed out". Guessing that
+  accounts work when they do not strands a user on a button that goes nowhere.
+- **The invitation is a link now, and the code rides in the URL.** E3's
+  `lib/share/invite.ts` is the *app* invitation, addressed to a stranger; K1's
+  `lib/sharing/inviteLink.ts` is a different message that carries a capability.
+  Putting an invite code in a forwarded WhatsApp link is acceptable **because**
+  E1 made codes single-use and 14-day — the first person to open it consumes it,
+  so a forwarded link is spent rather than a standing grant. The prose is fixed
+  copy and is asserted against E3's `INVITE_FORBIDDEN_PATTERNS`, so the two
+  invitations cannot drift: neither may ever carry a week, an FPP, a department
+  or a name. `wa.me/?text=` (no number) means the app never asks for a phone
+  number or reads a contact list to send it.
+- **`/familia?codigo=…` fills the code in; it does not redeem it.** Spending a
+  single-use code on a page load would burn it for whoever opened the message by
+  accident.
+- **"Seguir sin cuenta" is a secondary link, not a peer card, and it is on every
+  face of the account step** — including the one shown when no provider is
+  configured or the device is offline. ARCHITECTURE.md §4.2 still makes it a
+  supported path; it stopped being the pitch, not the path. The old "No te
+  pedimos cuenta, ni correo, ni teléfono" block is deleted (K6 sweeps the rest).
+- **Deletion coverage.** K1 adds no table and no blob store, so A5's
+  `TABLE_DISPOSITION` is unchanged. It does add one device-local artefact — the
+  localStorage draft — and "borrar todos mis datos", account deletion and a
+  backup restore all clear it. A draft that says "the profile is already saved"
+  would otherwise resume a wiped device into a flow whose remaining steps write
+  no profile at all.
+- **Fourteen spec files had the onboarding walk-through inlined**, so adding
+  steps to the flow meant teaching fourteen copies the same three clicks. It is
+  now `e2e/helpers/onboarding.ts`. The flow is the app's front door and it will
+  change again.
+- **Home First Load JS: 204 kB → 209 kB.** The server-action reference, the
+  auth-status client and the invite-link module. K11 owns the budget and is
+  scheduled to re-verify after K1/K2/K7 land; recorded here so that task starts
+  from a number rather than a guess.

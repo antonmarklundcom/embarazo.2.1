@@ -1,20 +1,13 @@
 import { test, expect } from "@playwright/test";
 
+import { completeOnboarding } from "./helpers/onboarding";
+
 // BUILD-PLAN C6 (feature map #15, #17): the home rail shows the guías that are
 // about this week, with a read time, and the read time follows through to the
 // article itself.
 
-async function onboardAt(page: import("@playwright/test").Page, daysAgo: number) {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Estoy embarazada" }).click();
-  await page.getByRole("button", { name: "Mamá" }).click();
-  const lmp = new Date(Date.now() - daysAgo * 86400000).toISOString().slice(0, 10);
-  await page.locator("#lmp").fill(lmp);
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.locator("#dep").selectOption({ index: 1 });
-  await page.getByRole("button", { name: "Empezar" }).click();
-  await expect(page.getByText("Tip de hoy")).toBeVisible();
-}
+const onboardAt = (page: import("@playwright/test").Page, daysAgo: number) =>
+  completeOnboarding(page, { daysAgo });
 
 test("week 34 is offered the bolso guía, and it opens", async ({ page }) => {
   await onboardAt(page, 238); // ~34 weeks

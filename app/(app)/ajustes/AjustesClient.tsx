@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { db, wipeAllData, type AppMode, type BabyIdentity, type Role } from "@/lib/db";
+import { clearOnboardingDraft } from "@/lib/onboarding/draftStorage";
 import { ROLE_ONBOARDING_COPY, ROLE_ORDER } from "@/lib/roleCopy";
 import { useProfile } from "@/lib/useProfile";
 import { DEPARTMENTS } from "@/lib/departments";
@@ -157,6 +158,9 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
     setBackupMsg("");
     try {
       await importBackup(confirmRestoreFile);
+      // Same reasoning as handleWipe: the restored file is the truth about this
+      // device now, and a leftover onboarding draft is not part of it.
+      clearOnboardingDraft();
       setConfirmRestoreFile(null);
       // Force a full reload so every screen re-reads the restored data.
       window.location.href = "/";
@@ -386,6 +390,9 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
   async function handleWipe() {
     await wipeAllData();
     clearPin();
+    // K1: a draft that says "the profile is already saved" would resume the
+    // user into an onboarding whose remaining steps write no profile at all.
+    clearOnboardingDraft();
     router.push("/");
     // Force a full reload so the first-run gate re-evaluates cleanly.
     if (typeof window !== "undefined") window.location.href = "/";

@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { completeOnboarding } from "./helpers/onboarding";
+
 // BUILD-PLAN E2 (feature map #30). Chromium's headless build does not offer
 // `navigator.share`, which is the *fallback* path and therefore the one worth
 // testing: the image must still be produced and handed over as a download,
@@ -19,15 +21,7 @@ test("sharing the week card produces a PNG without touching the network", async 
     }
   });
 
-  await page.goto("/");
-  await page.getByRole("button", { name: "Estoy embarazada" }).click();
-  await page.getByRole("button", { name: "Mamá" }).click();
-  const lmp = new Date(Date.now() - 140 * 86400000).toISOString().slice(0, 10);
-  await page.locator("#lmp").fill(lmp);
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.locator("#dep").selectOption({ index: 1 });
-  await page.getByRole("button", { name: "Empezar" }).click();
-  await expect(page.getByText("Tip de hoy")).toBeVisible();
+  await completeOnboarding(page, { daysAgo: 140 });
 
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Compartir mi semana" }).click();
@@ -42,14 +36,7 @@ test("sharing the week card produces a PNG without touching the network", async 
 });
 
 test("the copy tells the truth about where the image is made", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Estoy embarazada" }).click();
-  await page.getByRole("button", { name: "Mamá" }).click();
-  const lmp = new Date(Date.now() - 140 * 86400000).toISOString().slice(0, 10);
-  await page.locator("#lmp").fill(lmp);
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.locator("#dep").selectOption({ index: 1 });
-  await page.getByRole("button", { name: "Empezar" }).click();
+  await completeOnboarding(page, { daysAgo: 140 });
 
   await expect(page.getByText(/se arma en tu teléfono y solo lleva la semana/)).toBeVisible();
 });

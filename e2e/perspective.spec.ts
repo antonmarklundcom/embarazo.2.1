@@ -1,19 +1,12 @@
 import { test, expect } from "@playwright/test";
 
+import { completeOnboarding } from "./helpers/onboarding";
+
 // BUILD-PLAN C4 (feature map #13): the same week with three entrances, opening
 // on the role the user chose in onboarding (B1).
 
-async function onboard(page: import("@playwright/test").Page, role: string) {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Estoy embarazada" }).click();
-  await page.getByRole("button", { name: role }).click();
-  const lmp = new Date(Date.now() - 140 * 86400000).toISOString().slice(0, 10);
-  await page.locator("#lmp").fill(lmp);
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.locator("#dep").selectOption({ index: 1 });
-  await page.getByRole("button", { name: "Empezar" }).click();
-  await expect(page.getByText("Tip de hoy")).toBeVisible();
-}
+const onboard = (page: import("@playwright/test").Page, role: string) =>
+  completeOnboarding(page, { role, daysAgo: 140 });
 
 test("a mamá opens on 'para vos' and can read the other two", async ({ page }) => {
   await onboard(page, "Mamá");

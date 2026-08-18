@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useProfile } from "@/lib/useProfile";
 import {
   formatCompletedGestation,
@@ -26,6 +26,7 @@ function babyAtWeekLabel(babies: BabyIdentity[], role: Role, week: number): stri
   return name ? `${name} a las ${week} semanas` : roleBabyAtWeekLabel(role, week);
 }
 import { Onboarding } from "@/components/Onboarding";
+import { hasOnboardingDraft } from "@/lib/onboarding/draftStorage";
 import { PlaneandoHome } from "@/components/PlaneandoHome";
 import { LocalResourcesBlock } from "@/components/LocalResourcesBlock";
 import { AppointmentBanner } from "@/components/AppointmentBanner";
@@ -50,16 +51,38 @@ import { InviteFriend } from "@/components/InviteFriend";
 // rail. Paraguay-specific cards (derechos, recursos, temporada) stay below.
 export default function InicioPage() {
   const profile = useProfile();
-  // Bump to force a re-read right after onboarding saves (useLiveQuery also
-  // reacts, but this avoids any flash).
-  const [, setNonce] = useState(0);
+  // K1: onboarding now writes the profile row *before* its last steps (the
+  // account, the baby's name, the invite), so "has a profile" stopped being the
+  // same question as "has finished onboarding" — and a gate that asked the old
+  // question would throw the user out onto Hoy halfway through the flow.
+  //
+  // So the decision is made once, when the first IndexedDB read lands, and then
+  // it sticks: onboarding ends when onboarding says it has ended. A draft in
+  // localStorage is what makes a user who is mid-flow — including one who is
+  // coming back from Google's redirect — resume instead of starting over.
+  const [flow, setFlow] = useState<"unknown" | "active" | "done">("unknown");
 
-  if (profile.loading) {
+  useEffect(() => {
+    if (profile.loading) return;
+    setFlow((current) =>
+      // "done" is final: only the flow itself ends the flow. Everything else is
+      // re-derived, so a profile arriving from sync on a second device (A3)
+      // closes the first-run gate the moment it lands, exactly as it did before
+      // K1 — that device has no draft, so it was never mid-flow.
+      current === "done"
+        ? "done"
+        : !profile.hasProfile || hasOnboardingDraft()
+          ? "active"
+          : "done",
+    );
+  }, [profile.loading, profile.hasProfile]);
+
+  if (profile.loading || flow === "unknown") {
     return <HomeSkeleton />;
   }
 
-  if (!profile.hasProfile) {
-    return <Onboarding onDone={() => setNonce((n) => n + 1)} />;
+  if (flow === "active") {
+    return <Onboarding onDone={() => setFlow("done")} />;
   }
 
   // Pre-pregnancy "planeando / buscando" mode shows its own dashboard.

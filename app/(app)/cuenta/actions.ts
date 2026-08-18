@@ -24,12 +24,29 @@ import {
 // in the NextAuth `signIn` callback — this action is the only place that can
 // mint the ticket, and that callback is the only thing that accepts one.
 
+/**
+ * Where a completed sign-in lands, keyed by where it started (K1).
+ *
+ * A closed set of destinations rather than a `redirectTo` string, deliberately:
+ * this action is a public POST endpoint, and a caller-supplied redirect target
+ * is an open redirect waiting for somebody to forget to validate it. Onboarding
+ * needs the user back on "/" so the flow can resume from its saved draft; every
+ * other entry point still lands on /ajustes as it did before.
+ */
+const SIGN_IN_DESTINATIONS = {
+  cuenta: "/ajustes",
+  onboarding: "/",
+} as const;
+
 const StartSignInSchema = z
   .object({
     provider: z.enum(PROVIDER_IDS),
     // An unchecked checkbox is absent from the FormData entirely, so the only
     // value that can ever satisfy this is a deliberate tick.
     consent: z.literal("on"),
+    from: z
+      .enum(Object.keys(SIGN_IN_DESTINATIONS) as ["cuenta", "onboarding"])
+      .default("cuenta"),
   })
   .strict();
 
@@ -51,6 +68,9 @@ export async function startSignIn(
   const parsed = StartSignInSchema.safeParse({
     provider: formData.get("provider"),
     consent: formData.get("consent") ?? undefined,
+    // Absent means the default ("cuenta"). An unknown value is a rejection,
+    // not a fallback — a caller sending one is not a user who mis-ticked a box.
+    from: formData.get("from") ?? undefined,
   });
 
   if (!parsed.success) {
@@ -62,7 +82,7 @@ export async function startSignIn(
     };
   }
 
-  const { provider } = parsed.data;
+  const { provider, from } = parsed.data;
   if (!availableProviders().includes(provider)) {
     return { error: "Ese método de ingreso no está disponible ahora mismo." };
   }
@@ -81,7 +101,7 @@ export async function startSignIn(
 
   // Throws NEXT_REDIRECT on success — deliberately not wrapped in try/catch,
   // which would swallow the redirect and strand the user on this page.
-  await signIn(provider, { redirectTo: "/ajustes" });
+  await signIn(provider, { redirectTo: SIGN_IN_DESTINATIONS[from] });
   return {};
 }
 

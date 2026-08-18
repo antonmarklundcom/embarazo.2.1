@@ -1,20 +1,13 @@
 import { test, expect } from "@playwright/test";
 
+import { completeOnboarding } from "./helpers/onboarding";
+
 // BUILD-PLAN C8 (feature map #18, #19). The shortcuts must reach real screens
 // in one tap, and — in this build, which has no business number configured —
 // no WhatsApp button anywhere may point at a number nobody answers.
 
-async function onboard(page: import("@playwright/test").Page) {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Estoy embarazada" }).click();
-  await page.getByRole("button", { name: "Mamá" }).click();
-  const lmp = new Date(Date.now() - 140 * 86400000).toISOString().slice(0, 10);
-  await page.locator("#lmp").fill(lmp);
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.locator("#dep").selectOption({ index: 1 });
-  await page.getByRole("button", { name: "Empezar" }).click();
-  await expect(page.getByText("Tip de hoy")).toBeVisible();
-}
+const onboard = (page: import("@playwright/test").Page) =>
+  completeOnboarding(page, { daysAgo: 140 });
 
 test("the three shortcuts reach their screens", async ({ page }) => {
   await onboard(page);

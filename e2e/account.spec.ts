@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { completeOnboarding } from "./helpers/onboarding";
+
 // BUILD-PLAN A2. CI runs with AUTH_SECRET / AUTH_GOOGLE_* / DATABASE_URL all
 // unset, which is exactly the configuration ARCHITECTURE.md §4.2 protects:
 // local-only mode. So these tests assert the half of A2 that must hold there —
@@ -9,17 +11,6 @@ import { test, expect } from "@playwright/test";
 // The signed-in half needs a real Google client and is verified against a
 // configured deployment, not here.
 
-async function completeOnboarding(page: import("@playwright/test").Page) {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Estoy embarazada" }).click();
-  await page.getByRole("button", { name: "Mamá" }).click();
-  const lmp = new Date(Date.now() - 70 * 86400000).toISOString().slice(0, 10);
-  await page.locator("#lmp").fill(lmp);
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.locator("#dep").selectOption({ index: 1 });
-  await page.getByRole("button", { name: "Empezar" }).click();
-  await expect(page.getByText("Tip de hoy")).toBeVisible();
-}
 
 test("/cuenta always offers a working way back into the app", async ({
   page,

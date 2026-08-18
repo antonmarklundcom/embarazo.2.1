@@ -7,6 +7,7 @@ import {
   type DeleteAccountState,
 } from "@/app/(app)/ajustes/actions";
 import { wipeAllData } from "@/lib/db";
+import { clearOnboardingDraft } from "@/lib/onboarding/draftStorage";
 import { clearPin } from "@/lib/crypto";
 
 // BUILD-PLAN A5 — "Borrar mi cuenta", two taps from Ajustes: one to open the
@@ -34,6 +35,9 @@ export function DeleteAccountCard() {
     setWiping(true);
     try {
       await wipeAllData();
+      // K1: see AjustesClient.handleWipe — a stale draft would resume onboarding
+      // into a state that never writes a profile row.
+      clearOnboardingDraft();
       clearPin();
     } catch {
       // A browser that refuses to drop IndexedDB must not block the server

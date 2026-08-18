@@ -8,6 +8,7 @@
 
 import {
   bigint,
+  boolean,
   index,
   int,
   json,
@@ -220,6 +221,34 @@ export const companionSnapshots = mysqlTable("companionSnapshots", {
   nextAppointmentAt: bigint("nextAppointmentAt", { mode: "number" }),
   babyName: varchar("babyName", { length: 64 }),
   updatedAt: bigint("updatedAt", { mode: "number" }).notNull(),
+
+  // -------------------------------------------------------------------------
+  // K3 — sharing levels. The owner's per-field opt-in, for the pareja only.
+  // -------------------------------------------------------------------------
+  //
+  // The flags are stored next to the data rather than only on the owner's
+  // device, so "off" is enforced at READ time as well as at publish time. A
+  // device that goes offline forever after switching a level off must not leave
+  // the server serving that value; nulling it needs one write, and until that
+  // write lands the flag is what the read obeys.
+  //
+  // Defaults are false in the column, not just in the client, because a row
+  // written by an older client has to mean "not shared".
+  sharePeso: boolean("sharePeso").notNull().default(false),
+  sharePataditas: boolean("sharePataditas").notNull().default(false),
+  /**
+   * K3 records the preference; K4 is what will have anything to publish under
+   * it (ARCHITECTURE.md §4.4 — photos do not leave the device until then).
+   * There is deliberately no photo column here yet: guessing at K4's shape
+   * would be worse than adding it when K4 knows.
+   */
+  shareFotos: boolean("shareFotos").notNull().default(false),
+
+  /** Weight in GRAMS — an integer on the wire, no decimal/float rounding. */
+  weightGrams: int("weightGrams"),
+  weightAt: bigint("weightAt", { mode: "number" }),
+  kickCount: int("kickCount"),
+  kickAt: bigint("kickAt", { mode: "number" }),
 });
 
 /**

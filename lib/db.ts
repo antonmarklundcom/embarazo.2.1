@@ -46,6 +46,13 @@ export interface Profile extends Partial<SyncMeta> {
   // no nickname yet. Plain non-indexed field — adding a second baby is just
   // pushing to this array, no Dexie schema version bump.
   babies?: BabyIdentity[];
+  /**
+   * K3 — which extra fields the owner shares with her pareja (never with
+   * `family`). Absent means everything off; `parsePreferences` in
+   * lib/sharing/levels.ts is the only thing that reads it, and it defaults
+   * every unknown answer to not sharing.
+   */
+  sharing?: Record<string, boolean>;
   // Relationship role (B1). Optional for back-compat; defaults to "mama".
   // Plain non-indexed field, so no Dexie schema version bump is needed.
   role?: Role;

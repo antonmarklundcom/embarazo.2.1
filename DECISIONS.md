@@ -1962,3 +1962,97 @@ own bundle.
   to somebody else's. Missing the second would leave a deleted account's
   encouragement standing on another person's home screen.
 - **Home First Load JS: 209 kB → 213 kB.** K11 still owns the budget.
+
+## K3 — sharing levels (August 2026)
+
+E1's snapshot is the same four facts for everybody who is let in. K3 adds a
+second tier the owner controls **per field, for the pareja only**: her weight,
+her pataditas, her bump photos.
+
+### A level is a set of field names, and every field belongs to exactly one
+
+`applyLevels` (`lib/sharing/levels.ts`) starts from "everything null" and copies
+in only the fields whose level is on. There is no path through it that emits a
+field no level claims — so a field added to `SharedExtras` without being
+assigned to a level travels as null forever, and a test asserts the partition is
+**total and non-overlapping**, so that omission fails the build instead of
+shipping quietly. That is what "a field not in the whitelist shape cannot leak
+by construction" means here; it is the E1 argument applied to a tier that is
+conditional rather than fixed.
+
+The same function also ignores anything else in the object it is handed, which
+is why a call site cannot widen the tier by passing a fuller record. Asserted
+with a deliberately over-full input.
+
+### Two gates, and they mean different things
+
+`readSnapshotFor` filters twice: `canSeeSharingLevels(role)` — **partner only,
+ever** — and then `applyLevels` over the flags **stored on the row**. The role
+gate is the rule; the flags are the owner's choice. `family` is not a weaker
+partner, it is a different relationship: somebody's aunt does not get their
+weight because the app could not think of a reason to stop her.
+
+Reading the *stored* flags rather than trusting the stored values is what makes
+"turning one off removes it from the partner view" true even if her device never
+publishes again. And the flags default to `false` **in the column**, not only in
+the client, so a row written by a pre-K3 build means "not shared".
+
+### The device applies the levels, and then the server applies them again
+
+Both ends call the same pure function and neither trusts the other. The device
+filtering means a value whose level is off never leaves the phone. The server
+filtering means a client that sends a weight with `peso: false` — an old build,
+a bug, a hand-rolled request — stores a null rather than a value nobody agreed
+to share. The publish overwrites all seven K3 columns every time, so switching a
+level off clears the data in the same write that records the flag.
+
+`saveSharingPreferences` publishes immediately rather than waiting for the next
+app open, which is what makes "off" take effect now. If that publish fails
+(offline) the copy says so plainly instead of pretending it worked — and the
+server-side flag gate still governs the read in the meantime.
+
+### Weight is grams
+
+MySQL `decimal` comes back from drizzle as a string, and a float would let
+68.4 kg render as 68.40000000000001 on somebody's partner's phone. An integer
+number of grams has neither problem, and the client is the only thing that ever
+needs it in kilos. The route bounds it (20–300 kg) and bounds the kick count
+too: out-of-range is a 400 rather than a stored absurdity.
+
+### `fotos` claims no field yet, on purpose
+
+Photos do not leave the device at all until K4 makes uploading them an explicit
+opt-in (ARCHITECTURE.md §4.4). So the level exists, the preference is stored and
+enforced, and `LEVEL_FIELDS.fotos` is `[]` — adding an empty column now would be
+guessing at K4's shape, and *not* shipping the toggle would mean K4 has to turn
+a stored "no" into a default, which is exactly the accident this file is
+arranged to prevent. The toggle's copy says plainly that there is nothing to
+share yet and that her setting will already be in place when there is.
+
+### Smaller decisions
+
+- **E1's `FORBIDDEN_COMPANION_FIELDS` had to be amended, and the amendment is
+  narrow.** It bans `weight`/`kg` outright, which was right when nothing could
+  ever share them and is precisely what K3 changes — under an explicit,
+  per-field, partner-only opt-in. So `FORBIDDEN_SHARED_FIELDS` is that list
+  *minus those two*, derived from it rather than retyped, and it still leads
+  with notes. **Journal notes are not a level and never will be**: PIN-encrypted
+  on the device, not synced (A3), absent from every whitelist here.
+- **The schema assertion got stronger, not weaker.** The old test scanned the
+  table source for forbidden names; `levels.test.ts` now asserts
+  `companionSnapshots` holds **exactly** the columns the code's own whitelists
+  claim — base snapshot + three flags + the level fields — so any column added
+  without being named in a whitelist fails, whatever it is called.
+- **The partner's card renders nothing when nothing is shared.** No "ella no
+  comparte su peso" line: telling a partner what he is not being shown turns a
+  private setting into a conversation she did not ask to have.
+- **`readShareableExtras` reads only the two stores K3 shares**, for the same
+  reason `buildSnapshot` takes plain values — there is no wider object in scope
+  to spread by accident. It uses only a *completed* kick session: a counter
+  still running is not a number she has decided to stand behind.
+- **`routeContract.test.ts`'s `fnBody` helper replaced a `\n}` slice.** The old
+  slice ended a "function body" at the first line starting with `}`, which for
+  `readSnapshotFor` is the close of its multi-line return type — so every
+  assertion about that body was passing against the signature. Caught by writing
+  a test that should have failed and did not.
+- **Home First Load JS: 213 kB → 214 kB.**

@@ -21,6 +21,22 @@ const SERVER = readFileSync(
   "utf8",
 );
 
+/**
+ * The source of one exported function, from its signature to the next export.
+ *
+ * Slicing at the first `\n}` looks simpler and is wrong: a function whose
+ * return type is a multi-line object literal closes that literal on a line
+ * starting with `}`, so the "body" ends before the code does and every
+ * assertion about it silently passes.
+ */
+function fnBody(source: string, name: string): string {
+  const start = source.indexOf(`export async function ${name}`);
+  expect(start, `${name} not found`).toBeGreaterThan(-1);
+  const rest = source.slice(start);
+  const next = rest.indexOf("\nexport ", 1);
+  return next === -1 ? rest : rest.slice(0, next);
+}
+
 describe("the route accepts ids, never prose", () => {
   it("validates every K2 item key against the app's own checklist keys", () => {
     // `z.string()` here would be the whole feature quietly becoming a free-text
@@ -48,10 +64,15 @@ describe("the route accepts ids, never prose", () => {
     const unionStart = ROUTE.indexOf("const ActionSchema");
     const unionEnd = ROUTE.indexOf("function unavailable");
     const union = ROUTE.slice(unionStart, unionEnd);
-    // One `.strict()` per action object in the discriminated union.
-    expect(union.match(/\.strict\(\)/g)?.length).toBe(
-      union.match(/action: z\.literal/g)?.length,
+    // Every `z.object(` in the union — the actions themselves and K3's nested
+    // `sharing` / `extras` — carries a `.strict()`. Counting objects rather
+    // than actions is what keeps this honest as nested shapes get added: a
+    // non-strict nested object is exactly as leaky as a non-strict action.
+    const objects = union.match(/\.object\(/g)?.length ?? 0;
+    expect(objects).toBeGreaterThanOrEqual(
+      union.match(/action: z\.literal/g)?.length ?? 0,
     );
+    expect(union.match(/\.strict\(\)/g)?.length).toBe(objects);
   });
 });
 
@@ -79,18 +100,52 @@ describe("a companion acts on somebody else's pregnancy, and is checked for it",
   });
 
   it("never lets a companion send a cheer without a live membership", () => {
-    const fn = SERVER.slice(SERVER.indexOf("export async function sendCheer"));
-    const body = fn.slice(0, fn.indexOf("\n}"));
+    const body = fnBody(SERVER, "sendCheer");
     expect(body).toContain("liveMembership");
     // An owner cheering herself is not a thing the product does.
     expect(body).toContain('membership.role === "owner"');
   });
 });
 
+describe("K3 — the levels are applied by the server, not only by the device", () => {
+  it("re-applies the levels on the way in", () => {
+    // A client that sends a weight with `peso: false` — an old build, a bug, a
+    // hand-rolled request — must store a null, not a value nobody agreed to
+    // share. The device applying the levels first is a courtesy; this is the
+    // rule.
+    const body = fnBody(SERVER, "publishSnapshot");
+    expect(body).toContain("applyLevels(preferences, extras)");
+  });
+
+  it("defaults an absent `sharing` block to everything off", () => {
+    expect(ROUTE).toContain("data.sharing ?? SHARING_DEFAULTS");
+    expect(ROUTE).toContain("data.extras ?? emptyExtras()");
+  });
+
+  it("bounds the values rather than storing whatever arrives", () => {
+    const union = ROUTE.slice(
+      ROUTE.indexOf("const ActionSchema"),
+      ROUTE.indexOf("function unavailable"),
+    );
+    expect(union).toMatch(/weightGrams: z\.number\(\)\.int\(\)\.min\(/);
+    expect(union).toMatch(/kickCount: z\.number\(\)\.int\(\)\.min\(/);
+  });
+
+  it("gates the extras on the role AND the stored flag, inside the read", () => {
+    const body = fnBody(SERVER, "readSnapshotFor");
+    // The role gate is the rule ("the pareja only, ever"); the flags are the
+    // owner's choice. Reading the STORED flags is what makes switching a level
+    // off take effect even if her device never publishes again.
+    expect(body).toContain("canSeeSharingLevels(membership.role)");
+    expect(body).toContain("applyLevels");
+    expect(body).toContain("row.sharePeso");
+    expect(body).toContain("row.sharePataditas");
+  });
+});
+
 describe("family is excluded by the server, not by the UI", () => {
   it("gates the task list on canSeeSharedTasks inside the read", () => {
-    const fn = SERVER.slice(SERVER.indexOf("export async function readTasksFor"));
-    const body = fn.slice(0, fn.indexOf("\n}"));
+    const body = fnBody(SERVER, "readTasksFor");
     expect(body).toContain("liveMembership");
     expect(body).toContain("canSeeSharedTasks");
     // Null, not []: "there is nothing assigned" is itself an answer, and a
@@ -99,8 +154,7 @@ describe("family is excluded by the server, not by the UI", () => {
   });
 
   it("gates the cheer inbox on being the owner inside the read", () => {
-    const fn = SERVER.slice(SERVER.indexOf("export async function readCheersFor"));
-    const body = fn.slice(0, fn.indexOf("\n}"));
+    const body = fnBody(SERVER, "readCheersFor");
     expect(body).toContain("liveMembership");
     expect(body).toMatch(/membership\.role !== "owner"/);
   });

@@ -119,6 +119,8 @@ export function CompanionHome({
         </section>
       )}
 
+      <SharedExtrasCard view={view} />
+
       <CheerButtons pregnancyId={view.pregnancyId} />
 
       {canSeeSharedTasks(view.role) && (
@@ -289,6 +291,77 @@ function SharedTasks({
           );
         })}
       </ul>
+    </section>
+  );
+}
+
+/**
+ * K3 — what she chose to share, beyond the four facts everybody gets.
+ *
+ * Renders nothing at all when nothing is shared, which is the default and will
+ * stay the common case. There is no "ella no comparte su peso" line: telling a
+ * partner what he is not being shown turns a private setting into a
+ * conversation she did not ask to have.
+ *
+ * Every value here is null unless BOTH gates opened on the server — the role is
+ * `partner` and that specific level is on. This component does not check either
+ * one; it renders what it was given, and being given nothing is the answer.
+ */
+function SharedExtrasCard({ view }: { view: SharedView }) {
+  const extras = view.extras;
+  if (!extras) return null;
+
+  const hasWeight = extras.weightGrams !== null;
+  const hasKicks = extras.kickCount !== null;
+  if (!hasWeight && !hasKicks) return null;
+
+  return (
+    <section
+      aria-label="Lo que ella comparte con vos"
+      className="rounded-card border border-line bg-white p-4 shadow-soft"
+    >
+      <h2 className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">
+        Lo que ella comparte con vos
+      </h2>
+      <dl className="mt-2 space-y-1.5 text-sm">
+        {hasWeight && (
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="text-muted">Su peso</dt>
+            <dd className="text-right">
+              <span className="font-extrabold text-ink">
+                {(extras.weightGrams! / 1000).toLocaleString("es-PY", {
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 1,
+                })}{" "}
+                kg
+              </span>
+              {extras.weightAt && (
+                <span className="block text-xs text-muted">
+                  {formatDate(extras.weightAt)}
+                </span>
+              )}
+            </dd>
+          </div>
+        )}
+        {hasKicks && (
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="text-muted">Últimas pataditas</dt>
+            <dd className="text-right">
+              <span className="font-extrabold text-ink">
+                {extras.kickCount} en una sesión
+              </span>
+              {extras.kickAt && (
+                <span className="block text-xs text-muted">
+                  {formatDate(extras.kickAt)}
+                </span>
+              )}
+            </dd>
+          </div>
+        )}
+      </dl>
+      <p className="mt-3 text-[11px] leading-relaxed text-muted">
+        Ella eligió compartir esto y lo puede apagar cuando quiera.
+      </p>
     </section>
   );
 }

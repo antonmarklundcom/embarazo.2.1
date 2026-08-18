@@ -13,6 +13,7 @@ import {
   type SharedView,
 } from "@/lib/sharing/client";
 import { CHECKLISTS } from "@/lib/checklists";
+import { SharingLevels } from "@/components/SharingLevels";
 import { isValidInviteCode } from "@/lib/sharing/fields";
 import { inviteCodeFromSearch } from "@/lib/sharing/inviteLink";
 
@@ -150,6 +151,8 @@ export default function FamiliaPage() {
           </p>
         </section>
       ))}
+
+      {owned && <SharingLevels onChanged={() => void reload()} />}
 
       {owned && <PartnerTasks view={owned} onChanged={reload} />}
 

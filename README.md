@@ -200,8 +200,9 @@ para compartirlos entre tus propios dispositivos: viajan como un sobre
 opaco que el servidor guarda y devuelve pero nunca lee ni indexa
 (`docs/ARCHITECTURE.md` §4). Family sharing es opt-in por campo: vos elegís
 qué ve tu pareja o familia (por ejemplo peso o pataditas); las notas del
-diario nunca se comparten. Las fotos no se suben en v1 (`docs/ARCHITECTURE.md`
-§4.4) — es una función opt-in separada, todavía no habilitada.
+diario nunca se comparten. Las fotos se quedan en el teléfono salvo que la
+usuaria active «Copia de tus fotos» — un opt-in aparte, con almacenamiento
+de objetos y URLs firmadas de vida corta (`docs/ARCHITECTURE.md` §4.4).
 
 En ambos modos:
 

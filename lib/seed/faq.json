@@ -9,7 +9,7 @@
     "id": "faq-notas-fotos",
     "topic": "privacidad",
     "question": "¿Mis fotos y mis notas se suben a algún lado?",
-    "answer": "Las fotos —las de tu panza y las de tu carné— nunca salen del teléfono. No se sincronizan ni siquiera si tenés cuenta. Las notas del diario sí se sincronizan con tu cuenta, y si les ponés un PIN se guardan cifradas con una clave que solo existe en tu teléfono: ni nosotros podemos leerlas."
+    "answer": "Las fotos —las de tu panza y las de tu carné— se quedan en tu teléfono y no se sincronizan, salvo que vos actives «Copia de tus fotos» en Ajustes. Si la activás, se guardan a tu nombre para que las recuperes si cambiás de celular, y si la apagás borramos las copias en ese momento. Las notas del diario sí se sincronizan con tu cuenta, y si les ponés un PIN se guardan cifradas con una clave que solo existe en tu teléfono: ni nosotros podemos leerlas."
   },
   {
     "id": "faq-borro-la-app",

@@ -63,11 +63,14 @@ export default function PrivacidadPage() {
           ya guardás en el dispositivo, ni más ni menos.
         </p>
         <p className="text-sm leading-relaxed text-muted">
-          <strong>Las fotos nunca se suben.</strong> La foto de la panza y las
-          fotos del carné perinatal se quedan siempre en tu teléfono, tengas
-          cuenta o no. Las notas del diario que protegiste con PIN viajan
-          cifradas y sin la clave para abrirlas — nuestro servidor no puede
-          leerlas.
+          <strong>Las fotos solo se suben si vos lo pedís.</strong> La foto de
+          la panza y las del carné perinatal se quedan en tu teléfono, salvo
+          que actives «Copia de tus fotos» en Ajustes. Si la activás, se
+          guardan a tu nombre y solo vos las podés abrir; si la apagás,
+          borramos las copias en ese momento. Tu pareja y tu familia no las ven
+          salvo que además enciendas «fotos de la panza» en Familia. Las notas
+          del diario que protegiste con PIN viajan cifradas y sin la clave para
+          abrirlas — nuestro servidor no puede leerlas.
         </p>
       </section>
 

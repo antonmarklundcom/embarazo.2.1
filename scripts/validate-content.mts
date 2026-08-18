@@ -11,6 +11,7 @@ import {
   LimbSizeSchema,
   PerspectiveBandSchema,
   ObstetraNoteSchema,
+  InsightTemplateSchema,
   FaqEntrySchema,
   BabyNameSchema,
   validateContentArray,
@@ -124,6 +125,19 @@ const checks: Check[] = [];
         ObstetraNoteSchema,
         (entry) => String(entry.week),
       ),
+    );
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    // Not created yet — the card does not render.
+  }
+}
+{
+  // K9/F3 insight sentences, keyed by template id. Every line here is copy a
+  // medical reviewer signs off on before the card can render at all.
+  try {
+    const raw = readJson("lib/seed/insights.json") as unknown[];
+    checks.push(
+      validateContentArray("lib/seed/insights.json", raw, InsightTemplateSchema),
     );
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;

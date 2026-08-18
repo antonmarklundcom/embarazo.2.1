@@ -146,7 +146,8 @@ export function SignInCard({
             <ul className="mt-3 space-y-1.5 text-xs leading-relaxed text-ink/80">
               <li>
                 • Tus fotos de la panza y del carné <strong>no</strong> se
-                suben: quedan siempre en tu teléfono.
+                suben con esto: quedan en tu teléfono salvo que después
+                actives «Copia de tus fotos» en Ajustes.
               </li>
               <li>
                 • Podés borrar tu cuenta y todos tus datos del servidor cuando

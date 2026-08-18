@@ -27,6 +27,8 @@ interface Row {
 }
 
 function memoryDb() {
+  /** K4: object keys the plan asked the store to delete. */
+  const deletedObjects: string[] = [];
   const tables: Record<string, Row[]> = {
     users: [],
     accounts: [],
@@ -40,6 +42,9 @@ function memoryDb() {
     aiGenerations: [],
     pushReminders: [],
     companionSnapshots: [],
+    companionTasks: [],
+    companionCheers: [],
+    photoBlobs: [],
     contentStats: [],
     adminAudit: [],
   };
@@ -111,6 +116,27 @@ function memoryDb() {
         pregnancyIds.includes(r.pregnancyId as string),
       );
     },
+    async deletePhotoBlobs(userId) {
+      // The real executor deletes the OBJECT before the row; the in-memory one
+      // records that it happened so the test can assert both went.
+      for (const row of tables.photoBlobs!.filter((r) => r.userId === userId)) {
+        deletedObjects.push(row.objectKey as string);
+      }
+      return removeWhere("photoBlobs", (r) => r.userId === userId);
+    },
+    async deleteCompanionTasks(pregnancyIds) {
+      return removeWhere("companionTasks", (r) =>
+        pregnancyIds.includes(r.pregnancyId as string),
+      );
+    },
+    async deleteCompanionCheers(userId, pregnancyIds) {
+      return removeWhere(
+        "companionCheers",
+        (r) =>
+          r.fromUserId === userId ||
+          pregnancyIds.includes(r.pregnancyId as string),
+      );
+    },
     async deletePregnancies(pregnancyIds) {
       return removeWhere("pregnancies", (r) =>
         pregnancyIds.includes(r.id as string),
@@ -121,7 +147,7 @@ function memoryDb() {
     },
   };
 
-  return { tables, executor };
+  return { tables, executor, deletedObjects };
 }
 
 const VICTIM = "user-a";
@@ -178,6 +204,41 @@ function seed(db: ReturnType<typeof memoryDb>) {
     { pregnancyId: "preg-a", week: 24 },
     { pregnancyId: "preg-b", week: 12 },
   );
+  // K2. The victim assigned a task on her own pregnancy and cheered on the
+  // bystander's; the bystander did the mirror image. Deleting the victim must
+  // take both of hers and neither of his.
+  tables.companionTasks!.push(
+    { id: "t1", pregnancyId: "preg-a", itemKey: "bolso-carne" },
+    { id: "t2", pregnancyId: "preg-b", itemKey: "bolso-cedula" },
+  );
+  tables.companionCheers!.push(
+    { id: "c1", pregnancyId: "preg-a", fromUserId: BYSTANDER, cheerId: "fuerza" },
+    { id: "c2", pregnancyId: "preg-b", fromUserId: VICTIM, cheerId: "te-quiero" },
+    { id: "c3", pregnancyId: "preg-b", fromUserId: BYSTANDER, cheerId: "gracias" },
+  );
+
+  // K4. Two of the victim's photos and one of the bystander's.
+  tables.photoBlobs!.push(
+    {
+      userId: VICTIM,
+      store: "photoEntries",
+      recordId: "p1",
+      objectKey: `fotos/${VICTIM}/photoEntries/p1`,
+    },
+    {
+      userId: VICTIM,
+      store: "carnePhotos",
+      recordId: "p2",
+      objectKey: `fotos/${VICTIM}/carnePhotos/p2`,
+    },
+    {
+      userId: BYSTANDER,
+      store: "photoEntries",
+      recordId: "p3",
+      objectKey: `fotos/${BYSTANDER}/photoEntries/p3`,
+    },
+  );
+
   tables.aiGenerations!.push({ userId: VICTIM }, { userId: BYSTANDER });
 
   tables.contentStats!.push({ week: 12, contentId: "guia", day: "2026-08-12" });
@@ -202,6 +263,52 @@ describe("every table has a documented disposition", () => {
       .filter(([, rule]) => rule.startsWith("retained"))
       .map(([table]) => table);
     expect(retained).toEqual(["adminAudit"]);
+  });
+});
+
+describe("K2 — tasks and cheers go with the account", () => {
+  it("takes the deleted owner's shared checklist off her partner's screen", async () => {
+    const db = memoryDb();
+    seed(db);
+    await deleteAccountData(db.executor, VICTIM);
+    expect(db.tables.companionTasks!.map((r) => r.id)).toEqual(["t2"]);
+  });
+
+  it("removes cheers in both directions", async () => {
+    // Received (somebody cheered her pregnancy) AND sent (she cheered
+    // somebody else's). Missing the second would leave her encouragement
+    // standing on a home screen belonging to an account she no longer has.
+    const db = memoryDb();
+    seed(db);
+    await deleteAccountData(db.executor, VICTIM);
+    expect(db.tables.companionCheers!.map((r) => r.id)).toEqual(["c3"]);
+  });
+});
+
+describe("K4 — account deletion leaves zero blobs", () => {
+  it("deletes the objects, not only the rows that point at them", async () => {
+    // The task's own acceptance criterion. Dropping the index while leaving the
+    // bytes in a bucket is the worst of both outcomes: unreachable through the
+    // app, still sitting on somebody's disk.
+    const db = memoryDb();
+    seed(db);
+
+    await deleteAccountData(db.executor, VICTIM);
+
+    expect(db.tables.photoBlobs!.map((r) => r.recordId)).toEqual(["p3"]);
+    expect(db.deletedObjects.sort()).toEqual(
+      [
+        `fotos/${VICTIM}/photoEntries/p1`,
+        `fotos/${VICTIM}/carnePhotos/p2`,
+      ].sort(),
+    );
+  });
+
+  it("does not touch another account's photos", async () => {
+    const db = memoryDb();
+    seed(db);
+    await deleteAccountData(db.executor, VICTIM);
+    expect(db.deletedObjects.some((key) => key.includes(BYSTANDER))).toBe(false);
   });
 });
 

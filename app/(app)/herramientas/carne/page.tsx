@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
+import { deleteRemotePhoto, syncPhotos } from "@/lib/photos/client";
 import { db, type CarnePhoto } from "@/lib/db";
 import { downscaleImage } from "@/lib/images";
 import { PrivacyLine } from "@/components/PrivacyLine";
@@ -28,13 +29,27 @@ export default function CarnePage() {
     try {
       const blob = await downscaleImage(file);
       await db().carnePhotos.add({ blob, createdAt: Date.now() });
+      // K4: upload it now if backup is on. Fire-and-forget — a photo is
+      // saved on the phone the moment it is added, and the upload is a
+      // background convenience that must never make "guardar" feel slow.
+      void syncPhotos();
     } finally {
       setBusy(false);
     }
   }
 
   async function remove(id?: number) {
-    if (id) await db().carnePhotos.delete(id);
+    if (!id) {
+      setViewing(null);
+      return;
+    }
+    // K4: tell the server before the row is gone — its `uid` is the only name
+    // the backup knows this photo by, and after the delete there is nothing
+    // left to look it up from. Best-effort: the local delete is what she asked
+    // for and must not wait on the network.
+    const row = await db().carnePhotos.get(id);
+    await deleteRemotePhoto("carnePhotos", row?.uid);
+    await db().carnePhotos.delete(id);
     setViewing(null);
   }
 

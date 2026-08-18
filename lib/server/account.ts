@@ -3,10 +3,14 @@ import "server-only";
 import { and, eq, inArray, or } from "drizzle-orm";
 
 import type { Database } from "./db";
+import { deleteObject } from "./photoStorage";
 import {
   accounts,
   aiGenerations,
   companionSnapshots,
+  companionTasks,
+  photoBlobs,
+  companionCheers,
   invites,
   pregnancies,
   pregnancyMembers,
@@ -61,6 +65,21 @@ export const TABLE_DISPOSITION = {
   // it would keep serving a deleted account's week and due date to whoever
   // was still a member.
   companionSnapshots: "deleted",
+  // K2. Both are keyed by pregnancy, so they go with the owner's pregnancies.
+  // A leftover task would keep a deleted account's to-do list on a partner's
+  // home screen; a leftover cheer would keep somebody sending encouragement
+  // into an account that no longer exists.
+  companionTasks: "deleted",
+  // Also deleted by fromUserId: a companion who deletes *their own* account
+  // should not leave their cheers standing on somebody else's home screen.
+  companionCheers: "deleted",
+
+  // K4. Photos are the one thing this app stores that is not text, and
+  // "account deletion leaves zero blobs" is the task's own acceptance
+  // criterion. The row goes AND the object goes — deleting the index while
+  // leaving the bytes in a bucket would be the worst of both: unreachable
+  // through the app, still sitting on somebody's disk.
+  photoBlobs: "deleted (rows AND the objects they point at)",
 
   // Devices and paid-for work.
   pushSubscriptions: "deleted",
@@ -113,6 +132,22 @@ export interface AccountDeleteExecutor {
   /** Invites they created, invites to their pregnancies, invites they accepted. */
   deleteInvites(userId: string, pregnancyIds: string[]): Promise<number>;
   deleteCompanionSnapshots(pregnancyIds: string[]): Promise<number>;
+  /** K2: tasks belong to the pregnancy, so they go with it. */
+  deleteCompanionTasks(pregnancyIds: string[]): Promise<number>;
+  /**
+   * K2: cheers go two ways — those sent *to* this user's pregnancies, and
+   * those this user sent to somebody else's. Both must go.
+   */
+  deleteCompanionCheers(userId: string, pregnancyIds: string[]): Promise<number>;
+  /**
+   * K4: delete every stored photo — the object first, then the row.
+   *
+   * That order is deliberate, and it is the reasoning A5 used for running the
+   * device wipe before the server call: if this is interrupted, an orphaned row
+   * pointing at nothing is recoverable (the next attempt deletes it), while an
+   * orphaned object nobody holds a pointer to is not.
+   */
+  deletePhotoBlobs(userId: string): Promise<number>;
   deletePregnancies(pregnancyIds: string[]): Promise<number>;
   deleteUser(userId: string): Promise<number>;
 }
@@ -143,6 +178,9 @@ export async function deleteAccountData(
     invites: await executor.deleteInvites(userId, pregnancyIds),
     pregnancyMembers: await executor.deleteMemberships(userId, pregnancyIds),
     companionSnapshots: await executor.deleteCompanionSnapshots(pregnancyIds),
+    companionTasks: await executor.deleteCompanionTasks(pregnancyIds),
+    companionCheers: await executor.deleteCompanionCheers(userId, pregnancyIds),
+    photoBlobs: await executor.deletePhotoBlobs(userId),
     pregnancies: await executor.deletePregnancies(pregnancyIds),
     accounts: await executor.deleteAccounts(userId),
     sessions: await executor.deleteSessions(userId),
@@ -272,6 +310,49 @@ export function drizzleAccountExecutor(
           .delete(companionSnapshots)
           .where(inArray(companionSnapshots.pregnancyId, pregnancyIds)),
       );
+    },
+
+    async deletePhotoBlobs(userId) {
+      const rows = await database
+        .select({ objectKey: photoBlobs.objectKey })
+        .from(photoBlobs)
+        .where(eq(photoBlobs.userId, userId));
+
+      // Objects first. An orphaned row is recoverable; an orphaned object with
+      // nothing pointing at it is not.
+      for (const row of rows) {
+        await deleteObject(userId, row.objectKey);
+      }
+
+      return affected(
+        await database.delete(photoBlobs).where(eq(photoBlobs.userId, userId)),
+      );
+    },
+
+    async deleteCompanionTasks(pregnancyIds) {
+      if (pregnancyIds.length === 0) return 0;
+      return affected(
+        await database
+          .delete(companionTasks)
+          .where(inArray(companionTasks.pregnancyId, pregnancyIds)),
+      );
+    },
+
+    async deleteCompanionCheers(userId, pregnancyIds) {
+      // `or` with an empty `inArray` is a SQL error, so the two halves are
+      // issued separately when there is no pregnancy to match.
+      const sent = affected(
+        await database
+          .delete(companionCheers)
+          .where(eq(companionCheers.fromUserId, userId)),
+      );
+      if (pregnancyIds.length === 0) return sent;
+      const received = affected(
+        await database
+          .delete(companionCheers)
+          .where(inArray(companionCheers.pregnancyId, pregnancyIds)),
+      );
+      return sent + received;
     },
 
     async deletePregnancies(pregnancyIds) {

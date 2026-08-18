@@ -5,16 +5,31 @@ import { getSession, isAuthAvailable } from "@/lib/server/auth";
 import { dbOrNull } from "@/lib/server/db";
 import {
   acceptInvite,
+  assignTask,
   createInvite,
   ensurePregnancyForOwner,
+  markCheersSeen,
   membersOf,
   membershipsOf,
   publishSnapshot,
+  readCheersFor,
   readSnapshotFor,
+  readTasksFor,
   revokeInviteCode,
+  liveMembership,
   revokeMembership,
+  sendCheer,
+  setAccompanying,
+  setTaskDone,
+  unassignTask,
 } from "@/lib/server/sharing";
-import { isValidInviteCode } from "@/lib/sharing/fields";
+import {
+  canCompleteSharedTask,
+  isValidInviteCode,
+  SHARED_TASK_KEYS,
+} from "@/lib/sharing/fields";
+import { CHEER_IDS } from "@/lib/sharing/cheers";
+import { SHARING_DEFAULTS, emptyExtras } from "@/lib/sharing/levels";
 
 // BUILD-PLAN E1 — family sharing.
 //
@@ -30,6 +45,12 @@ import { isValidInviteCode } from "@/lib/sharing/fields";
 export const dynamic = "force-dynamic";
 
 const HEADERS = { "Cache-Control": "no-store" } as const;
+
+// zod needs a non-empty tuple of literals; both lists are pinned in code and
+// are never empty, and casting here rather than hand-copying them is what keeps
+// the route's whitelist and the app's own vocabularies from drifting apart.
+const TASK_KEYS = SHARED_TASK_KEYS as unknown as [string, ...string[]];
+const CHEER_ID_VALUES = CHEER_IDS as unknown as [string, ...string[]];
 
 const ActionSchema = z.discriminatedUnion("action", [
   z
@@ -60,6 +81,51 @@ const ActionSchema = z.discriminatedUnion("action", [
       code: z.string().min(1).max(32),
     })
     .strict(),
+  // K2 — shared checklist items. `itemKey` is a z.enum over the app's own
+  // checklist keys, so the server can only ever store an id it already knows:
+  // no label, no note, no prose an owner types. Same discipline as the
+  // snapshot's shape whitelist, applied to a second table.
+  z
+    .object({
+      action: z.literal("assign-task"),
+      itemKey: z.enum(TASK_KEYS),
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal("unassign-task"),
+      itemKey: z.enum(TASK_KEYS),
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal("complete-task"),
+      pregnancyId: z.string().min(1).max(64),
+      itemKey: z.enum(TASK_KEYS),
+      done: z.boolean(),
+    })
+    .strict(),
+  // K2 — "mandale ánimo". The whole message is an id from CHEERS; there is no
+  // text field here, deliberately (see lib/sharing/cheers.ts).
+  z
+    .object({
+      action: z.literal("cheer"),
+      pregnancyId: z.string().min(1).max(64),
+      cheerId: z.enum(CHEER_ID_VALUES),
+    })
+    .strict(),
+  z.object({ action: z.literal("cheers-seen") }).strict(),
+  // K8 — "yo la acompaño". Null clears it. The timestamp is the control the
+  // companion is agreeing to, and it is checked against the real one on the
+  // way out (`isAccompanying`) rather than trusted here: a companion cannot
+  // invent an appointment, only agree to one.
+  z
+    .object({
+      action: z.literal("accompany"),
+      pregnancyId: z.string().min(1).max(64),
+      appointmentAt: z.number().int().positive().nullable(),
+    })
+    .strict(),
   z
     .object({
       action: z.literal("publish"),
@@ -70,6 +136,29 @@ const ActionSchema = z.discriminatedUnion("action", [
       dueDate: z.number().int().positive().nullable(),
       nextAppointmentAt: z.number().int().positive().nullable(),
       babyName: z.string().max(64).nullable(),
+      // K3 — the owner's per-field sharing levels and the values they unlock.
+      // Absent means off / nothing, so a client that predates K3 publishes
+      // exactly what it always did and shares nothing new.
+      sharing: z
+        .object({
+          peso: z.boolean(),
+          pataditas: z.boolean(),
+          fotos: z.boolean(),
+        })
+        .strict()
+        .optional(),
+      // Bounds, not just types: a weight is a person's weight and a kick count
+      // is a count. 20–300 kg in grams, and a session nobody could have sat
+      // through. Out-of-range is a 400 rather than a stored absurdity.
+      extras: z
+        .object({
+          weightGrams: z.number().int().min(20_000).max(300_000).nullable(),
+          weightAt: z.number().int().positive().nullable(),
+          kickCount: z.number().int().min(0).max(1000).nullable(),
+          kickAt: z.number().int().positive().nullable(),
+        })
+        .strict()
+        .optional(),
     })
     .strict(),
 ]);
@@ -115,13 +204,40 @@ export async function GET() {
       return {
         pregnancyId: membership.pregnancyId,
         role: membership.role,
+        // K8. The caller's own "yo la acompaño" marker. On an owner view this
+        // is always null — she is not accompanying herself — and who else is
+        // coming reaches her through `members` below, by role only.
+        accompanyingAt: membership.accompanyingAt ?? null,
         snapshot: result?.snapshot ?? null,
+        // K3. Null for everyone but the pareja, and null per field for every
+        // level the owner has not turned on. `readSnapshotFor` decides both —
+        // this route never sees an unfiltered row.
+        extras: result?.extras ?? undefined,
         // The owner also gets the guest list, so "quién ve mi embarazo" is
         // answerable. A companion does not: who else is in a family is not
         // theirs to know.
         members:
           membership.role === "owner"
             ? await membersOf(ctx.database, membership.pregnancyId)
+            : undefined,
+        // K2. `readTasksFor` returns null — not [] — for a `family` member:
+        // "there is nothing assigned" is itself an answer, and family is not
+        // entitled to it. The owner sees her own list so she can manage it.
+        tasks:
+          (await readTasksFor(
+            ctx.database,
+            ctx.userId,
+            membership.pregnancyId,
+          )) ?? undefined,
+        // Cheers are the owner's own inbox; a companion never sees who else
+        // has been cheering.
+        cheers:
+          membership.role === "owner"
+            ? ((await readCheersFor(
+                ctx.database,
+                ctx.userId,
+                membership.pregnancyId,
+              )) ?? undefined)
             : undefined,
       };
     }),
@@ -176,6 +292,69 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // K2 — the two actions a COMPANION performs, on somebody else's pregnancy.
+  // They are handled before `ensurePregnancyForOwner` on purpose: that call
+  // creates a pregnancy for the caller, and a partner ticking off "llevá el
+  // carné" must not silently acquire a pregnancy of their own. The pregnancy id
+  // does come from the body here — there is no other way to name a pregnancy
+  // you do not own — and it is authorised by a live-membership lookup inside
+  // each function, which is also what makes a revoked companion's next tap fail
+  // instantly rather than eventually.
+  if (data.action === "complete-task") {
+    const membership = await liveMembership(
+      ctx.database,
+      ctx.userId,
+      data.pregnancyId,
+    );
+    if (!membership || !canCompleteSharedTask(membership.role)) {
+      return NextResponse.json(
+        { error: "no disponible" },
+        { status: 404, headers: HEADERS },
+      );
+    }
+    await setTaskDone(
+      ctx.database,
+      data.pregnancyId,
+      data.itemKey,
+      data.done,
+      now,
+    );
+    return NextResponse.json({ ok: true }, { headers: HEADERS });
+  }
+
+  if (data.action === "accompany") {
+    const marked = await setAccompanying(
+      ctx.database,
+      ctx.userId,
+      data.pregnancyId,
+      data.appointmentAt,
+    );
+    if (!marked) {
+      return NextResponse.json(
+        { error: "no disponible" },
+        { status: 404, headers: HEADERS },
+      );
+    }
+    return NextResponse.json({ ok: true }, { headers: HEADERS });
+  }
+
+  if (data.action === "cheer") {
+    const sent = await sendCheer(
+      ctx.database,
+      ctx.userId,
+      data.pregnancyId,
+      data.cheerId,
+      now,
+    );
+    if (!sent) {
+      return NextResponse.json(
+        { error: "no disponible" },
+        { status: 404, headers: HEADERS },
+      );
+    }
+    return NextResponse.json({ ok: true }, { headers: HEADERS });
+  }
+
   // Everything below acts on the caller's OWN pregnancy. It is resolved from
   // the session rather than taken from the body, so there is no id to tamper
   // with.
@@ -197,13 +376,37 @@ export async function POST(req: NextRequest) {
   }
 
   if (data.action === "publish") {
-    await publishSnapshot(ctx.database, pregnancyId, {
-      week: data.week,
-      dueDate: data.dueDate,
-      nextAppointmentAt: data.nextAppointmentAt,
-      babyName: data.babyName?.trim() ? data.babyName.trim() : null,
-      updatedAt: now,
-    });
+    await publishSnapshot(
+      ctx.database,
+      pregnancyId,
+      {
+        week: data.week,
+        dueDate: data.dueDate,
+        nextAppointmentAt: data.nextAppointmentAt,
+        babyName: data.babyName?.trim() ? data.babyName.trim() : null,
+        updatedAt: now,
+      },
+      // K3. Everything off unless this publish says otherwise — `applyLevels`
+      // inside `publishSnapshot` then drops any value whose level is off, so a
+      // client sending a weight it was not entitled to share stores a null.
+      data.sharing ?? SHARING_DEFAULTS,
+      data.extras ?? emptyExtras(),
+    );
+    return NextResponse.json({ ok: true }, { headers: HEADERS });
+  }
+
+  if (data.action === "assign-task") {
+    await assignTask(ctx.database, pregnancyId, data.itemKey, now);
+    return NextResponse.json({ ok: true }, { headers: HEADERS });
+  }
+
+  if (data.action === "unassign-task") {
+    await unassignTask(ctx.database, pregnancyId, data.itemKey);
+    return NextResponse.json({ ok: true }, { headers: HEADERS });
+  }
+
+  if (data.action === "cheers-seen") {
+    await markCheersSeen(ctx.database, pregnancyId, now);
     return NextResponse.json({ ok: true }, { headers: HEADERS });
   }
 

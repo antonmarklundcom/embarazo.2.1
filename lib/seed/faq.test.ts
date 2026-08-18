@@ -34,10 +34,15 @@ describe("the answers match what the app does", () => {
     return PUBLISHED_FAQ.find((entry) => entry.id === id)!.answer.toLowerCase();
   }
 
-  it("says photos never leave the phone (§4.4)", () => {
+  it("describes photo backup as the opt-in it became (§4.4, amended by K4)", () => {
+    // Before K4 this asserted "nunca salen del teléfono", which was true and
+    // is now false: photos upload if — and only if — she turns the switch on.
+    // The answer has to carry both halves, because either one alone is a
+    // misleading version of the truth.
     const text = answer("faq-notas-fotos");
-    expect(text).toContain("nunca salen del teléfono");
     expect(text).toContain("no se sincronizan");
+    expect(text).toContain("copia de tus fotos");
+    expect(text).toContain("borramos las copias");
   });
 
   it("describes the companion view as E1 actually built it", () => {

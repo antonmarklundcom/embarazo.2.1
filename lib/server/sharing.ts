@@ -1,21 +1,32 @@
 import "server-only";
 
-import { and, eq, isNull, ne } from "drizzle-orm";
+import { and, desc, eq, isNull, ne } from "drizzle-orm";
 
 import type { Database } from "./db";
 import {
+  companionCheers,
   companionSnapshots,
+  companionTasks,
   invites,
   pregnancies,
   pregnancyMembers,
 } from "./schema";
 import {
   INVITE_TTL_DAYS,
+  canSeeSharedTasks,
   generateInviteCode,
   snapshotShouldBeDropped,
   type CompanionSnapshot,
   type MemberRole,
+  type SharedTask,
 } from "@/lib/sharing/fields";
+import {
+  applyLevels,
+  canSeeSharingLevels,
+  emptyExtras,
+  type SharedExtras,
+  type SharingPreferences,
+} from "@/lib/sharing/levels";
 
 // BUILD-PLAN E1 — family sharing, server half.
 //
@@ -62,6 +73,8 @@ export async function ensurePregnancyForOwner(
 export interface Membership {
   pregnancyId: string;
   role: MemberRole;
+  /** K8 — the control this member said they would come to, if any. */
+  accompanyingAt?: number | null;
 }
 
 /**
@@ -104,6 +117,9 @@ export async function membershipsOf(
     .select({
       pregnancyId: pregnancyMembers.pregnancyId,
       role: pregnancyMembers.role,
+      // K8. A companion does not get the guest list (E1), so this is how they
+      // learn their own answer — their row and nobody else's.
+      accompanyingAt: pregnancyMembers.accompanyingAt,
     })
     .from(pregnancyMembers)
     .where(
@@ -260,12 +276,25 @@ export async function revokeInviteCode(
 // The snapshot
 // ---------------------------------------------------------------------------
 
-/** Written by the owner's device only. */
+/**
+ * Written by the owner's device only.
+ *
+ * K3: the extras are run through `applyLevels` **here as well as** on the
+ * device. That is not belt-and-braces for its own sake — it means a client
+ * that sends a weight with `peso: false` (an old build, a bug, a hand-rolled
+ * request) stores a null rather than a value nobody agreed to share. The
+ * publish is a full overwrite of all seven K3 columns, so switching a level off
+ * clears the data in the same write that records the flag.
+ */
 export async function publishSnapshot(
   database: Database,
   pregnancyId: string,
   snapshot: CompanionSnapshot,
+  preferences: SharingPreferences,
+  extras: SharedExtras = emptyExtras(),
 ): Promise<void> {
+  const shared = applyLevels(preferences, extras);
+
   const values = {
     pregnancyId,
     week: snapshot.week,
@@ -273,6 +302,10 @@ export async function publishSnapshot(
     nextAppointmentAt: snapshot.nextAppointmentAt,
     babyName: snapshot.babyName,
     updatedAt: snapshot.updatedAt,
+    sharePeso: preferences.peso,
+    sharePataditas: preferences.pataditas,
+    shareFotos: preferences.fotos,
+    ...shared,
   };
 
   await database
@@ -285,6 +318,13 @@ export async function publishSnapshot(
         nextAppointmentAt: values.nextAppointmentAt,
         babyName: values.babyName,
         updatedAt: values.updatedAt,
+        sharePeso: values.sharePeso,
+        sharePataditas: values.sharePataditas,
+        shareFotos: values.shareFotos,
+        weightGrams: values.weightGrams,
+        weightAt: values.weightAt,
+        kickCount: values.kickCount,
+        kickAt: values.kickAt,
       },
     });
 }
@@ -299,7 +339,11 @@ export async function readSnapshotFor(
   database: Database,
   userId: string,
   pregnancyId: string,
-): Promise<{ role: MemberRole; snapshot: CompanionSnapshot | null } | null> {
+): Promise<{
+  role: MemberRole;
+  snapshot: CompanionSnapshot | null;
+  extras: SharedExtras | null;
+} | null> {
   const membership = await liveMembership(database, userId, pregnancyId);
   if (!membership) return null;
 
@@ -310,18 +354,68 @@ export async function readSnapshotFor(
     .limit(1);
 
   const row = rows[0];
+  if (!row) return { role: membership.role, snapshot: null, extras: null };
+
   return {
     role: membership.role,
-    snapshot: row
-      ? {
-          week: row.week,
-          dueDate: row.dueDate,
-          nextAppointmentAt: row.nextAppointmentAt,
-          babyName: row.babyName,
-          updatedAt: row.updatedAt,
-        }
+    snapshot: {
+      week: row.week,
+      dueDate: row.dueDate,
+      nextAppointmentAt: row.nextAppointmentAt,
+      babyName: row.babyName,
+      updatedAt: row.updatedAt,
+    },
+    // K3. Two independent gates, and the order matters for what each one
+    // means: the ROLE gate is the rule ("the pareja only, ever"), the FLAG gate
+    // is the owner's choice. Reading the stored flags rather than trusting the
+    // stored values is what makes switching a level off take effect even if the
+    // owner's device never publishes again.
+    extras: canSeeSharingLevels(membership.role)
+      ? applyLevels(
+          {
+            peso: row.sharePeso,
+            pataditas: row.sharePataditas,
+            fotos: row.shareFotos,
+          },
+          {
+            weightGrams: row.weightGrams,
+            weightAt: row.weightAt,
+            kickCount: row.kickCount,
+            kickAt: row.kickAt,
+          },
+        )
       : null,
   };
+}
+
+/**
+ * K8 — "yo la acompaño" for one specific control.
+ *
+ * The caller must hold a live NON-owner membership: this is a companion saying
+ * they will be there. `appointmentAt` is stored as given and compared later
+ * against the control itself (`isAccompanying`), so a control that moves
+ * invalidates the marker instead of silently reassigning it.
+ */
+export async function setAccompanying(
+  database: Database,
+  userId: string,
+  pregnancyId: string,
+  appointmentAt: number | null,
+): Promise<boolean> {
+  const membership = await liveMembership(database, userId, pregnancyId);
+  if (!membership || membership.role === "owner") return false;
+
+  await database
+    .update(pregnancyMembers)
+    .set({ accompanyingAt: appointmentAt })
+    .where(
+      and(
+        eq(pregnancyMembers.pregnancyId, pregnancyId),
+        eq(pregnancyMembers.userId, userId),
+        isNull(pregnancyMembers.revokedAt),
+      ),
+    );
+  return true;
 }
 
 /** Who currently has access, for the owner's "quién ve mi embarazo" screen. */
@@ -331,12 +425,212 @@ export async function membersOf(database: Database, pregnancyId: string) {
       userId: pregnancyMembers.userId,
       role: pregnancyMembers.role,
       createdAt: pregnancyMembers.createdAt,
+      // K8. The owner sees WHO is coming by role — "te acompaña tu pareja" —
+      // and never a name: E1 never shared names between members and K8 does
+      // not start.
+      accompanyingAt: pregnancyMembers.accompanyingAt,
     })
     .from(pregnancyMembers)
     .where(
       and(
         eq(pregnancyMembers.pregnancyId, pregnancyId),
         isNull(pregnancyMembers.revokedAt),
+      ),
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Shared checklist items (K2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Every function below takes the caller's user id and resolves the membership
+ * itself, exactly as `readSnapshotFor` does. There is deliberately no
+ * "…ForPregnancy" variant that trusts a pregnancy id from a request body: the
+ * membership check is the authorisation, and a helper that skips it is a helper
+ * somebody will call.
+ */
+
+/** Assign a checklist item to the pareja. Owner only; idempotent. */
+export async function assignTask(
+  database: Database,
+  pregnancyId: string,
+  itemKey: string,
+  now: number,
+): Promise<void> {
+  await database
+    .insert(companionTasks)
+    .values({
+      id: crypto.randomUUID(),
+      pregnancyId,
+      itemKey,
+      doneAt: null,
+      updatedAt: now,
+    })
+    // Assigning twice is the same assignment. `updatedAt` moves so the
+    // partner's next read is ordered sensibly; `doneAt` is deliberately NOT
+    // reset — re-tapping "para tu pareja" on an item he already did should not
+    // un-do his work.
+    .onDuplicateKeyUpdate({ set: { updatedAt: now } });
+}
+
+/** Take an item back off the pareja's list. Owner only. */
+export async function unassignTask(
+  database: Database,
+  pregnancyId: string,
+  itemKey: string,
+): Promise<void> {
+  await database
+    .delete(companionTasks)
+    .where(
+      and(
+        eq(companionTasks.pregnancyId, pregnancyId),
+        eq(companionTasks.itemKey, itemKey),
+      ),
+    );
+}
+
+/**
+ * Tick or un-tick an assigned item.
+ *
+ * Only the pareja may do this, and only for an item that is already assigned:
+ * the update is scoped to `(pregnancyId, itemKey)`, so a key that was never
+ * assigned matches no row and silently changes nothing rather than creating an
+ * assignment the owner never made.
+ */
+export async function setTaskDone(
+  database: Database,
+  pregnancyId: string,
+  itemKey: string,
+  done: boolean,
+  now: number,
+): Promise<void> {
+  await database
+    .update(companionTasks)
+    .set({ doneAt: done ? now : null, updatedAt: now })
+    .where(
+      and(
+        eq(companionTasks.pregnancyId, pregnancyId),
+        eq(companionTasks.itemKey, itemKey),
+      ),
+    );
+}
+
+/**
+ * The shared list, if the caller may see it.
+ *
+ * Returns `null` — not an empty list — when the caller is not a live member or
+ * holds the `family` role. An empty array would say "there is nothing assigned"
+ * to somebody who is not entitled to know either way.
+ */
+export async function readTasksFor(
+  database: Database,
+  userId: string,
+  pregnancyId: string,
+): Promise<SharedTask[] | null> {
+  const membership = await liveMembership(database, userId, pregnancyId);
+  if (!membership) return null;
+  if (!canSeeSharedTasks(membership.role)) return null;
+
+  const rows = await database
+    .select({
+      itemKey: companionTasks.itemKey,
+      doneAt: companionTasks.doneAt,
+      updatedAt: companionTasks.updatedAt,
+    })
+    .from(companionTasks)
+    .where(eq(companionTasks.pregnancyId, pregnancyId));
+
+  return rows.map((row) => ({
+    itemKey: row.itemKey,
+    doneAt: row.doneAt,
+    updatedAt: row.updatedAt,
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Ánimos (K2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Send one cheer.
+ *
+ * The caller must hold a live NON-owner membership: this is a companion
+ * cheering the pregnant user, and an owner cheering herself is not a thing the
+ * product does. `cheerId` is validated against the pinned list at the API
+ * boundary before it reaches here.
+ */
+export async function sendCheer(
+  database: Database,
+  userId: string,
+  pregnancyId: string,
+  cheerId: string,
+  now: number,
+): Promise<boolean> {
+  const membership = await liveMembership(database, userId, pregnancyId);
+  if (!membership || membership.role === "owner") return false;
+
+  await database.insert(companionCheers).values({
+    id: crypto.randomUUID(),
+    pregnancyId,
+    fromUserId: userId,
+    cheerId,
+    createdAt: now,
+    seenAt: null,
+  });
+  return true;
+}
+
+export interface ReceivedCheer {
+  cheerId: string;
+  createdAt: number;
+  seenAt: number | null;
+}
+
+/**
+ * The cheers on the owner's own pregnancy.
+ *
+ * Owner only, by construction: this reads what people sent *her*, and a
+ * companion has no business seeing who else in the family has been cheering.
+ * Capped, because a home screen is not an inbox.
+ */
+export const CHEER_PAGE_SIZE = 50;
+
+export async function readCheersFor(
+  database: Database,
+  userId: string,
+  pregnancyId: string,
+): Promise<ReceivedCheer[] | null> {
+  const membership = await liveMembership(database, userId, pregnancyId);
+  if (!membership || membership.role !== "owner") return null;
+
+  const rows = await database
+    .select({
+      cheerId: companionCheers.cheerId,
+      createdAt: companionCheers.createdAt,
+      seenAt: companionCheers.seenAt,
+    })
+    .from(companionCheers)
+    .where(eq(companionCheers.pregnancyId, pregnancyId))
+    .orderBy(desc(companionCheers.createdAt))
+    .limit(CHEER_PAGE_SIZE);
+
+  return rows;
+}
+
+/** Mark everything on the owner's pregnancy as seen. Owner only. */
+export async function markCheersSeen(
+  database: Database,
+  pregnancyId: string,
+  now: number,
+): Promise<void> {
+  await database
+    .update(companionCheers)
+    .set({ seenAt: now })
+    .where(
+      and(
+        eq(companionCheers.pregnancyId, pregnancyId),
+        isNull(companionCheers.seenAt),
       ),
     );
 }

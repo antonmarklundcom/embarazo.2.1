@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
+import { deleteRemotePhoto, syncPhotos } from "@/lib/photos/client";
 import { db, type PhotoEntry } from "@/lib/db";
 import { useProfile } from "@/lib/useProfile";
 import { downscaleImage } from "@/lib/images";
@@ -28,13 +29,27 @@ export default function FotosPage() {
     try {
       const blob = await downscaleImage(file);
       await db().photoEntries.add({ week, blob, createdAt: Date.now() });
+      // K4: upload it now if backup is on. Fire-and-forget — a photo is
+      // saved on the phone the moment it is added, and the upload is a
+      // background convenience that must never make "guardar" feel slow.
+      void syncPhotos();
     } finally {
       setBusy(false);
     }
   }
 
   async function remove(id?: number) {
-    if (id) await db().photoEntries.delete(id);
+    if (!id) {
+      setViewing(null);
+      return;
+    }
+    // K4: tell the server before the row is gone — its `uid` is the only name
+    // the backup knows this photo by, and after the delete there is nothing
+    // left to look it up from. Best-effort: the local delete is what she asked
+    // for and must not wait on the network.
+    const row = await db().photoEntries.get(id);
+    await deleteRemotePhoto("photoEntries", row?.uid);
+    await db().photoEntries.delete(id);
     setViewing(null);
   }
 
@@ -184,7 +199,10 @@ function PhotoViewer({
         )}
       </div>
       {/* E2: the bump frame. Composited on this device, from this blob — the
-          photo has no path to our server, here or anywhere. */}
+          sharing path never uploads anything.
+          K4 note: the photo itself now has ONE path off the device, and only
+          one — "Copia de tus fotos" in Ajustes, off unless she turned it on
+          (ARCHITECTURE.md §4.4 as amended). This card is still not it. */}
       <div className="mt-3" onClick={(e) => e.stopPropagation()}>
         <ShareCard
           week={photo.week}

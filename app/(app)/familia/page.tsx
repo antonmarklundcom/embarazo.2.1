@@ -4,12 +4,16 @@ import { useCallback, useEffect, useState } from "react";
 
 import {
   acceptInviteCode,
+  assignTaskToPartner,
   createInviteCode,
   fetchSharedViews,
   publishCompanionSnapshot,
   revokeMember,
+  unassignTaskFromPartner,
   type SharedView,
 } from "@/lib/sharing/client";
+import { CHECKLISTS } from "@/lib/checklists";
+import { SharingLevels } from "@/components/SharingLevels";
 import { isValidInviteCode } from "@/lib/sharing/fields";
 import { inviteCodeFromSearch } from "@/lib/sharing/inviteLink";
 
@@ -148,6 +152,10 @@ export default function FamiliaPage() {
         </section>
       ))}
 
+      {owned && <SharingLevels onChanged={() => void reload()} />}
+
+      {owned && <PartnerTasks view={owned} onChanged={reload} />}
+
       <section className="rounded-card bg-white p-4 shadow-soft">
         <h2 className="text-base font-extrabold text-ink">
           Invitar a alguien
@@ -250,5 +258,102 @@ export default function FamiliaPage() {
         {message && <p className="mt-2 text-sm text-terracotta">{message}</p>}
       </section>
     </div>
+  );
+}
+
+/**
+ * K2 — "para tu pareja": the owner's half of the shared checklist.
+ *
+ * She ticks an item here and it appears on his home screen; when he marks it
+ * done she sees it here. What travels is the item's **key** — the words are
+ * rendered from `lib/checklists.ts` on both devices, so nothing she types can
+ * reach the server and no free-text channel exists between the two of them
+ * (see lib/sharing/cheers.ts for the same argument about ánimos).
+ *
+ * The section renders for the owner only. `family` members never see it, and
+ * the server does not send them the list either — this is presentation, not
+ * enforcement.
+ */
+function PartnerTasks({
+  view,
+  onChanged,
+}: {
+  view: SharedView;
+  onChanged: () => Promise<void>;
+}) {
+  const [pending, setPending] = useState<string | null>(null);
+  const assigned = new Map((view.tasks ?? []).map((task) => [task.itemKey, task]));
+
+  async function toggle(itemKey: string) {
+    setPending(itemKey);
+    if (assigned.has(itemKey)) await unassignTaskFromPartner(itemKey);
+    else await assignTaskToPartner(itemKey);
+    await onChanged();
+    setPending(null);
+  }
+
+  const doneCount = [...assigned.values()].filter((t) => t.doneAt !== null).length;
+
+  return (
+    <section className="rounded-card bg-white p-4 shadow-soft">
+      <h2 className="text-base font-extrabold text-ink">Para tu pareja</h2>
+      <p className="mt-1 text-sm leading-relaxed text-muted">
+        Marcá lo que querés que se encargue él. Le aparece en su pantalla de
+        inicio y vos ves acá cuando lo hace. Solo tu pareja ve esta lista — la
+        familia no.
+      </p>
+      {assigned.size > 0 && (
+        <p className="mt-2 text-sm font-extrabold text-petrol">
+          {doneCount} de {assigned.size} listo{assigned.size === 1 ? "" : "s"}
+        </p>
+      )}
+
+      {CHECKLISTS.map((group) => (
+        <div key={group.id} className="mt-3">
+          <h3 className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-muted">
+            {group.title}
+          </h3>
+          <ul className="mt-2 space-y-1.5">
+            {group.items.map((item) => {
+              const task = assigned.get(item.key);
+              const isAssigned = task !== undefined;
+              const isDone = task?.doneAt != null;
+              return (
+                <li key={item.key}>
+                  <button
+                    type="button"
+                    disabled={pending === item.key}
+                    onClick={() => void toggle(item.key)}
+                    aria-pressed={isAssigned}
+                    className={`flex min-h-[44px] w-full items-center gap-3 rounded-tile border px-3 py-2 text-left text-sm font-semibold disabled:opacity-60 ${
+                      isAssigned
+                        ? "border-petrol/30 bg-pastel-salvia text-ink"
+                        : "border-line bg-cream text-muted"
+                    }`}
+                  >
+                    <span
+                      aria-hidden
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border text-xs ${
+                        isAssigned
+                          ? "border-petrol bg-petrol text-white"
+                          : "border-ink/20 bg-white"
+                      }`}
+                    >
+                      {isAssigned ? "✓" : ""}
+                    </span>
+                    <span className="min-w-0 flex-1">{item.label}</span>
+                    {isDone && (
+                      <span className="shrink-0 text-[11px] font-extrabold uppercase tracking-[1px] text-petrol">
+                        Hecho
+                      </span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </section>
   );
 }

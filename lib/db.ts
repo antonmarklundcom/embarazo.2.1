@@ -46,6 +46,30 @@ export interface Profile extends Partial<SyncMeta> {
   // no nickname yet. Plain non-indexed field — adding a second baby is just
   // pushing to this array, no Dexie schema version bump.
   babies?: BabyIdentity[];
+  /**
+   * K3 — which extra fields the owner shares with her pareja (never with
+   * `family`). Absent means everything off; `parsePreferences` in
+   * lib/sharing/levels.ts is the only thing that reads it, and it defaults
+   * every unknown answer to not sharing.
+   */
+  sharing?: Record<string, boolean>;
+  /**
+   * K8 — this device wants to be reminded of the control of the pregnancy it
+   * is *accompanying*, not (only) its own.
+   *
+   * It lives in Dexie rather than localStorage for one reason: the service
+   * worker composes the notification text and cannot read localStorage. The
+   * flag is device-local either way — the server is told a list of timestamps
+   * and never what they are for (B5).
+   */
+  companionReminder?: boolean;
+  /**
+   * K4 — whether this account backs up bump and carné photos
+   * (ARCHITECTURE.md §4.4, amended from "never" to "explicit opt-in").
+   *
+   * Off unless she turned it on, and turning it off deletes the server copies.
+   */
+  photoBackup?: boolean;
   // Relationship role (B1). Optional for back-compat; defaults to "mama".
   // Plain non-indexed field, so no Dexie schema version bump is needed.
   role?: Role;
@@ -92,11 +116,27 @@ export interface JournalEntry extends Partial<SyncMeta> {
 }
 
 // Belly photos (build spec §5). The Blob NEVER leaves the device.
-export interface PhotoEntry {
+export interface PhotoEntry extends Partial<PhotoBackupMeta> {
   id?: number;
   week: number;
   blob: Blob;
   createdAt: number;
+}
+
+/**
+ * K4 — bookkeeping for opt-in photo backup (ARCHITECTURE.md §4.4, amended).
+ *
+ * Deliberately NOT `SyncMeta`: photos do not ride the sync engine. They have
+ * their own opt-in pipeline (`lib/photos/client.ts`) and their own server
+ * table, because the bytes belong in object storage rather than in an opaque
+ * JSON payload. What they share with SyncMeta is only the idea of a **stable
+ * cross-device id** — Dexie's `++id` is per-device and could never be one.
+ */
+export interface PhotoBackupMeta {
+  /** Stable across devices. Stamped by a hook so no call site can forget it. */
+  uid: string;
+  /** When this device last confirmed the upload. Absent means "not yet". */
+  uploadedAt?: number;
 }
 
 export interface KickSession extends Partial<SyncMeta> {
@@ -165,7 +205,7 @@ export interface CycleSettings extends Partial<SyncMeta> {
 
 // Digital carné perinatal (v4). Photos of the paper carné pages + key
 // clinical basics. Device-only, like every other health record here.
-export interface CarnePhoto {
+export interface CarnePhoto extends Partial<PhotoBackupMeta> {
   id?: number;
   blob: Blob;
   createdAt: number;
@@ -233,6 +273,15 @@ export interface ConflictRow {
 }
 
 /** A record id that is unique across devices. `++id` is not. */
+/**
+ * K4 — the two stores opt-in photo backup covers.
+ *
+ * Named here rather than imported from `lib/photos/keys.ts` for the same reason
+ * `SYNCED_STORES` lives in `lib/sync/stores.ts`: this is the Dexie side of the
+ * agreement, and a test asserts the two lists match so they cannot drift.
+ */
+export const PHOTO_BACKUP_STORES = ["photoEntries", "carnePhotos"] as const;
+
 function newRecordId(): string {
   const c = globalThis.crypto;
   if (c && typeof c.randomUUID === "function") return c.randomUUID();
@@ -348,7 +397,31 @@ export class MiBebeDB extends Dexie {
       favoriteNames: "++id, &name, &uid, updatedAt, dirty",
     });
 
+    // v7 (K4): opt-in photo backup. The two photo stores gain a stable
+    // cross-device `uid` and an `uploadedAt` marker. They are still NOT in
+    // SYNCED_STORES — photos do not ride the sync engine, they have their own
+    // pipeline and their own server table — so this adds indexes, not sync.
+    this.version(7)
+      .stores({
+        photoEntries: "++id, week, createdAt, &uid, uploadedAt",
+        carnePhotos: "++id, createdAt, &uid, uploadedAt",
+      })
+      .upgrade(async (tx) => {
+        // Backfill an id for photos that already exist. `uploadedAt` stays
+        // absent, which is exactly right: nothing has been uploaded, and if the
+        // user opts in these are the first things to go.
+        for (const store of PHOTO_BACKUP_STORES) {
+          const table = tx.table(store);
+          for (const row of await table.toArray()) {
+            if (typeof row.uid !== "string") {
+              await table.update(row.id, { uid: newRecordId() });
+            }
+          }
+        }
+      });
+
     this.registerSyncHooks();
+    this.registerPhotoHooks();
   }
 
   /**
@@ -363,6 +436,22 @@ export class MiBebeDB extends Dexie {
    * when it applies a remote record — no global "I am syncing" flag to get
    * out of step with an await.
    */
+  /**
+   * Stamp a stable `uid` on every photo, wherever it is created.
+   *
+   * Same argument as `registerSyncHooks`: there are existing call sites that
+   * write photos and a rule living in a helper is a rule a future call site
+   * forgets. A photo with no `uid` is a photo the backup can never name.
+   */
+  private registerPhotoHooks(): void {
+    for (const store of PHOTO_BACKUP_STORES) {
+      const table = this.table(store) as Table<Record<string, unknown>, number>;
+      table.hook("creating", (_primKey, obj) => {
+        if (obj.uid === undefined) obj.uid = newRecordId();
+      });
+    }
+  }
+
   private registerSyncHooks(): void {
     for (const store of SYNCED_STORES) {
       const table = this.table(store) as Table<Record<string, unknown>, number>;

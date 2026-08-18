@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, notDeleted, softDelete, type JournalEntry, type Mood } from "@/lib/db";
+import { SYMPTOMS } from "@/lib/symptoms";
 import { SyncConflicts } from "@/components/SyncConflicts";
 import { useProfile } from "@/lib/useProfile";
 import {
@@ -13,6 +14,7 @@ import {
   decryptNote,
 } from "@/lib/crypto";
 import { PrivacyLine } from "@/components/PrivacyLine";
+import { SymptomInsight } from "@/components/SymptomInsight";
 
 const MOODS: { key: Mood; label: string; emoji: string }[] = [
   { key: "muy_bien", label: "Muy bien", emoji: "😄" },
@@ -22,17 +24,7 @@ const MOODS: { key: Mood; label: string; emoji: string }[] = [
   { key: "muy_mal", label: "Muy mal", emoji: "😣" },
 ];
 
-const SYMPTOMS = [
-  "Náuseas",
-  "Acidez",
-  "Dolor de espalda",
-  "Hinchazón",
-  "Contracciones",
-  "Antojos",
-  "Insomnio",
-  "Cansancio",
-  "Otros",
-];
+
 
 function moodLabel(key?: Mood): string {
   return MOODS.find((m) => m.key === key)?.label ?? "—";
@@ -137,6 +129,11 @@ export default function SintomasPage() {
       {/* A3: a journal note replaced by a newer edit from another device is
           never dropped — it surfaces here for the user to keep or discard. */}
       <SyncConflicts />
+
+      {/* K9/F3: one observation about what she has been logging, computed on
+          this device. Renders nothing without a named medical reviewer, and
+          nothing when there is not enough data for a finding to be honest. */}
+      <SymptomInsight />
 
       {/* New entry */}
       <section className="rounded-card bg-white p-4 shadow-soft">

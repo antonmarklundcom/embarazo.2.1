@@ -2,13 +2,19 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { FORBIDDEN_SHARED_FIELDS } from "./levels";
 import {
   COMPANION_FIELDS,
   FORBIDDEN_COMPANION_FIELDS,
+  FORBIDDEN_TASK_FIELDS,
   INVITE_CODE_LENGTH,
   MEMBER_ROLES,
+  SHARED_TASK_KEYS,
   buildSnapshot,
+  canCompleteSharedTask,
+  canSeeSharedTasks,
   canWrite,
+  isSharedTaskKey,
   generateInviteCode,
   isLiveMembership,
   isValidInviteCode,
@@ -32,6 +38,61 @@ describe("roles", () => {
     expect(canWrite("owner")).toBe(true);
     expect(canWrite("partner")).toBe(false);
     expect(canWrite("family")).toBe(false);
+  });
+});
+
+describe("K2 — shared checklist items", () => {
+  it("is the first thing partner can do and family cannot", () => {
+    // E1 kept the two roles separate precisely so this could be a permission
+    // change instead of a migration. This is that change.
+    expect(canSeeSharedTasks("owner")).toBe(true);
+    expect(canSeeSharedTasks("partner")).toBe(true);
+    expect(canSeeSharedTasks("family")).toBe(false);
+  });
+
+  it("lets only the pareja tick one off — the owner assigns, she is not the doer", () => {
+    expect(canCompleteSharedTask("partner")).toBe(true);
+    expect(canCompleteSharedTask("owner")).toBe(false);
+    expect(canCompleteSharedTask("family")).toBe(false);
+  });
+
+  it("accepts exactly the app's own checklist keys", () => {
+    expect(SHARED_TASK_KEYS.length).toBeGreaterThan(10);
+    expect(new Set(SHARED_TASK_KEYS).size).toBe(SHARED_TASK_KEYS.length);
+    for (const key of SHARED_TASK_KEYS) expect(isSharedTaskKey(key)).toBe(true);
+  });
+
+  it("refuses anything that is not one of them, prose above all", () => {
+    for (const value of [
+      "",
+      "bolso-que-no-existe",
+      "Traé el carné y avisale a mi mamá",
+      "'; DROP TABLE companionTasks;--",
+      null,
+      undefined,
+      7,
+      ["bolso-carne"],
+    ]) {
+      expect(isSharedTaskKey(value), JSON.stringify(value)).toBe(false);
+    }
+  });
+
+  it("has nowhere in the database to put a note either", () => {
+    const schema = readFileSync(
+      join(process.cwd(), "lib", "server", "schema.ts"),
+      "utf8",
+    );
+    const table = schema.slice(
+      schema.indexOf("export const companionTasks"),
+      schema.indexOf("export const companionCheers"),
+    );
+    expect(table.length).toBeGreaterThan(50);
+    for (const forbidden of FORBIDDEN_TASK_FIELDS) {
+      expect(
+        table.includes(`"${forbidden}"`),
+        `companionTasks must have no "${forbidden}" column`,
+      ).toBe(false);
+    }
   });
 });
 
@@ -61,19 +122,26 @@ describe("what a companion can see", () => {
 
   it("has nowhere in the database to put a forbidden field either", () => {
     // The schema is the real boundary: a filter can be forgotten, a missing
-    // column cannot be. This reads the table definition rather than trusting
-    // that the write path is careful.
+    // column cannot. This reads the table definition rather than trusting that
+    // the write path is careful.
+    //
+    // K3 amended this deliberately: `weight`/`kg` are on E1's forbidden list
+    // because nothing could ever share them, and K3 makes them shareable under
+    // an explicit, per-field, partner-only opt-in. So this scan runs over the
+    // list *minus* those two (`FORBIDDEN_SHARED_FIELDS`), and the stronger
+    // assertion — that the table holds EXACTLY the columns the whitelists
+    // claim and nothing else — lives in `levels.test.ts`.
     const schema = readFileSync(
       join(process.cwd(), "lib", "server", "schema.ts"),
       "utf8",
     );
     const table = schema.slice(
       schema.indexOf("companionSnapshots = mysqlTable"),
-      schema.indexOf("// Sync (A3)"),
+      schema.indexOf("export const companionTasks"),
     );
     expect(table.length).toBeGreaterThan(50);
 
-    for (const forbidden of FORBIDDEN_COMPANION_FIELDS) {
+    for (const forbidden of FORBIDDEN_SHARED_FIELDS) {
       expect(
         table.includes(`"${forbidden}"`),
         `companionSnapshots must have no "${forbidden}" column`,

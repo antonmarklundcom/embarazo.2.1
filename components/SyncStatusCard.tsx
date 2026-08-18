@@ -76,7 +76,12 @@ export function SyncStatusCard() {
           : state.lastSyncAt
             ? `Última sincronización: ${formatWhen(state.lastSyncAt)}.`
             : "Listo."}{" "}
-        Tus fotos no se suben: siguen solo en este teléfono.
+        {/* K4 amended §4.4: photo backup is an opt-in, so this line stopped
+            being unconditionally true. It now says what is true either way —
+            the sync engine never carries a photo — and points at the one
+            switch that does. */}
+        Tus fotos no viajan con esta sincronización. Si querés una copia de
+        ellas, activá «Copia de tus fotos» en Ajustes.
       </p>
     </section>
   );

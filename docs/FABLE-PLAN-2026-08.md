@@ -81,7 +81,7 @@ e2e covers both paths.
 "K1 — account-first onboarding". The invite step ships with it: an E1 code now
 travels as a `/familia?codigo=…` link over WhatsApp.
 
-### K2 Companion experience — **L** [OPUS]
+### K2 Companion experience — **L** [OPUS] ✅ DONE
 Today a companion sees week · FPP · próximo control · nombre and has no
 reason to open the app twice. Add, for signed-in `partner`/`family`
 members:
@@ -99,8 +99,12 @@ table), documented as a bounded §4.3 exception like E1 was.
 (week hero + para-tu-pareja content + shared checklist + ánimo button);
 the mamá sees received ánimos; family role sees content but not the
 checklist assignments; revocation still cuts everything instantly.
+**Status:** done — `claude/k2-companion`. See DECISIONS.md "K2 — the companion
+experience". Two new tables (`companionTasks`, `companionCheers`), both
+id-only and both in A5's `TABLE_DISPOSITION`; the companion view is fetched
+and never cached, which is what keeps revocation instant.
 
-### K3 Sharing levels — **M** [OPUS]
+### K3 Sharing levels — **M** [OPUS] ✅ DONE
 Owner opt-in toggles in `/familia`: share **peso**, **pataditas**,
 **fotos de la panza** with the *partner role only*. Each toggle publishes
 that data into the snapshot mechanism (shape-whitelisted, per-field);
@@ -109,8 +113,11 @@ default is all off; journal notes stay unshareable, period.
 removes the data from the partner view on next sync; a field not in the
 whitelist shape cannot leak by construction; tests assert the
 partner-only restriction (familia never sees these).
+**Status:** done — `claude/k3-sharing-levels`. See DECISIONS.md "K3 — sharing
+levels". `peso` and `pataditas` carry data today; `fotos` records and enforces
+the preference, and K4 is what will have anything to publish under it.
 
-### K4 Photo backup & restore — **L** [OPUS]
+### K4 Photo backup & restore — **L** [OPUS] ✅ DONE
 Amends ARCHITECTURE.md §4.4 ("photos never leave the device") into an
 **explicit opt-in**: bump photos + carné photos upload for account
 holders who turn it on. Design constraints:
@@ -126,6 +133,12 @@ holders who turn it on. Design constraints:
 **Done when:** opt-in → photos restored on a second device after sign-in;
 opt-out stops uploads and deletes server copies; account deletion leaves
 zero blobs; the consent copy says exactly what is stored.
+**Status:** done — `claude/k4-photo-backup`. See DECISIONS.md "K4 — opt-in
+photo backup". ARCHITECTURE.md §4.4 is amended in place. S3-compatible
+storage with hand-rolled SigV4 presigning (no SDK); the photo's own metadata
+rides an opaque payload rather than becoming a third §4.3 exception.
+New env: `PHOTO_STORAGE_ENDPOINT` · `_BUCKET` · `_REGION` · `_ACCESS_KEY` ·
+`_SECRET_KEY`. Unset = the feature does not exist, and the app is whole.
 
 ### K5 Honest Play data safety — **S** [SONNET]
 Rewrite `docs/ANDROID-LAUNCH.md` §3.1's Data-safety answers for the
@@ -161,7 +174,7 @@ card moment ("¿querés que siga tu embarazo? invitala").
 renders correctly for owner with 0, 1 and n members and is absent for
 signed-out local-only users (they see the invite-a-friend card instead).
 
-### K8 Shared appointment agenda — **M** [OPUS]
+### K8 Shared appointment agenda — **M** [OPUS] ✅ DONE
 `próximo control` becomes a first-class shared object: the partner sees
 it (already in the snapshot) **and can opt into their own push reminder**
 — "Acompañala al control el jueves a las 9:00". Builds on B5's
@@ -171,11 +184,18 @@ date-only) and a "¿quién la acompaña?" marker the mamá sees.
 **Done when:** partner toggles the reminder in their own settings; it
 fires the day before; the mamá's view shows who's coming; no new
 server-legible health data beyond the already-shared next-control field.
+**Status:** done — `claude/k8-appointment-agenda`. See DECISIONS.md "K8 — the
+shared appointment agenda". The only new column anywhere is
+`pregnancyMembers.accompanyingAt`, an RSVP pointing at a timestamp that member
+could already read.
 
 ### K9 Engagement pull-forwards (F3 · F5 · F6) — **M** [OPUS spec → SONNET build]
 - **F3 symptom insight**: on-device pattern lines over existing journal
   data ("tus dolores de cabeza aparecen los días que dormís mal") —
-  pure computation, reviewed phrasing, never a diagnosis. [OPUS]
+  pure computation, reviewed phrasing, never a diagnosis. [OPUS] ✅ DONE
+  — `claude/k9-f3-symptom-insight`; see DECISIONS.md "K9 / F3". Templates in
+  `lib/seed/insights.json`, G1-validated, gated on the medical reviewer like
+  C5. F5 and F6 remain for the Sonnet lane.
 - **F5 onboarding depth**: ¿primer embarazo? · ¿IPS o privado? · ¿trabajás?
   → personalises derechos, checklists, article ordering. [SONNET, after K1]
 - **F6 daily streak**: memory + gentle streak on the existing mood

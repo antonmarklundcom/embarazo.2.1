@@ -5,6 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { db, wipeAllData, type AppMode, type BabyIdentity, type Role } from "@/lib/db";
 import { clearOnboardingDraft } from "@/lib/onboarding/draftStorage";
+import { CompanionReminderSettings } from "@/components/CompanionReminderSettings";
+import { PhotoBackupSettings } from "@/components/PhotoBackupSettings";
+import { companionViewOf, useSharedViews } from "@/lib/sharing/useSharedViews";
+import {
+  combineDateTime,
+  toDateInput as appointmentDateInput,
+  toTimeInput,
+} from "@/lib/appointments";
 import { ROLE_ONBOARDING_COPY, ROLE_ORDER } from "@/lib/roleCopy";
 import { useProfile } from "@/lib/useProfile";
 import { DEPARTMENTS } from "@/lib/departments";
@@ -76,6 +84,15 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
 
   // Next prenatal appointment (build spec §4).
   const [apptInput, setApptInput] = useState("");
+  /** K8 — optional hour of the control. Blank means "date only". */
+  const [apptTimeInput, setApptTimeInput] = useState("");
+  // K8. Fetched once here and passed down, rather than each component asking:
+  // the push schedule is replaced wholesale on every publish, so the appointment
+  // editor and the notification toggles all have to know about the companion
+  // poke or they will drop it. Never cached (K2) — this is the live answer.
+  const shared = useSharedViews();
+  const companionView = companionViewOf(shared.views);
+  const companionAppointmentAt = companionView?.snapshot?.nextAppointmentAt ?? null;
   const [apptMsg, setApptMsg] = useState("");
 
   const [pinExists, setPinExists] = useState(false);
@@ -196,7 +213,8 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
   }, [profile.plannedDeliveryDate]);
 
   useEffect(() => {
-    setApptInput(toDateInput(profile.nextAppointment));
+    setApptInput(appointmentDateInput(profile.nextAppointment));
+    setApptTimeInput(toTimeInput(profile.nextAppointment));
   }, [profile.nextAppointment]);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -283,20 +301,24 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
     await db().profile.update(first.id, { nextAppointment: value });
     // B5: the server holds a fire time, not an appointment, so a moved control
     // has to be re-scheduled from here. No-op when push is off.
-    await refreshReminders();
+    //
+    // K8: the schedule is replaced wholesale on every publish, so a device
+    // that is ALSO accompanying somebody has to re-send that poke in the same
+    // breath — otherwise editing her own control silently cancels his reminder.
+    await refreshReminders(companionAppointmentAt);
     setApptMsg(value ? "Control guardado." : "Control quitado.");
     setTimeout(() => setApptMsg(""), 2500);
   }
 
   async function saveAppointment() {
-    const value = apptInput
-      ? new Date(`${apptInput}T00:00:00`).getTime()
-      : undefined;
-    await persistAppointment(value);
+    // K8: date + optional time, combined into the one stored number. Local
+    // midnight is the "no time given" convention (lib/appointments.ts).
+    await persistAppointment(combineDateTime(apptInput, apptTimeInput));
   }
 
   async function clearAppointment() {
     setApptInput("");
+    setApptTimeInput("");
     await persistAppointment(undefined);
   }
 
@@ -684,17 +706,35 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
           Anotá la fecha de tu próximo control y te lo recordamos en Inicio.
           Solo en este dispositivo, sin notificaciones.
         </p>
-        <input
-          type="date"
-          value={apptInput}
-          min={today}
-          onChange={(e) => setApptInput(e.target.value)}
-          className="mt-3 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-3 py-2 focus:border-petrol focus:outline-none"
-        />
+        <div className="mt-3 flex gap-2">
+          <input
+            id="appt-date"
+            type="date"
+            value={apptInput}
+            min={today}
+            onChange={(e) => setApptInput(e.target.value)}
+            className="min-h-[44px] flex-1 rounded-tile border border-black/10 bg-cream px-3 py-2 focus:border-petrol focus:outline-none"
+          />
+          {/* K8: optional, and optional in the honest sense — leaving it blank
+              stores a date-only control and every sentence the app writes drops
+              the hour rather than inventing 00:00. */}
+          <input
+            id="appt-time"
+            type="time"
+            aria-label="Hora del control (opcional)"
+            value={apptTimeInput}
+            onChange={(e) => setApptTimeInput(e.target.value)}
+            className="min-h-[44px] w-[7.5rem] rounded-tile border border-black/10 bg-cream px-3 py-2 focus:border-petrol focus:outline-none"
+          />
+        </div>
         <div className="mt-3 flex gap-2">
           <button
             type="button"
             onClick={saveAppointment}
+            // Five buttons on this screen say "Guardar". Naming this one is an
+            // accessibility fix as much as a test hook: "Guardar" alone tells a
+            // screen-reader user nothing about which of them they are on.
+            aria-label="Guardar el control"
             className="min-h-[44px] flex-1 rounded-tile bg-petrol px-4 py-2.5 text-sm font-medium text-white transition active:scale-[0.98]"
           >
             Guardar
@@ -720,7 +760,18 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
           nothing at all in a deployment with no VAPID keys — and a group
           wrapper would leave an empty "NOTIFICACIONES" header behind, which is
           the exact thing B4's comment warns against. */}
-      <PushSettings groupTitle="Notificaciones" />
+      <PushSettings
+        groupTitle="Notificaciones"
+        companionAppointmentAt={companionAppointmentAt}
+      />
+
+      {/* K8: only rendered when this device is accompanying somebody. */}
+      <CompanionReminderSettings view={companionView} />
+
+      {/* K4: renders nothing when the deployment has no photo storage or the
+          user has no account — an opt-in for something that cannot happen is a
+          broken switch, not a choice. */}
+      <PhotoBackupSettings groupTitle="Tus fotos" />
 
       <SettingsGroup title="Privacidad">
       {/* E6: the trust questions, one tap from where somebody is already

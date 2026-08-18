@@ -27,6 +27,13 @@ function babyAtWeekLabel(babies: BabyIdentity[], role: Role, week: number): stri
 }
 import { Onboarding } from "@/components/Onboarding";
 import { hasOnboardingDraft } from "@/lib/onboarding/draftStorage";
+import { CompanionHome } from "@/components/CompanionHome";
+import { CheersCard } from "@/components/CheersCard";
+import {
+  companionViewOf,
+  ownerViewOf,
+  useSharedViews,
+} from "@/lib/sharing/useSharedViews";
 import { PlaneandoHome } from "@/components/PlaneandoHome";
 import { LocalResourcesBlock } from "@/components/LocalResourcesBlock";
 import { AppointmentBanner } from "@/components/AppointmentBanner";
@@ -61,6 +68,11 @@ export default function InicioPage() {
   // localStorage is what makes a user who is mid-flow — including one who is
   // coming back from Google's redirect — resume instead of starting over.
   const [flow, setFlow] = useState<"unknown" | "active" | "done">("unknown");
+  // K2. A signed-out or local-only user gets `views: []` from a fetch that
+  // fails, which is the right answer for them: no memberships, nothing to
+  // render. Nothing here blocks the page — the owner's own screen is built from
+  // Dexie and never waits on the network.
+  const shared = useSharedViews();
 
   useEffect(() => {
     if (profile.loading) return;
@@ -83,6 +95,22 @@ export default function InicioPage() {
 
   if (flow === "active") {
     return <Onboarding onDone={() => setFlow("done")} />;
+  }
+
+  // K2 — a companion's home screen is the pregnancy they are accompanying.
+  //
+  // The condition is deliberately narrow: a live NON-owner membership **and** a
+  // user who told B1's role question that they are not the pregnant one. A mamá
+  // who also follows her sister's pregnancy keeps her own home screen and
+  // reaches her sister's from `/familia`; a papá who accepted an invite gets the
+  // screen the invitation promised. The owner's published week also beats a
+  // companion's locally typed guess at the same dates, which is the other half
+  // of why this branch wins rather than sitting below the fold.
+  const companionView = companionViewOf(shared.views);
+  if (companionView && profile.role !== "mama") {
+    return (
+      <CompanionHome view={companionView} onChanged={() => void shared.reload()} />
+    );
   }
 
   // Pre-pregnancy "planeando / buscando" mode shows its own dashboard.
@@ -157,8 +185,16 @@ export default function InicioPage() {
           medical reviewer is configured — the byline IS the gate. */}
       <ObstetraCard week={week} />
 
+      {/* K2: ánimos her pareja and her familia sent. Renders nothing at all
+          when nobody has — an empty "todavía nadie te mandó ánimo" box is a
+          small unkindness this screen can simply not commit. */}
+      <CheersCard cheers={ownerViewOf(shared.views)?.cheers ?? []} />
+
       {/* Next prenatal appointment reminder (in-app only) */}
-      <AppointmentBanner date={profile.nextAppointment} />
+      <AppointmentBanner
+        date={profile.nextAppointment}
+        members={ownerViewOf(shared.views)?.members}
+      />
 
       {/* Daily tip */}
       <section className="rounded-card border border-line bg-white p-4">

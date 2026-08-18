@@ -1853,6 +1853,494 @@ dropdown wasted it.
   scheduled to re-verify after K1/K2/K7 land; recorded here so that task starts
   from a number rather than a guess.
 
+## K2 — the companion experience (August 2026)
+
+Before K2 a partner who accepted an invite saw four facts and had no reason to
+open the app twice. K2 gives him a home screen, a list, and one tap that tells
+her he is there. Three things in it are contract decisions rather than UI.
+
+### Two new tables, and why they are §4.3 exceptions rather than payloads
+
+`companionTasks` and `companionCheers` join `companionSnapshots` as the **only**
+places the server holds health-adjacent data in plain columns. The reasoning is
+E1's, unchanged: a companion on their own phone has to be *served* this by the
+server, so it cannot live inside an opaque `syncRecords.payload`. What makes the
+exception acceptable is that it is bounded and legible, and K2 keeps it that way
+by never storing a sentence:
+
+- **`companionTasks.itemKey` is a key from `SHARED_TASK_KEYS`** — every item in
+  `lib/checklists.ts` and nothing else, enforced as a `z.enum` at the route
+  boundary. The *label* is rendered from the seed on the reading device. So no
+  prose an owner types can reach the table, and the server learns "this
+  pregnancy asked its partner to pack the carné" rather than anything she wrote.
+- **`companionCheers.cheerId` is an id from `lib/sharing/cheers.ts`.** The whole
+  message is which of five buttons somebody pressed. That is the design and not
+  an optimisation: a free-text channel from a partner or a family member into a
+  pregnant user's home screen is a moderation surface, an abuse surface and a
+  support surface, and this app has none of the three and should not acquire
+  them in order to say "¡fuerza!".
+- Both are asserted **against the schema source**, not against a function's
+  output (`lib/server/schema.test.ts`, `lib/sharing/fields.test.ts`): a filter
+  can be forgotten, a missing column cannot. `lib/sharing/routeContract.test.ts`
+  adds the other half — that the route validates with `z.enum` rather than
+  `z.string`, that every action is `.strict()`, and that no K2 action carries a
+  `text`/`note`/`message` field at all.
+
+### `partner` finally does something `family` does not
+
+E1 shipped the two roles with identical permissions and said so, explicitly so
+that giving a partner more later would be a permission change rather than a
+migration. K2 is that change: `canSeeSharedTasks` (owner + partner) and
+`canCompleteSharedTask` (partner only — the owner assigns, she is not the doer).
+
+**The exclusion is in the server read, not in the UI.** `readTasksFor` returns
+`null` for a `family` member — not `[]`. Empty would answer the question:
+"nothing is assigned" is itself information about somebody's pregnancy, and
+family is not entitled to it. Same shape for `readCheersFor`, which is owner-only
+because who else has been cheering is not a companion's business (E1's "a
+companion does not get the guest list", applied again).
+
+### The companion view is fetched and never stored
+
+`useSharedViews` caches nothing — not IndexedDB, not localStorage. E1's promise
+is that revoking access cuts everything **instantly**, and a copy of the owner's
+week sitting on a revoked companion's phone is precisely what that rules out.
+The cost is paid honestly and visibly: a companion with no signal sees
+"necesitás conexión", not a stale week. Everything in the app that is not
+somebody else's data — guías, semanas, herramientas, emergencia — still works
+offline for them, which is the part that matters on Paraguayan mobile data.
+
+Other consequences of the same rule:
+- The two companion actions (`complete-task`, `cheer`) are handled **before**
+  `ensurePregnancyForOwner` in the route. That call creates a pregnancy for the
+  caller, and a partner ticking off "llevá el carné" must not silently acquire a
+  pregnancy of his own. Asserted by source order, because it is the kind of
+  thing a later refactor reorders without noticing.
+- Those two are also the only actions that take a `pregnancyId` from the body —
+  there is no other way to name a pregnancy you do not own — and each is
+  authorised by a live-membership lookup inside the call, which is what makes a
+  revoked companion's next tap fail immediately.
+
+### Whose home screen is it
+
+The companion home renders when the user holds a live non-owner membership
+**and** told B1's role question that they are not the pregnant one. Both halves
+matter: a mamá who follows her sister's pregnancy keeps her own home screen and
+reaches her sister's from `/familia`, while a papá who accepted an invite gets
+the screen the invitation promised. Where they overlap, the owner's *published*
+week beats a companion's locally typed guess at the same dates — she is the
+source of truth for her own pregnancy, which is the whole point of the snapshot.
+
+The weekly content is C4's `pareja` / `familia` band, selected by the snapshot's
+week. Worth stating plainly: **the week travels, the words do not.** The server
+sends a number; the paragraph comes out of the seed already in the companion's
+own bundle.
+
+### Smaller decisions
+
+- **Ánimos group, they do not stack.** Twelve separate "❤️ Te quiero" cards is a
+  notification feed; one line with "×12" is a nice thing that happened.
+  `groupCheers` is pure and tested; an id this build does not recognise
+  contributes nothing at all — not a card, not a count — rather than rendering a
+  generic "alguien te mandó ánimo" the sender never wrote.
+- **The card renders nothing when nobody has cheered.** An empty "todavía nadie
+  te mandó ánimo" box on a pregnant user's home screen is a small unkindness the
+  app can simply not commit.
+- **Guaraní where the phrase is really said in Guaraní** (`Rohayhu`, `Aguyje`,
+  `Py'aguasu`, `Aime nendive`) and nowhere else. These are terms of affection;
+  inventing one for the sake of symmetry lands worse than leaving it out.
+- **Re-assigning an item does not un-do it.** `assignTask` moves `updatedAt` on
+  a duplicate key but deliberately leaves `doneAt` alone — tapping "para tu
+  pareja" twice should not erase work he already did.
+- **Tasks survive revocation, the snapshot does not.** The snapshot exists only
+  to be read by companions, so E1 drops it when the last one goes. The task list
+  is also the owner's own screen in `/familia`, so it is hers to keep.
+- **Deletion coverage.** Both tables are in `TABLE_DISPOSITION`, and the A5
+  coverage test caught them the moment they were added — for the third time in
+  this repo, which is the entire argument for that test. Cheers are deleted in
+  **both** directions: received on the user's pregnancies, and sent by the user
+  to somebody else's. Missing the second would leave a deleted account's
+  encouragement standing on another person's home screen.
+- **Home First Load JS: 209 kB → 213 kB.** K11 still owns the budget.
+
+## K3 — sharing levels (August 2026)
+
+E1's snapshot is the same four facts for everybody who is let in. K3 adds a
+second tier the owner controls **per field, for the pareja only**: her weight,
+her pataditas, her bump photos.
+
+### A level is a set of field names, and every field belongs to exactly one
+
+`applyLevels` (`lib/sharing/levels.ts`) starts from "everything null" and copies
+in only the fields whose level is on. There is no path through it that emits a
+field no level claims — so a field added to `SharedExtras` without being
+assigned to a level travels as null forever, and a test asserts the partition is
+**total and non-overlapping**, so that omission fails the build instead of
+shipping quietly. That is what "a field not in the whitelist shape cannot leak
+by construction" means here; it is the E1 argument applied to a tier that is
+conditional rather than fixed.
+
+The same function also ignores anything else in the object it is handed, which
+is why a call site cannot widen the tier by passing a fuller record. Asserted
+with a deliberately over-full input.
+
+### Two gates, and they mean different things
+
+`readSnapshotFor` filters twice: `canSeeSharingLevels(role)` — **partner only,
+ever** — and then `applyLevels` over the flags **stored on the row**. The role
+gate is the rule; the flags are the owner's choice. `family` is not a weaker
+partner, it is a different relationship: somebody's aunt does not get their
+weight because the app could not think of a reason to stop her.
+
+Reading the *stored* flags rather than trusting the stored values is what makes
+"turning one off removes it from the partner view" true even if her device never
+publishes again. And the flags default to `false` **in the column**, not only in
+the client, so a row written by a pre-K3 build means "not shared".
+
+### The device applies the levels, and then the server applies them again
+
+Both ends call the same pure function and neither trusts the other. The device
+filtering means a value whose level is off never leaves the phone. The server
+filtering means a client that sends a weight with `peso: false` — an old build,
+a bug, a hand-rolled request — stores a null rather than a value nobody agreed
+to share. The publish overwrites all seven K3 columns every time, so switching a
+level off clears the data in the same write that records the flag.
+
+`saveSharingPreferences` publishes immediately rather than waiting for the next
+app open, which is what makes "off" take effect now. If that publish fails
+(offline) the copy says so plainly instead of pretending it worked — and the
+server-side flag gate still governs the read in the meantime.
+
+### Weight is grams
+
+MySQL `decimal` comes back from drizzle as a string, and a float would let
+68.4 kg render as 68.40000000000001 on somebody's partner's phone. An integer
+number of grams has neither problem, and the client is the only thing that ever
+needs it in kilos. The route bounds it (20–300 kg) and bounds the kick count
+too: out-of-range is a 400 rather than a stored absurdity.
+
+### `fotos` claims no field yet, on purpose
+
+Photos do not leave the device at all until K4 makes uploading them an explicit
+opt-in (ARCHITECTURE.md §4.4). So the level exists, the preference is stored and
+enforced, and `LEVEL_FIELDS.fotos` is `[]` — adding an empty column now would be
+guessing at K4's shape, and *not* shipping the toggle would mean K4 has to turn
+a stored "no" into a default, which is exactly the accident this file is
+arranged to prevent. The toggle's copy says plainly that there is nothing to
+share yet and that her setting will already be in place when there is.
+
+### Smaller decisions
+
+- **E1's `FORBIDDEN_COMPANION_FIELDS` had to be amended, and the amendment is
+  narrow.** It bans `weight`/`kg` outright, which was right when nothing could
+  ever share them and is precisely what K3 changes — under an explicit,
+  per-field, partner-only opt-in. So `FORBIDDEN_SHARED_FIELDS` is that list
+  *minus those two*, derived from it rather than retyped, and it still leads
+  with notes. **Journal notes are not a level and never will be**: PIN-encrypted
+  on the device, not synced (A3), absent from every whitelist here.
+- **The schema assertion got stronger, not weaker.** The old test scanned the
+  table source for forbidden names; `levels.test.ts` now asserts
+  `companionSnapshots` holds **exactly** the columns the code's own whitelists
+  claim — base snapshot + three flags + the level fields — so any column added
+  without being named in a whitelist fails, whatever it is called.
+- **The partner's card renders nothing when nothing is shared.** No "ella no
+  comparte su peso" line: telling a partner what he is not being shown turns a
+  private setting into a conversation she did not ask to have.
+- **`readShareableExtras` reads only the two stores K3 shares**, for the same
+  reason `buildSnapshot` takes plain values — there is no wider object in scope
+  to spread by accident. It uses only a *completed* kick session: a counter
+  still running is not a number she has decided to stand behind.
+- **`routeContract.test.ts`'s `fnBody` helper replaced a `\n}` slice.** The old
+  slice ended a "function body" at the first line starting with `}`, which for
+  `readSnapshotFor` is the close of its multi-line return type — so every
+  assertion about that body was passing against the signature. Caught by writing
+  a test that should have failed and did not.
+- **Home First Load JS: 213 kB → 214 kB.**
+
+## K8 — the shared appointment agenda (August 2026)
+
+`próximo control` was a date on one phone. K8 makes it a shared object: it
+carries an hour, the pareja can opt into their own reminder about it, and the
+mamá can see who is coming.
+
+### It adds no server-legible health data, and that is a design constraint met
+
+The appointment itself was **already** in `companionSnapshots` (E1), shared with
+exactly the people it is now shared with. The only new column anywhere is
+`pregnancyMembers.accompanyingAt` — an RSVP pointing at a timestamp that member
+can already read. Asserted at the route: the `accompany` action carries
+`pregnancyId` and `appointmentAt` and nothing else, counted by test.
+
+### The marker is a timestamp, not a boolean
+
+That is the decision worth keeping. When the mamá moves the control, every
+stored "yo la acompaño" stops matching it (`isAccompanying`), so she sees nobody
+coming and asks again — instead of the app quietly telling her that somebody
+will be at a date they never saw. A boolean fails in the other direction, which
+is the direction where she goes to a control alone believing otherwise.
+
+The companion's UI reflects the same rule: his answer is about *this* control,
+and the copy says so ("si cambia la fecha del control, te volvemos a
+preguntar").
+
+### The optional hour did not change storage
+
+Still one epoch-ms number. **Local midnight means "no time given"** — nobody has
+a control at 00:00, and treating that minute as unspecified costs nothing while
+avoiding a Dexie migration, a sync-payload change and a snapshot column for
+information the same number already carries. Every sentence in the app drops the
+hour when there is none rather than rendering an invented `00:00`.
+
+`lib/appointments.ts` exists because all of this must be **local-time**.
+`toISOString().slice(0, 10)` is the tempting one-liner and it is wrong: a control
+at 21:00 in Asunción (UTC-3) reports as the following day. `daysUntil` counts
+calendar days rather than hours for the same reason — "mañana" has to mean the
+next calendar day, so 08:00 tomorrow is "mañana" at 20 hours away and 23:00
+tonight is "hoy" at 21 hours away. The formatter also pins `hour12: false`:
+`es-PY` defaults to a 12-hour clock and was producing "a las 09:00 a. m..".
+
+### The companion's reminder, without caching the companion's data
+
+B5's design is unchanged — the server is told a list of epoch milliseconds and
+never what they are for, and the service worker writes the words. K8 extends it
+to a second device that is not the pregnant user's, and the interesting part is
+what it *does not* do:
+
+- **The companion's appointment is never stored on the companion's phone.** K2
+  keeps no cached companion view precisely so revocation cuts everything
+  instantly, and K8 does not quietly reintroduce one for scheduling. The
+  timestamp is passed in from the shared-views fetch the screen already did.
+- **The service worker fetches `/api/v1/sharing` at push time** to compose the
+  sentence. A revoked companion gets nothing back and falls through to the
+  generic line — which is exactly the behaviour E1 promises. Offline lands in
+  the same place. `userVisibleOnly: true` means it must show *something*, and
+  something true and useless beats something specific and wrong.
+- **The flag lives in Dexie, not localStorage**, for one reason: the service
+  worker can read one and not the other.
+- **Her own control is checked first.** It is the common case, it needs no
+  network, and a device tracking both would otherwise describe somebody else's.
+
+### The schedule is replaced wholesale, which had a trap in it
+
+`POST /api/v1/push` overwrites the endpoint's reminder list, so any call to
+`refreshReminders()` that did not know about the companion poke would silently
+cancel it — editing her own control would turn off his reminder. Rather than
+cache the value to make the problem go away, the appointment editor and the
+notification toggles all receive it: `/ajustes` fetches the shared views once
+and passes it down. Two devices that legitimately want the same minute are
+deduplicated, because B5's fallback would otherwise fire a second, redundant
+notification.
+
+### Smaller decisions
+
+- **The mamá is told who is coming by role, never by name.** "Te acompaña tu
+  pareja." E1 never shared names between members and K8 does not start; two
+  family members coming is still one "alguien de tu familia".
+- **A companion learns their own marker through `membershipsOf`**, their row and
+  nobody else's — a companion still does not get the guest list.
+- **The reminder toggle renders nothing unless this device is accompanying
+  somebody.** An empty "no estás acompañando a nadie" row in Ajustes is noise
+  for the ~all of users who are the pregnant one.
+- **The appointment's "Guardar" button got an `aria-label`.** Five buttons on
+  `/ajustes` say "Guardar"; naming this one is an accessibility fix as much as a
+  test hook.
+- **Home First Load JS: 214 kB → 215 kB.**
+
+## K4 — opt-in photo backup (August 2026)
+
+ARCHITECTURE.md §4.4 said photos never leave the device. K4 amends it to an
+explicit, per-account opt-in, and the amendment is written into §4.4 itself
+rather than left as a contradiction between a doc and a feature.
+
+### Object storage, and no SDK
+
+The bytes go to **S3-compatible object storage**, never to MySQL — blobs in a
+Hostinger MySQL are the wrong shape at any scale — and never through our own
+Node process. The browser PUTs to a **presigned URL for one object**, valid for
+fifteen minutes.
+
+`@aws-sdk/client-s3` was rejected for the reason B5 rejected `web-push`: the SDK
+exists to do a great deal we do not need, it is megabytes on a shared host, and
+what K4 needs is two signed URLs and a DELETE. SigV4 is a documented algorithm,
+so `lib/photos/sigv4.ts` implements it and `sigv4.test.ts` checks the
+**canonical request** and the **string to sign** — not only the final signature,
+because a wrong signature reports as `SignatureDoesNotMatch` and tells you
+nothing about which of six strings was wrong. The signing key derivation is
+re-derived independently in the test rather than pasted from the output.
+
+Path-style addressing (`/bucket/key`) and no AWS-specific behaviour, so the
+provider — Hostinger, R2, B2, MinIO, S3 — stays an environment variable.
+`uriEncode` is hand-written because `encodeURIComponent` leaves `!'()*` alone
+and AWS does not, which fails on exactly the keys nobody tests with.
+
+### A signed URL is a capability, so everything in it is checked
+
+- **The key is built from the session's user id, never from the body.** A caller
+  can name a `recordId`; it cannot name a user. Asserted against the route
+  source, along with the absence of any `userId` or `objectKey` field in the
+  accepted vocabulary.
+- `objectKeyFor` validates every segment, and `photoStorage` re-checks
+  `keyBelongsTo` **again** before signing — the last place a mistake is still
+  cheap. `userPrefix` ends in a slash so `fotos/{user}x/…` cannot read as
+  belonging to `{user}`.
+- Content type and size are whitelisted **before** anything is signed, so an
+  upload URL cannot become somewhere to park arbitrary content.
+- Nothing lasts: 15 minutes to upload, 10 to download. A presigned URL that
+  never expires is a public URL with extra steps, and these point at somebody's
+  bump photos.
+
+### The photo's metadata stays opaque
+
+`photoBlobs` records that an object exists, its size and its type. The *week* a
+bump photo belongs to is health data, and it rides in an **opaque `payload`** —
+the same envelope `syncRecords` uses (§4.3). Making it a column would have been
+a third §4.3 exception, and unlike E1's and K2's it is not needed: the server
+never has to read it, only hand it back. What the server learns is "this account
+has N objects of these sizes, changed at these times", and the consent copy says
+exactly that.
+
+Photos deliberately do **not** ride the sync engine. `SYNCED_STORES` is
+unchanged and its "no photo store" test still passes unmodified, which is
+correct: the bytes belong in object storage, not in a JSON payload, so photos
+get their own pipeline and their own table. What they borrow from A3 is the
+*ideas* — a stable cross-device id, last-write-wins on `updatedAt`, and a
+tombstone so a second device learns a photo was deleted instead of re-uploading
+it forever. A tombstone keeps `objectKey` and drops `payload`: A3 already
+refuses to hold the contents of a record the user deleted.
+
+### Deletion, in both directions
+
+- **Opting out deletes the server copies immediately.** Not "stops uploading" —
+  the only opt-out worth having. The local flag is written first so a failed
+  delete leaves the feature *off*, which is the direction that fails safe, and
+  the local upload marks are cleared so re-enabling uploads again rather than
+  trusting a server copy that no longer exists.
+- **Account deletion removes every object as well as every row**, and A5's
+  coverage test caught `photoBlobs` the moment the table appeared — the fourth
+  time that test has earned itself. **Objects go before rows**: an orphaned row
+  is recoverable (the next attempt deletes it), an orphaned object nobody holds
+  a pointer to is not. The single-photo path is deliberately the other order,
+  because there the tombstone *keeps* the key and a retry finishes the job.
+- **Opting out is not deleting her photos.** They stay on the phone; only the
+  copies go. Asserted by test, because it is the thing a user would most fear
+  getting wrong.
+
+### `/admin` cannot reach a photo at all
+
+§9 says the panel sees metadata and never health content, and K4 is the first
+feature to store something that is not text. A count of photos would be fine; a
+URL to one would not, and the difference is one careless import. So the test
+scans `app/admin` for any mention of the photo pipeline and fails on all of it.
+
+### Smaller decisions
+
+- **"Resumable-enough for 3G" means per-photo, not per-byte**, and that is
+  stated in the code rather than implied. Real multipart resumability is right
+  for video and over-engineering for a 2 MB JPEG; what actually fails on
+  Paraguayan mobile data is a *batch* dying partway. So uploads run one at a
+  time, each is confirmed and marked locally on its own, and a run that dies
+  resumes at the next unmarked photo.
+- **Uploads are fire-and-forget from the photo diary.** A photo is saved on the
+  phone the moment it is added; the upload must never make "guardar" feel slow.
+- **The delete path tells the server before dropping the row**, because the
+  row's `uid` is the only name the backup knows the photo by and after the
+  delete there is nothing left to look it up from.
+- **A Dexie v7 hook stamps `uid` on every photo**, for the same reason A3's
+  hooks stamp sync metadata: a rule living in a helper is a rule a future call
+  site forgets, and a photo with no `uid` is a photo the backup can never name.
+- **The settings card renders nothing when the feature cannot work** — no
+  bucket, or no account. An opt-in for something that cannot happen is a broken
+  switch, not a choice.
+- **The consent copy names what is stored, who can reach it and how to undo
+  it**, in her words. §4.4 used to promise the opposite; this is what replaces
+  that promise, and vagueness here would be the dishonest kind of amendment.
+- Home First Load JS unchanged at 215 kB — none of this is on the home screen.
+
+## K9 / F3 — symptom insight (August 2026)
+
+"Tus dolores de cabeza aparecen los días que dormís mal." One observation,
+computed entirely on the device from data she already logged, phrased so it can
+never be read as a diagnosis.
+
+### Code that computes and copy that claims are kept apart
+
+`lib/insights/patterns.ts` produces a **finding** — a symptom and four counts —
+and never a sentence. The words live in `lib/seed/insights.json`, so a medical
+reviewer can read every sentence the app will ever say about somebody's symptoms
+in one sitting, without reading TypeScript. That is what the task means by
+"reviewed phrasing", and it is the separation C5 made between an obstetra's note
+and the code that places it. The schema lives in `lib/content/schemas.ts` and the
+file is checked by `npm run validate:content` (G1), like every other seed.
+
+**The byline is the gate**, as it is for C5 and for a sharper reason: this block
+says something about a specific person's symptoms. Unsigned, it would be the app
+volunteering an interpretation of somebody's body with nobody's name on the
+phrasing. With no `NEXT_PUBLIC_MEDICAL_REVIEWER` it does not render.
+
+### Silence is the default, and it is not a failure state
+
+Most of this module is thresholds, and they are deliberately blunt:
+
+- fewer than **10 logged days** → nothing, however strong the signal. A test
+  feeds it nine perfect days and asserts silence.
+- a symptom seen fewer than **3 times** is not a pattern, it is a Tuesday.
+- each side of a comparison needs **4 days**, or there is nothing to compare.
+- the gap must be **30 percentage points**. A p-value over a fortnight of
+  self-reported check-ins would be false precision; the honest version of "is
+  this real?" at this sample size is "only say it when it is obvious". A test
+  feeds it 5-of-7 versus 4-of-7 — a real-looking number nobody should act on —
+  and asserts silence.
+
+And no empty state: no "todavía no encontramos patrones" box turning every quiet
+week into a small report that the app looked and found nothing.
+
+A pregnancy app that manufactures a pattern out of four entries is teaching
+somebody to believe things that are not there, about her own body, during a
+pregnancy. Every threshold is that sentence.
+
+### Two symptoms are never analysed
+
+`NEVER_ANALYSED` = `["Otros", "Contracciones"]`.
+
+- **"Otros"** is a bucket. "Tus otros aparecen los días que dormís mal" is
+  nonsense, and worse, nonsense that looks like a finding.
+- **"Contracciones"** is the one entry on the list that can be an alarm sign. A
+  pattern line about contractions would read as reassurance about something
+  whose entire safety story is "if they are regular before 37 weeks, call".
+  `/emergencia` owns that conversation and a trends card must not join it.
+
+### What the language may say, asserted rather than trusted
+
+`insights.test.ts` is the guardrail around the review, not a formality. Every
+template is scanned for causal language (`porque`, `causa`, `provoca`, `debido
+a`…) and for diagnostic or reassuring language — **`es normal` above all**,
+which is the most dangerous sentence a pregnancy app can produce: a clinical
+judgement, and the one a user will remember instead of calling. Every `line`
+must talk about what she *wrote down* ("anotaste"), not about her body, and
+every `hint` must point at her control, because the useful thing to do with a
+pattern is tell the person who can act on it.
+
+### Smaller decisions
+
+- **Local days, and one row per day.** A late-night check-in and the next
+  morning's sleep entry are different days; UTC bucketing would move a 21:00
+  Asunción entry to tomorrow. Three check-ins on one bad day count once, or a
+  bad day logged three times outweighs a week of quiet ones.
+- **The worst mood of a day wins.** "How was today" is not an average.
+- **Days with no mood are in neither mood group.** "She did not say" is not
+  "she felt fine", and treating it as the latter is how a comparison invents a
+  difference.
+- **`renderInsight` returns null rather than a brace.** A sentence with
+  `{withDays}` in it, about somebody's symptoms, is worse than no sentence — and
+  `0` renders as `0`, because "en 0 de los otros 7 días" is the most informative
+  half of the line.
+- **`SYMPTOMS` moved out of the page into `lib/symptoms.ts`.** The insight logic
+  has to reason about the same list the check-in offers, and two copies of a
+  vocabulary is how one of them grows an option the other has never heard of.
+- **Nothing here is fetched or sent.** It is arithmetic over rows already on the
+  phone, and notes are never read — encrypted or not, they are no part of any
+  finding.
+
 ## K6 — copy & README truth pass
 
 - **Swept for the two banned claims** (`grep -ri "no te pedimos cuenta"` and
@@ -1879,3 +2367,39 @@ dropdown wasted it.
   string that was already framed as "sin cuenta, ... / con cuenta, ...".
   Rewriting an already-honest sentence to "fix" it would just be churn.
 - **`docs/FABLE-PLAN-2026-08.md` §3 K6 marked done.**
+
+## K6 addendum — the photo claims K4 made false (August 2026)
+
+K6 shipped in parallel with the Opus lane and, correctly for its moment, left
+the "las fotos nunca salen del teléfono" claims standing: §4.4 still said so and
+K4 had not landed. K4 landed. This is the sweep K6's own entry predicted would
+be needed, done at the merge rather than left as a contradiction between the
+code and the copy — which is precisely the failure the Fable review found and
+Phase K exists to fix.
+
+Six places said photos never upload, and all six were true before K4 and false
+after it:
+
+- `components/SyncStatusCard.tsx` — now says photos do not travel with *this*
+  sync (still true, and the useful thing to know) and names the switch that
+  does carry them.
+- `app/(app)/privacidad/page.tsx` — "las fotos nunca se suben" became "solo se
+  suben si vos lo pedís", with what happens when she turns it off.
+- `README.md` — the "not enabled yet" line replaced with what actually ships.
+- `lib/seed/faq.json` — the answer now carries **both halves**: they do not
+  sync, *and* they do if she opts in, *and* the copies are deleted when she opts
+  out. Either half alone is a misleading version of the truth.
+- The consent bullets in `Onboarding` and `SignInCard` — "no se suben" became
+  "no se suben con esto", which is the accurate scope: consenting to health-data
+  sync is not consenting to photo backup, and they remain two separate opt-ins.
+
+**`lib/seed/faq.test.ts` asserted the false claim.** It required the answer to
+contain "nunca salen del teléfono". A test that pins copy to a promise the app
+has stopped keeping is worse than no test — it makes the honest fix fail CI. It
+now asserts the conditional shape instead, which is the thing that must stay
+true: the answer names the opt-in *and* the deletion.
+
+The lesson worth keeping: a data-contract change has a copy surface, and the
+task that changes the contract owns finding it. K4's own PR flagged this line;
+nothing enforced it. `faq.test.ts` is the closest thing to enforcement and it
+was pointing the wrong way.

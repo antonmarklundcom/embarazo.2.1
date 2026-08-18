@@ -8,6 +8,7 @@
 
 import {
   bigint,
+  boolean,
   index,
   int,
   json,
@@ -160,6 +161,22 @@ export const pregnancyMembers = mysqlTable(
       .defaultNow()
       .notNull(),
     revokedAt: timestamp("revokedAt", { mode: "date", fsp: 3 }),
+    /**
+     * K8 — "¿quién la acompaña?". The epoch ms of the control this member said
+     * they would come to, or null.
+     *
+     * A **timestamp rather than a boolean**, deliberately: it is the only way
+     * the marker can expire on its own. When the mamá moves the control, every
+     * stored "yo la acompaño" stops matching it and she sees an empty list —
+     * she asks again, instead of the app quietly telling her somebody is coming
+     * to a date nobody agreed to. `isAccompanying` (lib/appointments.ts) is
+     * that comparison, and it is the only thing that reads this column.
+     *
+     * It is an RSVP, not health data: the appointment it points at is already
+     * in `companionSnapshots`, shared with this exact member, so K8 adds no
+     * server-legible health field at all.
+     */
+    accompanyingAt: bigint("accompanyingAt", { mode: "number" }),
   },
   (table) => ({
     // One membership row per (pregnancy, user) — re-invites update in place.
@@ -220,7 +237,150 @@ export const companionSnapshots = mysqlTable("companionSnapshots", {
   nextAppointmentAt: bigint("nextAppointmentAt", { mode: "number" }),
   babyName: varchar("babyName", { length: 64 }),
   updatedAt: bigint("updatedAt", { mode: "number" }).notNull(),
+
+  // -------------------------------------------------------------------------
+  // K3 — sharing levels. The owner's per-field opt-in, for the pareja only.
+  // -------------------------------------------------------------------------
+  //
+  // The flags are stored next to the data rather than only on the owner's
+  // device, so "off" is enforced at READ time as well as at publish time. A
+  // device that goes offline forever after switching a level off must not leave
+  // the server serving that value; nulling it needs one write, and until that
+  // write lands the flag is what the read obeys.
+  //
+  // Defaults are false in the column, not just in the client, because a row
+  // written by an older client has to mean "not shared".
+  sharePeso: boolean("sharePeso").notNull().default(false),
+  sharePataditas: boolean("sharePataditas").notNull().default(false),
+  /**
+   * K3 records the preference; K4 is what will have anything to publish under
+   * it (ARCHITECTURE.md §4.4 — photos do not leave the device until then).
+   * There is deliberately no photo column here yet: guessing at K4's shape
+   * would be worse than adding it when K4 knows.
+   */
+  shareFotos: boolean("shareFotos").notNull().default(false),
+
+  /** Weight in GRAMS — an integer on the wire, no decimal/float rounding. */
+  weightGrams: int("weightGrams"),
+  weightAt: bigint("weightAt", { mode: "number" }),
+  kickCount: int("kickCount"),
+  kickAt: bigint("kickAt", { mode: "number" }),
 });
+
+/**
+ * K2 — checklist items the owner assigned to her pareja.
+ *
+ * The **second** bounded exception to §4.3, and it is bounded the same way the
+ * snapshot is: `itemKey` is a key from `SHARED_TASK_KEYS` (every item in
+ * `lib/checklists.ts`), validated at the API boundary, and the *label* is
+ * rendered from the seed on the reading device. No prose an owner types can
+ * land here, because there is no column for prose and the boundary would reject
+ * a key it does not recognise.
+ *
+ * What the server therefore learns is "this pregnancy asked its partner to pack
+ * the carné" — a coarse, non-clinical fact about a shared to-do list. That is
+ * the price of the feature; a companion on their own phone has to be served the
+ * list by somebody. It buys the same property as `companionSnapshots`: the
+ * exception is finite and reviewable, rather than "a companion can read the
+ * owner's records with a filter applied".
+ *
+ * `family` members never see this table (`canSeeSharedTasks`).
+ */
+export const companionTasks = mysqlTable(
+  "companionTasks",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    pregnancyId: varchar("pregnancyId", { length: 64 }).notNull(),
+    /** A key from lib/checklists.ts. Never a label, never free text. */
+    itemKey: varchar("itemKey", { length: 64 }).notNull(),
+    /** Epoch ms when the pareja ticked it, or null. */
+    doneAt: bigint("doneAt", { mode: "number" }),
+    updatedAt: bigint("updatedAt", { mode: "number" }).notNull(),
+  },
+  (table) => ({
+    // One assignment per item per pregnancy: assigning twice is the same
+    // assignment, not a second row that the partner sees twice.
+    pregnancyItem: uniqueIndex("companionTasks_pregnancy_item").on(
+      table.pregnancyId,
+      table.itemKey,
+    ),
+  }),
+);
+
+/**
+ * K2 — "mandale ánimo": a one-tap reaction from a companion to the owner.
+ *
+ * `cheerId` is an id from `lib/sharing/cheers.ts` and nothing else. There is no
+ * text column here and there will not be one: a free-text channel from a
+ * partner or a family member into a pregnant user's home screen is a moderation
+ * surface this app has no way to staff. The words live in the client seed; the
+ * server stores which of five buttons somebody pressed.
+ *
+ * `fromUserId` is kept so the owner can be told *who* cheered — and so a
+ * revoked member's cheers can be dropped with their membership.
+ */
+export const companionCheers = mysqlTable(
+  "companionCheers",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    pregnancyId: varchar("pregnancyId", { length: 64 }).notNull(),
+    fromUserId: varchar("fromUserId", { length: 255 }).notNull(),
+    /** An id from CHEERS. Validated at the boundary; never prose. */
+    cheerId: varchar("cheerId", { length: 32 }).notNull(),
+    createdAt: bigint("createdAt", { mode: "number" }).notNull(),
+    /** Epoch ms when the owner's device acknowledged it, or null. */
+    seenAt: bigint("seenAt", { mode: "number" }),
+  },
+  (table) => ({
+    byPregnancy: index("companionCheers_pregnancy").on(table.pregnancyId),
+  }),
+);
+
+/**
+ * K4 — the index of a user's backed-up photos (ARCHITECTURE.md §4.4, amended).
+ *
+ * §4.4 used to say photos never leave the device. K4 turns that into an
+ * **explicit opt-in**, and this is the row that exists for a photo that has
+ * been uploaded. The bytes are not here — they are in object storage under
+ * `fotos/{userId}/{store}/{recordId}` — and neither is anything about the
+ * pregnancy.
+ *
+ * `payload` is the SAME opaque envelope as `syncRecords.payload` (§4.3): the
+ * photo's own metadata (which week the bump photo is from, when it was taken)
+ * as JSON the server never queries into, never indexes and never uses for
+ * anything. A bump photo's week is health data; putting it in a column would
+ * have been a third §4.3 exception, and this one is not needed — the server
+ * has no reason to know it, it only has to hand it back.
+ *
+ * So what the server learns from this table is: *this account has N objects,
+ * of these sizes, of these types, changed at these times.* That is the honest
+ * cost of "sign in and your photos are back", and the consent copy says it.
+ *
+ * `objectKey` is stored rather than recomputed so deletion is a fact about a
+ * row rather than a re-derivation that could drift from what was written.
+ */
+export const photoBlobs = mysqlTable(
+  "photoBlobs",
+  {
+    userId: varchar("userId", { length: 255 }).notNull(),
+    /** "photoEntries" | "carnePhotos" — see lib/photos/keys.ts. */
+    store: varchar("store", { length: 32 }).notNull(),
+    recordId: varchar("recordId", { length: 64 }).notNull(),
+    objectKey: varchar("objectKey", { length: 512 }).notNull(),
+    contentType: varchar("contentType", { length: 64 }).notNull(),
+    bytes: int("bytes").notNull(),
+    /** Opaque to the server, exactly like syncRecords.payload (§4.3). */
+    payload: json("payload"),
+    updatedAt: bigint("updatedAt", { mode: "number" }).notNull(),
+    /** Soft delete, so a second device learns the photo is gone. */
+    deletedAt: bigint("deletedAt", { mode: "number" }),
+    serverUpdatedAt: bigint("serverUpdatedAt", { mode: "number" }).notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.userId, table.store, table.recordId] }),
+    byUser: index("photoBlobs_user_idx").on(table.userId, table.serverUpdatedAt),
+  }),
+);
 
 // ---------------------------------------------------------------------------
 // Sync (A3)
@@ -442,6 +602,9 @@ export const schema = {
   pregnancyMembers,
   invites,
   companionSnapshots,
+  companionTasks,
+  companionCheers,
+  photoBlobs,
   syncRecords,
   pushSubscriptions,
   pushReminders,

@@ -222,6 +222,75 @@ export const companionSnapshots = mysqlTable("companionSnapshots", {
   updatedAt: bigint("updatedAt", { mode: "number" }).notNull(),
 });
 
+/**
+ * K2 — checklist items the owner assigned to her pareja.
+ *
+ * The **second** bounded exception to §4.3, and it is bounded the same way the
+ * snapshot is: `itemKey` is a key from `SHARED_TASK_KEYS` (every item in
+ * `lib/checklists.ts`), validated at the API boundary, and the *label* is
+ * rendered from the seed on the reading device. No prose an owner types can
+ * land here, because there is no column for prose and the boundary would reject
+ * a key it does not recognise.
+ *
+ * What the server therefore learns is "this pregnancy asked its partner to pack
+ * the carné" — a coarse, non-clinical fact about a shared to-do list. That is
+ * the price of the feature; a companion on their own phone has to be served the
+ * list by somebody. It buys the same property as `companionSnapshots`: the
+ * exception is finite and reviewable, rather than "a companion can read the
+ * owner's records with a filter applied".
+ *
+ * `family` members never see this table (`canSeeSharedTasks`).
+ */
+export const companionTasks = mysqlTable(
+  "companionTasks",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    pregnancyId: varchar("pregnancyId", { length: 64 }).notNull(),
+    /** A key from lib/checklists.ts. Never a label, never free text. */
+    itemKey: varchar("itemKey", { length: 64 }).notNull(),
+    /** Epoch ms when the pareja ticked it, or null. */
+    doneAt: bigint("doneAt", { mode: "number" }),
+    updatedAt: bigint("updatedAt", { mode: "number" }).notNull(),
+  },
+  (table) => ({
+    // One assignment per item per pregnancy: assigning twice is the same
+    // assignment, not a second row that the partner sees twice.
+    pregnancyItem: uniqueIndex("companionTasks_pregnancy_item").on(
+      table.pregnancyId,
+      table.itemKey,
+    ),
+  }),
+);
+
+/**
+ * K2 — "mandale ánimo": a one-tap reaction from a companion to the owner.
+ *
+ * `cheerId` is an id from `lib/sharing/cheers.ts` and nothing else. There is no
+ * text column here and there will not be one: a free-text channel from a
+ * partner or a family member into a pregnant user's home screen is a moderation
+ * surface this app has no way to staff. The words live in the client seed; the
+ * server stores which of five buttons somebody pressed.
+ *
+ * `fromUserId` is kept so the owner can be told *who* cheered — and so a
+ * revoked member's cheers can be dropped with their membership.
+ */
+export const companionCheers = mysqlTable(
+  "companionCheers",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    pregnancyId: varchar("pregnancyId", { length: 64 }).notNull(),
+    fromUserId: varchar("fromUserId", { length: 255 }).notNull(),
+    /** An id from CHEERS. Validated at the boundary; never prose. */
+    cheerId: varchar("cheerId", { length: 32 }).notNull(),
+    createdAt: bigint("createdAt", { mode: "number" }).notNull(),
+    /** Epoch ms when the owner's device acknowledged it, or null. */
+    seenAt: bigint("seenAt", { mode: "number" }),
+  },
+  (table) => ({
+    byPregnancy: index("companionCheers_pregnancy").on(table.pregnancyId),
+  }),
+);
+
 // ---------------------------------------------------------------------------
 // Sync (A3)
 // ---------------------------------------------------------------------------
@@ -442,6 +511,8 @@ export const schema = {
   pregnancyMembers,
   invites,
   companionSnapshots,
+  companionTasks,
+  companionCheers,
   syncRecords,
   pushSubscriptions,
   pushReminders,

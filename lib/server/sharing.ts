@@ -1,20 +1,24 @@
 import "server-only";
 
-import { and, eq, isNull, ne } from "drizzle-orm";
+import { and, desc, eq, isNull, ne } from "drizzle-orm";
 
 import type { Database } from "./db";
 import {
+  companionCheers,
   companionSnapshots,
+  companionTasks,
   invites,
   pregnancies,
   pregnancyMembers,
 } from "./schema";
 import {
   INVITE_TTL_DAYS,
+  canSeeSharedTasks,
   generateInviteCode,
   snapshotShouldBeDropped,
   type CompanionSnapshot,
   type MemberRole,
+  type SharedTask,
 } from "@/lib/sharing/fields";
 
 // BUILD-PLAN E1 — family sharing, server half.
@@ -337,6 +341,202 @@ export async function membersOf(database: Database, pregnancyId: string) {
       and(
         eq(pregnancyMembers.pregnancyId, pregnancyId),
         isNull(pregnancyMembers.revokedAt),
+      ),
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Shared checklist items (K2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Every function below takes the caller's user id and resolves the membership
+ * itself, exactly as `readSnapshotFor` does. There is deliberately no
+ * "…ForPregnancy" variant that trusts a pregnancy id from a request body: the
+ * membership check is the authorisation, and a helper that skips it is a helper
+ * somebody will call.
+ */
+
+/** Assign a checklist item to the pareja. Owner only; idempotent. */
+export async function assignTask(
+  database: Database,
+  pregnancyId: string,
+  itemKey: string,
+  now: number,
+): Promise<void> {
+  await database
+    .insert(companionTasks)
+    .values({
+      id: crypto.randomUUID(),
+      pregnancyId,
+      itemKey,
+      doneAt: null,
+      updatedAt: now,
+    })
+    // Assigning twice is the same assignment. `updatedAt` moves so the
+    // partner's next read is ordered sensibly; `doneAt` is deliberately NOT
+    // reset — re-tapping "para tu pareja" on an item he already did should not
+    // un-do his work.
+    .onDuplicateKeyUpdate({ set: { updatedAt: now } });
+}
+
+/** Take an item back off the pareja's list. Owner only. */
+export async function unassignTask(
+  database: Database,
+  pregnancyId: string,
+  itemKey: string,
+): Promise<void> {
+  await database
+    .delete(companionTasks)
+    .where(
+      and(
+        eq(companionTasks.pregnancyId, pregnancyId),
+        eq(companionTasks.itemKey, itemKey),
+      ),
+    );
+}
+
+/**
+ * Tick or un-tick an assigned item.
+ *
+ * Only the pareja may do this, and only for an item that is already assigned:
+ * the update is scoped to `(pregnancyId, itemKey)`, so a key that was never
+ * assigned matches no row and silently changes nothing rather than creating an
+ * assignment the owner never made.
+ */
+export async function setTaskDone(
+  database: Database,
+  pregnancyId: string,
+  itemKey: string,
+  done: boolean,
+  now: number,
+): Promise<void> {
+  await database
+    .update(companionTasks)
+    .set({ doneAt: done ? now : null, updatedAt: now })
+    .where(
+      and(
+        eq(companionTasks.pregnancyId, pregnancyId),
+        eq(companionTasks.itemKey, itemKey),
+      ),
+    );
+}
+
+/**
+ * The shared list, if the caller may see it.
+ *
+ * Returns `null` — not an empty list — when the caller is not a live member or
+ * holds the `family` role. An empty array would say "there is nothing assigned"
+ * to somebody who is not entitled to know either way.
+ */
+export async function readTasksFor(
+  database: Database,
+  userId: string,
+  pregnancyId: string,
+): Promise<SharedTask[] | null> {
+  const membership = await liveMembership(database, userId, pregnancyId);
+  if (!membership) return null;
+  if (!canSeeSharedTasks(membership.role)) return null;
+
+  const rows = await database
+    .select({
+      itemKey: companionTasks.itemKey,
+      doneAt: companionTasks.doneAt,
+      updatedAt: companionTasks.updatedAt,
+    })
+    .from(companionTasks)
+    .where(eq(companionTasks.pregnancyId, pregnancyId));
+
+  return rows.map((row) => ({
+    itemKey: row.itemKey,
+    doneAt: row.doneAt,
+    updatedAt: row.updatedAt,
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Ánimos (K2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Send one cheer.
+ *
+ * The caller must hold a live NON-owner membership: this is a companion
+ * cheering the pregnant user, and an owner cheering herself is not a thing the
+ * product does. `cheerId` is validated against the pinned list at the API
+ * boundary before it reaches here.
+ */
+export async function sendCheer(
+  database: Database,
+  userId: string,
+  pregnancyId: string,
+  cheerId: string,
+  now: number,
+): Promise<boolean> {
+  const membership = await liveMembership(database, userId, pregnancyId);
+  if (!membership || membership.role === "owner") return false;
+
+  await database.insert(companionCheers).values({
+    id: crypto.randomUUID(),
+    pregnancyId,
+    fromUserId: userId,
+    cheerId,
+    createdAt: now,
+    seenAt: null,
+  });
+  return true;
+}
+
+export interface ReceivedCheer {
+  cheerId: string;
+  createdAt: number;
+  seenAt: number | null;
+}
+
+/**
+ * The cheers on the owner's own pregnancy.
+ *
+ * Owner only, by construction: this reads what people sent *her*, and a
+ * companion has no business seeing who else in the family has been cheering.
+ * Capped, because a home screen is not an inbox.
+ */
+export const CHEER_PAGE_SIZE = 50;
+
+export async function readCheersFor(
+  database: Database,
+  userId: string,
+  pregnancyId: string,
+): Promise<ReceivedCheer[] | null> {
+  const membership = await liveMembership(database, userId, pregnancyId);
+  if (!membership || membership.role !== "owner") return null;
+
+  const rows = await database
+    .select({
+      cheerId: companionCheers.cheerId,
+      createdAt: companionCheers.createdAt,
+      seenAt: companionCheers.seenAt,
+    })
+    .from(companionCheers)
+    .where(eq(companionCheers.pregnancyId, pregnancyId))
+    .orderBy(desc(companionCheers.createdAt))
+    .limit(CHEER_PAGE_SIZE);
+
+  return rows;
+}
+
+/** Mark everything on the owner's pregnancy as seen. Owner only. */
+export async function markCheersSeen(
+  database: Database,
+  pregnancyId: string,
+  now: number,
+): Promise<void> {
+  await database
+    .update(companionCheers)
+    .set({ seenAt: now })
+    .where(
+      and(
+        eq(companionCheers.pregnancyId, pregnancyId),
+        isNull(companionCheers.seenAt),
       ),
     );
 }

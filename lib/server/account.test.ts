@@ -40,6 +40,8 @@ function memoryDb() {
     aiGenerations: [],
     pushReminders: [],
     companionSnapshots: [],
+    companionTasks: [],
+    companionCheers: [],
     contentStats: [],
     adminAudit: [],
   };
@@ -111,6 +113,19 @@ function memoryDb() {
         pregnancyIds.includes(r.pregnancyId as string),
       );
     },
+    async deleteCompanionTasks(pregnancyIds) {
+      return removeWhere("companionTasks", (r) =>
+        pregnancyIds.includes(r.pregnancyId as string),
+      );
+    },
+    async deleteCompanionCheers(userId, pregnancyIds) {
+      return removeWhere(
+        "companionCheers",
+        (r) =>
+          r.fromUserId === userId ||
+          pregnancyIds.includes(r.pregnancyId as string),
+      );
+    },
     async deletePregnancies(pregnancyIds) {
       return removeWhere("pregnancies", (r) =>
         pregnancyIds.includes(r.id as string),
@@ -178,6 +193,19 @@ function seed(db: ReturnType<typeof memoryDb>) {
     { pregnancyId: "preg-a", week: 24 },
     { pregnancyId: "preg-b", week: 12 },
   );
+  // K2. The victim assigned a task on her own pregnancy and cheered on the
+  // bystander's; the bystander did the mirror image. Deleting the victim must
+  // take both of hers and neither of his.
+  tables.companionTasks!.push(
+    { id: "t1", pregnancyId: "preg-a", itemKey: "bolso-carne" },
+    { id: "t2", pregnancyId: "preg-b", itemKey: "bolso-cedula" },
+  );
+  tables.companionCheers!.push(
+    { id: "c1", pregnancyId: "preg-a", fromUserId: BYSTANDER, cheerId: "fuerza" },
+    { id: "c2", pregnancyId: "preg-b", fromUserId: VICTIM, cheerId: "te-quiero" },
+    { id: "c3", pregnancyId: "preg-b", fromUserId: BYSTANDER, cheerId: "gracias" },
+  );
+
   tables.aiGenerations!.push({ userId: VICTIM }, { userId: BYSTANDER });
 
   tables.contentStats!.push({ week: 12, contentId: "guia", day: "2026-08-12" });
@@ -202,6 +230,25 @@ describe("every table has a documented disposition", () => {
       .filter(([, rule]) => rule.startsWith("retained"))
       .map(([table]) => table);
     expect(retained).toEqual(["adminAudit"]);
+  });
+});
+
+describe("K2 — tasks and cheers go with the account", () => {
+  it("takes the deleted owner's shared checklist off her partner's screen", async () => {
+    const db = memoryDb();
+    seed(db);
+    await deleteAccountData(db.executor, VICTIM);
+    expect(db.tables.companionTasks!.map((r) => r.id)).toEqual(["t2"]);
+  });
+
+  it("removes cheers in both directions", async () => {
+    // Received (somebody cheered her pregnancy) AND sent (she cheered
+    // somebody else's). Missing the second would leave her encouragement
+    // standing on a home screen belonging to an account she no longer has.
+    const db = memoryDb();
+    seed(db);
+    await deleteAccountData(db.executor, VICTIM);
+    expect(db.tables.companionCheers!.map((r) => r.id)).toEqual(["c3"]);
   });
 });
 

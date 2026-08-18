@@ -1852,3 +1852,113 @@ dropdown wasted it.
   auth-status client and the invite-link module. K11 owns the budget and is
   scheduled to re-verify after K1/K2/K7 land; recorded here so that task starts
   from a number rather than a guess.
+
+## K2 — the companion experience (August 2026)
+
+Before K2 a partner who accepted an invite saw four facts and had no reason to
+open the app twice. K2 gives him a home screen, a list, and one tap that tells
+her he is there. Three things in it are contract decisions rather than UI.
+
+### Two new tables, and why they are §4.3 exceptions rather than payloads
+
+`companionTasks` and `companionCheers` join `companionSnapshots` as the **only**
+places the server holds health-adjacent data in plain columns. The reasoning is
+E1's, unchanged: a companion on their own phone has to be *served* this by the
+server, so it cannot live inside an opaque `syncRecords.payload`. What makes the
+exception acceptable is that it is bounded and legible, and K2 keeps it that way
+by never storing a sentence:
+
+- **`companionTasks.itemKey` is a key from `SHARED_TASK_KEYS`** — every item in
+  `lib/checklists.ts` and nothing else, enforced as a `z.enum` at the route
+  boundary. The *label* is rendered from the seed on the reading device. So no
+  prose an owner types can reach the table, and the server learns "this
+  pregnancy asked its partner to pack the carné" rather than anything she wrote.
+- **`companionCheers.cheerId` is an id from `lib/sharing/cheers.ts`.** The whole
+  message is which of five buttons somebody pressed. That is the design and not
+  an optimisation: a free-text channel from a partner or a family member into a
+  pregnant user's home screen is a moderation surface, an abuse surface and a
+  support surface, and this app has none of the three and should not acquire
+  them in order to say "¡fuerza!".
+- Both are asserted **against the schema source**, not against a function's
+  output (`lib/server/schema.test.ts`, `lib/sharing/fields.test.ts`): a filter
+  can be forgotten, a missing column cannot. `lib/sharing/routeContract.test.ts`
+  adds the other half — that the route validates with `z.enum` rather than
+  `z.string`, that every action is `.strict()`, and that no K2 action carries a
+  `text`/`note`/`message` field at all.
+
+### `partner` finally does something `family` does not
+
+E1 shipped the two roles with identical permissions and said so, explicitly so
+that giving a partner more later would be a permission change rather than a
+migration. K2 is that change: `canSeeSharedTasks` (owner + partner) and
+`canCompleteSharedTask` (partner only — the owner assigns, she is not the doer).
+
+**The exclusion is in the server read, not in the UI.** `readTasksFor` returns
+`null` for a `family` member — not `[]`. Empty would answer the question:
+"nothing is assigned" is itself information about somebody's pregnancy, and
+family is not entitled to it. Same shape for `readCheersFor`, which is owner-only
+because who else has been cheering is not a companion's business (E1's "a
+companion does not get the guest list", applied again).
+
+### The companion view is fetched and never stored
+
+`useSharedViews` caches nothing — not IndexedDB, not localStorage. E1's promise
+is that revoking access cuts everything **instantly**, and a copy of the owner's
+week sitting on a revoked companion's phone is precisely what that rules out.
+The cost is paid honestly and visibly: a companion with no signal sees
+"necesitás conexión", not a stale week. Everything in the app that is not
+somebody else's data — guías, semanas, herramientas, emergencia — still works
+offline for them, which is the part that matters on Paraguayan mobile data.
+
+Other consequences of the same rule:
+- The two companion actions (`complete-task`, `cheer`) are handled **before**
+  `ensurePregnancyForOwner` in the route. That call creates a pregnancy for the
+  caller, and a partner ticking off "llevá el carné" must not silently acquire a
+  pregnancy of his own. Asserted by source order, because it is the kind of
+  thing a later refactor reorders without noticing.
+- Those two are also the only actions that take a `pregnancyId` from the body —
+  there is no other way to name a pregnancy you do not own — and each is
+  authorised by a live-membership lookup inside the call, which is what makes a
+  revoked companion's next tap fail immediately.
+
+### Whose home screen is it
+
+The companion home renders when the user holds a live non-owner membership
+**and** told B1's role question that they are not the pregnant one. Both halves
+matter: a mamá who follows her sister's pregnancy keeps her own home screen and
+reaches her sister's from `/familia`, while a papá who accepted an invite gets
+the screen the invitation promised. Where they overlap, the owner's *published*
+week beats a companion's locally typed guess at the same dates — she is the
+source of truth for her own pregnancy, which is the whole point of the snapshot.
+
+The weekly content is C4's `pareja` / `familia` band, selected by the snapshot's
+week. Worth stating plainly: **the week travels, the words do not.** The server
+sends a number; the paragraph comes out of the seed already in the companion's
+own bundle.
+
+### Smaller decisions
+
+- **Ánimos group, they do not stack.** Twelve separate "❤️ Te quiero" cards is a
+  notification feed; one line with "×12" is a nice thing that happened.
+  `groupCheers` is pure and tested; an id this build does not recognise
+  contributes nothing at all — not a card, not a count — rather than rendering a
+  generic "alguien te mandó ánimo" the sender never wrote.
+- **The card renders nothing when nobody has cheered.** An empty "todavía nadie
+  te mandó ánimo" box on a pregnant user's home screen is a small unkindness the
+  app can simply not commit.
+- **Guaraní where the phrase is really said in Guaraní** (`Rohayhu`, `Aguyje`,
+  `Py'aguasu`, `Aime nendive`) and nowhere else. These are terms of affection;
+  inventing one for the sake of symmetry lands worse than leaving it out.
+- **Re-assigning an item does not un-do it.** `assignTask` moves `updatedAt` on
+  a duplicate key but deliberately leaves `doneAt` alone — tapping "para tu
+  pareja" twice should not erase work he already did.
+- **Tasks survive revocation, the snapshot does not.** The snapshot exists only
+  to be read by companions, so E1 drops it when the last one goes. The task list
+  is also the owner's own screen in `/familia`, so it is hers to keep.
+- **Deletion coverage.** Both tables are in `TABLE_DISPOSITION`, and the A5
+  coverage test caught them the moment they were added — for the third time in
+  this repo, which is the entire argument for that test. Cheers are deleted in
+  **both** directions: received on the user's pregnancies, and sent by the user
+  to somebody else's. Missing the second would leave a deleted account's
+  encouragement standing on another person's home screen.
+- **Home First Load JS: 209 kB → 213 kB.** K11 still owns the budget.

@@ -5,16 +5,29 @@ import { getSession, isAuthAvailable } from "@/lib/server/auth";
 import { dbOrNull } from "@/lib/server/db";
 import {
   acceptInvite,
+  assignTask,
   createInvite,
   ensurePregnancyForOwner,
+  markCheersSeen,
   membersOf,
   membershipsOf,
   publishSnapshot,
+  readCheersFor,
   readSnapshotFor,
+  readTasksFor,
   revokeInviteCode,
+  liveMembership,
   revokeMembership,
+  sendCheer,
+  setTaskDone,
+  unassignTask,
 } from "@/lib/server/sharing";
-import { isValidInviteCode } from "@/lib/sharing/fields";
+import {
+  canCompleteSharedTask,
+  isValidInviteCode,
+  SHARED_TASK_KEYS,
+} from "@/lib/sharing/fields";
+import { CHEER_IDS } from "@/lib/sharing/cheers";
 
 // BUILD-PLAN E1 — family sharing.
 //
@@ -30,6 +43,12 @@ import { isValidInviteCode } from "@/lib/sharing/fields";
 export const dynamic = "force-dynamic";
 
 const HEADERS = { "Cache-Control": "no-store" } as const;
+
+// zod needs a non-empty tuple of literals; both lists are pinned in code and
+// are never empty, and casting here rather than hand-copying them is what keeps
+// the route's whitelist and the app's own vocabularies from drifting apart.
+const TASK_KEYS = SHARED_TASK_KEYS as unknown as [string, ...string[]];
+const CHEER_ID_VALUES = CHEER_IDS as unknown as [string, ...string[]];
 
 const ActionSchema = z.discriminatedUnion("action", [
   z
@@ -60,6 +79,40 @@ const ActionSchema = z.discriminatedUnion("action", [
       code: z.string().min(1).max(32),
     })
     .strict(),
+  // K2 — shared checklist items. `itemKey` is a z.enum over the app's own
+  // checklist keys, so the server can only ever store an id it already knows:
+  // no label, no note, no prose an owner types. Same discipline as the
+  // snapshot's shape whitelist, applied to a second table.
+  z
+    .object({
+      action: z.literal("assign-task"),
+      itemKey: z.enum(TASK_KEYS),
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal("unassign-task"),
+      itemKey: z.enum(TASK_KEYS),
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal("complete-task"),
+      pregnancyId: z.string().min(1).max(64),
+      itemKey: z.enum(TASK_KEYS),
+      done: z.boolean(),
+    })
+    .strict(),
+  // K2 — "mandale ánimo". The whole message is an id from CHEERS; there is no
+  // text field here, deliberately (see lib/sharing/cheers.ts).
+  z
+    .object({
+      action: z.literal("cheer"),
+      pregnancyId: z.string().min(1).max(64),
+      cheerId: z.enum(CHEER_ID_VALUES),
+    })
+    .strict(),
+  z.object({ action: z.literal("cheers-seen") }).strict(),
   z
     .object({
       action: z.literal("publish"),
@@ -123,6 +176,25 @@ export async function GET() {
           membership.role === "owner"
             ? await membersOf(ctx.database, membership.pregnancyId)
             : undefined,
+        // K2. `readTasksFor` returns null — not [] — for a `family` member:
+        // "there is nothing assigned" is itself an answer, and family is not
+        // entitled to it. The owner sees her own list so she can manage it.
+        tasks:
+          (await readTasksFor(
+            ctx.database,
+            ctx.userId,
+            membership.pregnancyId,
+          )) ?? undefined,
+        // Cheers are the owner's own inbox; a companion never sees who else
+        // has been cheering.
+        cheers:
+          membership.role === "owner"
+            ? ((await readCheersFor(
+                ctx.database,
+                ctx.userId,
+                membership.pregnancyId,
+              )) ?? undefined)
+            : undefined,
       };
     }),
   );
@@ -176,6 +248,53 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // K2 — the two actions a COMPANION performs, on somebody else's pregnancy.
+  // They are handled before `ensurePregnancyForOwner` on purpose: that call
+  // creates a pregnancy for the caller, and a partner ticking off "llevá el
+  // carné" must not silently acquire a pregnancy of their own. The pregnancy id
+  // does come from the body here — there is no other way to name a pregnancy
+  // you do not own — and it is authorised by a live-membership lookup inside
+  // each function, which is also what makes a revoked companion's next tap fail
+  // instantly rather than eventually.
+  if (data.action === "complete-task") {
+    const membership = await liveMembership(
+      ctx.database,
+      ctx.userId,
+      data.pregnancyId,
+    );
+    if (!membership || !canCompleteSharedTask(membership.role)) {
+      return NextResponse.json(
+        { error: "no disponible" },
+        { status: 404, headers: HEADERS },
+      );
+    }
+    await setTaskDone(
+      ctx.database,
+      data.pregnancyId,
+      data.itemKey,
+      data.done,
+      now,
+    );
+    return NextResponse.json({ ok: true }, { headers: HEADERS });
+  }
+
+  if (data.action === "cheer") {
+    const sent = await sendCheer(
+      ctx.database,
+      ctx.userId,
+      data.pregnancyId,
+      data.cheerId,
+      now,
+    );
+    if (!sent) {
+      return NextResponse.json(
+        { error: "no disponible" },
+        { status: 404, headers: HEADERS },
+      );
+    }
+    return NextResponse.json({ ok: true }, { headers: HEADERS });
+  }
+
   // Everything below acts on the caller's OWN pregnancy. It is resolved from
   // the session rather than taken from the body, so there is no id to tamper
   // with.
@@ -204,6 +323,21 @@ export async function POST(req: NextRequest) {
       babyName: data.babyName?.trim() ? data.babyName.trim() : null,
       updatedAt: now,
     });
+    return NextResponse.json({ ok: true }, { headers: HEADERS });
+  }
+
+  if (data.action === "assign-task") {
+    await assignTask(ctx.database, pregnancyId, data.itemKey, now);
+    return NextResponse.json({ ok: true }, { headers: HEADERS });
+  }
+
+  if (data.action === "unassign-task") {
+    await unassignTask(ctx.database, pregnancyId, data.itemKey);
+    return NextResponse.json({ ok: true }, { headers: HEADERS });
+  }
+
+  if (data.action === "cheers-seen") {
+    await markCheersSeen(ctx.database, pregnancyId, now);
     return NextResponse.json({ ok: true }, { headers: HEADERS });
   }
 

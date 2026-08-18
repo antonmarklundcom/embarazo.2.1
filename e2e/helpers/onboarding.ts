@@ -22,6 +22,12 @@ export interface OnboardOptions {
   method?: "lmp" | "ecografia" | "fiv";
   /** Typed into the baby-name step. Left blank when absent — it is optional. */
   babyName?: string;
+  /**
+   * K2: a signed-in companion lands on the pregnancy they are accompanying,
+   * not on "Hoy", so the default readiness check does not apply to them. Set
+   * false and assert the companion screen instead.
+   */
+  landsOnHome?: boolean;
 }
 
 export async function completeOnboarding(
@@ -34,6 +40,7 @@ export async function completeOnboarding(
     daysAgo = 70,
     method = "lmp",
     babyName,
+    landsOnHome = true,
   } = options;
 
   await page.goto("/");
@@ -71,6 +78,11 @@ export async function completeOnboarding(
   if (mode === "embarazada") {
     if (babyName) await page.locator("#babyName").fill(babyName);
     await page.getByRole("button", { name: "Empezar" }).click();
-    await expect(page.getByText("Tip de hoy")).toBeVisible();
+    if (landsOnHome) await expect(page.getByText("Tip de hoy")).toBeVisible();
+    else {
+      await expect(
+        page.getByRole("heading", { name: "Bienvenida a Mi Bebé" }),
+      ).toHaveCount(0);
+    }
   }
 }

@@ -5,10 +5,15 @@ import { join } from "node:path";
 import {
   COMPANION_FIELDS,
   FORBIDDEN_COMPANION_FIELDS,
+  FORBIDDEN_TASK_FIELDS,
   INVITE_CODE_LENGTH,
   MEMBER_ROLES,
+  SHARED_TASK_KEYS,
   buildSnapshot,
+  canCompleteSharedTask,
+  canSeeSharedTasks,
   canWrite,
+  isSharedTaskKey,
   generateInviteCode,
   isLiveMembership,
   isValidInviteCode,
@@ -32,6 +37,61 @@ describe("roles", () => {
     expect(canWrite("owner")).toBe(true);
     expect(canWrite("partner")).toBe(false);
     expect(canWrite("family")).toBe(false);
+  });
+});
+
+describe("K2 — shared checklist items", () => {
+  it("is the first thing partner can do and family cannot", () => {
+    // E1 kept the two roles separate precisely so this could be a permission
+    // change instead of a migration. This is that change.
+    expect(canSeeSharedTasks("owner")).toBe(true);
+    expect(canSeeSharedTasks("partner")).toBe(true);
+    expect(canSeeSharedTasks("family")).toBe(false);
+  });
+
+  it("lets only the pareja tick one off — the owner assigns, she is not the doer", () => {
+    expect(canCompleteSharedTask("partner")).toBe(true);
+    expect(canCompleteSharedTask("owner")).toBe(false);
+    expect(canCompleteSharedTask("family")).toBe(false);
+  });
+
+  it("accepts exactly the app's own checklist keys", () => {
+    expect(SHARED_TASK_KEYS.length).toBeGreaterThan(10);
+    expect(new Set(SHARED_TASK_KEYS).size).toBe(SHARED_TASK_KEYS.length);
+    for (const key of SHARED_TASK_KEYS) expect(isSharedTaskKey(key)).toBe(true);
+  });
+
+  it("refuses anything that is not one of them, prose above all", () => {
+    for (const value of [
+      "",
+      "bolso-que-no-existe",
+      "Traé el carné y avisale a mi mamá",
+      "'; DROP TABLE companionTasks;--",
+      null,
+      undefined,
+      7,
+      ["bolso-carne"],
+    ]) {
+      expect(isSharedTaskKey(value), JSON.stringify(value)).toBe(false);
+    }
+  });
+
+  it("has nowhere in the database to put a note either", () => {
+    const schema = readFileSync(
+      join(process.cwd(), "lib", "server", "schema.ts"),
+      "utf8",
+    );
+    const table = schema.slice(
+      schema.indexOf("export const companionTasks"),
+      schema.indexOf("export const companionCheers"),
+    );
+    expect(table.length).toBeGreaterThan(50);
+    for (const forbidden of FORBIDDEN_TASK_FIELDS) {
+      expect(
+        table.includes(`"${forbidden}"`),
+        `companionTasks must have no "${forbidden}" column`,
+      ).toBe(false);
+    }
   });
 });
 
@@ -67,9 +127,14 @@ describe("what a companion can see", () => {
       join(process.cwd(), "lib", "server", "schema.ts"),
       "utf8",
     );
+    // Bounded at the next table on purpose: K2 added `companionTasks` and
+    // `companionCheers` immediately below, and a slice that ran to "// Sync
+    // (A3)" would quietly start asserting about them too — which reads like
+    // coverage but is really the test losing its aim. Those two have their own
+    // column assertions in lib/server/schema.test.ts.
     const table = schema.slice(
       schema.indexOf("companionSnapshots = mysqlTable"),
-      schema.indexOf("// Sync (A3)"),
+      schema.indexOf("export const companionTasks"),
     );
     expect(table.length).toBeGreaterThan(50);
 

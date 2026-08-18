@@ -2340,3 +2340,66 @@ pattern is tell the person who can act on it.
 - **Nothing here is fetched or sent.** It is arithmetic over rows already on the
   phone, and notes are never read — encrypted or not, they are no part of any
   finding.
+
+## K6 — copy & README truth pass
+
+- **Swept for the two banned claims** (`grep -ri "no te pedimos cuenta"` and
+  unconditional "nunca sale de tu teléfono"/"nunca en un servidor" phrasing)
+  across `app/`, `components/`, `lib/`, `README.md`. The onboarding screen was
+  already gone (K1); `e2e/onboarding.spec.ts` already asserts it stays gone, so
+  it was left as regression coverage rather than duplicated.
+- **README renamed `Nido` → `Mi Bebé`** — the doc had drifted from the shipped
+  app name/story since before this pivot. Rewrote the privacy section into two
+  honest halves (sin cuenta / con cuenta) mirroring ARCHITECTURE.md §4 instead
+  of one blanket "nunca se transmite" claim, and added the family-sharing
+  feature to the top-of-file feature list and env-var framing.
+- **`/conoce`** (the public pre-install landing page) got the same treatment:
+  replaced the "Privada por diseño / no pedimos cuenta" card with a "vos elegís
+  qué compartir" framing that states both paths, added a "Tu embarazo, en
+  familia" feature tile, and fixed the footer line and metadata description
+  that both still promised "sin cuenta" unconditionally.
+- **Left untouched, deliberately:** `docs/privacidad/page.tsx` (already
+  conditioned "sin cuenta: ... / con cuenta: ..." per K1-era work — no drift),
+  the photos-never-upload FAQ line and its test (`lib/seed/faq.test.ts`, still
+  true per ARCHITECTURE.md §4.4 — K4 hasn't shipped photo upload yet, so
+  "nunca se suben a internet" for photos remains accurate, unlike the
+  account-wide claim), and every `SignInCard`/`Onboarding`/`AjustesClient`
+  string that was already framed as "sin cuenta, ... / con cuenta, ...".
+  Rewriting an already-honest sentence to "fix" it would just be churn.
+- **`docs/FABLE-PLAN-2026-08.md` §3 K6 marked done.**
+
+## K6 addendum — the photo claims K4 made false (August 2026)
+
+K6 shipped in parallel with the Opus lane and, correctly for its moment, left
+the "las fotos nunca salen del teléfono" claims standing: §4.4 still said so and
+K4 had not landed. K4 landed. This is the sweep K6's own entry predicted would
+be needed, done at the merge rather than left as a contradiction between the
+code and the copy — which is precisely the failure the Fable review found and
+Phase K exists to fix.
+
+Six places said photos never upload, and all six were true before K4 and false
+after it:
+
+- `components/SyncStatusCard.tsx` — now says photos do not travel with *this*
+  sync (still true, and the useful thing to know) and names the switch that
+  does carry them.
+- `app/(app)/privacidad/page.tsx` — "las fotos nunca se suben" became "solo se
+  suben si vos lo pedís", with what happens when she turns it off.
+- `README.md` — the "not enabled yet" line replaced with what actually ships.
+- `lib/seed/faq.json` — the answer now carries **both halves**: they do not
+  sync, *and* they do if she opts in, *and* the copies are deleted when she opts
+  out. Either half alone is a misleading version of the truth.
+- The consent bullets in `Onboarding` and `SignInCard` — "no se suben" became
+  "no se suben con esto", which is the accurate scope: consenting to health-data
+  sync is not consenting to photo backup, and they remain two separate opt-ins.
+
+**`lib/seed/faq.test.ts` asserted the false claim.** It required the answer to
+contain "nunca salen del teléfono". A test that pins copy to a promise the app
+has stopped keeping is worse than no test — it makes the honest fix fail CI. It
+now asserts the conditional shape instead, which is the thing that must stay
+true: the answer names the opt-in *and* the deletion.
+
+The lesson worth keeping: a data-contract change has a copy surface, and the
+task that changes the contract owns finding it. K4's own PR flagged this line;
+nothing enforced it. `faq.test.ts` is the closest thing to enforcement and it
+was pointing the wrong way.

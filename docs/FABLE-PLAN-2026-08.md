@@ -152,7 +152,7 @@ the offline single-cache-key design is better anyway.
 `{contentId, week}` with the zod whitelist + tests updated; source-scan
 tests amended, not deleted.
 
-### K6 Copy & README truth pass — **S** [SONNET]
+### K6 Copy & README truth pass — **S** [SONNET] ✅ DONE
 Delete/rewrite every remaining "no account" claim: the onboarding line
 (if K1 hasn't already removed it), `README.md` (still describes
 privacy-first "Nido" — wrong name, wrong story, wrong feature list),
@@ -162,6 +162,8 @@ hecha para Paraguay*.
 **Done when:** `grep -ri "no te pedimos cuenta"` returns nothing; README
 describes the real app (accounts, familia, sync, offline); privacy claims
 are accurate per ARCHITECTURE.md §4 as amended.
+**Status:** done — `claude/k6-copy-truth-pass`. See DECISIONS.md "K6 — copy
+& README truth pass".
 
 ### K7 "Tu familia" surfaces — **S** [SONNET]
 Wire the built feature in: a "Tu familia" card on the home screen

@@ -1,9 +1,10 @@
-# Nido 🪺
+# Mi Bebé 🪺
 
-Una PWA de embarazo, gratuita e instalable, hecha para Paraguay. Privada por
-diseño: los datos de salud quedan en el teléfono.
+Una PWA de embarazo, gratuita e instalable, hecha para Paraguay. Con cuenta,
+seguí tu embarazo en familia — invitá a tu pareja o a tu familia y compartí
+lo que vos elijas; sin cuenta, la app funciona 100% en tu teléfono.
 
-Nido no es una app global traducida: el contenido, la logística (carné
+Mi Bebé no es una app global traducida: el contenido, la logística (carné
 perinatal, IPS vs. sanatorio privado, trámites del Registro Civil, vacunas PAI,
 derechos laborales) y el directorio están pensados para cómo funciona el
 embarazo acá. Funciona offline, con poca data, y se instala desde un link.
@@ -17,6 +18,12 @@ perder datos):
 - **Estoy planeando / buscando** — calendario menstrual, días fértiles
   estimados (es una estimación, **no** un método anticonceptivo) y checklist
   preconcepción.
+
+Con cuenta (Google, opcional), tus datos se respaldan y se sincronizan entre
+dispositivos, y podés invitar a tu pareja o familia a seguir el embarazo por
+un link de WhatsApp — cada rol ve solo lo que vos decidís compartir. Sin
+cuenta ("seguir sin cuenta"), la app funciona completa y todo queda
+únicamente en el teléfono.
 
 ---
 
@@ -156,7 +163,8 @@ se cargaron antes con conexión.
 
 ## Qué se guarda en el dispositivo
 
-Todo lo personal vive solo en IndexedDB (Dexie) y **nunca se transmite**:
+Todo lo personal vive primero en IndexedDB (Dexie) — es la fuente de verdad y
+la app funciona 100% offline con o sin cuenta:
 
 - Perfil (departamento, ciudad, **modo de uso**: embarazada o planeando) y datos
   del embarazo (última regla, fecha probable de parto). La fecha es editable
@@ -164,7 +172,7 @@ Todo lo personal vive solo en IndexedDB (Dexie) y **nunca se transmite**:
 - **Fecha del próximo control prenatal** (recordatorio in-app, sin push).
 - **Registros de síntomas y ánimo** (diario), con nota opcional cifrada si hay
   PIN.
-- **Fotos de la panza** (Blob redimensionado a ~1280px, nunca subido).
+- **Fotos de la panza** (Blob redimensionado a ~1280px).
 - **Copia del carné perinatal** (fotos de las páginas) y **datos clave**
   (grupo sanguíneo, alergias, notas).
 - **Contactos de emergencia** (sanatorio y persona de confianza).
@@ -173,25 +181,37 @@ Todo lo personal vive solo en IndexedDB (Dexie) y **nunca se transmite**:
   ciclo (`cycles` + `cycleSettings`).
 
 El **Resumen para mi control prenatal** (`herramientas/resumen`) solo organiza
-estos datos locales en una hoja imprimible; no interpreta nada ni los transmite,
-y se comparte únicamente cuando la persona lo imprime o lo muestra.
+estos datos locales en una hoja imprimible; no interpreta nada, y se comparte
+únicamente cuando la persona lo imprime o lo muestra.
 
 "Borrar todos mis datos" (en Ajustes) elimina toda la base local y el PIN.
 
-## Privacidad (un pilar del producto)
+## Privacidad y cuentas
 
-- Sin cuenta, sin correo, sin teléfono.
-- Los datos de salud **nunca salen del dispositivo** (IndexedDB): incluye los
-  registros de síntomas y ánimo, las fotos de la panza, el calendario menstrual
-  y la fecha del próximo control.
-- Lo único que viaja al servidor es el **trimestre** (1|2|3) derivado y el
-  **departamento** guardado, para mostrar recursos cercanos. La API rechaza con
-  `400` cualquier otro parámetro.
-- Sin cookies de seguimiento, sin SDK de analítica.
+**Sin cuenta** ("seguir sin cuenta"), la app es 100% local: nada de lo de
+arriba sale del teléfono. Lo único que viaja al servidor en ese modo es el
+**trimestre** (1|2|3) derivado y el **departamento** guardado, para mostrar
+recursos cercanos — la API rechaza con `400` cualquier otro parámetro. Sin
+cookies de seguimiento, sin SDK de analítica.
+
+**Con cuenta** (Google, opcional), el dispositivo sigue siendo la fuente de
+verdad, pero tus datos de salud se sincronizan al servidor como respaldo y
+para compartirlos entre tus propios dispositivos: viajan como un sobre
+opaco que el servidor guarda y devuelve pero nunca lee ni indexa
+(`docs/ARCHITECTURE.md` §4). Family sharing es opt-in por campo: vos elegís
+qué ve tu pareja o familia (por ejemplo peso o pataditas); las notas del
+diario nunca se comparten. Las fotos se quedan en el teléfono salvo que la
+usuaria active «Copia de tus fotos» — un opt-in aparte, con almacenamiento
+de objetos y URLs firmadas de vida corta (`docs/ARCHITECTURE.md` §4.4).
+
+En ambos modos:
+
 - PIN opcional que cifra las notas del diario con WebCrypto (PBKDF2 + AES-GCM).
   Es cifrado del navegador, no de grado bancario: depende también de la
   seguridad del teléfono.
-- "Borrar todos mis datos" (en Ajustes) elimina toda la base local y el PIN.
+- "Borrar todos mis datos" (en Ajustes) elimina toda la base local y el PIN;
+  con cuenta, eliminarla borra también las filas del servidor
+  (`docs/ARCHITECTURE.md` §8).
 
 ## Despliegue (Hostinger — Node.js Web App)
 

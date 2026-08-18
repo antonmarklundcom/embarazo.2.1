@@ -649,7 +649,8 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           Con cuenta, tu embarazo se guarda en nuestro servidor y lo recuperás
           si cambiás de teléfono. Sin cuenta, todo queda solo en este aparato.
           En los dos casos podés borrar todo cuando quieras desde Ajustes, y tus
-          notas y tus fotos nunca se comparten con tu familia.
+          notas nunca se comparten con tu familia, y tus fotos tampoco salvo
+          que vos lo enciendas.
         </p>
       </div>
 
@@ -839,8 +840,9 @@ function AccountStep({
           </label>
           <ul className="mt-3 space-y-1.5 text-xs leading-relaxed text-ink/80">
             <li>
-              • Tus fotos de la panza y del carné <strong>no</strong> se suben:
-              quedan siempre en tu teléfono.
+              • Tus fotos de la panza y del carné <strong>no</strong> se suben
+              con esto: quedan en tu teléfono salvo que después actives «Copia
+              de tus fotos» en Ajustes.
             </li>
             <li>
               • Podés borrar tu cuenta y todos tus datos del servidor cuando

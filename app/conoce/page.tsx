@@ -11,7 +11,7 @@ import { InstallCard } from "@/components/InstallCard";
 export const metadata: Metadata = {
   title: "Mi Bebé — tu embarazo semana a semana en Paraguay",
   description:
-    "La app gratuita del embarazo hecha para Paraguay: semana a semana, tus derechos, herramientas y recursos cercanos. Privada: tus datos quedan en tu teléfono.",
+    "La app gratuita del embarazo hecha para Paraguay: semana a semana, tus derechos, herramientas, familia y recursos cercanos. Con cuenta o sin ella.",
   alternates: { canonical: "/conoce" },
 };
 
@@ -20,6 +20,11 @@ const FEATURES = [
     title: "Semana a semana",
     body: "El desarrollo de tu bebé, síntomas comunes y consejos, en es-PY, desde la semana 1 hasta el parto.",
     tone: "bg-pastel-arena",
+  },
+  {
+    title: "Tu embarazo, en familia",
+    body: "Invitá a tu pareja o familia por WhatsApp: cada uno ve tu semana y lo que vos elijas compartir.",
+    tone: "bg-pastel-lavanda",
   },
   {
     title: "Tus derechos en Paraguay",
@@ -77,11 +82,13 @@ export default function ConocePage() {
 
         <section className="mt-8 rounded-card border border-line bg-white p-4">
           <p className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">
-            Privada por diseño
+            Vos elegís qué compartir
           </p>
           <p className="mt-1.5 text-[15px] font-semibold leading-relaxed text-ink">
-            No pedimos cuenta, correo ni número de teléfono. Tus datos de
-            salud se guardan solo en tu teléfono — nunca en un servidor.
+            Con cuenta, tus datos se respaldan y podés invitar a tu familia a
+            seguir tu embarazo — vos decidís qué ve cada uno. Preferís no
+            crear cuenta: la app funciona igual, completa, y todo queda solo
+            en tu teléfono.
           </p>
         </section>
 
@@ -129,7 +136,7 @@ export default function ConocePage() {
             Empezar ahora, es gratis
           </Link>
           <p className="mt-4 text-xs font-semibold text-muted">
-            Sin cuenta. Sin publicidad invasiva. Hecha en Paraguay.
+            Con cuenta o sin ella. Sin publicidad invasiva. Hecha en Paraguay.
           </p>
         </div>
       </div>

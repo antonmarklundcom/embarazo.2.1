@@ -1,0 +1,17 @@
+[
+  {
+    "id": "sleep",
+    "line": "Anotaste {symptom} en {withCount} de los {withDays} días que dormiste mal, y en {withoutCount} de los otros {withoutDays}.",
+    "hint": "Puede ser casualidad. Si te preocupa, contale a tu médico/a en el próximo control."
+  },
+  {
+    "id": "mood",
+    "line": "Anotaste {symptom} en {withCount} de los {withDays} días que te sentiste mal de ánimo, y en {withoutCount} de los otros {withoutDays}.",
+    "hint": "El cuerpo y el ánimo van juntos muchas veces. Si te preocupa, hablalo en tu próximo control."
+  },
+  {
+    "id": "frequent",
+    "line": "{symptom} es lo que más anotaste este último tiempo: {withCount} de {withDays} días.",
+    "hint": "Llevá este dato a tu próximo control; le sirve a tu médico/a más que a nadie."
+  }
+]

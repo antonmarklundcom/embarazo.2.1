@@ -190,7 +190,10 @@ could already read.
 ### K9 Engagement pull-forwards (F3 · F5 · F6) — **M** [OPUS spec → SONNET build]
 - **F3 symptom insight**: on-device pattern lines over existing journal
   data ("tus dolores de cabeza aparecen los días que dormís mal") —
-  pure computation, reviewed phrasing, never a diagnosis. [OPUS]
+  pure computation, reviewed phrasing, never a diagnosis. [OPUS] ✅ DONE
+  — `claude/k9-f3-symptom-insight`; see DECISIONS.md "K9 / F3". Templates in
+  `lib/seed/insights.json`, G1-validated, gated on the medical reviewer like
+  C5. F5 and F6 remain for the Sonnet lane.
 - **F5 onboarding depth**: ¿primer embarazo? · ¿IPS o privado? · ¿trabajás?
   → personalises derechos, checklists, article ordering. [SONNET, after K1]
 - **F6 daily streak**: memory + gentle streak on the existing mood

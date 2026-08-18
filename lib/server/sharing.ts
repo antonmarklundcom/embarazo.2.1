@@ -20,6 +20,13 @@ import {
   type MemberRole,
   type SharedTask,
 } from "@/lib/sharing/fields";
+import {
+  applyLevels,
+  canSeeSharingLevels,
+  emptyExtras,
+  type SharedExtras,
+  type SharingPreferences,
+} from "@/lib/sharing/levels";
 
 // BUILD-PLAN E1 — family sharing, server half.
 //
@@ -264,12 +271,25 @@ export async function revokeInviteCode(
 // The snapshot
 // ---------------------------------------------------------------------------
 
-/** Written by the owner's device only. */
+/**
+ * Written by the owner's device only.
+ *
+ * K3: the extras are run through `applyLevels` **here as well as** on the
+ * device. That is not belt-and-braces for its own sake — it means a client
+ * that sends a weight with `peso: false` (an old build, a bug, a hand-rolled
+ * request) stores a null rather than a value nobody agreed to share. The
+ * publish is a full overwrite of all seven K3 columns, so switching a level off
+ * clears the data in the same write that records the flag.
+ */
 export async function publishSnapshot(
   database: Database,
   pregnancyId: string,
   snapshot: CompanionSnapshot,
+  preferences: SharingPreferences,
+  extras: SharedExtras = emptyExtras(),
 ): Promise<void> {
+  const shared = applyLevels(preferences, extras);
+
   const values = {
     pregnancyId,
     week: snapshot.week,
@@ -277,6 +297,10 @@ export async function publishSnapshot(
     nextAppointmentAt: snapshot.nextAppointmentAt,
     babyName: snapshot.babyName,
     updatedAt: snapshot.updatedAt,
+    sharePeso: preferences.peso,
+    sharePataditas: preferences.pataditas,
+    shareFotos: preferences.fotos,
+    ...shared,
   };
 
   await database
@@ -289,6 +313,13 @@ export async function publishSnapshot(
         nextAppointmentAt: values.nextAppointmentAt,
         babyName: values.babyName,
         updatedAt: values.updatedAt,
+        sharePeso: values.sharePeso,
+        sharePataditas: values.sharePataditas,
+        shareFotos: values.shareFotos,
+        weightGrams: values.weightGrams,
+        weightAt: values.weightAt,
+        kickCount: values.kickCount,
+        kickAt: values.kickAt,
       },
     });
 }
@@ -303,7 +334,11 @@ export async function readSnapshotFor(
   database: Database,
   userId: string,
   pregnancyId: string,
-): Promise<{ role: MemberRole; snapshot: CompanionSnapshot | null } | null> {
+): Promise<{
+  role: MemberRole;
+  snapshot: CompanionSnapshot | null;
+  extras: SharedExtras | null;
+} | null> {
   const membership = await liveMembership(database, userId, pregnancyId);
   if (!membership) return null;
 
@@ -314,16 +349,36 @@ export async function readSnapshotFor(
     .limit(1);
 
   const row = rows[0];
+  if (!row) return { role: membership.role, snapshot: null, extras: null };
+
   return {
     role: membership.role,
-    snapshot: row
-      ? {
-          week: row.week,
-          dueDate: row.dueDate,
-          nextAppointmentAt: row.nextAppointmentAt,
-          babyName: row.babyName,
-          updatedAt: row.updatedAt,
-        }
+    snapshot: {
+      week: row.week,
+      dueDate: row.dueDate,
+      nextAppointmentAt: row.nextAppointmentAt,
+      babyName: row.babyName,
+      updatedAt: row.updatedAt,
+    },
+    // K3. Two independent gates, and the order matters for what each one
+    // means: the ROLE gate is the rule ("the pareja only, ever"), the FLAG gate
+    // is the owner's choice. Reading the stored flags rather than trusting the
+    // stored values is what makes switching a level off take effect even if the
+    // owner's device never publishes again.
+    extras: canSeeSharingLevels(membership.role)
+      ? applyLevels(
+          {
+            peso: row.sharePeso,
+            pataditas: row.sharePataditas,
+            fotos: row.shareFotos,
+          },
+          {
+            weightGrams: row.weightGrams,
+            weightAt: row.weightAt,
+            kickCount: row.kickCount,
+            kickAt: row.kickAt,
+          },
+        )
       : null,
   };
 }

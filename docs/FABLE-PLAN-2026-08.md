@@ -104,7 +104,7 @@ experience". Two new tables (`companionTasks`, `companionCheers`), both
 id-only and both in A5's `TABLE_DISPOSITION`; the companion view is fetched
 and never cached, which is what keeps revocation instant.
 
-### K3 Sharing levels — **M** [OPUS]
+### K3 Sharing levels — **M** [OPUS] ✅ DONE
 Owner opt-in toggles in `/familia`: share **peso**, **pataditas**,
 **fotos de la panza** with the *partner role only*. Each toggle publishes
 that data into the snapshot mechanism (shape-whitelisted, per-field);
@@ -113,6 +113,9 @@ default is all off; journal notes stay unshareable, period.
 removes the data from the partner view on next sync; a field not in the
 whitelist shape cannot leak by construction; tests assert the
 partner-only restriction (familia never sees these).
+**Status:** done — `claude/k3-sharing-levels`. See DECISIONS.md "K3 — sharing
+levels". `peso` and `pataditas` carry data today; `fotos` records and enforces
+the preference, and K4 is what will have anything to publish under it.
 
 ### K4 Photo backup & restore — **L** [OPUS]
 Amends ARCHITECTURE.md §4.4 ("photos never leave the device") into an

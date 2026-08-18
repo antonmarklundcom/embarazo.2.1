@@ -28,6 +28,12 @@ interface View {
     updatedAt: number;
   } | null;
   tasks?: { itemKey: string; doneAt: number | null; updatedAt: number }[];
+  extras?: {
+    weightGrams: number | null;
+    weightAt: number | null;
+    kickCount: number | null;
+    kickAt: number | null;
+  };
   cheers?: { cheerId: string; createdAt: number; seenAt: number | null }[];
 }
 
@@ -235,6 +241,191 @@ test("revoking access cuts the companion screen off on the next load", async ({
   await expect(page.getByRole("region", { name: "Mandale ánimo" })).toHaveCount(0);
   // Not a dead end: he lands on the ordinary app he onboarded into.
   await expect(page.getByText("Tip de hoy")).toBeVisible();
+
+  await context.close();
+});
+
+// ---------------------------------------------------------------------------
+// K3 — sharing levels
+// ---------------------------------------------------------------------------
+//
+// The server decides what a companion is given (`readSnapshotFor` gates on the
+// role AND the stored flag; `lib/sharing/routeContract.test.ts` asserts that,
+// and `lib/sharing/levels.test.ts` asserts the pure rule). What these drive is
+// the other half: that the pareja's screen renders what it was handed, that it
+// renders NOTHING when handed nothing, and that the owner's toggle publishes
+// the levels she chose.
+
+test("the pareja sees the values she opted into, and nothing about the ones she did not", async ({
+  browser,
+}) => {
+  const server = fakeSharing([
+    {
+      pregnancyId: "preg-1",
+      role: "partner",
+      snapshot: snapshot(24),
+      tasks: [],
+      // Only peso is on: the kick fields come back null, exactly as
+      // `applyLevels` produces them on the server.
+      extras: {
+        weightGrams: 68_400,
+        weightAt: NOW - 86400000,
+        kickCount: null,
+        kickAt: null,
+      },
+    },
+  ]);
+  const context = await browser.newContext();
+  await serve(context, server);
+  const page = await context.newPage();
+
+  await completeOnboarding(page, { role: "Papá", landsOnHome: false });
+  await page.goto("/");
+
+  const card = page.getByRole("region", { name: "Lo que ella comparte con vos" });
+  await expect(card).toBeVisible();
+  await expect(card).toContainText("68,4 kg");
+  // Nothing about pataditas — not a value, and not a "no comparte" line either.
+  await expect(card).not.toContainText("pataditas");
+  await expect(card).not.toContainText("pataditas", { ignoreCase: true });
+
+  await context.close();
+});
+
+test("with every level off there is no card at all, not an empty one", async ({
+  browser,
+}) => {
+  const server = fakeSharing([
+    {
+      pregnancyId: "preg-1",
+      role: "partner",
+      snapshot: snapshot(24),
+      tasks: [],
+      extras: { weightGrams: null, weightAt: null, kickCount: null, kickAt: null },
+    },
+  ]);
+  const context = await browser.newContext();
+  await serve(context, server);
+  const page = await context.newPage();
+
+  await completeOnboarding(page, { role: "Papá", landsOnHome: false });
+  await page.goto("/");
+
+  await expect(page.getByRole("heading", { name: "Semana 24" })).toBeVisible();
+  // Telling a partner what he is NOT being shown turns a private setting into
+  // a conversation she did not ask to have.
+  await expect(
+    page.getByRole("region", { name: "Lo que ella comparte con vos" }),
+  ).toHaveCount(0);
+
+  await context.close();
+});
+
+test("familia is never handed the extras, whatever the owner turned on", async ({
+  browser,
+}) => {
+  // The server sends no `extras` key to a family member at all — this asserts
+  // the client half: nothing on their screen goes looking for one.
+  const server = fakeSharing([
+    { pregnancyId: "preg-1", role: "family", snapshot: snapshot(24) },
+  ]);
+  const context = await browser.newContext();
+  await serve(context, server);
+  const page = await context.newPage();
+
+  await completeOnboarding(page, { role: "Familiar o amiga", landsOnHome: false });
+  await page.goto("/");
+
+  await expect(page.getByRole("heading", { name: "Semana 24" })).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Lo que ella comparte con vos" }),
+  ).toHaveCount(0);
+  await expect(page.getByText("kg")).toHaveCount(0);
+
+  await context.close();
+});
+
+test("the owner's toggles start off and publish what she chose", async ({
+  browser,
+}) => {
+  const server = fakeSharing([
+    { pregnancyId: "preg-1", role: "owner", snapshot: snapshot(24), tasks: [] },
+  ]);
+  const context = await browser.newContext();
+  await serve(context, server);
+  const page = await context.newPage();
+
+  await completeOnboarding(page);
+  await page.goto("/familia");
+
+  const peso = page.getByRole("switch", { name: /Tu peso/ });
+  const pataditas = page.getByRole("switch", { name: /Las pataditas/ });
+  const fotos = page.getByRole("switch", { name: /fotos de la panza/ });
+
+  // Sharing her weight has to be something she did, not something she failed
+  // to prevent.
+  await expect(peso).toHaveAttribute("aria-checked", "false");
+  await expect(pataditas).toHaveAttribute("aria-checked", "false");
+  await expect(fotos).toHaveAttribute("aria-checked", "false");
+
+  await peso.click();
+  await expect(peso).toHaveAttribute("aria-checked", "true");
+  await expect(pataditas).toHaveAttribute("aria-checked", "false");
+
+  const published = () =>
+    server.posts.filter((p) => p.action === "publish").slice(-1)[0];
+  await expect.poll(() => published()?.sharing).toEqual({
+    peso: true,
+    pataditas: false,
+    fotos: false,
+  });
+
+  // Turning it back off publishes again, so the value is gone from the
+  // partner's view on the next read rather than at some later sync.
+  await peso.click();
+  await expect.poll(() => published()?.sharing).toEqual({
+    peso: false,
+    pataditas: false,
+    fotos: false,
+  });
+  await expect.poll(() => published()?.extras).toEqual({
+    weightGrams: null,
+    weightAt: null,
+    kickCount: null,
+    kickAt: null,
+  });
+
+  await context.close();
+});
+
+test("a publish before K3 was ever touched shares nothing", async ({ browser }) => {
+  const server = fakeSharing([
+    { pregnancyId: "preg-1", role: "owner", snapshot: snapshot(24) },
+  ]);
+  const context = await browser.newContext();
+  await serve(context, server);
+  const page = await context.newPage();
+
+  // She has weighed herself; she has never opened the sharing section.
+  await completeOnboarding(page);
+  await page.goto("/herramientas/peso");
+  await page.locator("#kg").fill("68,4");
+  await page.getByRole("button", { name: "Guardar", exact: true }).click();
+
+  await page.goto("/familia");
+  await expect
+    .poll(() => server.posts.filter((p) => p.action === "publish").length)
+    .toBeGreaterThan(0);
+
+  for (const post of server.posts.filter((p) => p.action === "publish")) {
+    expect(post.sharing).toEqual({ peso: false, pataditas: false, fotos: false });
+    expect(post.extras).toEqual({
+      weightGrams: null,
+      weightAt: null,
+      kickCount: null,
+      kickAt: null,
+    });
+  }
 
   await context.close();
 });

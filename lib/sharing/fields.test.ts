@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { FORBIDDEN_SHARED_FIELDS } from "./levels";
 import {
   COMPANION_FIELDS,
   FORBIDDEN_COMPANION_FIELDS,
@@ -121,24 +122,26 @@ describe("what a companion can see", () => {
 
   it("has nowhere in the database to put a forbidden field either", () => {
     // The schema is the real boundary: a filter can be forgotten, a missing
-    // column cannot be. This reads the table definition rather than trusting
-    // that the write path is careful.
+    // column cannot. This reads the table definition rather than trusting that
+    // the write path is careful.
+    //
+    // K3 amended this deliberately: `weight`/`kg` are on E1's forbidden list
+    // because nothing could ever share them, and K3 makes them shareable under
+    // an explicit, per-field, partner-only opt-in. So this scan runs over the
+    // list *minus* those two (`FORBIDDEN_SHARED_FIELDS`), and the stronger
+    // assertion — that the table holds EXACTLY the columns the whitelists
+    // claim and nothing else — lives in `levels.test.ts`.
     const schema = readFileSync(
       join(process.cwd(), "lib", "server", "schema.ts"),
       "utf8",
     );
-    // Bounded at the next table on purpose: K2 added `companionTasks` and
-    // `companionCheers` immediately below, and a slice that ran to "// Sync
-    // (A3)" would quietly start asserting about them too — which reads like
-    // coverage but is really the test losing its aim. Those two have their own
-    // column assertions in lib/server/schema.test.ts.
     const table = schema.slice(
       schema.indexOf("companionSnapshots = mysqlTable"),
       schema.indexOf("export const companionTasks"),
     );
     expect(table.length).toBeGreaterThan(50);
 
-    for (const forbidden of FORBIDDEN_COMPANION_FIELDS) {
+    for (const forbidden of FORBIDDEN_SHARED_FIELDS) {
       expect(
         table.includes(`"${forbidden}"`),
         `companionSnapshots must have no "${forbidden}" column`,

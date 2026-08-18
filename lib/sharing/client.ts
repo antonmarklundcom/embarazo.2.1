@@ -9,6 +9,14 @@ import {
   type SharedTask,
 } from "./fields";
 import type { CheerId } from "./cheers";
+import {
+  SHARING_DEFAULTS,
+  applyLevels,
+  emptyExtras,
+  parsePreferences,
+  type SharedExtras,
+  type SharingPreferences,
+} from "./levels";
 
 // BUILD-PLAN E1 — the owner's device is what publishes the companion view.
 //
@@ -38,6 +46,12 @@ export interface SharedView {
   tasks?: SharedTask[];
   /** K2. The owner's own inbox of ánimos; never present on a companion view. */
   cheers?: ReceivedCheer[];
+  /**
+   * K3. Present only on a `partner` view, and each field is null unless the
+   * owner turned that level on. The server decides both — see
+   * `readSnapshotFor`.
+   */
+  extras?: SharedExtras;
 }
 
 /**
@@ -60,16 +74,90 @@ export async function publishCompanionSnapshot(): Promise<boolean> {
       now: Date.now(),
     });
 
+    // K3. The device applies the levels too, so a value whose level is off
+    // never leaves the phone in the first place. The server applies them again
+    // on the way in — the two are the same pure function, and neither trusts
+    // the other.
+    const preferences = parsePreferences(profile?.sharing);
+    const extras = applyLevels(preferences, await readShareableExtras());
+
     const res = await fetch(URL_PATH, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "publish", ...withoutUpdatedAt(snapshot) }),
+      body: JSON.stringify({
+        action: "publish",
+        ...withoutUpdatedAt(snapshot),
+        sharing: preferences,
+        extras,
+      }),
     });
     return res.ok;
   } catch {
     // No account, offline, or sharing not configured. All ordinary.
     return false;
   }
+}
+
+/**
+ * The values the levels can unlock, read from the device.
+ *
+ * Reads exactly the two stores K3 shares and nothing else, for the same reason
+ * `buildSnapshot` takes plain values rather than a profile: there is no wider
+ * object in scope for a call site to accidentally spread.
+ */
+async function readShareableExtras(): Promise<SharedExtras> {
+  const extras = emptyExtras();
+
+  const weights = notDeleted(await db().weightEntries.toArray()).sort(
+    (a, b) => b.date - a.date,
+  );
+  const latestWeight = weights[0];
+  if (latestWeight) {
+    extras.weightGrams = Math.round(latestWeight.kg * 1000);
+    extras.weightAt = latestWeight.date;
+  }
+
+  // Only a finished session: a counter that is still running is not a number
+  // she has decided to stand behind.
+  const kicks = notDeleted(await db().kickSessions.toArray())
+    .filter((session) => session.completedAt)
+    .sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0));
+  const latestKicks = kicks[0];
+  if (latestKicks) {
+    extras.kickCount = latestKicks.count;
+    extras.kickAt = latestKicks.completedAt ?? latestKicks.startedAt;
+  }
+
+  return extras;
+}
+
+/** Read the owner's stored levels off her profile row. */
+export async function readSharingPreferences(): Promise<SharingPreferences> {
+  try {
+    const profile = notDeleted(await db().profile.toArray())[0];
+    return parsePreferences(profile?.sharing);
+  } catch {
+    return { ...SHARING_DEFAULTS };
+  }
+}
+
+/**
+ * Store the levels and publish immediately.
+ *
+ * Publishing in the same call is what makes "turning one off removes it from
+ * the partner view" true now rather than at the next app open. If the publish
+ * fails (offline), the *flag* is already stored on the server from the last
+ * successful publish or, failing that, the read path still obeys whatever flag
+ * the server holds — and the next publish reconciles both.
+ */
+export async function saveSharingPreferences(
+  preferences: SharingPreferences,
+): Promise<boolean> {
+  const rows = await db().profile.toArray();
+  const first = rows[0];
+  if (!first?.id) return false;
+  await db().profile.update(first.id, { sharing: { ...preferences } });
+  return publishCompanionSnapshot();
 }
 
 /** `updatedAt` is stamped by the server; sending it would be a 400. */

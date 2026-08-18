@@ -28,6 +28,7 @@ import {
   SHARED_TASK_KEYS,
 } from "@/lib/sharing/fields";
 import { CHEER_IDS } from "@/lib/sharing/cheers";
+import { SHARING_DEFAULTS, emptyExtras } from "@/lib/sharing/levels";
 
 // BUILD-PLAN E1 — family sharing.
 //
@@ -123,6 +124,29 @@ const ActionSchema = z.discriminatedUnion("action", [
       dueDate: z.number().int().positive().nullable(),
       nextAppointmentAt: z.number().int().positive().nullable(),
       babyName: z.string().max(64).nullable(),
+      // K3 — the owner's per-field sharing levels and the values they unlock.
+      // Absent means off / nothing, so a client that predates K3 publishes
+      // exactly what it always did and shares nothing new.
+      sharing: z
+        .object({
+          peso: z.boolean(),
+          pataditas: z.boolean(),
+          fotos: z.boolean(),
+        })
+        .strict()
+        .optional(),
+      // Bounds, not just types: a weight is a person's weight and a kick count
+      // is a count. 20–300 kg in grams, and a session nobody could have sat
+      // through. Out-of-range is a 400 rather than a stored absurdity.
+      extras: z
+        .object({
+          weightGrams: z.number().int().min(20_000).max(300_000).nullable(),
+          weightAt: z.number().int().positive().nullable(),
+          kickCount: z.number().int().min(0).max(1000).nullable(),
+          kickAt: z.number().int().positive().nullable(),
+        })
+        .strict()
+        .optional(),
     })
     .strict(),
 ]);
@@ -169,6 +193,10 @@ export async function GET() {
         pregnancyId: membership.pregnancyId,
         role: membership.role,
         snapshot: result?.snapshot ?? null,
+        // K3. Null for everyone but the pareja, and null per field for every
+        // level the owner has not turned on. `readSnapshotFor` decides both —
+        // this route never sees an unfiltered row.
+        extras: result?.extras ?? undefined,
         // The owner also gets the guest list, so "quién ve mi embarazo" is
         // answerable. A companion does not: who else is in a family is not
         // theirs to know.
@@ -316,13 +344,22 @@ export async function POST(req: NextRequest) {
   }
 
   if (data.action === "publish") {
-    await publishSnapshot(ctx.database, pregnancyId, {
-      week: data.week,
-      dueDate: data.dueDate,
-      nextAppointmentAt: data.nextAppointmentAt,
-      babyName: data.babyName?.trim() ? data.babyName.trim() : null,
-      updatedAt: now,
-    });
+    await publishSnapshot(
+      ctx.database,
+      pregnancyId,
+      {
+        week: data.week,
+        dueDate: data.dueDate,
+        nextAppointmentAt: data.nextAppointmentAt,
+        babyName: data.babyName?.trim() ? data.babyName.trim() : null,
+        updatedAt: now,
+      },
+      // K3. Everything off unless this publish says otherwise — `applyLevels`
+      // inside `publishSnapshot` then drops any value whose level is off, so a
+      // client sending a weight it was not entitled to share stores a null.
+      data.sharing ?? SHARING_DEFAULTS,
+      data.extras ?? emptyExtras(),
+    );
     return NextResponse.json({ ok: true }, { headers: HEADERS });
   }
 

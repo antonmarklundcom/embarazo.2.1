@@ -3,11 +3,13 @@ import "server-only";
 import { and, eq, inArray, or } from "drizzle-orm";
 
 import type { Database } from "./db";
+import { deleteObject } from "./photoStorage";
 import {
   accounts,
   aiGenerations,
   companionSnapshots,
   companionTasks,
+  photoBlobs,
   companionCheers,
   invites,
   pregnancies,
@@ -72,6 +74,13 @@ export const TABLE_DISPOSITION = {
   // should not leave their cheers standing on somebody else's home screen.
   companionCheers: "deleted",
 
+  // K4. Photos are the one thing this app stores that is not text, and
+  // "account deletion leaves zero blobs" is the task's own acceptance
+  // criterion. The row goes AND the object goes — deleting the index while
+  // leaving the bytes in a bucket would be the worst of both: unreachable
+  // through the app, still sitting on somebody's disk.
+  photoBlobs: "deleted (rows AND the objects they point at)",
+
   // Devices and paid-for work.
   pushSubscriptions: "deleted",
   // B5. Keyed by endpoint, not by user, so these are deleted via the user's
@@ -130,6 +139,15 @@ export interface AccountDeleteExecutor {
    * those this user sent to somebody else's. Both must go.
    */
   deleteCompanionCheers(userId: string, pregnancyIds: string[]): Promise<number>;
+  /**
+   * K4: delete every stored photo — the object first, then the row.
+   *
+   * That order is deliberate, and it is the reasoning A5 used for running the
+   * device wipe before the server call: if this is interrupted, an orphaned row
+   * pointing at nothing is recoverable (the next attempt deletes it), while an
+   * orphaned object nobody holds a pointer to is not.
+   */
+  deletePhotoBlobs(userId: string): Promise<number>;
   deletePregnancies(pregnancyIds: string[]): Promise<number>;
   deleteUser(userId: string): Promise<number>;
 }
@@ -162,6 +180,7 @@ export async function deleteAccountData(
     companionSnapshots: await executor.deleteCompanionSnapshots(pregnancyIds),
     companionTasks: await executor.deleteCompanionTasks(pregnancyIds),
     companionCheers: await executor.deleteCompanionCheers(userId, pregnancyIds),
+    photoBlobs: await executor.deletePhotoBlobs(userId),
     pregnancies: await executor.deletePregnancies(pregnancyIds),
     accounts: await executor.deleteAccounts(userId),
     sessions: await executor.deleteSessions(userId),
@@ -290,6 +309,23 @@ export function drizzleAccountExecutor(
         await database
           .delete(companionSnapshots)
           .where(inArray(companionSnapshots.pregnancyId, pregnancyIds)),
+      );
+    },
+
+    async deletePhotoBlobs(userId) {
+      const rows = await database
+        .select({ objectKey: photoBlobs.objectKey })
+        .from(photoBlobs)
+        .where(eq(photoBlobs.userId, userId));
+
+      // Objects first. An orphaned row is recoverable; an orphaned object with
+      // nothing pointing at it is not.
+      for (const row of rows) {
+        await deleteObject(userId, row.objectKey);
+      }
+
+      return affected(
+        await database.delete(photoBlobs).where(eq(photoBlobs.userId, userId)),
       );
     },
 

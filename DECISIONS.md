@@ -2145,3 +2145,113 @@ notification.
   `/ajustes` say "Guardar"; naming this one is an accessibility fix as much as a
   test hook.
 - **Home First Load JS: 214 kB → 215 kB.**
+
+## K4 — opt-in photo backup (August 2026)
+
+ARCHITECTURE.md §4.4 said photos never leave the device. K4 amends it to an
+explicit, per-account opt-in, and the amendment is written into §4.4 itself
+rather than left as a contradiction between a doc and a feature.
+
+### Object storage, and no SDK
+
+The bytes go to **S3-compatible object storage**, never to MySQL — blobs in a
+Hostinger MySQL are the wrong shape at any scale — and never through our own
+Node process. The browser PUTs to a **presigned URL for one object**, valid for
+fifteen minutes.
+
+`@aws-sdk/client-s3` was rejected for the reason B5 rejected `web-push`: the SDK
+exists to do a great deal we do not need, it is megabytes on a shared host, and
+what K4 needs is two signed URLs and a DELETE. SigV4 is a documented algorithm,
+so `lib/photos/sigv4.ts` implements it and `sigv4.test.ts` checks the
+**canonical request** and the **string to sign** — not only the final signature,
+because a wrong signature reports as `SignatureDoesNotMatch` and tells you
+nothing about which of six strings was wrong. The signing key derivation is
+re-derived independently in the test rather than pasted from the output.
+
+Path-style addressing (`/bucket/key`) and no AWS-specific behaviour, so the
+provider — Hostinger, R2, B2, MinIO, S3 — stays an environment variable.
+`uriEncode` is hand-written because `encodeURIComponent` leaves `!'()*` alone
+and AWS does not, which fails on exactly the keys nobody tests with.
+
+### A signed URL is a capability, so everything in it is checked
+
+- **The key is built from the session's user id, never from the body.** A caller
+  can name a `recordId`; it cannot name a user. Asserted against the route
+  source, along with the absence of any `userId` or `objectKey` field in the
+  accepted vocabulary.
+- `objectKeyFor` validates every segment, and `photoStorage` re-checks
+  `keyBelongsTo` **again** before signing — the last place a mistake is still
+  cheap. `userPrefix` ends in a slash so `fotos/{user}x/…` cannot read as
+  belonging to `{user}`.
+- Content type and size are whitelisted **before** anything is signed, so an
+  upload URL cannot become somewhere to park arbitrary content.
+- Nothing lasts: 15 minutes to upload, 10 to download. A presigned URL that
+  never expires is a public URL with extra steps, and these point at somebody's
+  bump photos.
+
+### The photo's metadata stays opaque
+
+`photoBlobs` records that an object exists, its size and its type. The *week* a
+bump photo belongs to is health data, and it rides in an **opaque `payload`** —
+the same envelope `syncRecords` uses (§4.3). Making it a column would have been
+a third §4.3 exception, and unlike E1's and K2's it is not needed: the server
+never has to read it, only hand it back. What the server learns is "this account
+has N objects of these sizes, changed at these times", and the consent copy says
+exactly that.
+
+Photos deliberately do **not** ride the sync engine. `SYNCED_STORES` is
+unchanged and its "no photo store" test still passes unmodified, which is
+correct: the bytes belong in object storage, not in a JSON payload, so photos
+get their own pipeline and their own table. What they borrow from A3 is the
+*ideas* — a stable cross-device id, last-write-wins on `updatedAt`, and a
+tombstone so a second device learns a photo was deleted instead of re-uploading
+it forever. A tombstone keeps `objectKey` and drops `payload`: A3 already
+refuses to hold the contents of a record the user deleted.
+
+### Deletion, in both directions
+
+- **Opting out deletes the server copies immediately.** Not "stops uploading" —
+  the only opt-out worth having. The local flag is written first so a failed
+  delete leaves the feature *off*, which is the direction that fails safe, and
+  the local upload marks are cleared so re-enabling uploads again rather than
+  trusting a server copy that no longer exists.
+- **Account deletion removes every object as well as every row**, and A5's
+  coverage test caught `photoBlobs` the moment the table appeared — the fourth
+  time that test has earned itself. **Objects go before rows**: an orphaned row
+  is recoverable (the next attempt deletes it), an orphaned object nobody holds
+  a pointer to is not. The single-photo path is deliberately the other order,
+  because there the tombstone *keeps* the key and a retry finishes the job.
+- **Opting out is not deleting her photos.** They stay on the phone; only the
+  copies go. Asserted by test, because it is the thing a user would most fear
+  getting wrong.
+
+### `/admin` cannot reach a photo at all
+
+§9 says the panel sees metadata and never health content, and K4 is the first
+feature to store something that is not text. A count of photos would be fine; a
+URL to one would not, and the difference is one careless import. So the test
+scans `app/admin` for any mention of the photo pipeline and fails on all of it.
+
+### Smaller decisions
+
+- **"Resumable-enough for 3G" means per-photo, not per-byte**, and that is
+  stated in the code rather than implied. Real multipart resumability is right
+  for video and over-engineering for a 2 MB JPEG; what actually fails on
+  Paraguayan mobile data is a *batch* dying partway. So uploads run one at a
+  time, each is confirmed and marked locally on its own, and a run that dies
+  resumes at the next unmarked photo.
+- **Uploads are fire-and-forget from the photo diary.** A photo is saved on the
+  phone the moment it is added; the upload must never make "guardar" feel slow.
+- **The delete path tells the server before dropping the row**, because the
+  row's `uid` is the only name the backup knows the photo by and after the
+  delete there is nothing left to look it up from.
+- **A Dexie v7 hook stamps `uid` on every photo**, for the same reason A3's
+  hooks stamp sync metadata: a rule living in a helper is a rule a future call
+  site forgets, and a photo with no `uid` is a photo the backup can never name.
+- **The settings card renders nothing when the feature cannot work** — no
+  bucket, or no account. An opt-in for something that cannot happen is a broken
+  switch, not a choice.
+- **The consent copy names what is stored, who can reach it and how to undo
+  it**, in her words. §4.4 used to promise the opposite; this is what replaces
+  that promise, and vagueness here would be the dishonest kind of amendment.
+- Home First Load JS unchanged at 215 kB — none of this is on the home screen.

@@ -143,6 +143,42 @@ describe("K3 — the levels are applied by the server, not only by the device", 
   });
 });
 
+describe("K8 — the accompanying marker", () => {
+  it("is set only by a live non-owner member", () => {
+    const body = fnBody(SERVER, "setAccompanying");
+    expect(body).toContain("liveMembership");
+    // She is not accompanying herself.
+    expect(body).toContain('membership.role === "owner"');
+    // And a revoked membership cannot be written through.
+    expect(body).toContain("isNull(pregnancyMembers.revokedAt)");
+  });
+
+  it("is handled before ensurePregnancyForOwner, like the other companion actions", () => {
+    const accompany = ROUTE.indexOf('data.action === "accompany"');
+    const ensure = ROUTE.indexOf("await ensurePregnancyForOwner");
+    expect(accompany).toBeGreaterThan(-1);
+    expect(accompany).toBeLessThan(ensure);
+  });
+
+  it("adds no health field to the wire — it is a timestamp and a pregnancy id", () => {
+    const union = ROUTE.slice(
+      ROUTE.indexOf("const ActionSchema"),
+      ROUTE.indexOf("function unavailable"),
+    );
+    const accompany = union.slice(
+      union.indexOf('action: z.literal("accompany")'),
+    );
+    const action = accompany.slice(0, accompany.indexOf(".strict()"));
+    expect(action).toContain("appointmentAt: z.number().int().positive().nullable()");
+    expect(action).toContain("pregnancyId:");
+    // Nothing else. The appointment it points at is already shared with this
+    // exact member via companionSnapshots, so K8 stores no new health data.
+    // The slice starts after `action:`, so what remains is `pregnancyId` and
+    // `appointmentAt` — and nothing else, which is the assertion.
+    expect(action.match(/^\s+\w+:/gm)).toHaveLength(2);
+  });
+});
+
 describe("family is excluded by the server, not by the UI", () => {
   it("gates the task list on canSeeSharedTasks inside the read", () => {
     const body = fnBody(SERVER, "readTasksFor");

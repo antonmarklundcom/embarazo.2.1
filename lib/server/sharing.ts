@@ -73,6 +73,8 @@ export async function ensurePregnancyForOwner(
 export interface Membership {
   pregnancyId: string;
   role: MemberRole;
+  /** K8 — the control this member said they would come to, if any. */
+  accompanyingAt?: number | null;
 }
 
 /**
@@ -115,6 +117,9 @@ export async function membershipsOf(
     .select({
       pregnancyId: pregnancyMembers.pregnancyId,
       role: pregnancyMembers.role,
+      // K8. A companion does not get the guest list (E1), so this is how they
+      // learn their own answer — their row and nobody else's.
+      accompanyingAt: pregnancyMembers.accompanyingAt,
     })
     .from(pregnancyMembers)
     .where(
@@ -383,6 +388,36 @@ export async function readSnapshotFor(
   };
 }
 
+/**
+ * K8 — "yo la acompaño" for one specific control.
+ *
+ * The caller must hold a live NON-owner membership: this is a companion saying
+ * they will be there. `appointmentAt` is stored as given and compared later
+ * against the control itself (`isAccompanying`), so a control that moves
+ * invalidates the marker instead of silently reassigning it.
+ */
+export async function setAccompanying(
+  database: Database,
+  userId: string,
+  pregnancyId: string,
+  appointmentAt: number | null,
+): Promise<boolean> {
+  const membership = await liveMembership(database, userId, pregnancyId);
+  if (!membership || membership.role === "owner") return false;
+
+  await database
+    .update(pregnancyMembers)
+    .set({ accompanyingAt: appointmentAt })
+    .where(
+      and(
+        eq(pregnancyMembers.pregnancyId, pregnancyId),
+        eq(pregnancyMembers.userId, userId),
+        isNull(pregnancyMembers.revokedAt),
+      ),
+    );
+  return true;
+}
+
 /** Who currently has access, for the owner's "quién ve mi embarazo" screen. */
 export async function membersOf(database: Database, pregnancyId: string) {
   return database
@@ -390,6 +425,10 @@ export async function membersOf(database: Database, pregnancyId: string) {
       userId: pregnancyMembers.userId,
       role: pregnancyMembers.role,
       createdAt: pregnancyMembers.createdAt,
+      // K8. The owner sees WHO is coming by role — "te acompaña tu pareja" —
+      // and never a name: E1 never shared names between members and K8 does
+      // not start.
+      accompanyingAt: pregnancyMembers.accompanyingAt,
     })
     .from(pregnancyMembers)
     .where(

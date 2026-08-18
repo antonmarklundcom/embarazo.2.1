@@ -22,7 +22,21 @@ import {
 // the browser shows the prompt once ever, and an app that spends it on a
 // first-visit pop-up is an app whose reminders can never be turned on again.
 
-export function PushSettings({ groupTitle }: { groupTitle?: string }) {
+export function PushSettings({
+  groupTitle,
+  companionAppointmentAt = null,
+}: {
+  groupTitle?: string;
+  /**
+   * K8 — the control of the pregnancy this device accompanies, if any.
+   *
+   * It rides through here because the server stores a list of fire times and
+   * replaces it on every publish: enabling push or changing a category would
+   * otherwise silently drop the companion reminder. It is passed in rather than
+   * read from storage because a companion view is never cached (K2).
+   */
+  companionAppointmentAt?: number | null;
+}) {
   const [state, setState] = useState<PushState | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -37,7 +51,7 @@ export function PushSettings({ groupTitle }: { groupTitle?: string }) {
   async function turnOn() {
     setBusy(true);
     setMessage("");
-    const status = await enablePush(state!.categories);
+    const status = await enablePush(state!.categories, companionAppointmentAt);
     setState({ ...state!, status });
     setBusy(false);
 
@@ -62,7 +76,7 @@ export function PushSettings({ groupTitle }: { groupTitle?: string }) {
   async function onToggleCategory(category: PushCategory, on: boolean) {
     const next = toggleCategory(state!.categories, category, on);
     setState({ ...state!, categories: next });
-    await setCategories(next);
+    await setCategories(next, companionAppointmentAt);
   }
 
   // Push is not configured in this deployment. Say nothing rather than show a

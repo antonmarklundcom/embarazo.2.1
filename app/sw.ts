@@ -3,6 +3,10 @@ import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
 import { Serwist, NetworkFirst, NetworkOnly } from "serwist";
 import { MIN_WEEK, MAX_WEEK } from "@/lib/pregnancy";
 import { ARTICLES } from "@/lib/seed/articles";
+import {
+  companionReminderSentence,
+  ownReminderSentence,
+} from "@/lib/appointments";
 
 // Service worker (build spec §9). Compiled from app/sw.ts → public/sw.js.
 declare global {
@@ -97,11 +101,22 @@ serwist.addEventListeners();
 
 const NOTIFICATION_TAG = "mibebe-recordatorio";
 
-/** Read the next appointment straight from Dexie's object store. */
-async function readNextAppointment(): Promise<number | null> {
+interface LocalReminderState {
+  /** The mamá's own next control, if she has one. */
+  nextAppointment: number | null;
+  /** K8 — whether this device asked to be reminded of somebody else's. */
+  companionReminder: boolean;
+}
+
+/** Read what the notification needs straight from Dexie's object store. */
+async function readLocalReminderState(): Promise<LocalReminderState> {
   return new Promise((resolve) => {
     let settled = false;
-    const done = (value: number | null) => {
+    const NOTHING: LocalReminderState = {
+      nextAppointment: null,
+      companionReminder: false,
+    };
+    const done = (value: LocalReminderState) => {
       if (!settled) {
         settled = true;
         resolve(value);
@@ -112,10 +127,10 @@ async function readNextAppointment(): Promise<number | null> {
     try {
       request = indexedDB.open("mibebe");
     } catch {
-      return done(null);
+      return done(NOTHING);
     }
 
-    request.onerror = () => done(null);
+    request.onerror = () => done(NOTHING);
     request.onsuccess = () => {
       const database = request.result;
       try {
@@ -124,42 +139,77 @@ async function readNextAppointment(): Promise<number | null> {
         all.onsuccess = () => {
           const rows = (all.result ?? []) as {
             nextAppointment?: number;
+            companionReminder?: boolean;
             deletedAt?: number | null;
           }[];
           const live = rows.find((row) => !row.deletedAt);
-          done(typeof live?.nextAppointment === "number" ? live.nextAppointment : null);
+          done({
+            nextAppointment:
+              typeof live?.nextAppointment === "number"
+                ? live.nextAppointment
+                : null,
+            companionReminder: live?.companionReminder === true,
+          });
         };
-        all.onerror = () => done(null);
+        all.onerror = () => done(NOTHING);
       } catch {
-        done(null);
+        done(NOTHING);
       }
     };
   });
 }
 
-function formatTime(ms: number): string {
-  return new Date(ms).toLocaleTimeString("es-PY", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+/**
+ * K8 — the control of the pregnancy this device is *accompanying*.
+ *
+ * Fetched live at push time rather than read from a local copy, and that is
+ * the design: K2 keeps no cached companion view precisely so that revoking a
+ * companion cuts everything instantly. A revoked companion's phone therefore
+ * gets nothing back here and falls through to the generic line, which is the
+ * correct outcome. Offline lands in the same place — this is a poke that has
+ * to show *something*, not a screen.
+ */
+async function readCompanionAppointment(): Promise<number | null> {
+  try {
+    const res = await fetch("/api/v1/sharing", {
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const body = (await res.json()) as {
+      views?: {
+        role?: string;
+        snapshot?: { nextAppointmentAt?: number | null } | null;
+      }[];
+    };
+    const companion = (body.views ?? []).find((view) => view.role !== "owner");
+    const at = companion?.snapshot?.nextAppointmentAt;
+    return typeof at === "number" ? at : null;
+  } catch {
+    return null;
+  }
 }
 
 async function composeNotification(): Promise<{ title: string; body: string }> {
-  const appointment = await readNextAppointment();
+  const now = Date.now();
+  const local = await readLocalReminderState();
 
-  if (appointment !== null) {
-    const hoursAway = (appointment - Date.now()) / 3_600_000;
-    if (hoursAway > 0 && hoursAway < 48) {
-      return {
-        title: "Mañana tenés control prenatal",
-        body: `A las ${formatTime(appointment)}. Llevá tu carné perinatal.`,
-      };
-    }
+  // Her own control first: it is the common case, it needs no network, and a
+  // device that tracks both would otherwise describe somebody else's.
+  const own = ownReminderSentence(local.nextAppointment, now);
+  if (own) return own;
+
+  if (local.companionReminder) {
+    const companion = companionReminderSentence(
+      await readCompanionAppointment(),
+      now,
+    );
+    if (companion) return companion;
   }
 
-  // The appointment moved or was cleared between scheduling and firing. We
-  // still have to show something, so show something true and useless rather
-  // than something specific and wrong.
+  // The appointment moved or was cleared between scheduling and firing, or
+  // access was revoked. We still have to show something, so show something
+  // true and useless rather than something specific and wrong.
   return {
     title: "Mi Bebé",
     body: "Tocá para ver cómo va tu semana.",

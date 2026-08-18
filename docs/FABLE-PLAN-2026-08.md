@@ -166,7 +166,7 @@ card moment ("¿querés que siga tu embarazo? invitala").
 renders correctly for owner with 0, 1 and n members and is absent for
 signed-out local-only users (they see the invite-a-friend card instead).
 
-### K8 Shared appointment agenda — **M** [OPUS]
+### K8 Shared appointment agenda — **M** [OPUS] ✅ DONE
 `próximo control` becomes a first-class shared object: the partner sees
 it (already in the snapshot) **and can opt into their own push reminder**
 — "Acompañala al control el jueves a las 9:00". Builds on B5's
@@ -176,6 +176,10 @@ date-only) and a "¿quién la acompaña?" marker the mamá sees.
 **Done when:** partner toggles the reminder in their own settings; it
 fires the day before; the mamá's view shows who's coming; no new
 server-legible health data beyond the already-shared next-control field.
+**Status:** done — `claude/k8-appointment-agenda`. See DECISIONS.md "K8 — the
+shared appointment agenda". The only new column anywhere is
+`pregnancyMembers.accompanyingAt`, an RSVP pointing at a timestamp that member
+could already read.
 
 ### K9 Engagement pull-forwards (F3 · F5 · F6) — **M** [OPUS spec → SONNET build]
 - **F3 symptom insight**: on-device pattern lines over existing journal

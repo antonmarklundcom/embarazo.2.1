@@ -37,7 +37,15 @@ export interface SharedView {
   pregnancyId: string;
   role: MemberRole;
   snapshot: CompanionSnapshot | null;
-  members?: { userId: string; role: MemberRole; createdAt: string }[];
+  members?: {
+    userId: string;
+    role: MemberRole;
+    createdAt: string;
+    /** K8 — the control this member said they would come to, if any. */
+    accompanyingAt: number | null;
+  }[];
+  /** K8 — the caller's own "yo la acompaño" marker. Null on an owner view. */
+  accompanyingAt?: number | null;
   /**
    * K2. Absent for a `family` member, and absent is not the same as empty: the
    * server declines to say whether anything is assigned, rather than saying
@@ -288,4 +296,18 @@ export function sendCheer(
 /** Owner: acknowledge everything currently in the inbox. */
 export function markCheersSeen(): Promise<boolean> {
   return post({ action: "cheers-seen" });
+}
+
+/**
+ * K8 — companion: say you will be at this control, or take it back.
+ *
+ * The timestamp is the control being agreed to, not "the next one": if it
+ * moves, the stored marker stops matching and everybody involved is told
+ * nothing rather than something wrong.
+ */
+export function setAccompanying(
+  pregnancyId: string,
+  appointmentAt: number | null,
+): Promise<boolean> {
+  return post({ action: "accompany", pregnancyId, appointmentAt });
 }

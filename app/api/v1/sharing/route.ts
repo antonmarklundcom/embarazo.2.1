@@ -19,6 +19,7 @@ import {
   liveMembership,
   revokeMembership,
   sendCheer,
+  setAccompanying,
   setTaskDone,
   unassignTask,
 } from "@/lib/server/sharing";
@@ -114,6 +115,17 @@ const ActionSchema = z.discriminatedUnion("action", [
     })
     .strict(),
   z.object({ action: z.literal("cheers-seen") }).strict(),
+  // K8 — "yo la acompaño". Null clears it. The timestamp is the control the
+  // companion is agreeing to, and it is checked against the real one on the
+  // way out (`isAccompanying`) rather than trusted here: a companion cannot
+  // invent an appointment, only agree to one.
+  z
+    .object({
+      action: z.literal("accompany"),
+      pregnancyId: z.string().min(1).max(64),
+      appointmentAt: z.number().int().positive().nullable(),
+    })
+    .strict(),
   z
     .object({
       action: z.literal("publish"),
@@ -192,6 +204,10 @@ export async function GET() {
       return {
         pregnancyId: membership.pregnancyId,
         role: membership.role,
+        // K8. The caller's own "yo la acompaño" marker. On an owner view this
+        // is always null — she is not accompanying herself — and who else is
+        // coming reaches her through `members` below, by role only.
+        accompanyingAt: membership.accompanyingAt ?? null,
         snapshot: result?.snapshot ?? null,
         // K3. Null for everyone but the pareja, and null per field for every
         // level the owner has not turned on. `readSnapshotFor` decides both —
@@ -303,6 +319,22 @@ export async function POST(req: NextRequest) {
       data.done,
       now,
     );
+    return NextResponse.json({ ok: true }, { headers: HEADERS });
+  }
+
+  if (data.action === "accompany") {
+    const marked = await setAccompanying(
+      ctx.database,
+      ctx.userId,
+      data.pregnancyId,
+      data.appointmentAt,
+    );
+    if (!marked) {
+      return NextResponse.json(
+        { error: "no disponible" },
+        { status: 404, headers: HEADERS },
+      );
+    }
     return NextResponse.json({ ok: true }, { headers: HEADERS });
   }
 

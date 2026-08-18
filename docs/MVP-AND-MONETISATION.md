@@ -1,5 +1,10 @@
 # MVP cut line & monetisation
 
+> **Superseded in part (2026-08-18):** `docs/FABLE-PLAN-2026-08.md` replaces
+> §2's cut line — v1.0 now **includes** accounts, sync, family sharing and
+> push (account-first launch, founder decision). §3 monetisation and §4
+> acquisition remain in force unchanged.
+
 > **August 2026.** Answers two founder questions directly: *what is left before
 > I can publish an Android app my partner can actually use and I can put users
 > on*, and *how does this make money so I can fund content and paid

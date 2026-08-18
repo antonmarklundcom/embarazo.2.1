@@ -1,5 +1,14 @@
 # Build plan — engineering work
 
+> **August 2026 (later) — `docs/FABLE-PLAN-2026-08.md` supersedes the launch
+> strategy below and in the Opus review.** The founder approved an
+> **account-first, family-first** launch on 2026-08-18: accounts, sync,
+> family sharing and push are IN v1.0, the "No data collected" badge is
+> given up in favour of honest declarations, and a new **Phase K** (defined
+> in that file) carries the pivot work. Where this file or
+> `OPUS-REVIEW-2026-08.md` says accounts are off the launch path, that is
+> no longer true.
+
 > **August 2026 — read `docs/OPUS-REVIEW-2026-08.md` before planning from this
 > file.** An independent review found that this plan is sequenced for feature
 > parity with Preggers rather than for reaching real users, and recommends

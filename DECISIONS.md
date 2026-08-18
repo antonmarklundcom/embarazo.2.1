@@ -1728,3 +1728,25 @@ guarantee is only as good as the data that cannot exist.
   nothing against either travelling — no photos, no free text beyond a name the
   user typed on purpose — and a favourite-names list that does not survive a new
   phone is the one people would be angriest to lose.
+
+## 2026-08-18 — Fable review: account-first pivot approved (Phase K)
+
+The founder approved all 14 recommendations from the Fable 5 critique —
+see `docs/FABLE-PLAN-2026-08.md` for the full list and the Phase K tasks.
+The decision that reorders the plan: **the app launches account-first and
+family-first.** Consequences worth recording here rather than only there:
+
+- OPUS-REVIEW §4.1 ("take accounts off the critical path") and
+  MVP-AND-MONETISATION §2's "no accounts, no sync" v1.0 cut line are
+  superseded. Both files carry banners; neither was rewritten — history
+  stays readable.
+- The Play "No data collected" badge is deliberately given up (K5).
+  ARCHITECTURE.md §4 remains the data contract: opaque payloads, deletion
+  guarantees and "seguir sin cuenta" all survive — as engineering and as a
+  fallback, not as positioning. §4.4 ("photos never leave the device")
+  will be amended by K4 into an explicit opt-in, not silently broken.
+- Rationale: the repo held two strategies at once. Accounts, sync, E1
+  family sharing and push were already built, tested and merged, while
+  onboarding still said "No te pedimos cuenta" and `/familia` was linked
+  from nowhere. Committing to the built direction and wiring it into the
+  front door beats any new feature.

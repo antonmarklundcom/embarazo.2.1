@@ -11,6 +11,7 @@ import {
   type SharedView,
 } from "@/lib/sharing/client";
 import { isValidInviteCode } from "@/lib/sharing/fields";
+import { inviteCodeFromSearch } from "@/lib/sharing/inviteLink";
 
 // BUILD-PLAN E1 — one screen, both sides of sharing.
 //
@@ -34,6 +35,7 @@ export default function FamiliaPage() {
   const [invite, setInvite] = useState<{ code: string } | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [invited, setInvited] = useState(false);
 
   const reload = useCallback(async () => {
     setViews(await fetchSharedViews());
@@ -44,6 +46,19 @@ export default function FamiliaPage() {
     // job: the owner opening the app is the only reliable moment we have.
     void publishCompanionSnapshot().then(reload);
   }, [reload]);
+
+  // K1: an invitation now travels as a link (`/familia?codigo=…`), so somebody
+  // arriving from WhatsApp lands here with their code already in hand. It is
+  // filled in, **not** redeemed automatically: the code is single-use, and
+  // spending it on a page load would burn it for whoever opened the message by
+  // accident. `window.location` rather than `useSearchParams` keeps this page
+  // out of a Suspense boundary it does not otherwise need.
+  useEffect(() => {
+    const fromLink = inviteCodeFromSearch(window.location.search);
+    if (!fromLink) return;
+    setCode(fromLink);
+    setInvited(true);
+  }, []);
 
   const owned = views?.find((v) => v.role === "owner");
   const shared = views?.filter((v) => v.role !== "owner") ?? [];
@@ -210,7 +225,9 @@ export default function FamiliaPage() {
           Tengo un código
         </h2>
         <p className="mt-1 text-sm text-muted">
-          Si alguien te invitó a acompañar su embarazo, escribí su código acá.
+          {invited
+            ? "Te invitaron a acompañar un embarazo. Tocá «Entrar» para aceptar — el código sirve una sola vez."
+            : "Si alguien te invitó a acompañar su embarazo, escribí su código acá."}
         </p>
         <div className="mt-3 flex gap-2">
           <input

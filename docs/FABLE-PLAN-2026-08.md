@@ -65,7 +65,7 @@ Tasks are tagged with the **model lane** they are planned for:
 **[SONNET]** = well-specified wiring, copy and mechanical work executed
 after the Opus lane lands.
 
-### K1 Account-first onboarding — **L** [OPUS]
+### K1 Account-first onboarding — **L** [OPUS] ✅ DONE
 Rework `components/Onboarding.tsx` into the account-first flow:
 mode → role → dates/department → **crear cuenta (Google)** → nombre del
 bebé → **invitá a tu pareja y familia** (WhatsApp share of an E1 invite
@@ -77,6 +77,9 @@ redirecting). The old "No te pedimos cuenta…" screen is deleted.
 leaving onboarding; abandoning sign-in lands back in a working onboarding,
 not a dead end; "seguir sin cuenta" still reaches a fully working app;
 e2e covers both paths.
+**Status:** done — `claude/k1-onboarding-account-first`. See DECISIONS.md
+"K1 — account-first onboarding". The invite step ships with it: an E1 code now
+travels as a `/familia?codigo=…` link over WhatsApp.
 
 ### K2 Companion experience — **L** [OPUS]
 Today a companion sees week · FPP · próximo control · nombre and has no

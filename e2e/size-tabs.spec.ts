@@ -1,19 +1,12 @@
 import { test, expect } from "@playwright/test";
 
+import { completeOnboarding } from "./helpers/onboarding";
+
 // BUILD-PLAN C3 (feature map #12): the same week answered three ways. A 70-day
 // LMP puts the user in week 11 — foot ≈0,7 cm, hand ≈0,6 cm.
 
-async function onboardAt(page: import("@playwright/test").Page, daysAgo: number) {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Estoy embarazada" }).click();
-  await page.getByRole("button", { name: "Mamá" }).click();
-  const lmp = new Date(Date.now() - daysAgo * 86400000).toISOString().slice(0, 10);
-  await page.locator("#lmp").fill(lmp);
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.locator("#dep").selectOption({ index: 1 });
-  await page.getByRole("button", { name: "Empezar" }).click();
-  await expect(page.getByText("Tip de hoy")).toBeVisible();
-}
+const onboardAt = (page: import("@playwright/test").Page, daysAgo: number) =>
+  completeOnboarding(page, { daysAgo });
 
 test("switching tabs answers the same week three ways", async ({ page }) => {
   await onboardAt(page, 70);

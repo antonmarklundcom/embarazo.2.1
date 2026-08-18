@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { completeOnboarding } from "./helpers/onboarding";
+
 // BUILD-PLAN C5 (feature map #14). The card is gated on
 // NEXT_PUBLIC_MEDICAL_REVIEWER, which is inlined at build time — so this spec
 // asserts whichever side of the gate the build under test is on. CI builds with
@@ -13,15 +15,7 @@ const REVIEWER = process.env.NEXT_PUBLIC_MEDICAL_REVIEWER?.trim();
 const CONFIGURED = Boolean(REVIEWER) && !REVIEWER!.includes("___");
 
 test("the obstetra card follows the reviewer, not the content", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Estoy embarazada" }).click();
-  await page.getByRole("button", { name: "Mamá" }).click();
-  const lmp = new Date(Date.now() - 175 * 86400000).toISOString().slice(0, 10);
-  await page.locator("#lmp").fill(lmp);
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.locator("#dep").selectOption({ index: 1 });
-  await page.getByRole("button", { name: "Empezar" }).click();
-  await expect(page.getByText("Tip de hoy")).toBeVisible();
+  await completeOnboarding(page, { daysAgo: 175 });
 
   const card = page.getByRole("region", { name: "De la obstetra" });
 

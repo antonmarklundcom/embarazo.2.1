@@ -1,5 +1,7 @@
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
 
+import { completeOnboarding } from "./helpers/onboarding";
+
 // BUILD-PLAN A3 — "airplane-mode edits sync on reconnect; two profiles signed
 // into the same account converge."
 //
@@ -84,17 +86,6 @@ async function serve(
   });
 }
 
-async function onboard(page: Page) {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Estoy embarazada" }).click();
-  await page.getByRole("button", { name: "Mamá" }).click();
-  const lmp = new Date(Date.now() - 70 * 86400000).toISOString().slice(0, 10);
-  await page.locator("#lmp").fill(lmp);
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.locator("#dep").selectOption({ index: 1 });
-  await page.getByRole("button", { name: "Empezar" }).click();
-  await expect(page.getByText("Tip de hoy")).toBeVisible();
-}
 
 /**
  * Force an immediate sync instead of waiting out the three-second debounce.
@@ -119,7 +110,7 @@ test("an offline edit reaches a second device on reconnect", async ({
   const contextA = await browser.newContext();
   await serve(contextA, server);
   const a = await contextA.newPage();
-  await onboard(a);
+  await completeOnboarding(a);
 
   // Airplane mode. Navigate first: /herramientas/peso is not in the service
   // worker's precache list, and this test is about writing offline, not about
@@ -169,7 +160,7 @@ test("a deletion propagates instead of coming back", async ({ browser }) => {
   const contextA = await browser.newContext();
   await serve(contextA, server);
   const a = await contextA.newPage();
-  await onboard(a);
+  await completeOnboarding(a);
   await a.goto("/herramientas/peso");
   await a.locator("#kg").fill("62");
   await a.getByRole("button", { name: /Guardar/ }).click();
@@ -207,7 +198,7 @@ test("the app works with no account and no sync server at all", async ({
     route.fulfill({ status: 404, body: "sync no disponible" }),
   );
 
-  await onboard(page);
+  await completeOnboarding(page);
   await page.goto("/herramientas/peso");
   await page.locator("#kg").fill("60");
   await page.getByRole("button", { name: /Guardar/ }).click();
@@ -251,7 +242,7 @@ test("a local-only user's data uploads once when they sign in", async ({
   });
 
   const page = await context.newPage();
-  await onboard(page);
+  await completeOnboarding(page);
   await page.goto("/herramientas/peso");
   await page.locator("#kg").fill("58");
   await page.getByRole("button", { name: /Guardar/ }).click();
@@ -296,7 +287,7 @@ test("data is not uploaded into a different account", async ({ browser }) => {
   await serve(contextA, server);
   const a = await contextA.newPage();
 
-  await onboard(a);
+  await completeOnboarding(a);
   await a.goto("/herramientas/peso");
   await a.locator("#kg").fill("59");
   await a.getByRole("button", { name: /Guardar/ }).click();

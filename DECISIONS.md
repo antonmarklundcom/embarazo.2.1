@@ -1852,3 +1852,30 @@ dropdown wasted it.
   auth-status client and the invite-link module. K11 owns the budget and is
   scheduled to re-verify after K1/K2/K7 land; recorded here so that task starts
   from a number rather than a guess.
+
+## K6 — copy & README truth pass
+
+- **Swept for the two banned claims** (`grep -ri "no te pedimos cuenta"` and
+  unconditional "nunca sale de tu teléfono"/"nunca en un servidor" phrasing)
+  across `app/`, `components/`, `lib/`, `README.md`. The onboarding screen was
+  already gone (K1); `e2e/onboarding.spec.ts` already asserts it stays gone, so
+  it was left as regression coverage rather than duplicated.
+- **README renamed `Nido` → `Mi Bebé`** — the doc had drifted from the shipped
+  app name/story since before this pivot. Rewrote the privacy section into two
+  honest halves (sin cuenta / con cuenta) mirroring ARCHITECTURE.md §4 instead
+  of one blanket "nunca se transmite" claim, and added the family-sharing
+  feature to the top-of-file feature list and env-var framing.
+- **`/conoce`** (the public pre-install landing page) got the same treatment:
+  replaced the "Privada por diseño / no pedimos cuenta" card with a "vos elegís
+  qué compartir" framing that states both paths, added a "Tu embarazo, en
+  familia" feature tile, and fixed the footer line and metadata description
+  that both still promised "sin cuenta" unconditionally.
+- **Left untouched, deliberately:** `docs/privacidad/page.tsx` (already
+  conditioned "sin cuenta: ... / con cuenta: ..." per K1-era work — no drift),
+  the photos-never-upload FAQ line and its test (`lib/seed/faq.test.ts`, still
+  true per ARCHITECTURE.md §4.4 — K4 hasn't shipped photo upload yet, so
+  "nunca se suben a internet" for photos remains accurate, unlike the
+  account-wide claim), and every `SignInCard`/`Onboarding`/`AjustesClient`
+  string that was already framed as "sin cuenta, ... / con cuenta, ...".
+  Rewriting an already-honest sentence to "fix" it would just be churn.
+- **`docs/FABLE-PLAN-2026-08.md` §3 K6 marked done.**

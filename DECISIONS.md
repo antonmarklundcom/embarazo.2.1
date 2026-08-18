@@ -2056,3 +2056,92 @@ share yet and that her setting will already be in place when there is.
   assertion about that body was passing against the signature. Caught by writing
   a test that should have failed and did not.
 - **Home First Load JS: 213 kB → 214 kB.**
+
+## K8 — the shared appointment agenda (August 2026)
+
+`próximo control` was a date on one phone. K8 makes it a shared object: it
+carries an hour, the pareja can opt into their own reminder about it, and the
+mamá can see who is coming.
+
+### It adds no server-legible health data, and that is a design constraint met
+
+The appointment itself was **already** in `companionSnapshots` (E1), shared with
+exactly the people it is now shared with. The only new column anywhere is
+`pregnancyMembers.accompanyingAt` — an RSVP pointing at a timestamp that member
+can already read. Asserted at the route: the `accompany` action carries
+`pregnancyId` and `appointmentAt` and nothing else, counted by test.
+
+### The marker is a timestamp, not a boolean
+
+That is the decision worth keeping. When the mamá moves the control, every
+stored "yo la acompaño" stops matching it (`isAccompanying`), so she sees nobody
+coming and asks again — instead of the app quietly telling her that somebody
+will be at a date they never saw. A boolean fails in the other direction, which
+is the direction where she goes to a control alone believing otherwise.
+
+The companion's UI reflects the same rule: his answer is about *this* control,
+and the copy says so ("si cambia la fecha del control, te volvemos a
+preguntar").
+
+### The optional hour did not change storage
+
+Still one epoch-ms number. **Local midnight means "no time given"** — nobody has
+a control at 00:00, and treating that minute as unspecified costs nothing while
+avoiding a Dexie migration, a sync-payload change and a snapshot column for
+information the same number already carries. Every sentence in the app drops the
+hour when there is none rather than rendering an invented `00:00`.
+
+`lib/appointments.ts` exists because all of this must be **local-time**.
+`toISOString().slice(0, 10)` is the tempting one-liner and it is wrong: a control
+at 21:00 in Asunción (UTC-3) reports as the following day. `daysUntil` counts
+calendar days rather than hours for the same reason — "mañana" has to mean the
+next calendar day, so 08:00 tomorrow is "mañana" at 20 hours away and 23:00
+tonight is "hoy" at 21 hours away. The formatter also pins `hour12: false`:
+`es-PY` defaults to a 12-hour clock and was producing "a las 09:00 a. m..".
+
+### The companion's reminder, without caching the companion's data
+
+B5's design is unchanged — the server is told a list of epoch milliseconds and
+never what they are for, and the service worker writes the words. K8 extends it
+to a second device that is not the pregnant user's, and the interesting part is
+what it *does not* do:
+
+- **The companion's appointment is never stored on the companion's phone.** K2
+  keeps no cached companion view precisely so revocation cuts everything
+  instantly, and K8 does not quietly reintroduce one for scheduling. The
+  timestamp is passed in from the shared-views fetch the screen already did.
+- **The service worker fetches `/api/v1/sharing` at push time** to compose the
+  sentence. A revoked companion gets nothing back and falls through to the
+  generic line — which is exactly the behaviour E1 promises. Offline lands in
+  the same place. `userVisibleOnly: true` means it must show *something*, and
+  something true and useless beats something specific and wrong.
+- **The flag lives in Dexie, not localStorage**, for one reason: the service
+  worker can read one and not the other.
+- **Her own control is checked first.** It is the common case, it needs no
+  network, and a device tracking both would otherwise describe somebody else's.
+
+### The schedule is replaced wholesale, which had a trap in it
+
+`POST /api/v1/push` overwrites the endpoint's reminder list, so any call to
+`refreshReminders()` that did not know about the companion poke would silently
+cancel it — editing her own control would turn off his reminder. Rather than
+cache the value to make the problem go away, the appointment editor and the
+notification toggles all receive it: `/ajustes` fetches the shared views once
+and passes it down. Two devices that legitimately want the same minute are
+deduplicated, because B5's fallback would otherwise fire a second, redundant
+notification.
+
+### Smaller decisions
+
+- **The mamá is told who is coming by role, never by name.** "Te acompaña tu
+  pareja." E1 never shared names between members and K8 does not start; two
+  family members coming is still one "alguien de tu familia".
+- **A companion learns their own marker through `membershipsOf`**, their row and
+  nobody else's — a companion still does not get the guest list.
+- **The reminder toggle renders nothing unless this device is accompanying
+  somebody.** An empty "no estás acompañando a nadie" row in Ajustes is noise
+  for the ~all of users who are the pregnant one.
+- **The appointment's "Guardar" button got an `aria-label`.** Five buttons on
+  `/ajustes` say "Guardar"; naming this one is an accessibility fix as much as a
+  test hook.
+- **Home First Load JS: 214 kB → 215 kB.**

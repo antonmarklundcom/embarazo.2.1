@@ -191,7 +191,10 @@ export default function InicioPage() {
       <CheersCard cheers={ownerViewOf(shared.views)?.cheers ?? []} />
 
       {/* Next prenatal appointment reminder (in-app only) */}
-      <AppointmentBanner date={profile.nextAppointment} />
+      <AppointmentBanner
+        date={profile.nextAppointment}
+        members={ownerViewOf(shared.views)?.members}
+      />
 
       {/* Daily tip */}
       <section className="rounded-card border border-line bg-white p-4">

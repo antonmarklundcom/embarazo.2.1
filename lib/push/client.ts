@@ -142,6 +142,7 @@ function urlBase64ToBytes(base64: string): ArrayBuffer {
  */
 export async function enablePush(
   categories: PushCategory[] = readLocalCategories(),
+  companionAppointmentAt: number | null = null,
 ): Promise<PushStatus> {
   if (!supported()) return "unsupported";
 
@@ -162,7 +163,7 @@ export async function enablePush(
     }));
 
   writeLocalCategories(categories);
-  await syncSubscription(subscription, categories);
+  await syncSubscription(subscription, categories, companionAppointmentAt);
   return "on";
 }
 
@@ -186,10 +187,36 @@ export async function disablePush(): Promise<PushStatus> {
 
 export async function setCategories(
   categories: PushCategory[],
+  companionAppointmentAt: number | null = null,
 ): Promise<void> {
   writeLocalCategories(categories);
   const subscription = await existingSubscription();
-  if (subscription) await syncSubscription(subscription, categories);
+  if (subscription) {
+    await syncSubscription(subscription, categories, companionAppointmentAt);
+  }
+}
+
+/**
+ * K8 — turn the "acompañala al control" reminder on or off for this device.
+ *
+ * The flag goes to Dexie (the service worker reads it; it cannot read
+ * localStorage) and the schedule is re-sent immediately, because the server
+ * stores a list of fire times and replaces it wholesale on every publish.
+ */
+export async function setCompanionReminder(
+  enabled: boolean,
+  companionAppointmentAt: number | null,
+): Promise<void> {
+  try {
+    const rows = await db().profile.toArray();
+    const first = rows[0];
+    if (first?.id) {
+      await db().profile.update(first.id, { companionReminder: enabled });
+    }
+  } catch {
+    // No profile yet, or storage refused. The toggle simply does not stick.
+  }
+  await refreshReminders(companionAppointmentAt);
 }
 
 /**
@@ -202,10 +229,11 @@ export async function setCategories(
 async function syncSubscription(
   subscription: PushSubscription,
   categories: PushCategory[],
+  companionAppointmentAt: number | null = null,
 ): Promise<void> {
   const json = subscription.toJSON();
   const reminders = categories.includes("recordatorios")
-    ? await computeReminderTimes()
+    ? await computeReminderTimes(Date.now(), companionAppointmentAt)
     : [];
 
   try {
@@ -235,21 +263,62 @@ export const REMINDER_LEAD_MS = 24 * 60 * 60 * 1000;
  */
 export async function computeReminderTimes(
   now: number = Date.now(),
+  companionAppointmentAt: number | null = null,
 ): Promise<number[]> {
   try {
     const profiles = notDeleted(await db().profile.toArray());
-    const next = profiles[0]?.nextAppointment;
-    if (typeof next !== "number") return [];
-    const fireAt = next - REMINDER_LEAD_MS;
-    return fireAt > now ? [fireAt] : [];
+    const profile = profiles[0];
+
+    const wanted: number[] = [];
+    if (typeof profile?.nextAppointment === "number") {
+      wanted.push(profile.nextAppointment);
+    }
+    // K8. The control of the pregnancy this device is accompanying. It comes
+    // in as an argument rather than out of Dexie because it is somebody else's
+    // appointment and is deliberately never stored here (K2: no cached copy of
+    // a companion view, so that revocation cuts everything instantly). The
+    // caller has it in memory from the shared-views fetch.
+    if (profile?.companionReminder && typeof companionAppointmentAt === "number") {
+      wanted.push(companionAppointmentAt);
+    }
+
+    return dedupe(
+      wanted
+        .map((appointment) => appointment - REMINDER_LEAD_MS)
+        .filter((fireAt) => fireAt > now),
+    );
   } catch {
     return [];
   }
 }
 
-/** Re-send the schedule after the appointment changed. Safe to call always. */
-export async function refreshReminders(): Promise<void> {
+/**
+ * Two people, one control: the mamá tracking it herself and accompanying
+ * somebody whose control is the same minute would otherwise schedule the same
+ * poke twice, and B5's fallback would then fire a second, redundant
+ * notification.
+ */
+function dedupe(times: number[]): number[] {
+  return [...new Set(times)].sort((a, b) => a - b);
+}
+
+/**
+ * Re-send the schedule after an appointment changed. Safe to call always.
+ *
+ * `companionAppointmentAt` is the control of the pregnancy this device
+ * accompanies, when the caller happens to have it. Omitting it means "I do not
+ * know", and the companion poke is simply not scheduled this round — never
+ * "there is no appointment", which would silently cancel a reminder from a
+ * screen that has no business deciding that.
+ */
+export async function refreshReminders(
+  companionAppointmentAt: number | null = null,
+): Promise<void> {
   const subscription = await existingSubscription();
   if (!subscription) return;
-  await syncSubscription(subscription, readLocalCategories());
+  await syncSubscription(
+    subscription,
+    readLocalCategories(),
+    companionAppointmentAt,
+  );
 }

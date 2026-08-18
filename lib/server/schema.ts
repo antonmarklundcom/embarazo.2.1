@@ -161,6 +161,22 @@ export const pregnancyMembers = mysqlTable(
       .defaultNow()
       .notNull(),
     revokedAt: timestamp("revokedAt", { mode: "date", fsp: 3 }),
+    /**
+     * K8 — "¿quién la acompaña?". The epoch ms of the control this member said
+     * they would come to, or null.
+     *
+     * A **timestamp rather than a boolean**, deliberately: it is the only way
+     * the marker can expire on its own. When the mamá moves the control, every
+     * stored "yo la acompaño" stops matching it and she sees an empty list —
+     * she asks again, instead of the app quietly telling her somebody is coming
+     * to a date nobody agreed to. `isAccompanying` (lib/appointments.ts) is
+     * that comparison, and it is the only thing that reads this column.
+     *
+     * It is an RSVP, not health data: the appointment it points at is already
+     * in `companionSnapshots`, shared with this exact member, so K8 adds no
+     * server-legible health field at all.
+     */
+    accompanyingAt: bigint("accompanyingAt", { mode: "number" }),
   },
   (table) => ({
     // One membership row per (pregnancy, user) — re-invites update in place.

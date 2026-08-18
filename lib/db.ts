@@ -53,6 +53,16 @@ export interface Profile extends Partial<SyncMeta> {
    * every unknown answer to not sharing.
    */
   sharing?: Record<string, boolean>;
+  /**
+   * K8 — this device wants to be reminded of the control of the pregnancy it
+   * is *accompanying*, not (only) its own.
+   *
+   * It lives in Dexie rather than localStorage for one reason: the service
+   * worker composes the notification text and cannot read localStorage. The
+   * flag is device-local either way — the server is told a list of timestamps
+   * and never what they are for (B5).
+   */
+  companionReminder?: boolean;
   // Relationship role (B1). Optional for back-compat; defaults to "mama".
   // Plain non-indexed field, so no Dexie schema version bump is needed.
   role?: Role;

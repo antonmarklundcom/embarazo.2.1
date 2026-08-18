@@ -5,7 +5,13 @@ import Link from "next/link";
 
 import { CHEERS, type CheerId } from "@/lib/sharing/cheers";
 import { canSeeSharedTasks } from "@/lib/sharing/fields";
-import { sendCheer, setSharedTaskDone, type SharedView } from "@/lib/sharing/client";
+import {
+  sendCheer,
+  setAccompanying,
+  setSharedTaskDone,
+  type SharedView,
+} from "@/lib/sharing/client";
+import { formatAppointment, isAccompanying } from "@/lib/appointments";
 import { perspectivesFor } from "@/lib/seed/perspectives";
 import { CHECKLISTS } from "@/lib/checklists";
 
@@ -36,10 +42,7 @@ const LABEL_BY_KEY = new Map(
 
 function formatDate(ms: number | null | undefined): string {
   if (!ms) return "—";
-  return new Date(ms).toLocaleDateString("es-PY", {
-    day: "numeric",
-    month: "long",
-  });
+  return formatAppointment(ms);
 }
 
 export function CompanionHome({
@@ -118,6 +121,8 @@ export function CompanionHome({
           </p>
         </section>
       )}
+
+      <AccompanyCard view={view} onChanged={onChanged} />
 
       <SharedExtrasCard view={view} />
 
@@ -361,6 +366,87 @@ function SharedExtrasCard({ view }: { view: SharedView }) {
       </dl>
       <p className="mt-3 text-[11px] leading-relaxed text-muted">
         Ella eligió compartir esto y lo puede apagar cuando quiera.
+      </p>
+    </section>
+  );
+}
+
+/**
+ * K8 — "yo la acompaño".
+ *
+ * One button, and the thing it stores is the **timestamp of the control being
+ * agreed to**, not a boolean. When she moves the control, his answer stops
+ * matching it: he is asked again and she sees nobody coming, instead of the app
+ * quietly telling her he will be at a date he never saw. Failing in that
+ * direction is the whole reason the column is a timestamp.
+ *
+ * Renders nothing when she has not set a next control — there is nothing to
+ * accompany, and "no hay control cargado" is her business to fix, not his.
+ */
+function AccompanyCard({
+  view,
+  onChanged,
+}: {
+  view: SharedView;
+  onChanged: () => void;
+}) {
+  const appointmentAt = view.snapshot?.nextAppointmentAt ?? null;
+  const [coming, setComing] = useState(
+    isAccompanying(view.accompanyingAt, appointmentAt),
+  );
+  const [busy, setBusy] = useState(false);
+
+  if (!appointmentAt) return null;
+
+  async function toggle() {
+    const next = !coming;
+    setComing(next);
+    setBusy(true);
+    const ok = await setAccompanying(
+      view.pregnancyId,
+      next ? appointmentAt : null,
+    );
+    setBusy(false);
+    if (!ok) setComing(!next);
+    onChanged();
+  }
+
+  return (
+    <section
+      aria-label="Su próximo control"
+      className="rounded-card border border-petrol/20 bg-petrol/5 p-4"
+    >
+      <p className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">
+        Su próximo control
+      </p>
+      <p className="mt-1 text-[15px] font-extrabold text-ink">
+        {formatAppointment(appointmentAt)}
+      </p>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={coming}
+        disabled={busy}
+        onClick={() => void toggle()}
+        className={`mt-3 flex min-h-[44px] w-full items-center gap-3 rounded-tile border px-3 py-2.5 text-left disabled:opacity-60 ${
+          coming ? "border-petrol/30 bg-pastel-salvia" : "border-line bg-white"
+        }`}
+      >
+        <span
+          aria-hidden
+          className={`flex h-6 w-10 shrink-0 items-center rounded-full px-0.5 transition ${
+            coming ? "justify-end bg-petrol" : "justify-start bg-ink/20"
+          }`}
+        >
+          <span className="h-5 w-5 rounded-full bg-white" />
+        </span>
+        <span className="text-sm font-extrabold text-ink">
+          {coming ? "La vas a acompañar" : "Yo la acompaño"}
+        </span>
+      </button>
+      <p className="mt-2 text-[11px] leading-relaxed text-muted">
+        Ella lo ve en su pantalla de inicio. Si cambia la fecha del control, te
+        volvemos a preguntar.
       </p>
     </section>
   );

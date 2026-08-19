@@ -1,5 +1,10 @@
 # Fable review & approved plan — August 2026
 
+> **Updated 2026-08-19:** a second Fable audit (two independent Opus deep
+> reviews: technical + product/UX/roles) produced §§5–8 below. The founder
+> reviewed the findings and approved the decisions in §5 on 2026-08-19.
+> §8 supersedes §4's sequencing for all remaining work.
+
 > **This document supersedes the launch strategy in
 > `docs/OPUS-REVIEW-2026-08.md` §4.1 and `docs/MVP-AND-MONETISATION.md` §2
 > wherever they conflict.** The founder reviewed 14 recommendations from an
@@ -244,3 +249,198 @@ DECISIONS.md entry appended. Placeholder/content gates (Z1/G1) unchanged.
 everything shipped today + K1, K2, K5, K6, K7, K9, K10, K11 + J1/J2/J4.
 K3, K4, K8 ship in v1.0 if ready, v1.1 otherwise — they must not block
 the Play submission.
+
+> **§4 is superseded by §8 (2026-08-19) for all work not yet merged.**
+
+---
+
+# Addendum — Fable audit round 2, approved 2026-08-19
+
+Two independent Opus audits (technical; product/UX/roles) ran against the
+merged K1–K4/K6/K8/K9-F3 state. Full findings live in the audit session;
+what follows is the approved actionable subset. Standing rules unchanged:
+data-contract classification first, gates green, DECISIONS.md entries,
+es-PY voseo, offline-and-accountless keeps working.
+
+## 5. Approved decisions (founder, 2026-08-19)
+
+| # | Decision |
+|---|---|
+| D1 | This document is updated **in place** (no V2 doc). |
+| D2 | **K14 (security & cache correctness) is first and blocks launch.** The SW cache leak makes K2's "revocation cuts instantly" guarantee false in a built app; the push endpoint is an open SSRF surface. |
+| D3 | **Sponsor work deferred to a later batch**, scoped to *reporting only* (K15): `placementClicks` day-bucket counts + `/admin/patrocinios`. No sponsor role, no portal — revisit a read-only sponsor login at ~10 paying sponsors. |
+| D4 | **No editor/employee role.** Content stays in git (build-time validation + offline precache is the point). A read-only `/admin/contenido` review-debt page ships in a later batch. Platform roles stay `user \| admin`; a capability module is built only when a second privileged human exists. |
+| D5 | **Minimal community ships**, scoped to **curated Q&A** (K20): users submit questions, nothing is public until admin approves and answers, answers grow a public FAQ. No free-text between users, no moderator role. |
+| D6 | **Language = L0 + L1** (K19): Guaraní on all safety-critical copy (stacked, always shown), plus a typed dictionary + Ajustes toggle over ~100 core UI strings. Full Guaraní weekly content stays out until institutionally funded. No neutral Spanish, no English UI. |
+| D7 | **Postpartum deferred** (K17 is a spec note, not a build task yet). Open product decision recorded: one app vs. a separate baby app on the stores. Technical recommendation: same app (third `AppMode`, data carries over birth day); distribution decision is the founder's, later. |
+| D8 | **All remaining work builds in the Opus lane** (single build chat). The Sonnet lane is dissolved. |
+| D9 | **CI goes label-gated** (K21): the builder validates lint+tests+build in-session (0 minutes), pushes, applies a `run-ci` label → exactly one CI run per PR gates auto-merge. Playwright browser cached. Founder explicitly approved this workflow change per the budgeted-runner policy. Tasks are batched into ~6–8 PRs to cap total Actions minutes at roughly 40–60 for the whole build. |
+
+## 6. New tasks
+
+### K14 Security & cache correctness — **M** [OPUS] — BLOCKS LAUNCH
+The audit's top findings, one PR:
+- **SW cache leak:** add `NetworkOnly` matchers *before* `...defaultCache`
+  in `app/sw.ts` for `/api/v1/(sync|sharing|photos|auth-status|ai)` and for
+  navigations to `/admin|/familia|/cuenta|/ajustes`; purge `apis`/`pages`
+  caches on sign-out; add a source-scan test asserting every session-bearing
+  route is NetworkOnly (so the next route can't regress it). Add
+  `cache: "no-store"` to the fetch in `lib/sharing/client.ts`.
+- **Push endpoint hardening** (`app/api/v1/push`): whitelist endpoint hosts
+  to real push services (FCM, Mozilla, WNS, APNs web push); add rate
+  limiting; change the upsert so an anonymous replay can never null out an
+  existing `userId` (`coalesce`).
+- **Rate limits** on `/api/v1/sharing` and `/api/v1/photos` (copy the sync
+  pattern). Take the **rightmost** `X-Forwarded-For` entry in
+  `lib/rateLimit.ts`.
+- **Bound the photo confirm payload** with the existing 64 KB `.refine()`
+  from `lib/sync/protocol.ts`.
+- **Security headers** in `next.config.ts`: `frame-ancestors 'none'`,
+  `Referrer-Policy`, `Permissions-Policy`, HSTS; CSP starts Report-Only.
+- Make `pregnancies_owner_idx` a `uniqueIndex` (create-race fix).
+- Write the missing `lib/server/admin.test.ts` `payload` source scan.
+**Done when:** a revoked companion offline gets nothing from cache (e2e);
+push POST with a non-push-service URL is rejected; all 12 API routes are
+throttled; headers verified; DECISIONS.md notes that K2's "never cached"
+claim only became true here.
+
+### K15 Sponsor click reporting — **M** [OPUS] — LATER BATCH (post-launch)
+`placementClicks` table (placementId, day bucket, count — **no user
+identity**, preserving J3) written by `/api/v1/go/[id]`; a
+`/admin/patrocinios` page with impressions/clicks per placement per month.
+The Sheets webhook stays as an optional mirror.
+**Done when:** the admin can answer "what did placement X get in month Y"
+without leaving the app; no per-user rows exist by construction (test).
+
+### K16 Admin metrics — **S** [OPUS]
+`/admin/metricas`: onboarding completion by step, invites sent→accepted,
+week-2 retention proxy, DAU/WAU, tool usage — all aggregate, derived from
+existing tables (`syncRecords`, `invites`, `pregnancyMembers`,
+`pushSubscriptions`), no identity. **Pre-launch** — this data cannot be
+reconstructed retroactively.
+
+### K17 Postpartum — SPEC NOTE ONLY (deferred)
+The app dead-ends at week 42 (`clampWeek`). v-next needs: "¿ya nació?"
+prompt from week 38 → `postparto` mode (lactancia, control puerperal,
+vacunas PAI, Registro Civil — the existing checklist/derechos engines
+generalise), tools re-pointed (peso→bebé, diario, fotos). **Open founder
+decision first: same app vs. a separate baby app on Play/App Store.**
+Technical recommendation: same app. Also in scope when built: a
+**pregnancy-loss path** — a quiet Ajustes option that pauses content and
+offers archive or delete, with the right copy. Nothing here blocks v1.0.
+
+### K18 Copy honesty sweep #2 + quick wins — **S** [OPUS]
+What K6 missed, plus one-liners: delete "Privada: tus datos quedan en tu
+teléfono" from `app/layout.tsx` metadata (it's the WhatsApp-preview
+string); make `PrivacyLine` state-aware and true; fix the Diario header
+(journal notes DO sync unless PIN-encrypted); fix
+`lib/sync/stores.ts`'s stale "photos never leave the device" comment; add
+`PHOTO_STORAGE_*` and `PUSH_DISPATCH_SECRET` to `.env.example`; mount
+`SyncConflicts` on `/herramientas/diario`; delete the `lib/wordpress.ts`
+dead stubs; enforce ≥6-digit PIN or say honestly what a 4-digit PIN
+protects against.
+
+### K19 Language: Guaraní L0 + toggle L1 — **M/L** [OPUS]
+- **L0:** generalise the existing `textGu` pattern into a
+  `{ es, gn? }` shape in `lib/content/schemas.ts`; add Guaraní to
+  emergencia, señales de alarma, "cuándo ir ya al hospital", derechos
+  headlines. Rendered **stacked, always** on safety surfaces. Native-speaker
+  review is a **founder task** and gates shipping the strings (same
+  mechanism as the medical reviewer gate).
+- **L1:** homegrown typed dictionary (`lib/i18n/dict.ts`, missing key =
+  type error; **not** next-intl, **no** locale routes, **no** middleware);
+  `locale` field on the Dexie profile (syncs free); toggle in Ajustes
+  switching ~100 core navigation/safety strings; locale-parity test in the
+  repo's source-scan style; all locales ship in one chunk (~25 KB gz each).
+**Done when:** toggle works offline; parity test green; 42-week content
+untouched (stays es-PY); `<html lang>` follows the locale.
+
+### K20 Curated Q&A community — **M** [OPUS]
+Replaces the Roadmap card's promise with a real, safe surface: signed-in
+users submit a question (rate-limited, length-capped); questions are
+visible **only to admin** until approved; admin approves + answers in
+`/admin`; approved Q&As publish into `/preguntas` (which becomes a living
+FAQ, precached like other content). No user-to-user text, no public
+unreviewed content, no moderator role.
+**Done when:** submit → admin queue → approve → visible in `/preguntas`;
+rejected/pending questions never render publicly (test); submitter sees
+their question's status; deletion via `TABLE_DISPOSITION`.
+
+### K21 Label-gated CI + batching — **S** [OPUS] — FIRST PR
+Per D9, founder-approved workflow change: `ci.yml` PR trigger becomes
+label-gated (`pull_request: types: [labeled]`, guarded on
+`github.event.label.name == 'run-ci'`); keep the `main` push trigger;
+cache the Playwright browser; keep single job, concurrency-cancel,
+timeout. Builder protocol: validate lint+`validate:content`+tests+build
+(and e2e where feasible) **in-session before pushing**, push once clean,
+apply `run-ci`, enable auto-merge on green.
+
+### K13 — split (supersedes §3's K13)
+- **K13a (now, S):** Next.js 15.1.6 → current 15.x (published CVEs in the
+  cache-poisoning/DoS class; the middleware-bypass CVE does NOT apply —
+  this app has no middleware, and that fact is now a documented invariant:
+  never add middleware auth); `next lint` → eslint CLI; add Dependabot or
+  a monthly audit note.
+- **K13b (blocked on upstream):** `next-auth` beta → v5 stable when
+  published; verify Drizzle adapter compat.
+
+## 7. Amendments to existing open tasks
+
+- **K7** additionally: delete the "Compartir con tu pareja — Próximamente"
+  item (and "Comunidad de mamás", replaced by K20's real link) from
+  `components/RoadmapSection.tsx`; guard `/familia` for signed-out users
+  (invite buttons currently render and can only fail); link
+  `/herramientas/bebe-ia` into the tools grid and `/preguntas` somewhere
+  discoverable. A shipped feature linked from nowhere is a bug.
+- **K7 scope add (UX):** the home "próximo control" shortcut gets an
+  inline date+time editor instead of dumping into `/ajustes`; show
+  days-to-go and K8's "¿quién la acompaña?" RSVP.
+- **K9-F5** includes splitting `components/Onboarding.tsx` (1,039 lines)
+  into per-step components while it's open, and adds a first-screen
+  **"Me invitaron / tengo un código"** entry so companions skip the
+  LMP/department questions (today a papá is asked for his last period).
+- **K9-F6:** first make the home mood check-in actually **record** the
+  mood on tap (today it only navigates), then build the streak on it.
+- **K11** gets the audit's verified target list: `next/dynamic` for
+  `Onboarding` on the home route; build-time article index (slug · title ·
+  range · precomputed minutes) so `articles.json` bodies **and zod** stop
+  shipping to the browser via `WeekArticleFeed`; dynamic-import the
+  below-the-fold home cards; trimester-aware ranking + collapse of the
+  ~18-card home stack. 175 kB First Load JS is reachable from these alone.
+- **K5** design precision: write `week` on the stats POST (column exists),
+  keep GET parameterless and single-cache-key; return top-N per week
+  bucket in one payload, client selects. DECISIONS.md entry.
+- **New push work folded into K9-F6's PR batch:** a weekly `consejos`
+  reminder generator (composed on-device, payload-free like B5) and a
+  push when a cheer arrives — the toggles exist today with no sender, and
+  cheers currently land silently.
+
+## 8. Sequencing (supersedes §4 for remaining work)
+
+**Single Opus build chat.** Batched PRs, each label-gated (K21), validated
+in-session before push, auto-merge on green. Dependency order:
+
+| PR | Contents | Depends on |
+|---|---|---|
+| PR-1 | K21 (CI) + K13a (Next bump, eslint) | — |
+| PR-2 | K14 security & cache — **blocks launch** | PR-1 |
+| PR-3 | K7 (as amended) + K18 copy/quick wins | PR-2 (touches same surfaces) |
+| PR-4 | K16 metrics + K5 stats | PR-1 |
+| PR-5 | K9-F5 + K9-F6 (+ weekly/cheer push) + K10 price guide | PR-3 (onboarding/home) |
+| PR-6 | K19 language L0+L1 | PR-3 |
+| PR-7 | K20 curated Q&A | PR-4 (admin surface) |
+| PR-8 | K11 performance — **last** (measures the final home screen) | PR-3, PR-5, PR-6 |
+
+Estimated Actions cost: ~8 runs ≈ 40–70 minutes total.
+
+**v1.0 cut line (supersedes §4's):** everything merged today + PR-1…PR-5
++ PR-8, plus K5 within PR-4. K19 (language) and K20 (Q&A) ship in v1.0 if
+ready, v1.1 otherwise — they must not block the Play submission. K15
+(sponsor reporting), K17 (postpartum), `/admin/contenido` (review-debt
+page) and K13b are post-launch.
+
+**Founder tasks in parallel (unchanged + new):** Meta verification (K12);
+native Guaraní reviewer for K19-L0; the one-app-vs-two decision for K17;
+real directory/events/placement data (20% of the nav currently renders
+empty states — turn them into sourcing surfaces per K18's empty-state
+copy).

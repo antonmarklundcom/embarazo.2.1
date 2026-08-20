@@ -3421,3 +3421,99 @@ because it looks finished.
 The toggle also renders each option in its own language — "Castellano" and
 "Guaraní", never translated into the active one. A language picker that
 translates its own labels is useless to the only person who needs it.
+
+## PR-7 / K20 — a community that cannot say anything unreviewed
+
+`docs/FABLE-PLAN-2026-08.md` §6 K20, under §5 D5. The Roadmap card promising
+"Comunidad de mamás" came down in PR-3 because it described a product nobody
+intends to build. This is the one that ships: **users ask, an administrator
+answers, and the answers grow a public FAQ.** No user-to-user text, no public
+unreviewed content, no moderator role.
+
+### The split that makes it cacheable
+
+The single most consequential decision here is not about moderation. It is that
+**submitting a question and reading the published ones live on different
+paths.**
+
+- `GET /api/v1/preguntas` — the published Q&A. Parameterless, identical for
+  every reader, and it never touches the session. Cached network-first by the
+  service worker, beside `/directory` and `/placements`.
+- `GET`/`POST /api/v1/mis-preguntas` — her own questions, and asking a new one.
+  Both read the session, so the path is in `SESSION_BEARING_API` and is
+  `NetworkOnly` forever.
+
+K14's rule is "reads a session → never cached", enforced from source by
+`swCache.test.ts`, with no per-route exemptions argued. Putting the POST on
+`/api/v1/preguntas` would have dragged the public GET into that pattern with
+it — and `/preguntas` would have stopped working offline, which is the one
+thing K20 asks of it. Two paths, and the rule stays absolute.
+
+Her status list is deliberately **not** cached, and that is not an oversight
+either: a status is a live fact about a queue, and a cached "en revisión" from
+last Tuesday is a worse answer than no answer.
+
+### What the queue guarantees, and where
+
+"Rejected and pending questions never render publicly" is asserted as a
+property of the code, not of a render:
+
+- `approvedQuestions` filters `status = 'approved'` **in SQL**, so a page that
+  forgot to check still cannot get a pending row out of it.
+- It also requires a non-empty answer. An approved row with no answer would
+  publish as a bare question under the app's name — the accidental form of
+  "public unreviewed content", arrived at without anyone deciding it.
+- Approval and the answer are **one operation**. A separate "approve" button
+  would create a window in which that state exists at all.
+- The public projection cannot name `askedByUserId`, and a test reads the
+  source to say so. A published question has no author, because there is no
+  column to forget to omit.
+
+The e2e fixture is adversarial on purpose: the same pending and rejected
+questions that appear in her status list are also handed to the page, so a
+component that rendered its inputs indiscriminately fails.
+
+### The two decisions that cost something
+
+**Deletion takes her published questions down.** `TABLE_DISPOSITION:
+communityQuestions = "deleted"`, including approved ones that are public FAQ
+content other women are reading. It is her text, she may have described her own
+pregnancy in it, and /ajustes promises "no nos queda nada tuyo en el servidor" —
+retaining her words, even unattributed, makes that sentence false. A promise
+about deletion outranks an FAQ entry. The answer is not lost so much as
+relocated: one worth keeping forever belongs in `lib/seed/faq.json`, rewritten
+as a general question, where content lives (D4) and no account can remove it.
+
+**`/admin/preguntas` is the first admin screen that shows text a user wrote,
+and it says so on screen.** Every other panel surface is metadata by
+construction — `admin.test.ts` fails the build if `payload` appears anywhere
+under `app/admin`, and that still holds here. The distinction that makes this
+defensible is narrow and worth naming: `communityQuestions.question` is not
+health data the server happens to hold, it is text submitted **to us, to be
+answered**. The layout footer says "solo datos de cuenta"; this page carries
+its own note explaining why it is the exception.
+
+Both decisions are audited (`question_approved`, `question_rejected`) with the
+question's **id and nothing else** — not the question, not the answer.
+`adminAudit` is the one table deletion retains, and a user's words must not
+outlive her account by riding along in an audit payload.
+
+### Smaller things, decided rather than defaulted
+
+- **Two rate limits, answering different questions.** The per-connection limit
+  stops a flood; the per-account daily cap (`QUESTIONS_PER_DAY = 3`) is the one
+  that means "this person is asking too much". In Paraguay a household or a
+  locutorio behind one address is normal, so an IP cap alone throttles a
+  neighbourhood.
+- **A minimum length, which is not anti-spam.** "ayuda" cannot be answered: it
+  costs an administrator a decision and gives the asker nothing.
+- **A rejected question is kept, unanswered, and she is told.** A question that
+  silently disappears reads as a bug and gets asked again — and "we are not
+  answering this here" is genuinely useful when the honest answer is "ask your
+  doctor". The copy says so, and points at /emergencia if it is urgent.
+- **The queue is oldest-first.** A queue is a promise with a clock on it, and
+  newest-first quietly never reaches the woman who asked eight days ago. Past
+  three days the card says how long she has been waiting.
+- **Signed-out visitors read everything and are told why asking needs an
+  account** — rather than being shown a textarea that 401s after they have
+  typed their question.

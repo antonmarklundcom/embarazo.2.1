@@ -200,6 +200,7 @@ describe("schema export", () => {
         "companionSnapshots",
         "companionCheers",
         "companionTasks",
+        "communityQuestions",
         "contentStats",
         "photoBlobs",
         "invites",

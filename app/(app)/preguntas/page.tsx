@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { CommunityQuestions } from "@/components/CommunityQuestions";
 import { FaqAccordion } from "@/components/FaqAccordion";
 import { FAQ_TOPIC_LABELS } from "@/lib/seed/faq";
 
@@ -24,7 +25,8 @@ export default function PreguntasPage() {
           Preguntas frecuentes
         </h1>
         <p className="text-sm text-muted">
-          Lo que más nos preguntan sobre tus datos, tu cuenta y la app.
+          Lo que más nos preguntan sobre tus datos, tu cuenta y la app — y las
+          preguntas que nos mandan las mamás, respondidas por el equipo.
         </p>
       </header>
 
@@ -33,9 +35,14 @@ export default function PreguntasPage() {
       <FaqAccordion topics={["app"]} title={FAQ_TOPIC_LABELS.app} />
       <FaqAccordion topics={["salud"]} title={FAQ_TOPIC_LABELS.salud} />
 
+      {/* K20 — the living half of the page. The four accordions above are the
+          static FAQ, in git, precached with the app; below is what women
+          actually asked, once an admin has answered it. Deliberately in that
+          order: the static answers are the ones people came for. */}
+      <CommunityQuestions />
+
       <p className="text-sm text-muted">
-        ¿Te quedó una duda que no está acá? Escribinos: la lista crece con lo
-        que nos preguntan. Ver también la{" "}
+        Ver también la{" "}
         <Link href="/privacidad" className="font-bold underline">
           política de privacidad
         </Link>{" "}

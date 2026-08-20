@@ -10,6 +10,7 @@ import {
   companionSnapshots,
   companionTasks,
   photoBlobs,
+  communityQuestions,
   companionCheers,
   invites,
   pregnancies,
@@ -93,6 +94,21 @@ export const TABLE_DISPOSITION = {
   // (week, contentId, day), so there is nothing here that belongs to anyone.
   contentStats: "no user data",
 
+  // K20. DELETED, and this was the decision worth arguing about.
+  //
+  // An approved question is public FAQ content by then, and deleting it takes
+  // an answer off a page other women are reading. It still goes, for a reason
+  // that outranks that: it is *her text*, she may have described her own
+  // pregnancy in it, and /ajustes tells her "no nos queda nada tuyo en el
+  // servidor". Retaining her words — even unattributed — would make that
+  // sentence false, and a promise about deletion is worth more than an FAQ
+  // entry.
+  //
+  // The answer is not lost, it is relocated: an answer worth keeping forever
+  // belongs in `lib/seed/faq.json`, rewritten as a general question, where
+  // content lives (D4) and where no user's account can take it away.
+  communityQuestions: "deleted",
+
   // RETAINED, deliberately. This is the record of what an administrator did,
   // and it is what makes admin access to a health app defensible (§9). After
   // the user row is gone the ids in it resolve to nobody: they are opaque
@@ -149,6 +165,8 @@ export interface AccountDeleteExecutor {
    */
   deletePhotoBlobs(userId: string): Promise<number>;
   deletePregnancies(pregnancyIds: string[]): Promise<number>;
+  /** K20: questions she asked, in whatever state — pending, approved or not. */
+  deleteCommunityQuestions(userId: string): Promise<number>;
   deleteUser(userId: string): Promise<number>;
 }
 
@@ -181,6 +199,7 @@ export async function deleteAccountData(
     companionTasks: await executor.deleteCompanionTasks(pregnancyIds),
     companionCheers: await executor.deleteCompanionCheers(userId, pregnancyIds),
     photoBlobs: await executor.deletePhotoBlobs(userId),
+    communityQuestions: await executor.deleteCommunityQuestions(userId),
     pregnancies: await executor.deletePregnancies(pregnancyIds),
     accounts: await executor.deleteAccounts(userId),
     sessions: await executor.deleteSessions(userId),
@@ -326,6 +345,14 @@ export function drizzleAccountExecutor(
 
       return affected(
         await database.delete(photoBlobs).where(eq(photoBlobs.userId, userId)),
+      );
+    },
+
+    async deleteCommunityQuestions(userId) {
+      return affected(
+        await database
+          .delete(communityQuestions)
+          .where(eq(communityQuestions.askedByUserId, userId)),
       );
     },
 

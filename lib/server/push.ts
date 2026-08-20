@@ -71,7 +71,22 @@ export async function saveSubscription(
     })
     .onDuplicateKeyUpdate({
       set: {
-        userId: input.userId,
+        // K14 — `coalesce`, not an overwrite.
+        //
+        // `/api/v1/push` accepts an anonymous POST by design (B5, above): a
+        // device that has not signed in must still be able to subscribe. The
+        // consequence was that ANY anonymous POST carrying an existing
+        // endpoint set that row's `userId` back to NULL — and a NULL `userId`
+        // is a subscription A5's account deletion no longer finds, because
+        // there is nothing tying it to an account to delete it by. An
+        // unauthenticated replay of a captured endpoint could therefore
+        // detach every subscription in the table from its owner, permanently.
+        //
+        // Signing in later still links the row: `values(userId)` wins whenever
+        // the incoming value is non-NULL. Only the null case is refused, which
+        // is exactly "an anonymous request may not un-own a subscription".
+        // (Unsubscribing is DELETE's job, and it removes the row outright.)
+        userId: sql`coalesce(values(\`userId\`), \`userId\`)`,
         p256dh: input.p256dh,
         auth: input.auth,
         categories,

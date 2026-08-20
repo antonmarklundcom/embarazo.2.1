@@ -71,6 +71,13 @@
       "when": 1787054540163,
       "tag": "0009_elite_layla_miller",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1787218020796,
+      "tag": "0010_lonely_ghost_rider",
+      "breakpoints": true
     }
   ]
 }

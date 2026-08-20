@@ -1,6 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { availableProviders, getSession } from "@/lib/server/auth";
+import {
+  CHEAP_READ_LIMIT,
+  clientKeyFromHeaders,
+  isRateLimited,
+} from "@/lib/rateLimit";
 
 // BUILD-PLAN K1 — "can this device create an account, and does it already have
 // one?", answered to a client component.
@@ -37,6 +42,16 @@ const HEADERS = {
 } as const;
 
 export async function GET(req: NextRequest) {
+  // K14: throttled like every other session-reading route. This one is cheap,
+  // but it is the route that answers "is this cookie live?", and an unmetered
+  // oracle for that is worth a limiter even when the answer is one boolean.
+  if (isRateLimited(`auth-status:${clientKeyFromHeaders(req.headers)}`, Date.now(), CHEAP_READ_LIMIT)) {
+    return NextResponse.json(
+      { error: "demasiadas solicitudes" },
+      { status: 429, headers: HEADERS },
+    );
+  }
+
   for (const key of req.nextUrl.searchParams.keys()) {
     return NextResponse.json(
       { error: `parámetro no permitido: ${key}` },

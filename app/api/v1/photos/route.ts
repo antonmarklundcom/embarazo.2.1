@@ -16,6 +16,8 @@ import {
   isPhotoStorageConfigured,
   uploadUrl,
 } from "@/lib/server/photoStorage";
+import { clientKeyFromHeaders, isRateLimited } from "@/lib/rateLimit";
+import { MAX_PAYLOAD_BYTES } from "@/lib/sync/protocol";
 import {
   ALLOWED_CONTENT_TYPES,
   MAX_PHOTO_BYTES,
@@ -71,8 +73,7 @@ const ActionSchema = z.discriminatedUnion("action", [
       contentType: z.enum(ALLOWED_CONTENT_TYPES),
       bytes: z.number().int().positive().max(MAX_PHOTO_BYTES),
       updatedAt: z.number().int().positive(),
-      // Opaque. Bounded in size so it cannot become a general data store, and
-      // never inspected — the server hands it back and nothing else.
+      // Opaque. Never inspected — the server hands it back and nothing else.
       payload: z.unknown().optional(),
     })
     .strict(),
@@ -85,7 +86,25 @@ const ActionSchema = z.discriminatedUnion("action", [
     .strict(),
   // The opt-out. Everything, now, objects included.
   z.object({ action: z.literal("delete-all") }).strict(),
-]);
+])
+  // K14: "bounded in size" was a comment, not a rule. A `payload` is stored
+  // verbatim and returned verbatim, so with no cap the `confirm` action was a
+  // general-purpose key-value store that happened to live in the photo index —
+  // authenticated, but unmetered. This is the same 64 KB bound
+  // `lib/sync/protocol.ts` puts on a sync record's payload, and for the same
+  // reason: generous for the handful of fields a photo has, hostile to
+  // anything else.
+  //
+  // It hangs off the union rather than the `confirm` member because zod's
+  // `discriminatedUnion` takes objects, not the `ZodEffects` a `.refine()`
+  // produces — a member-level refine throws at module load.
+  .refine(
+    (value) =>
+      !("payload" in value) ||
+      value.payload == null ||
+      JSON.stringify(value.payload).length <= MAX_PAYLOAD_BYTES,
+    { message: "payload demasiado grande" },
+  );
 
 function unavailable() {
   return NextResponse.json(
@@ -94,7 +113,18 @@ function unavailable() {
   );
 }
 
-async function context() {
+async function context(req: NextRequest) {
+  // K14 — throttled like sync and sharing. This route mints presigned URLs,
+  // so an unthrottled caller is one who can mint them as fast as the network
+  // allows.
+  if (isRateLimited(`photos:${clientKeyFromHeaders(req.headers)}`)) {
+    return {
+      error: NextResponse.json(
+        { error: "demasiadas solicitudes" },
+        { status: 429, headers: HEADERS },
+      ),
+    } as const;
+  }
   // Photo backup needs an account (whose photos are these?) AND a database
   // (where is the index?) AND a bucket. Any of the three missing is "this
   // deployment does not have the feature", not an error.
@@ -124,7 +154,7 @@ async function context() {
  * photo was deleted elsewhere instead of re-uploading it forever.
  */
 export async function GET(req: NextRequest) {
-  const ctx = await context();
+  const ctx = await context(req);
   if ("error" in ctx) return ctx.error;
 
   for (const key of req.nextUrl.searchParams.keys()) {
@@ -170,7 +200,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const ctx = await context();
+  const ctx = await context(req);
   if ("error" in ctx) return ctx.error;
 
   let body: unknown;

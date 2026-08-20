@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Session } from "next-auth";
 
 import { signOutAction } from "@/app/(app)/cuenta/actions";
+import { SignOutButton } from "./SignOutButton";
 
 // BUILD-PLAN A2 — the signed-in identity, rendered on /ajustes and /cuenta.
 //
@@ -59,14 +60,7 @@ export function AccountCard({
         Tus fotos no: siguen solo en este teléfono.
       </p>
 
-      <form action={signOutAction}>
-        <button
-          type="submit"
-          className="mt-3 min-h-[44px] w-full rounded-full bg-cream px-4 py-2.5 text-sm font-extrabold text-petrol transition active:scale-[0.99]"
-        >
-          Cerrar sesión
-        </button>
-      </form>
+      <SignOutButton action={signOutAction} />
 
       {showDeletionNote && (
         <p className="mt-3 text-xs leading-relaxed text-muted">

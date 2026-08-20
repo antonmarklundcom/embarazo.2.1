@@ -43,18 +43,81 @@ const pageRoutes: string[] = [
   ...ARTICLES.map((a) => `/guias/${a.slug}`),
 ];
 
+// ---------------------------------------------------------------------------
+// K14 — what the cache is not allowed to hold
+// ---------------------------------------------------------------------------
+//
+// `defaultCache` from @serwist/next contains a same-origin `NetworkFirst` rule
+// for `/api/*` and another for document navigations. Both are right for the
+// content this app is mostly made of and both were **wrong** for anything
+// carrying a session: a companion's snapshot, a photo index, an admin page.
+// They were being written to the `apis` and `pages` caches, which meant K2's
+// central promise — "revoking a companion cuts everything instantly" — was
+// true of the server and false of the phone. Revoke access, go offline, reload:
+// the last good answer came straight back out of the cache, with the week, the
+// due date and the baby's name in it.
+//
+// So: two `NetworkOnly` rules, and they sit **before** `...defaultCache`,
+// because Serwist takes the first matching rule and `defaultCache`'s
+// same-origin patterns would otherwise claim these first.
+//
+// Offline is not a regression here. A NetworkOnly navigation that cannot reach
+// the network falls through to the `/offline` fallback below, which is the
+// honest answer: this screen needs the server, and there is nothing safe to
+// show without it.
+//
+// `lib/invariants/swCache.test.ts` reads these two constants back out of this
+// file and fails if an API route that reads a session is not covered by the
+// first one. Adding a route is how this regresses, so adding a route is what
+// the test watches.
+
+/**
+ * API paths whose response is scoped to whoever is signed in.
+ *
+ * `push` is here on the rule rather than on a judgement call: its GET returns
+ * only the public VAPID key, which is the same for everyone, but its POST
+ * links a subscription to a session and the rule this file enforces is "reads
+ * a session → never cached". A route whose exemption depends on somebody
+ * re-deriving that argument is a route that leaks the day the handler grows.
+ * There is nothing to lose — nothing about subscribing works offline anyway.
+ */
+export const SESSION_BEARING_API =
+  /^\/api\/v1\/(sync|sharing|photos|auth-status|ai|push)(\/|$)/;
+
+/**
+ * Pages that render somebody's account, family or admin panel.
+ *
+ * Matched on the **pathname alone**, deliberately. In an App Router app a
+ * "navigation" is usually not a document request at all — tapping a link sends
+ * an `RSC: 1` fetch, which `defaultCache` files under `pages-rsc` (and
+ * `pages-rsc-prefetch` when the router prefetches on hover). A rule that only
+ * caught `request.destination === "document"` would leave the common case —
+ * in-app navigation to /familia — cached exactly as before. Nothing under these
+ * paths is a static asset (those live under `/_next/`), so there is nothing
+ * this over-matches.
+ */
+export const PRIVATE_NAVIGATION = /^\/(admin|familia|cuenta|ajustes)(\/|$)/;
+
 const serwist = new Serwist({
   precacheEntries: [...(self.__SW_MANIFEST ?? []), ...pageRoutes],
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
   runtimeCaching: [
-    // A3: /api/v1/sync is never cached, in either direction. A cached pull
-    // would replay stale records over newer local ones, and a cached push
-    // response would clear a dirty flag for a write the server never got.
-    // This sits before defaultCache so its same-origin rules cannot claim it.
+    // A3, widened by K14: /api/v1/sync is never cached, in either direction —
+    // a cached pull would replay stale records over newer local ones, and a
+    // cached push response would clear a dirty flag for a write the server
+    // never got. Every other session-bearing route is here for the reason
+    // above the constant: a cached copy outlives the access that produced it.
     {
-      matcher: ({ url }) => url.pathname === "/api/v1/sync",
+      matcher: ({ url }) => SESSION_BEARING_API.test(url.pathname),
+      handler: new NetworkOnly(),
+    },
+    // K14: and the pages that render those answers. A cached /familia is a
+    // cached list of who can see this pregnancy.
+    {
+      matcher: ({ url, sameOrigin }) =>
+        sameOrigin && PRIVATE_NAVIGATION.test(url.pathname),
       handler: new NetworkOnly(),
     },
     // Network-first with cached fallback for the two read APIs (spec §9).

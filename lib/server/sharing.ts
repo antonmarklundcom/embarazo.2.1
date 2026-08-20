@@ -50,11 +50,28 @@ export async function ensurePregnancyForOwner(
   if (existing[0]) return existing[0].id;
 
   const id = crypto.randomUUID();
-  await database.insert(pregnancies).values({
-    id,
-    ownerUserId,
-    updatedAt: now,
-  });
+  try {
+    await database.insert(pregnancies).values({
+      id,
+      ownerUserId,
+      updatedAt: now,
+    });
+  } catch (error) {
+    // K14 — `pregnancies_owner_idx` is UNIQUE now (see lib/server/schema.ts),
+    // so the loser of the read-then-insert race lands here instead of creating
+    // a second pregnancy for the same owner. The winner's row is committed by
+    // definition, so re-reading is the whole recovery: this call returns the
+    // same id the winner returned, which is what the caller wanted either way.
+    const raced = await database
+      .select({ id: pregnancies.id })
+      .from(pregnancies)
+      .where(eq(pregnancies.ownerUserId, ownerUserId))
+      .limit(1);
+    if (raced[0]) return raced[0].id;
+    // Not the race, then. A real failure the caller must see.
+    throw error;
+  }
+
   // The owner is a member of their own pregnancy. Without this row, "who can
   // see this" has to special-case the owner in every query that asks.
   await database.insert(pregnancyMembers).values({

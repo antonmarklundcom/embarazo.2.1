@@ -2499,3 +2499,196 @@ monthly is the amount of it this repo has.
 deliberately **not** fixed here — a lockfile-wide `audit fix` inside the PR
 that bumps the framework is how you lose the ability to say which change
 broke the build. Dependabot will bring them one group at a time.
+
+## PR-2 / K14 — security & cache correctness (August 2026)
+
+The audit's top findings, and the reason this PR blocks launch. The headline is
+not any single fix — it is that **K2's central promise was false in a built
+app, and nothing in the repo could tell**.
+
+### K2's "never cached" only became true here
+
+K2's own entry says the companion view "is fetched and never cached, which is
+what keeps revocation instant". That was true of the code K2 wrote. It was
+false of the app K2 shipped inside.
+
+`defaultCache` from `@serwist/next` carries a same-origin `NetworkFirst` rule
+for `/api/*` and more for navigations, and Serwist takes the **first matching**
+rule. K2's fetch had no caching of its own, so `defaultCache` claimed it: every
+companion snapshot went into the `apis` cache and was served from it whenever
+the network was slow or absent. Revoke a partner, put the phone in aeroplane
+mode, reload — the week, the due date and the baby's name came straight back
+out.
+
+The distance between "this code does not cache" and "this response is not
+cached" is a service worker nobody was thinking about while writing the fetch.
+That is the general lesson: **a caching layer is a shared global, and a feature
+that says nothing about caching has not opted out of it.**
+
+`e2e/revoked-companion.spec.ts` is the proof, and it was written failing first.
+With the `NetworkOnly` rules reverted it reports `["apis",
+"http://127.0.0.1:3000/api/v1/sharing"]` sitting in Cache Storage, and — with
+the cache assertion removed so the run reaches the end — a revoked companion
+offline still reads `Milena` off his screen. With the rules in place, both are
+gone and `/semana/24` still works offline, which is the half that must not
+break.
+
+Two details of that spec are worth keeping:
+
+- **It asserts Cache Storage, not just the screen.** A blank screen can be
+  blank for the wrong reason — a slow render, a renamed heading — while the
+  answer sits in a cache entry waiting for the next reader. The question is
+  what the phone is holding.
+- **`context.setOffline(true)` does not reach a request Playwright is
+  fulfilling itself.** The stub kept answering a phone with no signal, so the
+  service worker never fell through to its cache and the test passed against
+  the broken build. Offline is now modelled at the wire (`route.abort
+  ("internetdisconnected")`). A test that cannot fail is not evidence, and this
+  one could not, for its first three drafts.
+
+While writing it, the `**/api/v1/sharing**` glob the other companion specs use
+turned out to also intercept `/_next/static/chunks/app/api/v1/sharing/route-
+<hash>.js` — Next names a build chunk after the route — and serve it the stub's
+JSON, which the service worker then precached. Harmless everywhere except in a
+spec that inspects the cache, where it looks exactly like the leak. The new
+spec matches on `url.pathname` instead.
+
+### The pattern is derived, not listed
+
+`SESSION_BEARING_API` and `PRIVATE_NAVIGATION` in `app/sw.ts` are exported so
+that `lib/invariants/swCache.test.ts` can read them back out of the source,
+enumerate every `route.ts` under `app/api/v1`, decide which ones read a session
+**from their own source** (`getSession(` / `requireAdmin(`), and require the
+pattern to cover each. A hand-maintained list is the thing that goes stale, and
+going stale is the whole failure mode: the fix is one route away from being
+undone, silently, forever.
+
+It earned its place on its first run by finding `/api/v1/push`, which reads a
+session and was not in the pattern I had written. Its GET returns only the
+public VAPID key, so an argument could be made for exempting it — which is
+exactly why it is not exempted. A route whose safety depends on somebody
+re-deriving that argument leaks the day the handler grows.
+
+The test also asserts the **other** direction: `/directory`, `/placements` and
+the 42 week pages must NOT match, because marking those `NetworkOnly` would be
+a quiet offline regression in the part of the app that matters most on a bus.
+And it asserts the rules sit above `...defaultCache`, because below it they are
+unreachable and every other assertion still passes.
+
+`PRIVATE_NAVIGATION` matches on **pathname alone**, not
+`request.destination === "document"`. In an App Router app, tapping a link is
+not a document request — it is an `RSC: 1` fetch, filed under `pages-rsc`. A
+document-only rule would have left the common case, in-app navigation to
+`/familia`, cached exactly as before.
+
+### Clearing a cookie is not forgetting
+
+The `NetworkOnly` rules stop new private responses being written. They do
+nothing about the ones already on a phone that used the app before this build.
+So sign-out and account deletion now purge `apis`, `pages`, `pages-rsc`,
+`pages-rsc-prefetch` and `next-data` by name — **by name, not "delete
+everything"**, because the precache holds the 42 week pages and the guías,
+which are identical for every reader and are what makes the app work offline.
+
+The purge is unconditional in the deletion flow, including when the user
+declines the device wipe. That checkbox is about *her* data; the service
+worker's copy of `/familia` is ours, and there is no reading of "borrar mi
+cuenta" where it should survive. Making that true meant `handleSubmit` now runs
+on every submit rather than only when the wipe box is ticked, with a
+`preparedRef` so the `form.requestSubmit()` at the end does not re-enter it.
+
+### The push endpoint was a persistent SSRF
+
+`/api/v1/push` accepts an anonymous POST (B5's design, and still right) and
+stores an endpoint URL that **our own server later fetches on a schedule**.
+`z.string().url()` is as happy with `https://169.254.169.254/latest/meta-data/`
+as it is with FCM. Subscribe with an internal address and the app pokes it for
+you, from inside the network, with nobody waiting for the answer to look wrong.
+
+`lib/push/endpoints.ts` whitelists the real services by **host**, not by
+pattern — `endsWith(".googleapis.com")` is how a whitelist becomes an open
+redirect, and the tests cover `fcm.googleapis.com.attacker.example` and
+`evilfcm.googleapis.com` precisely because that is the mistake this shape
+invites. https only, no credentials, no port: an endpoint is a bearer
+capability in a URL and all three change who the request is really to.
+
+### `coalesce`, and a deletion that would have stopped working
+
+`saveSubscription`'s upsert set `userId: input.userId` unconditionally. Since
+the route is anonymous by design, **any** unauthenticated POST replaying a
+known endpoint set that row's owner to NULL — and a subscription with a NULL
+`userId` is one A5's account deletion can never find again. Not "a
+notification goes to the wrong person": a row that survives the deletion that
+was supposed to remove it, permanently, at the attacker's choosing.
+
+`coalesce(values(userId), userId)` refuses only the null case, which is exactly
+"an anonymous request may not un-own a subscription". Signing in later still
+links the row. Unsubscribing is DELETE's job and removes it outright.
+
+### Rate limits: the rightmost hop, and a second tier
+
+`clientKeyFromHeaders` read the **leftmost** `X-Forwarded-For` entry, which is
+whatever the caller wrote. One attacker varying the header got a fresh bucket
+every request and the limiter counted to one, forever; they could also fill
+somebody else's bucket by naming their address. The rightmost entry is the one
+our own proxy appended and is the only one no client can forge.
+
+`lib/invariants/rateLimits.test.ts` requires every route under `app/api/v1` to
+reach the limiter or to appear in an `EXEMPT` map **with a written reason**
+(`/health` is a liveness probe; `/push/dispatch` is secret-gated and called by
+a cron that is supposed to hammer it). It found three unthrottled routes
+nobody had listed — `/auth-status`, `/directory`, `/placements`.
+
+Throttling those three at 30/minute then broke the e2e suite, which is the
+finding: **the key is an IP address, and a clinic waiting room is one key.**
+30/min is right for a route that writes, signs a URL or costs money; for three
+routes that answer from memory and that the app itself asks for on every open,
+it presents as "the app is broken on this wifi". Hence `CHEAP_READ_LIMIT`
+(300), applied to exactly those three. The parallel Playwright workers sharing
+`127.0.0.1` were a fair simulation of the thing that would have happened in
+Asunción.
+
+### Smaller, and all of a kind
+
+- **The photo `confirm` payload is bounded** by `lib/sync/protocol.ts`'s 64 KB
+  refine. "Bounded in size so it cannot become a general data store" was a
+  comment above an unbounded field — an authenticated, unmetered key-value
+  store living in the photo index. The refine hangs off the union rather than
+  the `confirm` member: zod's `discriminatedUnion` takes objects, and a
+  member-level `.refine()` returns `ZodEffects`, which throws at module load.
+- **`pregnancies_owner_idx` is UNIQUE.** `ensurePregnancyForOwner` reads,
+  finds nothing, and inserts; two concurrent requests both read nothing and
+  both insert. The result is not an error anywhere — it is a family invited to
+  one pregnancy while her device publishes into the other, forever, with a
+  permanently stale snapshot and nothing to explain it. The database is the
+  only place that race can be settled. The loser now catches the duplicate key
+  and re-reads, so it returns the winner's id; a failure that is *not* the race
+  still throws.
+- **Security headers** are in `next.config.ts` because Hostinger managed Node
+  has no edge config and no proxy of ours: if they are not in the app they do
+  not exist. `Referrer-Policy` is the interesting one — `/semana/31` in a
+  `Referer` tells a sponsor's server how far along the visitor is, which is the
+  exact datum ARCHITECTURE.md §4.6 says never reaches them.
+- **CSP ships Report-Only** except `frame-ancestors 'none'`, which is enforced.
+  This app renders article bodies through `dangerouslySetInnerHTML` and Next
+  injects inline bootstrap scripts; an enforcing policy written without reading
+  a single report is a policy that blanks the app on somebody's phone. A
+  Report-Only header that is never promoted is theatre, so promoting it is on
+  K18's list.
+- **`lib/server/admin.test.ts` now exists.** `lib/server/admin.ts` has claimed
+  since A7 that "`admin.test.ts` fails the build if the word appears anywhere
+  under `app/admin`". There was no such file. The comment was the only thing
+  enforcing ARCHITECTURE.md §9, and a comment enforces nothing. It scans for
+  `payload`, for the photo identifiers §4.4 says `/admin` may not reach, for
+  K2/K3's shared health values, and it checks that every admin surface calls
+  `requireAdmin` — plus one test asserting the scanned file list is non-empty,
+  because a rename that emptied it would turn every other assertion into a
+  vacuous pass.
+
+### What this PR did not do
+
+The CSP is not enforcing. The rate limiter is still in-memory and per-process,
+so it resets on redeploy and does not coordinate across instances — fine for
+one Hostinger Node process, wrong the day there are two, and not something to
+fix speculatively. Neither is a K14 gap; both are written here so the next
+person finds the boundary rather than assuming there isn't one.

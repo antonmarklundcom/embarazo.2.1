@@ -146,7 +146,19 @@ export const pregnancies = mysqlTable(
     deletedAt: bigint("deletedAt", { mode: "number" }),
   },
   (table) => ({
-    ownerIdx: index("pregnancies_owner_idx").on(table.ownerUserId),
+    // K14 — UNIQUE, not a plain index.
+    //
+    // `ensurePregnancyForOwner` reads, finds nothing, and inserts. Two
+    // requests from the same account arriving together (an app open racing a
+    // sharing publish, or a double-tapped invite) both read nothing and both
+    // insert, and the owner ends up with two pregnancies. The second one is
+    // the one companions get invited to and the first is the one her device
+    // keeps publishing into — a family that sees a permanently stale snapshot,
+    // with no error anywhere to explain it.
+    //
+    // The database is the only place that race can be settled, so it settles
+    // it: the losing insert gets a duplicate-key error instead of a row.
+    ownerIdx: uniqueIndex("pregnancies_owner_idx").on(table.ownerUserId),
   }),
 );
 

@@ -33,14 +33,22 @@ test("the language toggle works with the network off", async ({ page, context })
   // pronouncing Guaraní through Spanish phonetics.
   await expect(page.locator("html")).toHaveAttribute("lang", "gn");
 
-  // And it is a preference, not a session: it survives a reload, still offline.
-  await page.reload();
-  await expect(page.getByRole("link", { name: "Ko ára" })).toBeVisible();
-  await expect(page.locator("html")).toHaveAttribute("lang", "gn");
-
+  // Both directions, still offline. Asserted here rather than after navigating
+  // back: `/ajustes` is `force-dynamic` and the service worker handles it
+  // NetworkOnly (K14), so any `goto` to it while the network is down — or in
+  // the moment after it comes back — aborts. That would be a test about the
+  // cache, and a flaky one; this is a test about the toggle.
   await page.getByRole("button", { name: "Castellano" }).click();
   await expect(page.getByRole("link", { name: "Hoy" })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("lang", "es-PY");
+
+  // And it is a preference, not a screen's state: it survives leaving the
+  // screen entirely, over a precached route, with the network still off.
+  await page.getByRole("button", { name: "Guaraní" }).click();
+  await expect(page.getByRole("link", { name: "Ko ára" })).toBeVisible();
+  await page.goto("/semana/15");
+  await expect(page.getByRole("link", { name: "Ko ára" })).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("lang", "gn");
 });
 
 test("safety copy shows Guaraní without anyone asking for it", async ({ page }) => {

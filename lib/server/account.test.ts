@@ -46,6 +46,7 @@ function memoryDb() {
     companionCheers: [],
     photoBlobs: [],
     contentStats: [],
+    communityQuestions: [],
     adminAudit: [],
   };
 
@@ -123,6 +124,9 @@ function memoryDb() {
         deletedObjects.push(row.objectKey as string);
       }
       return removeWhere("photoBlobs", (r) => r.userId === userId);
+    },
+    async deleteCommunityQuestions(userId) {
+      return removeWhere("communityQuestions", (r) => r.askedByUserId === userId);
     },
     async deleteCompanionTasks(pregnancyIds) {
       return removeWhere("companionTasks", (r) =>
@@ -242,6 +246,13 @@ function seed(db: ReturnType<typeof memoryDb>) {
   tables.aiGenerations!.push({ userId: VICTIM }, { userId: BYSTANDER });
 
   tables.contentStats!.push({ week: 12, contentId: "guia", day: "2026-08-12" });
+  // K20. The victim's approved question is the interesting one: it is public
+  // FAQ content by now, and it still goes.
+  tables.communityQuestions!.push(
+    { id: "q1", askedByUserId: VICTIM, status: "pending" },
+    { id: "q2", askedByUserId: VICTIM, status: "approved", answer: "Sí." },
+    { id: "q3", askedByUserId: BYSTANDER, status: "approved", answer: "Sí." },
+  );
   tables.adminAudit!.push({
     actorUserId: "admin-1",
     action: "support_delete",
@@ -405,6 +416,17 @@ describe("deleteAccountData", () => {
     // Nothing in contentStats belongs to anybody (§4.5), so there is nothing
     // to delete and deleting it would corrupt an aggregate.
     expect(db.tables.contentStats).toHaveLength(1);
+  });
+
+  it("takes her questions down, including the ones already published", async () => {
+    const db = memoryDb();
+    seed(db);
+    await deleteAccountData(db.executor, VICTIM);
+    // An approved question is on a public page other women are reading, and it
+    // still goes: /ajustes promises "no nos queda nada tuyo en el servidor",
+    // and her words are hers. An answer worth keeping is rewritten into
+    // lib/seed/faq.json, where content lives and no account can remove it.
+    expect(db.tables.communityQuestions!.map((r) => r.id)).toEqual(["q3"]);
   });
 
   it("is idempotent — deleting twice is not an error", async () => {

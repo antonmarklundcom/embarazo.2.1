@@ -8,6 +8,12 @@ import { z } from "zod";
 import { adminDb, recordAudit, requireAdmin } from "@/lib/server/admin";
 import { deleteAccountData, drizzleAccountExecutor } from "@/lib/server/account";
 import { invites } from "@/lib/server/schema";
+import { approveQuestion, rejectQuestion } from "@/lib/server/questions";
+import {
+  ANSWER_MAX,
+  ANSWER_MIN,
+  answerSchema,
+} from "@/lib/community/questions";
 
 // BUILD-PLAN A7 — the three mutating admin actions.
 //
@@ -130,4 +136,101 @@ export async function extendInvite(
 
   revalidatePath("/admin");
   return { ok: `Invitación reactivada por ${INVITE_EXTENSION_DAYS} días.` };
+}
+
+// ---------------------------------------------------------------------------
+// K20 — the two editorial decisions
+// ---------------------------------------------------------------------------
+
+const AnswerSchema = z
+  .object({
+    questionId: z.string().min(1).max(64),
+    answer: answerSchema,
+  })
+  .strict();
+
+const QuestionIdSchema = z
+  .object({ questionId: z.string().min(1).max(64) })
+  .strict();
+
+/**
+ * Publish a question, with its answer.
+ *
+ * One action, not two, because approval and the answer are one decision. A
+ * separate "approve" button would create a window in which an approved row has
+ * no answer — and the public query is one careless `filter` away from
+ * publishing a bare question in that window. Writing them together means the
+ * state never exists to get wrong.
+ *
+ * The audit row carries the question's id and nothing else: not the question,
+ * not the answer. `adminAudit` is the table deletion keeps, and a user's words
+ * must not survive there after her account is gone.
+ */
+export async function answerQuestion(
+  _previous: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
+  const actor = await requireAdmin();
+  const database = adminDb();
+  if (!database) notFound();
+
+  const parsed = AnswerSchema.safeParse({
+    questionId: formData.get("questionId"),
+    answer: formData.get("answer"),
+  });
+  if (!parsed.success) {
+    return {
+      error: `La respuesta tiene que tener entre ${ANSWER_MIN} y ${ANSWER_MAX} caracteres.`,
+    };
+  }
+
+  const done = await approveQuestion(
+    database,
+    parsed.data.questionId,
+    actor.id,
+    parsed.data.answer,
+  );
+  if (!done) return { error: "No encontramos esa pregunta." };
+
+  await recordAudit(database, {
+    actorUserId: actor.id,
+    action: "question_approved",
+    meta: { questionId: parsed.data.questionId },
+  });
+
+  revalidatePath("/admin/preguntas");
+  return { ok: "Publicada." };
+}
+
+/**
+ * Decline to publish.
+ *
+ * The row stays, unanswered, and the asker is told. A question that vanishes
+ * silently reads as a bug and gets asked again — and "we are not answering
+ * this here" is genuinely useful when the honest answer is "ask your doctor".
+ */
+export async function declineQuestion(
+  _previous: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
+  const actor = await requireAdmin();
+  const database = adminDb();
+  if (!database) notFound();
+
+  const parsed = QuestionIdSchema.safeParse({
+    questionId: formData.get("questionId"),
+  });
+  if (!parsed.success) return { error: "Pedido inválido." };
+
+  const done = await rejectQuestion(database, parsed.data.questionId, actor.id);
+  if (!done) return { error: "No encontramos esa pregunta." };
+
+  await recordAudit(database, {
+    actorUserId: actor.id,
+    action: "question_rejected",
+    meta: { questionId: parsed.data.questionId },
+  });
+
+  revalidatePath("/admin/preguntas");
+  return { ok: "No publicada." };
 }

@@ -14,6 +14,10 @@ export const ADMIN_ACTIONS = [
   "user_deleted",
   "invite_revoked",
   "invite_extended",
+  // K20. Deciding what the app publishes is an editorial act performed on
+  // somebody else's words, so it is audited like any other admin action.
+  "question_approved",
+  "question_rejected",
 ] as const;
 
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
@@ -49,6 +53,11 @@ export const AUDIT_META_SCHEMAS = {
   invite_extended: z
     .object({ code: z.string().min(1).max(32), days: z.number().int().positive() })
     .strict(),
+  // K20: the question's id and nothing else. Not the question text, not the
+  // answer, not who asked — the row itself holds all three, and copying any of
+  // them here would put user-written words in the one table deletion keeps.
+  question_approved: z.object({ questionId: z.string().min(1).max(64) }).strict(),
+  question_rejected: z.object({ questionId: z.string().min(1).max(64) }).strict(),
 } as const satisfies Record<AdminAction, z.ZodType>;
 
 /**

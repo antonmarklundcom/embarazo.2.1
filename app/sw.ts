@@ -86,7 +86,7 @@ const pageRoutes: string[] = [
  * There is nothing to lose — nothing about subscribing works offline anyway.
  */
 export const SESSION_BEARING_API =
-  /^\/api\/v1\/(sync|sharing|photos|auth-status|ai|push)(\/|$)/;
+  /^\/api\/v1\/(sync|sharing|photos|auth-status|ai|push|mis-preguntas)(\/|$)/;
 
 /**
  * Pages that render somebody's account, family or admin panel.
@@ -124,11 +124,20 @@ const serwist = new Serwist({
         sameOrigin && PRIVATE_NAVIGATION.test(url.pathname),
       handler: new NetworkOnly(),
     },
-    // Network-first with cached fallback for the two read APIs (spec §9).
+    // Network-first with cached fallback for the public read APIs (spec §9).
+    //
+    // K20 put `/api/v1/preguntas` here rather than leaving it to
+    // `defaultCache`, for the reason /preguntas exists at all: the questions
+    // women ask about privacy and about their rights are the ones they read
+    // before trusting the app, often on a bus. Note the sibling it is NOT:
+    // `/api/v1/mis-preguntas` reads the session and is covered by the
+    // NetworkOnly rule above — which is the whole reason the two are separate
+    // paths.
     {
       matcher: ({ url }) =>
         url.pathname === "/api/v1/placements" ||
-        url.pathname === "/api/v1/directory",
+        url.pathname === "/api/v1/directory" ||
+        url.pathname === "/api/v1/preguntas",
       handler: new NetworkFirst({
         cacheName: "mibebe-api",
         networkTimeoutSeconds: 5,

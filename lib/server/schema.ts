@@ -596,6 +596,60 @@ export const contentStats = mysqlTable(
 );
 
 // ---------------------------------------------------------------------------
+// Curated Q&A (K20)
+// ---------------------------------------------------------------------------
+
+/**
+ * Questions submitted by signed-in users, and the answers an admin writes.
+ *
+ * The privacy shape is the point (§5 D5). This table holds **text a user
+ * wrote**, which makes it unlike anything else the server stores: `syncRecords`
+ * is opaque payload the server cannot read, and `contentStats` carries no
+ * identity at all. Here the server can read the words, and a woman may well
+ * describe her own pregnancy in them.
+ *
+ * Three consequences, all structural rather than procedural:
+ *
+ *   - `askedByUserId` exists **only** so she can be shown her own question's
+ *     status and so account deletion can find the row. It is never selected
+ *     alongside `question` for any public read, and `publicQuestions.test.ts`
+ *     asserts that against the source.
+ *   - Publication is opt-in *by an administrator*, never by the asker: `status`
+ *     defaults to "pending" and nothing but an admin action moves it.
+ *   - The published Q&A carries no author. There is no display name column to
+ *     forget to omit, because there is no display name.
+ */
+export const communityQuestions = mysqlTable(
+  "communityQuestions",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    // Who asked. For her status view and for deletion — never for display.
+    askedByUserId: varchar("askedByUserId", { length: 255 }).notNull(),
+    question: text("question").notNull(),
+    status: mysqlEnum("status", ["pending", "approved", "rejected"])
+      .default("pending")
+      .notNull(),
+    // Written by an admin. Null until answered; an approved row without one is
+    // not publishable (see lib/community/questions.ts).
+    answer: text("answer"),
+    answeredByUserId: varchar("answeredByUserId", { length: 255 }),
+    createdAt: timestamp("createdAt", { mode: "date", fsp: 3 })
+      .defaultNow()
+      .notNull(),
+    decidedAt: timestamp("decidedAt", { mode: "date", fsp: 3 }),
+  },
+  (table) => ({
+    // The public read is "approved, newest first"; the admin read is
+    // "pending, oldest first". Both are this index.
+    statusIdx: index("community_questions_status_idx").on(
+      table.status,
+      table.createdAt,
+    ),
+    askedByIdx: index("community_questions_asked_by_idx").on(table.askedByUserId),
+  }),
+);
+
+// ---------------------------------------------------------------------------
 // Admin audit (A7)
 // ---------------------------------------------------------------------------
 
@@ -635,5 +689,6 @@ export const schema = {
   pushReminders,
   aiGenerations,
   contentStats,
+  communityQuestions,
   adminAudit,
 };

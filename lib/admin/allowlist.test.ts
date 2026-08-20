@@ -52,7 +52,16 @@ describe("ADMIN_EMAILS allowlist", () => {
 describe("audited actions", () => {
   it("names every mutating action, so adding one is a decision", () => {
     expect([...ADMIN_ACTIONS].sort()).toEqual(
-      ["invite_extended", "invite_revoked", "user_deleted", "user_viewed"].sort(),
+      [
+        "invite_extended",
+        "invite_revoked",
+        "user_deleted",
+        "user_viewed",
+        // K20: deciding what the app publishes is an editorial act performed
+        // on somebody else's words, so it is audited like any other.
+        "question_approved",
+        "question_rejected",
+      ].sort(),
     );
   });
 });

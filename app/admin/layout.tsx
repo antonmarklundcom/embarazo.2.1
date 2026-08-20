@@ -50,6 +50,13 @@ export default async function AdminLayout({
             >
               Métricas
             </Link>
+            {/* K20 — the moderation queue. */}
+            <Link
+              href="/admin/preguntas"
+              className="text-[13px] font-extrabold text-petrol"
+            >
+              Preguntas
+            </Link>
           </div>
           <p className="truncate text-xs text-muted">{actor.email}</p>
         </div>

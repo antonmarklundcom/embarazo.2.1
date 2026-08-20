@@ -11,6 +11,10 @@ const ADMIN_URLS = [
   "/admin",
   "/admin/usuarios/anyone",
   "/admin/usuarios/../../etc",
+  // K16 — the metrics page is behind the same guard as everything else, and it
+  // is worth naming here rather than trusting the layout: this is the page that
+  // would tell a stranger how many users the app has.
+  "/admin/metricas",
 ];
 
 test("every /admin URL 404s for someone who is not an administrator", async ({

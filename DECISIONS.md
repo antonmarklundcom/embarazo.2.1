@@ -2880,3 +2880,145 @@ for free.
 `PUSH_DISPATCH_SECRET` (B5) and the five `PHOTO_STORAGE_*` (K4) were never in
 `.env.example`. The push one is the worse omission: without it, scheduled
 reminders silently never fire and nothing says why.
+## PR-4 / K16 + K5 — the numbers, and the badge we gave up
+
+### K5 — the week comes back to one route, and only one
+
+J3 stripped four things to buy an honest **"No data collected"** badge on the
+Play listing: `department` from `/directory` and `/placements`, `trimester` +
+`department` from `/go`'s attribution, and the pregnancy `week` from
+`/api/v1/stats`. §5 D2 gave the badge up — the app has accounts, sync, family
+sharing and opt-in photo backup, so the declaration is honest either way and
+the badge can no longer veto a product decision.
+
+K5 restores **one** of those four, and the asymmetry is the decision worth
+recording. The other three stay gone, and not because of any badge:
+
+- `/directory` and `/placements` serve tens of seed entries that are already
+  precached. A parameterless route caches under **one key for every user in the
+  country**, which is a better offline design than a per-department cache would
+  ever be. J3 got a better route and paid for it with a filter that runs in a
+  millisecond on the device.
+- `/go`'s attribution is a fire-and-forget redirect to `wa.me`. Sending a
+  sponsor a trimester tells them a health fact about whoever just tapped, which
+  ARCHITECTURE.md §4.6 rules out on its own.
+
+What J3 cost on `/stats` was the feature's whole point. "Lo más leído **esta
+semana**" meant "in the last seven days" — not "by women as far along as you",
+which is the version anyone would actually want to read.
+
+**The week goes on the POST. The GET stays parameterless.** §7 is precise about
+this and it is the right call twice over: a `?week=` would put a health datum in
+a URL that proxies, access logs and browser history can all see, and it would
+give every reader their own cache entry on a route whose whole virtue is that
+one cached answer serves everybody.
+
+So the server returns **the top N for every week bucket in one payload** and the
+client picks its own — the cheapest possible personalisation, and the only one
+that costs nothing in privacy.
+
+Details that took a decision:
+
+- **Buckets of six weeks, not single weeks.** 42 buckets of three rows is a
+  payload nobody needs, and women four weeks apart are reading the same things.
+  Six-week spans approximate trimesters without pretending week 13 and week 14
+  are different worlds.
+- **The raw week is stored; the bucket is computed on read.** `WEEK_BUCKET_SPAN`
+  is a product decision, and grouping in SQL would bake it into the data. This
+  way changing it is a deploy, not a migration and a re-count.
+- **Bucket 0 is *everybody*, not "readers with no week".** It is the fallback
+  the client uses when its own bucket is empty. Without it, a quiet bucket would
+  render one woman's afternoon as what everyone is reading.
+- **Ties break by content id.** The response is cached for ten minutes and
+  shared by everybody; a tie broken by `Map` insertion order reshuffles the rail
+  between two readers for no reason either could see.
+- **`week` is optional on the wire.** A reader in `planeando` mode, a companion,
+  or somebody reading before onboarding has none. Those views count in bucket 0,
+  which is what `NO_WEEK` has meant since A1.
+- **`RecordContentView` waits for the profile read** rather than firing weekless
+  and again with a week. A view counted in the wrong bucket is worse than a view
+  counted half a second later.
+
+**The tests were amended, not deleted** — the plan says so and it is the right
+instinct anyway. `contentStats.test.ts` still rejects `userId`, `sessionId`,
+`deviceId`, `department`, `trimester`, and now `day` and `timestamp` too: a week
+plus a day bucket is not a person, and a week plus a minute-resolution timestamp
+starts to be one. The source scan that required the POST body to be exactly
+`{ contentId }` now pins both shapes and forbids a spread, which is the property
+that was actually worth having — the failure mode here was never "somebody adds
+a week", it is "somebody spreads a profile into the body".
+
+`docs/ANDROID-LAUNCH.md` §3.1 was rewritten from "protect the No data collected
+answer" into the actual Data-safety table, row by row, with the thing that makes
+each answer defensible. Two rows carry the interesting arguments:
+
+- **Health info is "linked to identity", and says so.** Synced records are keyed
+  to a user id, and claiming otherwise because the payload is opaque would be a
+  lie about the *shape* of the data rather than about its contents. What §4.3
+  buys is real and belongs in the privacy policy, which has room to say it: the
+  server stores an envelope it never queries into, so it does not learn which
+  symptom, which week or which note — even though it knows whose.
+- **App interactions: collected, NOT linked.** This is `/stats`, and it is the
+  one row where the architecture argues for you — no identity column exists
+  (A1), no session is read, no IP is retained, the finest timestamp is a
+  calendar day. The restored `week` is declared here rather than under Health
+  info, because the row is `(week, content_id, day, count)` with nothing to join
+  it to.
+
+§3.3's deletion requirements stopped being conditional. That surfaced a real
+gap: A5 built the in-app path, but **the public signed-out `/borrar-cuenta` page
+Play requires does not exist**. It is small and it is on the critical path for
+submission; noted in the doc rather than built here, because K5's scope is the
+stats route and the declarations.
+
+### K16 — metrics that cannot be reconstructed later
+
+Pre-launch for one reason: every number is derived from rows the app already
+writes, but the **history** is not recoverable. Ship this in month two and the
+first month of "did onboarding actually work?" is gone.
+
+Six blocks, all aggregate. The rule that makes "aggregate" structural rather
+than a rendering promise: every query is `count()`, `countDistinct()`, `sum` or
+`max`, so **there is no row to leak**. `adminMetrics.test.ts` asserts that
+against every `.select()` projection in the module, and `admin.test.ts` — which
+K14 wrote for `payload` — now scans this file too, from the day it was written,
+which is the only time adding it is free.
+
+A third rule follows, and it is the temptation worth naming: **there is no
+cohort small enough to be a person.** "Users in Itapúa who logged a symptom this
+week" eventually returns one row, and one row about health data is not an
+aggregate. Nothing here filters by anything but time and store; the test pins
+`groupBy` to `syncRecords.store` and `invites.role` and nothing else, so adding
+a dimension is a decision somebody has to make on purpose.
+
+Three numbers needed honesty more than precision:
+
+- **The onboarding funnel measures only signed-in users.** "Seguir sin cuenta"
+  leaves no server trail at all — by design — so the funnel cannot see it. The
+  page says so above the numbers rather than presenting a completion rate that
+  silently excludes most of the app's users. There is no per-step event log and
+  K16 deliberately does not add one: an analytics pipeline for a five-step
+  screen is a lot of new surface, and the trail each completed step already
+  leaves (account → profile row → pregnancy row → invite → acceptance) answers
+  the question well enough to act on.
+- **DAU/WAU counts people who *wrote* something, not who opened the app.** A
+  woman who reads her week and closes the app is not counted, and she is a
+  successful user. The alternative is a request whose only purpose is to say "I
+  am here" — a beacon, from a health app, attached to an account — and that is
+  not worth a nicer chart. The card says which number it is.
+- **Week-2 retention only counts accounts at least 14 days old.** Including
+  younger ones would count everyone who signed up yesterday as "did not return",
+  so the number would fall every time the app grew. A retention metric that
+  drops when you acquire users is worse than no metric, because people act on
+  it.
+
+Two smaller ones:
+
+- **Invites are split by role.** A pareja invite is the one the growth story
+  depends on; averaging it with familia invites hides whichever is failing.
+  `expired` excludes accepted and revoked invites so the columns add up.
+- **Tool usage lists every synced store, including the empty ones.** A tool
+  nobody has ever used is the most actionable row on the page, and it is exactly
+  the row a `GROUP BY` omits. Both "people" and "records" are shown, because
+  4 000 kick sessions from 12 women and 4 000 from 900 are different products
+  and one number cannot tell them apart.

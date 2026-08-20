@@ -1,4 +1,18 @@
-import type { Article } from "../types";
+/**
+ * The minimum an article-like row needs for this module to rank it.
+ *
+ * Structural rather than `Article`, because K11 made the home rail render an
+ * *index* (slug · title · range · minutes) instead of the full articles — the
+ * bodies and zod stopped shipping to the browser. The ranking rule did not
+ * change, so it should not have needed a second copy that takes a different
+ * type; it needed to say what it actually reads, which is a week range and a
+ * cluster.
+ */
+export interface RankableArticle {
+  fromWeek?: number;
+  toWeek?: number;
+  cluster?: string;
+}
 
 // BUILD-PLAN C6 — which guías belong to which week (feature map #15).
 //
@@ -18,14 +32,14 @@ export const WEEK_FEED_SIZE = 3;
  * about her week; they may never push a guía about week 34 behind a general
  * one in week 34.
  */
-export function weekSpan(article: Article): number {
+export function weekSpan(article: RankableArticle): number {
   if (article.fromWeek === undefined || article.toWeek === undefined) {
     return Number.POSITIVE_INFINITY;
   }
   return article.toWeek - article.fromWeek;
 }
 
-function matchesWeek(article: Article, week: number): boolean {
+function matchesWeek(article: RankableArticle, week: number): boolean {
   if (article.fromWeek === undefined || article.toWeek === undefined) return true;
   return week >= article.fromWeek && week <= article.toWeek;
 }
@@ -42,11 +56,11 @@ function matchesWeek(article: Article, week: number): boolean {
  * Ties keep the file's order, so a content editor can decide what leads by
  * moving an entry rather than by discovering an invisible rule.
  */
-export function articlesForWeek(
-  articles: readonly Article[],
+export function articlesForWeek<T extends RankableArticle>(
+  articles: readonly T[],
   week: number,
   limit: number = WEEK_FEED_SIZE,
-): Article[] {
+): T[] {
   return articles
     .filter((article) => matchesWeek(article, week))
     .map((article, index) => ({ article, index }))
@@ -56,6 +70,6 @@ export function articlesForWeek(
 }
 
 /** True when the article names this week specifically rather than the whole pregnancy. */
-export function isWeekSpecific(article: Article): boolean {
+export function isWeekSpecific(article: RankableArticle): boolean {
   return article.fromWeek !== undefined && article.toWeek !== undefined;
 }

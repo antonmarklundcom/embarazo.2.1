@@ -3517,3 +3517,92 @@ outlive her account by riding along in an audit payload.
 - **Signed-out visitors read everything and are told why asking needs an
   account** — rather than being shown a textarea that 401s after they have
   typed their question.
+
+## PR-8 / K11 — 224 kB to 174 kB, and what the browser was downloading for nothing
+
+`docs/FABLE-PLAN-2026-08.md` §6 K11 with §7's verified target list. Home First
+Load JS: **224 kB → 174 kB**, under G3's ~175 kB budget. Measured last, as the
+sequencing required, so the number is the real home screen after K7's surfaces,
+K9's onboarding and K19's dictionary all landed.
+
+### The article index — the change worth reading
+
+`WeekArticleFeed` and `PopularThisWeek` are client components on the home
+screen, and both imported `ARTICLES`. That bought the browser three things it
+had no use for: **every article body** (~17 kB of HTML the home screen never
+renders — it renders eight titles and links away), **zod and
+`lib/content/schemas.ts` with it** (the seed loader validates at import time,
+which is right on a server and pure weight in a browser: the JSON was validated
+at build time and cannot have changed in transit), and a reason for all of it to
+sit in the one bundle every user pays for before seeing anything.
+
+So the rails read an **index** — slug, title, week range, precomputed minutes —
+generated from the bodies at build time by `scripts/build-article-index.mts`.
+
+The interesting tension is with `readTime.ts`'s own rule: *a read time must
+never be stored, because a stored figure is one somebody has to remember to
+update, and the first edit that skips it makes every other one untrustworthy.*
+The index stores one. That rule survives because **nobody maintains the number,
+the build does** — `prebuild` regenerates, and `index.test.ts` fails if the
+committed index disagrees with `articles.json` by so much as a formatting
+difference. A generated, committed file is only honest if something checks it.
+
+`articlesForWeek` and `articlesForReader` are now generic over a structural
+`RankableArticle` (`{ fromWeek?, toWeek?, cluster? }`) rather than `Article`.
+The ranking rule did not change, so it did not deserve a second copy taking a
+different type; it deserved to say what it actually reads.
+
+### `next/dynamic`, and what it is not
+
+Two groups, dynamic for different reasons. **Whole-screen alternatives** —
+`Onboarding`, `CompanionHome`, `PlaneandoHome` — each replace the entire home
+screen for one kind of user and are dead weight for the other two; Onboarding
+is the largest and renders exactly once in a user's life. **Below the fold** —
+everything from `WeeklyLineCard` down, including the three cards that each load
+a whole seed file (limb sizes, perspectives, obstetra notes) to render one
+week's row out of it.
+
+**No `ssr: false` anywhere.** All of it is still prerendered into the static
+HTML. This changes when the *JavaScript* arrives, not whether the content does,
+so nothing below the fold becomes a blank space for a reader on a slow
+connection — which would have traded a budget number for the exact experience
+G3 exists to protect.
+
+The service worker got the same treatment: it imported `ARTICLES` to precache
+eight slugs, putting every article body into the worker bundle every user
+downloads. It reads the index now.
+
+### The weekly images: a runtime rule, not a precache
+
+K11 asks to precache the current ±1 week images. **They do not exist yet** —
+`public/assets/semanas/` is empty, the founder has not added the renders
+(REDESIGN-PLAN.md §4), and `WeekHeroImage` falls back to the week number. Listing
+`bebe-12.webp` in `precacheEntries` today would make every install fetch a 404,
+and a failed precache entry fails the whole install, taking the app's offline
+mode with it.
+
+A `CacheFirst` runtime rule for `/assets/semanas/bebe-N.webp` costs nothing
+while the directory is empty and starts working the day the images land: the
+week she is on is the screen she opens daily, so the second visit is already
+offline-capable. CacheFirst because a week render is immutable content at a
+URL versioned by meaning — if it changes, it is a different week.
+
+### Measured
+
+| | Before | After |
+|---|---|---|
+| Home First Load JS | 224 kB | **174 kB** |
+| Home route chunk | 35.4 kB | 14.8 kB |
+
+Lighthouse (production build, headless Chromium, mobile emulation): performance
+**91**, accessibility **96**, best practices **96**, SEO **100**. FCP 0.8 s,
+Speed Index 0.8 s, TBT 80 ms, CLS 0. LCP is 3.4 s and is the remaining weak
+spot — it is the week hero, which today renders the fallback block rather than
+an image. Numbers from a container against localhost are a regression signal,
+not a field measurement; the real one is a mid-range Android on Paraguayan
+mobile data, and that is a founder task.
+
+Lighthouse 12 no longer scores a PWA category, so "PWA pass" is asserted where
+it is actually checkable: the manifest, icons, offline fallback and precache
+are covered by `e2e/offline.spec.ts` and the installability checks that shipped
+with P1.

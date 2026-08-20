@@ -1,7 +1,11 @@
-import type { Article } from "@/lib/types";
 import type { ChecklistGroup } from "@/lib/checklists";
 import type { WorkSituation } from "@/lib/derechos";
-import { articlesForWeek, weekSpan, WEEK_FEED_SIZE } from "@/lib/articles/forWeek";
+import {
+  articlesForWeek,
+  weekSpan,
+  WEEK_FEED_SIZE,
+  type RankableArticle,
+} from "@/lib/articles/forWeek";
 
 // K9-F5 (docs/FABLE-PLAN-2026-08.md §3) — the three onboarding answers, and
 // everything they are allowed to change.
@@ -190,12 +194,12 @@ export function clusterBoost(
  *
  * With no answers this is `articlesForWeek` exactly, asserted by test.
  */
-export function articlesForReader(
-  articles: readonly Article[],
+export function articlesForReader<T extends RankableArticle>(
+  articles: readonly T[],
   week: number,
   answers: PregnancyAnswers,
   limit: number = WEEK_FEED_SIZE,
-): Article[] {
+): T[] {
   if (isUnanswered(answers)) return articlesForWeek(articles, week, limit);
 
   const candidates = articlesForWeek(articles, week, limit * 2);

@@ -2,7 +2,92 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useProfile } from "@/lib/useProfile";
+
+// K11 (G3) — what the home route does NOT have to download to render "Hoy".
+//
+// Everything below is `next/dynamic`, and the two groups are dynamic for
+// different reasons:
+//
+// **Whole-screen alternatives.** `Onboarding`, `CompanionHome` and
+// `PlaneandoHome` each replace the entire home screen for one kind of user, and
+// each is dead weight for the other two. Onboarding in particular is the
+// biggest of the three and is rendered exactly once in a user's life — paying
+// for it in every First Load JS afterwards is the clearest waste on this route.
+//
+// **Below the fold.** The cards from `LocalResourcesBlock` down are past the
+// first screenful on any phone this app targets. They are not less important;
+// they are simply not what the user is looking at while the page paints, and
+// on a 3G connection in Concepción the difference is the whole point of G3.
+//
+// `ssr: false` is not used anywhere here. These are prerendered into the static
+// HTML as before — this changes when the *JavaScript* arrives, not whether the
+// content does, so nothing below the fold turns into a blank space for a reader
+// with a slow connection or no JS yet.
+
+const Onboarding = dynamic(() =>
+  import("@/components/Onboarding").then((m) => m.Onboarding),
+);
+const CompanionHome = dynamic(() =>
+  import("@/components/CompanionHome").then((m) => m.CompanionHome),
+);
+const PlaneandoHome = dynamic(() =>
+  import("@/components/PlaneandoHome").then((m) => m.PlaneandoHome),
+);
+// These three each load a whole seed file — limb sizes, perspectives,
+// obstetra notes — to render one week's row out of it, and each validates it
+// with zod on the way. That is ~17 kB of JSON plus the schema module, for
+// content the reader meets after scrolling past the hero, the tip and the
+// shortcuts.
+const SizeTabs = dynamic(() =>
+  import("@/components/SizeTabs").then((m) => m.SizeTabs),
+);
+const PerspectiveSwitcher = dynamic(() =>
+  import("@/components/PerspectiveSwitcher").then((m) => m.PerspectiveSwitcher),
+);
+const ObstetraCard = dynamic(() =>
+  import("@/components/ObstetraCard").then((m) => m.ObstetraCard),
+);
+const WeeklyLineCard = dynamic(() =>
+  import("@/components/WeeklyLineCard").then((m) => m.WeeklyLineCard),
+);
+const MedicalReviewByline = dynamic(() =>
+  import("@/components/MedicalReviewByline").then((m) => m.MedicalReviewByline),
+);
+const CheersCard = dynamic(() =>
+  import("@/components/CheersCard").then((m) => m.CheersCard),
+);
+const FamilyCard = dynamic(() =>
+  import("@/components/FamilyCard").then((m) => m.FamilyCard),
+);
+const NextAppointmentCard = dynamic(() =>
+  import("@/components/NextAppointmentCard").then((m) => m.NextAppointmentCard),
+);
+const MoodCheckIn = dynamic(() =>
+  import("@/components/MoodCheckIn").then((m) => m.MoodCheckIn),
+);
+const WeekArticleFeed = dynamic(() =>
+  import("@/components/WeekArticleFeed").then((m) => m.WeekArticleFeed),
+);
+const LocalResourcesBlock = dynamic(() =>
+  import("@/components/LocalResourcesBlock").then((m) => m.LocalResourcesBlock),
+);
+const PopularThisWeek = dynamic(() =>
+  import("@/components/PopularThisWeek").then((m) => m.PopularThisWeek),
+);
+const ShareCard = dynamic(() =>
+  import("@/components/ShareCard").then((m) => m.ShareCard),
+);
+const RoadmapSection = dynamic(() =>
+  import("@/components/RoadmapSection").then((m) => m.RoadmapSection),
+);
+const InstallCard = dynamic(() =>
+  import("@/components/InstallCard").then((m) => m.InstallCard),
+);
+const InviteFriend = dynamic(() =>
+  import("@/components/InviteFriend").then((m) => m.InviteFriend),
+);
 import {
   formatCompletedGestation,
   formatWeekPlusDay,
@@ -25,36 +110,20 @@ function babyAtWeekLabel(babies: BabyIdentity[], role: Role, week: number): stri
   const name = primaryBabyName(babies);
   return name ? `${name} a las ${week} semanas` : roleBabyAtWeekLabel(role, week);
 }
-import { Onboarding } from "@/components/Onboarding";
+
 import { hasOnboardingDraft } from "@/lib/onboarding/draftStorage";
 import { INVITE_CODE_PARAM } from "@/lib/sharing/inviteLink";
-import { CompanionHome } from "@/components/CompanionHome";
-import { MoodCheckIn } from "@/components/MoodCheckIn";
-import { CheersCard } from "@/components/CheersCard";
+
 import {
   companionViewOf,
   ownerViewOf,
   useSharedViews,
 } from "@/lib/sharing/useSharedViews";
-import { PlaneandoHome } from "@/components/PlaneandoHome";
-import { LocalResourcesBlock } from "@/components/LocalResourcesBlock";
-import { NextAppointmentCard } from "@/components/NextAppointmentCard";
-import { WeeklyLineCard } from "@/components/WeeklyLineCard";
-import { SizeTabs } from "@/components/SizeTabs";
-import { PerspectiveSwitcher } from "@/components/PerspectiveSwitcher";
-import { ObstetraCard } from "@/components/ObstetraCard";
-import { WeekArticleFeed } from "@/components/WeekArticleFeed";
-import { PopularThisWeek } from "@/components/PopularThisWeek";
+
 import { HomeShortcuts } from "@/components/HomeShortcuts";
-import { ShareCard } from "@/components/ShareCard";
-import { RoadmapSection } from "@/components/RoadmapSection";
-import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { PrivacyLine } from "@/components/PrivacyLine";
-import { InstallCard } from "@/components/InstallCard";
 // D1: one icon set, shared with the herramientas grid so the two cannot drift.
 import { ToolIcon, type ToolIconName } from "@/components/ToolIcon";
-import { InviteFriend } from "@/components/InviteFriend";
-import { FamilyCard } from "@/components/FamilyCard";
 
 // "Hoy" screen — Mi Bebé design 1a (docs/REDESIGN-PLAN.md §2): week strip,
 // photo hero with fallback, tip, mood check-in, herramientas grid, reading

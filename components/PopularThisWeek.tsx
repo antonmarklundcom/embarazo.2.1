@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { ARTICLES } from "@/lib/seed/articles";
+import { ARTICLE_INDEX } from "@/lib/articles/loadIndex";
 import {
   weekBucket,
   type PopularByBucket,
@@ -57,7 +57,7 @@ export function PopularThisWeek() {
   // An id we no longer publish (a retired guía) is dropped rather than rendered
   // as a dead link — the counter outlives the content.
   const items = popular
-    .map((item) => ARTICLES.find((article) => article.slug === item.contentId))
+    .map((item) => ARTICLE_INDEX.find((article) => article.slug === item.contentId))
     .filter((article) => article !== undefined);
 
   if (items.length === 0) return null;

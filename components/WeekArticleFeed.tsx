@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 
-import { ARTICLES } from "@/lib/seed/articles";
-import { readTimeLabel } from "@/lib/articles/readTime";
+import { ARTICLE_INDEX } from "@/lib/articles/loadIndex";
+import { indexReadTimeLabel } from "@/lib/articles/index";
 import {
   articlesForReader,
   type PregnancyAnswers,
@@ -17,8 +17,12 @@ import {
 // trámites at 38, control prenatal at 8 — and falls back to the ones that hold
 // for the whole pregnancy rather than showing an empty rail.
 //
-// Read time is computed from the body, never stored (`lib/articles/readTime.ts`),
-// so it cannot go stale when somebody edits an article.
+// K11: this rail reads the build-time **index** (slug · title · range ·
+// minutes), not `ARTICLES`. It renders titles and links away, so the article
+// bodies — and the zod that validates them — were ~17 kB of the home screen's
+// First Load JS doing nothing. Read time is still computed from the body and
+// still never hand-maintained; it is computed at build time now, and a test
+// fails if the index drifts from the content.
 //
 // K9-F5: `answers` are onboarding's three optional questions. They break ties
 // among guías that are equally about this week — a woman who told us she works
@@ -36,7 +40,7 @@ export function WeekArticleFeed({
   week: number;
   answers?: PregnancyAnswers;
 }) {
-  const articles = articlesForReader(ARTICLES, week, answers);
+  const articles = articlesForReader(ARTICLE_INDEX, week, answers);
   if (articles.length === 0) return null;
 
   return (
@@ -66,7 +70,7 @@ export function WeekArticleFeed({
                 {article.title}
               </p>
               <p className="mt-1.5 text-[11px] font-bold text-muted">
-                {readTimeLabel(article.html)}
+                {indexReadTimeLabel(article)}
               </p>
             </div>
           </Link>

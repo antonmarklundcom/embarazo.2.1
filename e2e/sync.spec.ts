@@ -298,6 +298,14 @@ test("data is not uploaded into a different account", async ({ browser }) => {
 
   // Somebody else signs in on this phone.
   server.accountId = "user-b";
+  // The reload is load-bearing — "Guardar" is disabled once today's weight is
+  // saved, and a fresh page is what re-enables it. What it must not do is
+  // navigate while the round-trip `reconnect` just kicked off is still in
+  // flight: `expect.poll` above returns as soon as the SERVER has the rows,
+  // which is before the client has finished with the response. Navigating in
+  // that window is how this aborted with `net::ERR_ABORTED` on loaded CI
+  // runners while passing on every developer machine.
+  await a.waitForLoadState("networkidle");
   await a.goto("/herramientas/peso");
   await a.locator("#kg").fill("70");
   await a.getByRole("button", { name: /Guardar/ }).click();

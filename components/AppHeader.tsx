@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useT } from "@/lib/i18n/useLocale";
 
 // App header — "Mi Bebé" design 1a: brand circle mark + 900 wordmark,
 // terracotta SOS pill, bordered round Ajustes button.
 export function AppHeader() {
+  const t = useT();
   return (
     <header
       className="sticky top-0 z-30 border-b border-line bg-cream/90 backdrop-blur print:hidden"
@@ -22,11 +24,11 @@ export function AppHeader() {
             href="/emergencia"
             className="flex h-9 items-center rounded-full bg-terracotta px-3.5 text-xs font-black tracking-wide text-white transition active:scale-95"
           >
-            SOS
+            {t("header.emergency")}
           </Link>
           <Link
             href="/ajustes"
-            aria-label="Ajustes"
+            aria-label={t("header.settings")}
             className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white text-muted transition hover:bg-black/5"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>

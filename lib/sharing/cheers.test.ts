@@ -23,28 +23,28 @@ describe("the cheer list", () => {
   it("gives every entry something to show and something to press", () => {
     for (const cheer of CHEERS) {
       expect(cheer.emoji.length, cheer.id).toBeGreaterThan(0);
-      expect(cheer.text.length, cheer.id).toBeGreaterThan(0);
+      expect(cheer.text.es.length, cheer.id).toBeGreaterThan(0);
       expect(cheer.buttonLabel.length, cheer.id).toBeGreaterThan(0);
       // Short enough to sit on a home screen without becoming a paragraph.
-      expect(cheer.text.length, cheer.id).toBeLessThanOrEqual(60);
+      expect(cheer.text.es.length, cheer.id).toBeLessThanOrEqual(60);
     }
   });
 
   it("says something different in each entry", () => {
     // Five buttons that mean the same thing is one button and four taps of
     // hesitation.
-    expect(new Set(CHEERS.map((c) => c.text)).size).toBe(CHEERS.length);
+    expect(new Set(CHEERS.map((c) => c.text.es)).size).toBe(CHEERS.length);
   });
 
   it("carries Guaraní only where the phrase is really said in Guaraní", () => {
     // `as const satisfies` keeps each entry's literal type, which means the
-    // entries without a Guaraní line genuinely have no `textGu` property.
+    // entries without a Guaraní line genuinely have no `gn` property.
     // Widening here is the point of the assertion, not a workaround.
-    const withGuarani = (CHEERS as readonly Cheer[]).filter((c) => c.textGu);
+    const withGuarani = (CHEERS as readonly Cheer[]).filter((c) => c.text.gn);
     expect(withGuarani.length).toBeGreaterThan(0);
     for (const cheer of withGuarani) {
-      expect(cheer.textGu!.trim().length, cheer.id).toBeGreaterThan(0);
-      expect(cheer.textGu, cheer.id).not.toBe(cheer.text);
+      expect(cheer.text.gn!.trim().length, cheer.id).toBeGreaterThan(0);
+      expect(cheer.text.gn, cheer.id).not.toBe(cheer.text.es);
     }
   });
 });

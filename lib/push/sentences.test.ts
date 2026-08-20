@@ -38,7 +38,7 @@ describe("cheerSentence", () => {
   it("renders the cheer's own words from the id", () => {
     for (const cheer of CHEERS) {
       const sentence = cheerSentence(cheer.id);
-      expect(sentence.body).toContain(cheer.text);
+      expect(sentence.body).toContain(cheer.text.es);
       expect(sentence.body).toContain(cheer.emoji);
     }
   });

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useProfile } from "@/lib/useProfile";
+import { useT } from "@/lib/i18n/useLocale";
 
 // Fixed bottom tab bar — "Mi Bebé" design: terracotta active state,
 // white bar over line border.
@@ -24,13 +25,16 @@ function checklistHref(mode: "embarazada" | "planeando"): string {
 export function BottomNav() {
   const pathname = usePathname();
   const { mode } = useProfile();
+  // K19-L1: the five tab labels are the most-read strings in the app, which is
+  // why they are the first thing the locale toggle has to move.
+  const t = useT();
 
   const TABS = [
-    { href: "/", label: "Hoy", icon: HomeIcon },
-    { href: "/guias", label: "Guías", icon: BookIcon },
-    { href: checklistHref(mode), label: "Checklist", icon: ChecklistIcon },
-    { href: "/herramientas", label: "Herramientas", icon: ToolsIcon },
-    { href: "/directorio", label: "Cerca tuyo", icon: MapIcon },
+    { href: "/", label: t("nav.today"), icon: HomeIcon },
+    { href: "/guias", label: t("nav.guides"), icon: BookIcon },
+    { href: checklistHref(mode), label: t("nav.checklist"), icon: ChecklistIcon },
+    { href: "/herramientas", label: t("nav.tools"), icon: ToolsIcon },
+    { href: "/directorio", label: t("nav.nearby"), icon: MapIcon },
   ];
 
   function isActive(href: string): boolean {

@@ -59,14 +59,14 @@ export function CheersCard({ cheers }: { cheers: ReceivedCheer[] }) {
             </span>
             <div className="min-w-0">
               <p className="text-[15px] font-extrabold leading-snug text-ink">
-                {cheer.text}
+                {cheer.text.es}
                 {count > 1 && (
                   <span className="ml-1.5 font-black text-petrol">×{count}</span>
                 )}
               </p>
-              {cheer.textGu && (
-                <p className="text-sm font-semibold italic text-ink/70">
-                  {cheer.textGu}
+              {cheer.text.gn && (
+                <p lang="gn" className="text-sm font-semibold italic text-ink/70">
+                  {cheer.text.gn}
                 </p>
               )}
               <p className="text-xs text-muted">{relative(latestAt, now)}</p>

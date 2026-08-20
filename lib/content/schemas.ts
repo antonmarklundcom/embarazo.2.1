@@ -89,6 +89,43 @@ export const fixedTimestampSchema = z
     "el timestamp (ms desde epoch) está fuera de rango 2024–2035 — usá un valor fijo, no Date.now()",
   );
 
+/**
+ * K19-L0 — a string that may carry a Guaraní translation alongside its es-PY
+ * original.
+ *
+ * This generalises the ad-hoc `text` / `textGu` pair that `lib/emergency.ts`
+ * and `lib/sharing/cheers.ts` grew independently. One shape, because the
+ * rendering rule is one rule: on a safety surface the Guaraní line is shown
+ * **stacked under the Spanish and always** (D6) — never behind the locale
+ * toggle, because the woman who needs the Guaraní sentence at 3 a.m. is
+ * exactly the woman who never opened Ajustes.
+ *
+ * `gn` is optional and stays optional. Guaraní here is hand-written and
+ * pending native-speaker review (a founder gate, like the medical reviewer);
+ * a required field would have forced someone to invent the missing lines to
+ * make the build pass, which is the failure mode the gate exists to prevent.
+ *
+ * The two refinements are the ones a translation pass actually gets wrong:
+ * a blank `gn` (a key added, the sentence never written) and a `gn` that is a
+ * verbatim copy of the `es` (a paste that looks translated in a diff).
+ */
+export const bilingualTextSchema = z
+  .object({
+    es: z.string().min(1, "falta el texto en español"),
+    gn: z.string().min(1).optional(),
+  })
+  .refine(
+    (t) => t.gn === undefined || t.gn.trim().length > 0,
+    "el texto en guaraní está vacío — escribí la frase o sacá la clave `gn`",
+  )
+  .refine(
+    (t) => t.gn === undefined || t.gn.trim() !== t.es.trim(),
+    "el texto en guaraní es idéntico al español — parece un copiar/pegar, no una traducción",
+  );
+
+/** A string with an optional Guaraní twin. See `bilingualTextSchema`. */
+export type BilingualText = z.infer<typeof bilingualTextSchema>;
+
 export const ArticleSchema = z.object({
   slug: slugSchema,
   title: z.string().min(1),

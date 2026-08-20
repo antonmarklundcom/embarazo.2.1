@@ -3327,3 +3327,97 @@ piece of markup in the content files able to rot into a 404 with nothing
 noticing — and a map can be tested: every slug exists, every href is a real
 route, and the map stays sparse, because a "related tool" on every article is a
 slot somebody eventually fills with the nearest-looking tool.
+
+## PR-6 / K19 — Guaraní where it is not optional, and a toggle over the rest
+
+`docs/FABLE-PLAN-2026-08.md` §6 K19, under §5 D6: **L0 + L1**. Two layers,
+because Guaraní is two different problems in this app and only one of them is
+a preference.
+
+### L0 — the layer nobody opts into
+
+The alarm signs already carried a hand-written `textGu`; so did three of the
+five cheers. Two modules had independently grown the same idea with different
+key names, which is how a codebase ends up with three. `bilingualTextSchema`
+in `lib/content/schemas.ts` makes it one shape, `{ es, gn? }`, validated by the
+same zod the content files use, and both old spellings are gone.
+
+The rule that shape encodes is D6's: **stacked, always**. `components/Bilingual.tsx`
+does not read the locale — deliberately, and a test asserts it does not import
+`lib/i18n` at all. The woman who needs "Osẽramo ndehegui tuguy" at 3 a.m. is
+precisely the woman who never opened Ajustes, and a safety line behind a
+setting is a safety line for people who already had a good day.
+
+What got Guaraní, and the boundary that decided it:
+
+- **`/emergencia` entirely** — not just the list. A bilingual list under a
+  monolingual heading helps nobody: if the sentence saying *what the list is
+  for* is unreadable, the translated bullets are decoration. So the lead, the
+  heading, the call script and the two numbers' descriptions carry it too.
+- **Alarm signs: all nine or none.** A list where six of nine lines have
+  Guaraní reads as "the other three are less serious". Its own test.
+- **`/derechos` headlines only.** Bodies stay Spanish, and the split is the
+  decision: she scans twelve headlines to find *which* right is hers, and the
+  headline is what she scans. The paragraph under it quotes Ley 5508 and IPS
+  procedure — a hand-written translation pending review would be a legal claim
+  nobody has checked.
+- **"Cuándo ir ya al hospital" is a routing line, not triage.** Which sign
+  means *go* rather than *call* is a medical judgement, and this batch adds
+  language, not medicine. What `GO_NOW_LINE` does say is the thing no list
+  states and every woman needs: a phone that does not answer is not a reason
+  to wait.
+
+⚠️ Every Guaraní string in this PR is pending **native-speaker review** — the
+same founder gate as the medical reviewer, and it gates shipping the strings,
+not merging the mechanism. The register is jopara, the everyday mixed Guaraní
+actually spoken, not academic Guaraní.
+
+### L1 — the toggle, and the four things it is not
+
+`lib/i18n/dict.ts` is ~40 lines of hand-written TypeScript. `es` is the source
+of truth; `gn` is typed `Record<CoreKey, string>`, so a forgotten key is a
+**build error**, not `undefined` rendered into a nav label. The test covers
+what the type cannot: blank strings, and the copy-paste that leaves a
+"translation" identical to its Spanish (with a five-entry allowlist for the
+borrowings people genuinely say — SOS, WhatsApp, Checklist).
+
+Each exclusion in the plan pays for something the app already committed to:
+
+- **No locale routes.** `/emergencia` is precached and opened offline.
+  `/gn/emergencia` is a second URL to precache, a second cache entry per page,
+  and a woman whose locale changed after her last online session tapping into
+  a route she has never fetched. The locale on the profile row costs zero URLs.
+- **No middleware.** K13a made "this app has no middleware" a documented
+  security invariant. Locale detection is not worth spending it.
+- **No `next-intl`, no interpolation.** Every key is a whole sentence. The
+  moment a string bakes in a count, Guaraní pluralisation is a linguist's
+  question rather than an ICU one — so the app composes those lines from a
+  label plus a number, and `translate` stays a `Record` lookup.
+- **One chunk, both locales** (~25 KB gz each). A lazily-fetched locale bundle
+  is a toggle that works in the office and fails in Concepción. Source-scanned.
+
+**The locale lives on the Dexie profile row and nowhere else.** No context, no
+event bus: `useLiveQuery` repaints the nav bar behind the settings screen when
+the row changes. It rides the profile's existing sync as opaque payload, so the
+choice follows her to a second device with no server column — and a test
+asserts the server never learns the word `locale`. A language is a strong
+signal about who someone is, and this app tells the server nothing about that.
+
+`<html lang>` is server-rendered `es-PY` and patched by `<HtmlLang />` once the
+profile is read; the server cannot know a locale that lives in IndexedDB. It is
+not cosmetic — it is what stops a screen reader pronouncing Guaraní through
+Spanish phonetics.
+
+### What stays in Spanish, and why Ajustes says so
+
+The 42 weeks, the guías, the derechos bodies, the food entries. D6 defers full
+Guaraní content until it is institutionally funded, and the settings hint says
+this in plain words rather than letting a user discover it on the third tap. An
+e2e test asserts a week page is still Spanish in Guaraní mode: if a later batch
+starts hand-translating articles without a funded reviewer, it fails, which is
+the point. A half-translated medical corpus is worse than an untranslated one,
+because it looks finished.
+
+The toggle also renders each option in its own language — "Castellano" and
+"Guaraní", never translated into the active one. A language picker that
+translates its own labels is useless to the only person who needs it.

@@ -49,6 +49,7 @@ import { saveNextAppointment } from "@/lib/appointments.client";
 import { syncNow } from "@/lib/sync/client";
 import { PrivacyLine } from "@/components/PrivacyLine";
 import { FamiliaSettings } from "@/components/FamiliaSettings";
+import { LanguageSettings } from "@/components/LanguageSettings";
 import { InstallCard } from "@/components/InstallCard";
 import { InviteFriend } from "@/components/InviteFriend";
 
@@ -478,6 +479,14 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
           session, a token or lib/server/*. */}
       <SettingsGroup title="Cuenta">
         {account}
+      </SettingsGroup>
+
+      {/* K19-L1 — the language toggle sits directly under Cuenta, above every
+          pregnancy setting, because a woman who cannot read this screen has to
+          find it without reading it: first group, two buttons, each labelled in
+          its own language. */}
+      <SettingsGroup title="Idioma · Ñe'ẽ">
+        <LanguageSettings />
       </SettingsGroup>
 
       {/* K7 — the Familia group. `/familia` shipped with E1 and was reachable

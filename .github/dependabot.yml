@@ -1,0 +1,34 @@
+# K13a (docs/FABLE-PLAN-2026-08.md §6). The Next.js 15.1.6 → 15.5.x bump in
+# this PR was found by hand, months late. Dependabot is here so the next one
+# is found by a robot instead.
+#
+# Deliberately monthly, not weekly, and grouped: this repo's CI is
+# label-gated (K21) and its Actions minutes are budgeted, so a Dependabot PR
+# costs nothing until a human applies `run-ci`. Monthly + grouped keeps the
+# review surface to roughly one PR per ecosystem per month.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    groups:
+      # Security fixes arrive on their own, promptly, ungrouped by severity.
+      production-dependencies:
+        dependency-type: "production"
+      development-dependencies:
+        dependency-type: "development"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "deps"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 2
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "ci"

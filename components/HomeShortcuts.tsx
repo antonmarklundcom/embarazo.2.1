@@ -7,10 +7,9 @@ import { businessWhatsApp, waLink } from "@/lib/whatsapp";
 
 // BUILD-PLAN C8 — shortcuts + feedback (feature map #18, #19).
 //
-// Three things a pregnant woman needs to reach in one tap and cannot go looking
-// for: the emergency screen, her carné perinatal, and her next control. They
-// exist elsewhere in the app — that is the point; the home screen is where you
-// are when you suddenly need one of them.
+// Things a pregnant woman needs to reach in one tap and cannot go looking for.
+// They exist elsewhere in the app — that is the point; the home screen is where
+// you are when you suddenly need one of them.
 //
 // The feedback card is the testing round's feedback path. It renders **only**
 // when a real business number is configured: a "contanos cómo te va" button
@@ -33,10 +32,15 @@ const SHORTCUTS = [
     tone: "bg-pastel-celeste",
   },
   {
-    href: "/ajustes",
-    title: "Próximo control",
-    subtitle: "Anotá la fecha",
-    tone: "bg-pastel-salvia",
+    // K7 (§7): this was "Próximo control → /ajustes", which dumped the user
+    // into a settings screen to hunt for a date field. The control is now
+    // edited in place by <NextAppointmentCard> on the same screen. The third
+    // slot goes to /preguntas, the other shipped page that was reachable from
+    // almost nowhere.
+    href: "/preguntas",
+    title: "Preguntas",
+    subtitle: "Dudas frecuentes",
+    tone: "bg-pastel-arena",
   },
 ] as const;
 

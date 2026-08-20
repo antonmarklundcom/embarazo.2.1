@@ -134,6 +134,26 @@ const TOOLS: Tool[] = [
     icon: "guides",
     tone: "bg-pastel-celeste",
   },
+  // K7 (§7) — two screens that shipped and were reachable from nowhere. The
+  // AI portrait had a route, a quota, a consent step and an e2e spec, and no
+  // link; `/preguntas` was precached for offline reading and linked only from
+  // the footer of one other page. "A shipped feature linked from nowhere is a
+  // bug" is the review's phrasing, and this is the grid where a user goes
+  // looking for what the app can do.
+  {
+    href: "/preguntas",
+    title: "Preguntas",
+    desc: "Quién ve tus datos, si hace falta una cuenta y quién revisa lo médico.",
+    icon: "faq",
+    tone: "bg-pastel-arena",
+  },
+  {
+    href: "/herramientas/bebe-ia",
+    title: "Así podría ser",
+    desc: "Una imagen generada de cómo podría ser tu bebé. Es un juego, no una predicción.",
+    icon: "ai",
+    tone: "bg-pastel-lavanda",
+  },
 ];
 
 const VIDEOS: Tool = {
@@ -153,8 +173,14 @@ export default function HerramientasPage() {
     <div className="space-y-4">
       <header>
         <h1 className="text-2xl font-black tracking-tight text-ink">Herramientas</h1>
+        {/* K18 — "todo funciona sin internet y se guarda solo en tu teléfono"
+            stopped being true twice over: with an account these tools sync
+            (A3), and "Así podría ser" needs the network by definition. A
+            blanket claim on the screen that lists the exceptions is the kind
+            of small dishonesty Phase K exists to clear out. */}
         <p className="text-sm text-muted">
-          Todo funciona sin internet y se guarda solo en tu teléfono.
+          Casi todo funciona sin internet. Con cuenta, lo que anotás se copia
+          para que no lo pierdas.
         </p>
       </header>
 

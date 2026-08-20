@@ -15,6 +15,19 @@ const nunito = Nunito_Sans({
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mibebe.app";
 
+// K18 — this string is the WhatsApp link preview.
+//
+// It used to end "Privada: tus datos quedan en tu teléfono", which is the exact
+// claim K6 swept out of the app and, since K1/K4, is not true: there are
+// accounts, there is sync, and photos upload when she asks them to. It survived
+// K6 because it lives in metadata rather than in a screen, and the sweep read
+// screens.
+//
+// It is also the single most-forwarded sentence the app has — the app spreads
+// through WhatsApp, so this is what a stranger reads before deciding whether to
+// trust it with a pregnancy. It now says what the app is for, which is K6's
+// story: tu embarazo, tu familia, en una sola app, hecha para Paraguay.
+
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
@@ -22,7 +35,7 @@ export const metadata: Metadata = {
     template: "%s · Mi Bebé",
   },
   description:
-    "Guía del embarazo semana a semana, hecha para Paraguay. Privada: tus datos quedan en tu teléfono.",
+    "Guía del embarazo semana a semana, hecha para Paraguay. Seguila con tu pareja y tu familia, y funciona sin internet.",
   applicationName: "Mi Bebé",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
@@ -34,7 +47,7 @@ export const metadata: Metadata = {
     type: "website",
     title: "Mi Bebé — tu embarazo en Paraguay",
     description:
-      "Guía del embarazo semana a semana, hecha para Paraguay. Privada: tus datos quedan en tu teléfono.",
+      "Guía del embarazo semana a semana, hecha para Paraguay. Seguila con tu pareja y tu familia, y funciona sin internet.",
     siteName: "Mi Bebé",
     images: [{ url: "/og.png", width: 1200, height: 630, alt: "Mi Bebé" }],
   },
@@ -42,7 +55,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Mi Bebé — tu embarazo en Paraguay",
     description:
-      "Guía del embarazo semana a semana, hecha para Paraguay. Privada: tus datos quedan en tu teléfono.",
+      "Guía del embarazo semana a semana, hecha para Paraguay. Seguila con tu pareja y tu familia, y funciona sin internet.",
     images: ["/og.png"],
   },
   icons: {

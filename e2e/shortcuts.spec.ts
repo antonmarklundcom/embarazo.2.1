@@ -23,8 +23,17 @@ test("the three shortcuts reach their screens", async ({ page }) => {
   await expect(page).toHaveURL(/\/herramientas\/carne$/);
   await page.goBack();
 
-  await shortcuts.getByRole("link", { name: /Próximo control/ }).click();
-  await expect(page).toHaveURL(/\/ajustes$/);
+  // K7 (§7): the third shortcut was "Próximo control → /ajustes", which is
+  // the dump-into-settings this task exists to remove — the control is now
+  // edited in place by <NextAppointmentCard> on this same screen. The slot went
+  // to /preguntas, the other shipped page that was reachable from almost
+  // nowhere.
+  await shortcuts.getByRole("link", { name: /Preguntas/ }).click();
+  await expect(page).toHaveURL(/\/preguntas$/);
+  await page.goBack();
+
+  // And the control itself is here, not one navigation away.
+  await expect(page.getByRole("region", { name: "Próximo control" })).toBeVisible();
 });
 
 test("no dead WhatsApp number is offered anywhere", async ({ page }) => {

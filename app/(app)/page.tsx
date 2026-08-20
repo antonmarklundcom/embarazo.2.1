@@ -36,7 +36,7 @@ import {
 } from "@/lib/sharing/useSharedViews";
 import { PlaneandoHome } from "@/components/PlaneandoHome";
 import { LocalResourcesBlock } from "@/components/LocalResourcesBlock";
-import { AppointmentBanner } from "@/components/AppointmentBanner";
+import { NextAppointmentCard } from "@/components/NextAppointmentCard";
 import { WeeklyLineCard } from "@/components/WeeklyLineCard";
 import { SizeTabs } from "@/components/SizeTabs";
 import { PerspectiveSwitcher } from "@/components/PerspectiveSwitcher";
@@ -52,6 +52,7 @@ import { InstallCard } from "@/components/InstallCard";
 // D1: one icon set, shared with the herramientas grid so the two cannot drift.
 import { ToolIcon, type ToolIconName } from "@/components/ToolIcon";
 import { InviteFriend } from "@/components/InviteFriend";
+import { FamilyCard } from "@/components/FamilyCard";
 
 // "Hoy" screen — Mi Bebé design 1a (docs/REDESIGN-PLAN.md §2): week strip,
 // photo hero with fallback, tip, mood check-in, herramientas grid, reading
@@ -118,6 +119,10 @@ export default function InicioPage() {
     return <PlaneandoHome />;
   }
 
+  // K7/K2: the owner's server-side view, read once. Null for a signed-out or
+  // local-only user, which is what gates the family surfaces below.
+  const ownerView = ownerViewOf(shared.views);
+
   const week = profile.week!;
   const trimester = profile.trimester!;
   const department = profile.department!;
@@ -164,9 +169,9 @@ export default function InicioPage() {
       {/* E2: share the week card (map #30). Drawn on the device; the image
           carries the week number and nothing else. Sits directly under the
           hero, which is the card it shares. */}
-      <ShareCard week={week} label="Compartir mi semana" />
+      <ShareCard week={week} label="Compartir mi semana" offerInvite />
 
-      {/* C8: one-tap access to emergencia · carné · próximo control, and the
+      {/* C8: one-tap access to emergencia · carné · preguntas, and the
           feedback path (map #18, #19). */}
       <HomeShortcuts week={week} />
 
@@ -188,12 +193,33 @@ export default function InicioPage() {
       {/* K2: ánimos her pareja and her familia sent. Renders nothing at all
           when nobody has — an empty "todavía nadie te mandó ánimo" box is a
           small unkindness this screen can simply not commit. */}
-      <CheersCard cheers={ownerViewOf(shared.views)?.cheers ?? []} />
+      <CheersCard cheers={ownerView?.cheers ?? []} />
 
-      {/* Next prenatal appointment reminder (in-app only) */}
-      <AppointmentBanner
-        date={profile.nextAppointment}
-        members={ownerViewOf(shared.views)?.members}
+      {/* K7 — "Tu familia". `/familia` shipped with E1 and was linked from
+          nowhere; this card and the Ajustes group are the two taps the plan
+          asks for.
+
+          It renders only for a user the server knows about: `ownerView` is
+          non-null exactly when there is an account, a database and a pregnancy
+          row. A signed-out, local-only user gets <InviteFriend> lower down
+          instead — inviting somebody to *the app* is the thing they can
+          actually do, and rendering a family invite they cannot complete is
+          the bug §7 flags on /familia itself. */}
+      {ownerView && (
+        <FamilyCard members={ownerView.members ?? []} />
+      )}
+
+      {/* K7 (§7) — the control, editable here, with days-to-go and K8's RSVP.
+          This replaced both the shortcut tile that navigated to /ajustes and
+          <AppointmentBanner>, which was a second card saying the same things
+          (and linking to /ajustes as well). See NextAppointmentCard's comment:
+          urgency is now a tone on this card. */}
+      <NextAppointmentCard
+        appointmentAt={profile.nextAppointment}
+        guests={ownerView?.members ?? []}
+        companionAppointmentAt={
+          companionViewOf(shared.views)?.snapshot?.nextAppointmentAt ?? null
+        }
       />
 
       {/* Daily tip */}

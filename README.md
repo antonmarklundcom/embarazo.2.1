@@ -69,11 +69,9 @@ AUTH_FACEBOOK_SECRET=
 
 # --- OPCIONALES (la app funciona sin esto) ---
 SHEETS_WEBHOOK_URL=                  # atribución de clics opcional; sin valor = redirección directa
-WP_API_URL=                          # fuente de contenido futura; sin valor = seed del repo
 ```
 
-`SHEETS_WEBHOOK_URL` y `WP_API_URL` son **opcionales**: la app corre por
-completo sin ellas, usando los datos seed del repositorio.
+`SHEETS_WEBHOOK_URL` es **opcional**: la app corre por completo sin ella.
 
 Las variables de cuentas también son opcionales. Con `AUTH_SECRET`,
 `AUTH_GOOGLE_*` o `DATABASE_URL` sin valor, la app corre completa en modo
@@ -133,8 +131,10 @@ Todo el contenido vive tipado dentro de `lib/` — no hay base de datos ni CMS:
 > Las fechas de los eventos seed se calculan relativas a "hoy" para mantener una
 > mezcla realista de próximos y pasados; para datos reales usá timestamps fijos.
 
-`lib/wordpress.ts` es un hook opcional a futuro: si se define `WP_API_URL`,
-podría leer una API REST de WordPress; mientras tanto devuelve el seed.
+`lib/wordpress.ts` devuelve el contenido seed del repositorio. El contenido
+**vive en git a propósito**: se valida en el build (G1) y entra en la precarga
+del service worker, que es lo que hace que la app funcione sin internet. No hay
+CMS externo y no está previsto uno.
 
 ## Qué funciona offline
 

@@ -16,6 +16,8 @@ import { CHECKLISTS } from "@/lib/checklists";
 import { SharingLevels } from "@/components/SharingLevels";
 import { isValidInviteCode } from "@/lib/sharing/fields";
 import { inviteCodeFromSearch } from "@/lib/sharing/inviteLink";
+import { fetchAuthStatus, type AuthStatus } from "@/lib/auth/status";
+import { SignInCard } from "@/components/SignInCard";
 
 // BUILD-PLAN E1 — one screen, both sides of sharing.
 //
@@ -40,16 +42,29 @@ export default function FamiliaPage() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [invited, setInvited] = useState(false);
+  // K7 (§7) — this screen used to render its invite buttons to everybody.
+  // For a signed-out or local-only user every one of them posts to a route
+  // that answers 401, so the entire page was a set of controls that could only
+  // fail, with an error message as the explanation. The account is not a
+  // detail of this feature; it *is* the feature — an invitation needs somebody
+  // to invite you into something the server knows about.
+  const [auth, setAuth] = useState<AuthStatus | null>(null);
 
   const reload = useCallback(async () => {
     setViews(await fetchSharedViews());
   }, []);
 
   useEffect(() => {
+    void fetchAuthStatus().then(setAuth);
+  }, []);
+
+  useEffect(() => {
     // Publishing on open keeps the companion view fresh without a background
     // job: the owner opening the app is the only reliable moment we have.
+    // Nothing to publish, and nothing to read, without a session.
+    if (!auth?.signedIn) return;
     void publishCompanionSnapshot().then(reload);
-  }, [reload]);
+  }, [auth?.signedIn, reload]);
 
   // K1: an invitation now travels as a link (`/familia?codigo=…`), so somebody
   // arriving from WhatsApp lands here with their code already in hand. It is
@@ -101,6 +116,54 @@ export default function FamiliaPage() {
         : result.reason === "used"
           ? "Ese código ya fue usado por otra persona."
           : "No encontramos ese código.",
+    );
+  }
+
+  // The answer has not arrived yet. Rendering the signed-out screen first and
+  // swapping it for the real one a beat later reads as a bug on a slow phone.
+  if (auth === null) {
+    return (
+      <div className="space-y-5">
+        <header>
+          <h1 className="text-2xl font-black tracking-tight text-ink">Familia</h1>
+        </header>
+        <div className="h-32 animate-pulse rounded-card bg-white/60" />
+      </div>
+    );
+  }
+
+  if (!auth.signedIn) {
+    return (
+      <div className="space-y-5">
+        <header>
+          <h1 className="text-2xl font-black tracking-tight text-ink">Familia</h1>
+          <p className="text-sm text-muted">
+            Compartí tu semana con quien quieras, sin compartir todo lo demás.
+          </p>
+        </header>
+
+        <section className="rounded-card bg-white p-4 shadow-soft">
+          <h2 className="text-base font-extrabold text-ink">
+            Para esto necesitás una cuenta
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed text-muted">
+            Es lo que conecta tu teléfono con el de ellos. Van a ver tu semana,
+            tu fecha probable de parto y tu próximo control.{" "}
+            <strong>No van a ver</strong> tus notas, tus síntomas, tu peso ni
+            tus fotos, y podés sacarles el acceso cuando quieras.
+          </p>
+          {auth.providers.length > 0 ? (
+            <div className="mt-3">
+              <SignInCard providers={auth.providers} />
+            </div>
+          ) : (
+            <p className="mt-3 rounded-tile bg-cream p-3 text-sm text-muted">
+              Todavía no podés crear una cuenta desde este teléfono. El resto de
+              la app funciona igual, sin cuenta.
+            </p>
+          )}
+        </section>
+      </div>
     );
   }
 

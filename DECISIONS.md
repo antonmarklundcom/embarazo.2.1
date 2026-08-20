@@ -2692,3 +2692,191 @@ so it resets on redeploy and does not coordinate across instances — fine for
 one Hostinger Node process, wrong the day there are two, and not something to
 fix speculatively. Neither is a K14 gap; both are written here so the next
 person finds the boundary rather than assuming there isn't one.
+
+## PR-3 / K7 + K18 — the surfaces, and the copy that outlived its contract
+
+Two tasks in one PR because they touch the same screens. They also turn out to
+be the same task: **the app had stopped describing itself accurately, in both
+directions.** K18 is the sentences that promise something the app no longer
+does. K7 is the features the app does and never mentions.
+
+### "A shipped feature linked from nowhere is a bug"
+
+`/familia` — accounts, invites, roles, revocation, sharing levels, shared
+checklists, ánimos, an RSVP; E1 through K8; the feature the founder named as
+the growth engine — was reachable from **nothing**. Not the nav, not Hoy, not
+Ajustes, not onboarding. Meanwhile the home screen carried a dashed-border card
+reading **"Compartir con tu pareja — Próximamente"**, which is the worst
+possible version of this bug: a user who wanted exactly that feature read
+"próximamente" and stopped looking.
+
+`<FamilyCard>` on Hoy and a Familia group in Ajustes are the two taps. Three
+states, and the empty one had the only real decision in it: a card that says
+"nadie todavía" and stops is a small reproach on a home screen, so the empty
+state answers the question the emptiness raises — *how do I invite someone* —
+in the same breath. On the growth surface, the empty state **is** the
+invitation.
+
+Avatars are **role initials on pastel tokens, never names**, and that is not a
+placeholder for real avatars. `SharedView["members"]` carries `userId`, `role`,
+`createdAt`, `accompanyingAt` and nothing else — E1 never shared names between
+members and K8 did not start, so there is no name on the client to render.
+
+Two more orphans went into the tools grid: `/herramientas/bebe-ia` (a route, a
+quota, a consent step, an e2e spec, and no link anywhere) and `/preguntas`
+(precached for offline reading, linked from one footer). `/preguntas` also took
+the home shortcut slot the próximo control gave up.
+
+**`lib/invariants/linkedSurfaces.test.ts` is what makes this stick.** It walks
+every `page.tsx` under `app/(app)` and requires the path to appear as a string
+literal somewhere in `app/` or `components/`, or to carry a written exemption.
+Not a reachability graph — half this app's links are data-driven (`{ href,
+title }` arrays in the tools grid and the nav), so the check is "does anything
+mention this page". Looser than ideal, and it catches the thing that actually
+happened four times.
+
+It found a fifth on its first run: `/planeando`. That one is genuinely fine —
+the planeando dashboard is what `/` renders when the mode is active, so nobody
+in that mode needs a link — and it is now an `UNLINKED` entry with that reason
+written down, which is the difference between a decision and an oversight.
+
+### The roadmap may not promise what the app does, or what it won't
+
+"Compartir con tu pareja" is gone because it shipped. "Comunidad de mamás" is
+gone for the opposite reason: §5 D5 scoped community to **curated Q&A** — admin-
+approved questions growing a public FAQ, no free text between users. That is a
+different product from the open forum the card described, so leaving it up was
+a promise nobody intended to keep. "Grupos de mamás cerca tuyo" stays: still
+planned, still not built, still honestly described.
+
+### The control is edited where it is read — and one card, not two
+
+The home shortcut was a tile reading "Próximo control · Anotá la fecha" that
+navigated to `/ajustes`, where the field sits three groups down past "Modo de
+uso" and the due-date calculator. The thing a woman actually does — walks out
+of a consultation with the next date on a slip of paper — took four taps and a
+hunt, on the screen already showing her the date.
+
+`<NextAppointmentCard>` edits in place, with an optional time (a carné often
+says "jueves" and nothing more; demanding an hour she does not have makes her
+invent one), **days-to-go** ("En 3 días" is the question she is actually
+asking; the date is how the answer is checked), and K8's RSVP by role.
+
+Then an existing e2e failed with `strict mode violation: resolved to 2
+elements`, and it was right: "Te acompaña tu pareja." was now on the home
+screen **twice**. `<AppointmentBanner>` — the urgent form, shown within three
+days of the control — had become a strict subset of the new card, and it linked
+to `/ajustes` too, which is the exact behaviour §7 asks to remove.
+
+So the banner is **deleted**, and its urgency is a tone on the card: `soon`
+uses the same three-day window the banner did, `past` keeps the genuinely
+useful half ("¿ya fuiste? anotá el próximo"). One card that changes colour
+beats two cards that repeat each other, and the fix is a deletion rather than
+a suppression.
+
+**`lib/appointments.client.ts`** exists because two editors for one field is two
+chances to forget one of the three things a saved appointment must do: write to
+Dexie, re-send the push schedule (B5 — the server holds a fire time, not an
+appointment, and K8's `companionAppointmentAt` must ride along or editing her
+own control silently cancels his reminder), and republish the companion
+snapshot. **Ajustes was not doing the third one** — it waited for the next app
+open — so extracting this fixed a live bug in the caller that already existed.
+It is a separate file from `lib/appointments.ts` because that module is
+imported by `app/sw.ts` and must stay free of Dexie and anything with a window.
+
+### `/familia` no longer offers buttons that can only fail
+
+Signed out, every control on that page posted to a route that answers 401. The
+whole screen was a set of things that could not work, with an error message as
+the explanation. It now checks the session first and explains — the account is
+not a detail of this feature, it *is* the feature. It renders nothing until it
+knows: showing the signed-out screen and swapping it a beat later reads as a
+bug on a slow phone.
+
+That change broke two `companion.spec.ts` tests, correctly: they stub the
+sharing API to stand up a signed-in owner and now have to stand up the signal
+that says so. `pretendSignedIn` is installed **after** `completeOnboarding`,
+because the shared walk-through takes the "Seguir sin cuenta" path that only
+exists while the app believes accounts are unavailable — stubbing it earlier
+removes the button the helper clicks.
+
+### K18 — the sentences a screen-sweep cannot reach
+
+K6 swept the screens. What it could not reach, because it was not on a screen:
+
+- **`app/layout.tsx`'s metadata description** — "Privada: tus datos quedan en
+  tu teléfono". This is the **WhatsApp link preview**, which for an app that
+  spreads by forwarded message is the most-read sentence it has, and the one a
+  stranger uses to decide whether to trust it with a pregnancy. It now tells
+  K6's story instead. `app/manifest.webmanifest` carried the identical string
+  and was not on K18's list; it is the install prompt, so it is fixed too.
+- **The Diario header** said notes "queda en tu teléfono". `journalEntries` is
+  in `SYNCED_STORES`: with an account they go to the server like everything
+  else, and the PIN is what makes them unreadable there. The new copy says
+  *that*, which is a stronger and more specific promise than the false one it
+  replaced.
+- **The herramientas subtitle** — "Todo funciona sin internet y se guarda solo
+  en tu teléfono" — on the screen that lists the exceptions.
+- **`lib/sync/stores.ts`'s comment** said photos "never leave the device in
+  v1". Since K4 they do, opt-in. The true statement is narrower and more
+  useful: they never travel through *this engine*; they have their own path
+  (browser → presigned URL → object storage) and are never a
+  `syncRecords.payload`.
+- **`PrivacyLine`**, on ten screens, told everyone the same thing and was false
+  for anyone signed in. It is now two sentences, one per state, and it renders
+  **nothing until it knows** — the first paint used to be the reassuring claim,
+  and a reassurance retracted a beat later is worse than one that arrives a
+  beat late.
+
+**`lib/invariants/copyHonesty.test.ts`** is the part that is not a one-off. The
+pattern here is not carelessness: a data-contract change has a copy surface
+nobody owns, and the sweep that fixes it happens once. The banned phrasings now
+fail the build wherever they appear next. Conditional forms stay legal, and
+that is the entire distinction — "sin cuenta, tus datos quedan en este
+teléfono" is true and useful; the unconditional promise is not. (Verified by
+reintroducing the manifest string and watching it go red.)
+
+### The PIN is six digits now, and says what it is for
+
+The threat model changed under the feature and nobody moved the number. When
+the PIN shipped, an encrypted note lived only in this phone's IndexedDB; the
+attacker was somebody holding the handset, guessing through a UI one try at a
+time, and four digits behind 150 000 PBKDF2 iterations is fine against them.
+
+A3 put `journalEntries` in `SYNCED_STORES`. **The ciphertext is now also a row
+on a server** — an offline attack surface, where 10 000 candidates is hours of
+compute whatever the iteration count. Six digits is 100× that. Still not a
+password, and the copy says so in plain words rather than implying otherwise.
+
+Existing four-digit PINs keep working: the PIN is never stored, so there is
+nothing to upgrade in place, and locking a woman out of her own diary to
+enforce a policy is a worse outcome than the weakness. This is the floor for
+setting a new one.
+
+The copy gained the consequence nobody had written down anywhere — **if you
+forget it, those notes are gone, including to us** — and the reason for the
+length. The old line ("no es seguridad de grado bancario") was honest about
+tone and vague about the thing that matters.
+
+### The WordPress hook that was never a hook
+
+Three functions in `lib/wordpress.ts` each carried
+`if (WP_API_URL) { /* TODO: map WP posts → Article */ }` and fell through to the
+seed data regardless. Dead code shaped like a feature is worse than no code: it
+reads as "set this env var and the app becomes CMS-backed", which was never
+true, and every reader has to prove the negative.
+
+Deleted, along with `WP_API_URL` from `.env.example` and the README paragraph
+describing it. The decision is now settled rather than deferred, and §5 D4
+settles it: content stays in git, because build-time validation (G1) and the
+service worker's precache are the point — a CMS-backed article can be neither.
+
+The file keeps its name and its three exports: they are the seam eleven callers
+already import, and renaming it would be churn to make a point a comment makes
+for free.
+
+### And two env vars that shipped undocumented
+
+`PUSH_DISPATCH_SECRET` (B5) and the five `PHOTO_STORAGE_*` (K4) were never in
+`.env.example`. The push one is the worse omission: without it, scheduled
+reminders silently never fire and nothing says why.

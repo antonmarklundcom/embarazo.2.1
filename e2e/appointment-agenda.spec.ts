@@ -88,11 +88,17 @@ test("a control can carry an hour, and every sentence about it uses one", async 
   await expect(page.locator("#appt-date")).toHaveValue(date);
   await expect(page.locator("#appt-time")).toHaveValue("09:00");
 
-  // And the home banner says the hour, because it is tomorrow.
+  // And the home screen says the hour.
+  //
+  // K7 (§7) replaced <AppointmentBanner> — whose sentence this used to match —
+  // with <NextAppointmentCard>, which is always present, editable in place, and
+  // carries the urgency as a tone rather than as a separate card. The property
+  // under test is unchanged: the hour she entered is the hour she is shown.
   await page.goto("/");
-  const banner = page.getByText(/Tu próximo control es el/);
-  await expect(banner).toBeVisible();
-  await expect(banner).toContainText("09:00");
+  const card = page.getByRole("region", { name: "Próximo control" });
+  await expect(card).toBeVisible();
+  await expect(card).toContainText("09:00");
+  await expect(card).toContainText("Es mañana");
 });
 
 test("leaving the hour blank keeps a date-only control, with no invented 00:00", async ({
@@ -112,11 +118,11 @@ test("leaving the hour blank keeps a date-only control, with no invented 00:00",
   await expect(page.getByText("Control guardado.")).toBeVisible();
 
   await page.goto("/");
-  const banner = page.getByText(/Tu próximo control es el/);
-  await expect(banner).toBeVisible();
+  const card = page.getByRole("region", { name: "Próximo control" });
+  await expect(card).toBeVisible();
   // "a las 00:00" would be a time nobody entered.
-  await expect(banner).not.toContainText("00:00");
-  await expect(banner).not.toContainText("a las");
+  await expect(card).not.toContainText("00:00");
+  await expect(card).not.toContainText("a las");
 });
 
 test("the pareja can say they are coming, and it names the control it agreed to", async ({
@@ -209,7 +215,13 @@ test("the mamá sees who is coming, by role and never by name", async ({
   await expect(page.getByText("Control guardado.")).toBeVisible();
 
   await page.goto("/");
-  await expect(page.getByText("Te acompaña tu pareja.")).toBeVisible();
+  // K7: scoped to the card. This sentence used to render twice on this screen
+  // — once in <AppointmentBanner> and once in <NextAppointmentCard> — which is
+  // how this spec found the duplication. The banner is gone; the card carries
+  // the RSVP and the urgency both.
+  await expect(
+    page.getByRole("region", { name: "Próximo control" }).getByText("Te acompaña tu pareja."),
+  ).toBeVisible();
   // Never an id, never a name.
   await expect(page.getByText("user-partner")).toHaveCount(0);
 
@@ -263,7 +275,8 @@ test("moving the control invalidates every 'yo la acompaño'", async ({
   await expect(page.getByText("Control guardado.")).toBeVisible();
 
   await page.goto("/");
-  await expect(page.getByText(/Tu próximo control es el/)).toContainText("15:00");
+  const movedCard = page.getByRole("region", { name: "Próximo control" });
+  await expect(movedCard).toContainText("15:00");
   // She is told nobody is coming rather than told he will be at a time he
   // never saw. She asks again; the app does not decide for her.
   await expect(page.getByText("Te acompaña tu pareja.")).toHaveCount(0);

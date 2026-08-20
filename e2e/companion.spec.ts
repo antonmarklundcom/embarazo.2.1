@@ -79,6 +79,32 @@ async function serve(
   });
 }
 
+/**
+ * K7 (§7) — tell the app there is a session.
+ *
+ * `/familia` now checks before rendering its invite controls: signed out,
+ * every one of them posts to a route that answers 401, so the screen was a set
+ * of buttons that could only fail. A spec that stubs the sharing API is
+ * standing up a signed-in user and has to stand up the signal that says so.
+ *
+ * Installed **after** `completeOnboarding`, deliberately. These specs run in a
+ * build with no auth configured, and the shared onboarding walk-through takes
+ * the "Seguir sin cuenta" path that only exists when the app believes accounts
+ * are unavailable. Stubbing this before onboarding would remove the button the
+ * helper clicks.
+ */
+async function pretendSignedIn(context: BrowserContext) {
+  await context.route(
+    (url) => url.pathname === "/api/v1/auth-status",
+    (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ providers: ["google"], signedIn: true }),
+      }),
+  );
+}
+
 test("a pareja who accepted an invite gets a real home screen", async ({
   browser,
 }) => {
@@ -356,6 +382,7 @@ test("the owner's toggles start off and publish what she chose", async ({
   const page = await context.newPage();
 
   await completeOnboarding(page);
+  await pretendSignedIn(context);
   await page.goto("/familia");
 
   const peso = page.getByRole("switch", { name: /Tu peso/ });
@@ -412,6 +439,7 @@ test("a publish before K3 was ever touched shares nothing", async ({ browser }) 
   await page.locator("#kg").fill("68,4");
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
 
+  await pretendSignedIn(context);
   await page.goto("/familia");
   await expect
     .poll(() => server.posts.filter((p) => p.action === "publish").length)

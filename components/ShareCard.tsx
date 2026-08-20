@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 import {
   CARD_HEIGHT,
@@ -47,17 +48,32 @@ async function toFile(
 export function ShareCard({
   week,
   photo,
+  /**
+   * K7 — the invite prompt that belongs at this exact moment.
+   *
+   * Somebody who has just shared their week with a person is, by definition,
+   * a person that share was *for*. The plan asks for the invite action at the
+   * E2 share-card moment ("¿querés que siga tu embarazo? invitala"), and the
+   * moment is right after the share sheet closes, not before it opens: an
+   * upsell in front of the button is a tax on the thing she came to do.
+   *
+   * Off by default so the bump-frame instance on /herramientas/fotos does not
+   * grow one too. Hoy's card is where the family story lives.
+   */
+  offerInvite = false,
   label = "Compartir",
   className = "",
 }: {
   week: number;
   /** A bump photo to composite. Without one, the plain week card is shared. */
   photo?: Blob;
+  offerInvite?: boolean;
   label?: string;
   className?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [shared, setShared] = useState(false);
 
   async function share() {
     setBusy(true);
@@ -85,6 +101,7 @@ export function ShareCard({
 
       if (canShareFiles(navigator, file)) {
         await navigator.share({ files: [file], text: shareText(week) });
+        setShared(true);
         return;
       }
 
@@ -116,6 +133,26 @@ export function ShareCard({
         {busy ? "Preparando…" : label}
       </button>
       {error && <p className="mt-1 text-sm text-terracotta">{error}</p>}
+
+      {/* K7 — the invite, after the share and only after it. */}
+      {offerInvite && shared && (
+        <div className="mt-2 rounded-tile bg-pastel-salvia p-3">
+          <p className="text-sm font-extrabold text-ink">
+            ¿Querés que siga tu embarazo?
+          </p>
+          <p className="mt-0.5 text-[13px] leading-relaxed text-ink/70">
+            Invitala y va a ver tu semana cada vez que abra la app, sin que le
+            mandes nada.
+          </p>
+          <Link
+            href="/familia"
+            className="mt-2 inline-flex min-h-[40px] items-center rounded-full bg-white px-4 text-[13px] font-extrabold text-petrol shadow-soft"
+          >
+            Invitar
+          </Link>
+        </div>
+      )}
+
       <p className="mt-1 text-[11px] leading-relaxed text-muted">
         La imagen se arma en tu teléfono y solo lleva la semana. La foto no sale
         de acá hasta que vos elegís con quién compartirla.

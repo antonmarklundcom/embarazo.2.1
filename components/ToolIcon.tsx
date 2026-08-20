@@ -27,7 +27,10 @@ export type ToolIconName =
   | "kegel"
   | "sleep"
   | "diary"
-  | "dental";
+  | "dental"
+  // K7 (§7) — two shipped screens that were reachable from nowhere.
+  | "ai"
+  | "faq";
 
 export function ToolIcon({
   name,
@@ -161,6 +164,25 @@ export function ToolIcon({
         <svg {...common}>
           <path d="M6 3h11a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
           <path d="M8 3v18M11.5 8h4M11.5 12h4" />
+        </svg>
+      );
+    case "ai":
+      // A sparkle over a small portrait: generated, and a face. Deliberately
+      // not a robot — the screen is "así podría ser tu bebé", labelled
+      // entertainment, and a machine glyph would read as a prediction.
+      return (
+        <svg {...common}>
+          <circle cx="11" cy="9.5" r="3.5" />
+          <path d="M5 19.5c.8-3 3-4.5 6-4.5s5.2 1.5 6 4.5" />
+          <path d="M18.5 3.5 19.3 5.7 21.5 6.5 19.3 7.3 18.5 9.5 17.7 7.3 15.5 6.5 17.7 5.7Z" />
+        </svg>
+      );
+    case "faq":
+      return (
+        <svg {...common}>
+          <path d="M20 15a2 2 0 0 1-2 2H8l-4 3.5V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2Z" />
+          <path d="M9.5 9a2.5 2.5 0 0 1 4.6 1.3c0 1.7-2.1 1.9-2.1 3.2" />
+          <path d="M12 15.6h.01" />
         </svg>
       );
     case "dental":

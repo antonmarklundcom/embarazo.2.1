@@ -6,6 +6,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db, notDeleted, softDelete, type JournalEntry } from "@/lib/db";
 import { useProfile } from "@/lib/useProfile";
 import { decryptNote, encryptNote, isPinSet, isUnlocked, unlock } from "@/lib/crypto";
+import { SyncConflicts } from "@/components/SyncConflicts";
 
 // BUILD-PLAN D2 — the diary (feature map #21).
 //
@@ -71,7 +72,7 @@ export default function DiarioPage() {
       createdAt: Date.now(),
     });
     setText("");
-    setSavedMsg("Guardado en tu teléfono.");
+    setSavedMsg("Guardado.");
     setTimeout(() => setSavedMsg(""), 2500);
   }
 
@@ -89,11 +90,27 @@ export default function DiarioPage() {
     <div className="space-y-5">
       <header>
         <h1 className="text-2xl font-black tracking-tight text-ink">Diario</h1>
+        {/* K18 — this said "queda en tu teléfono", full stop. Journal entries
+            are in SYNCED_STORES (lib/sync/stores.ts): with an account they go
+            to the server like every other record, and the only thing that
+            stops the server holding readable text is the optional PIN, which
+            encrypts the note on the device before it is ever written. That is
+            a real and unusually strong guarantee — and it was being buried
+            under a sentence that promised something else entirely. */}
         <p className="text-sm text-muted">
-          Escribí lo que quieras guardar de estos meses. Queda en tu teléfono, y
-          con PIN queda cifrado.
+          Escribí lo que quieras guardar de estos meses. Con PIN, tus notas se
+          cifran en este teléfono y ni nosotros podemos leerlas. Sin PIN, se
+          copian a tu cuenta como el resto de tus datos.
         </p>
       </header>
+
+      {/* K18 — A3's conflict surface belongs on BOTH screens that write
+          journal notes, not only on Síntomas. `journalEntries` is one store:
+          a note written here, replaced by a newer edit from another device, is
+          kept as a `conflicts` row — and until now it surfaced on a screen the
+          person who wrote it may never open. The one place in the app where
+          silent loss would actually hurt was silent for half its writers. */}
+      <SyncConflicts />
 
       {pinNeeded ? (
         <section className="rounded-card border border-line bg-white p-4">

@@ -10,6 +10,30 @@ const PIN_SALT_KEY = "mibebe.pin.salt";
 const PIN_VERIFIER_KEY = "mibebe.pin.verifier";
 const PBKDF2_ITERATIONS = 150_000;
 
+/**
+ * K18 — the shortest PIN this app will set. Six, not four.
+ *
+ * The threat this protects against changed under the feature's feet. When the
+ * PIN shipped, an encrypted note existed in exactly one place: IndexedDB on
+ * this phone, behind the browser's per-origin isolation. The attacker was
+ * somebody holding the unlocked handset, and against them four digits and
+ * 150 000 PBKDF2 iterations are fine, because they get one guess at a time
+ * through a UI.
+ *
+ * Since A3, `journalEntries` is in `SYNCED_STORES`. The ciphertext is now also
+ * a row on a server. That is an **offline** attack surface: anyone who ever
+ * reads that table can grind the whole keyspace at their own pace, with no UI
+ * in the way. A four-digit PIN is 10 000 candidates — hours on one machine,
+ * whatever the iteration count. Six digits is 100× that. Still not a password,
+ * and the copy in Ajustes says so in plain words rather than implying it is.
+ *
+ * Existing four-digit PINs keep working: the PIN is never stored, so there is
+ * nothing to upgrade in place, and locking somebody out of their own diary to
+ * enforce a policy would be a worse outcome than the weakness. This is the
+ * floor for setting a *new* one.
+ */
+export const MIN_PIN_LENGTH = 6;
+
 let sessionKey: CryptoKey | null = null;
 
 // WebCrypto's lib.dom types want `BufferSource` backed by a plain ArrayBuffer.

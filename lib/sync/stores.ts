@@ -12,9 +12,16 @@
 /**
  * Dexie stores that sync to the server, by their *Dexie table name*.
  *
- * Photos (`photoEntries`, `carnePhotos`) are absent on purpose — they never
- * leave the device in v1 (ARCHITECTURE.md §4.4). The bookkeeping tables
- * (`syncState`, `conflicts`) are local machinery and are never synced either.
+ * Photos (`photoEntries`, `carnePhotos`) are absent on purpose, and K18
+ * corrects what that used to say here: it is not that photos "never leave the
+ * device" — since K4 they do, if the user turns backup on (ARCHITECTURE.md
+ * §4.4, amended). It is that they never travel **through this engine**. Photo
+ * bytes go browser → presigned URL → object storage, and their index rows live
+ * in `photoBlobs`, so a photo is never a `syncRecords.payload`. Adding one here
+ * would put image data through a path built for small JSON envelopes.
+ *
+ * The bookkeeping tables (`syncState`, `conflicts`) are local machinery and are
+ * never synced either.
  */
 export const SYNCED_STORES = [
   "profile",
@@ -39,8 +46,9 @@ export type SyncedStore = (typeof SYNCED_STORES)[number];
 
 /**
  * Stores that never sync, listed explicitly so the exclusion is testable
- * rather than implied by absence. Photos are a data-contract exclusion; the
- * other two are local bookkeeping that would be meaningless on another device.
+ * rather than implied by absence. Photos are excluded from *this* engine (see
+ * above — K4 gave them their own path); the other two are local bookkeeping
+ * that would be meaningless on another device.
  */
 export const UNSYNCED_STORES = [
   "photoEntries",

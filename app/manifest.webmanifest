@@ -1,7 +1,7 @@
 {
   "name": "Mi Bebé — tu embarazo en Paraguay",
   "short_name": "Mi Bebé",
-  "description": "Guía del embarazo semana a semana, hecha para Paraguay. Privada: tus datos quedan en tu teléfono.",
+  "description": "Guía del embarazo semana a semana, hecha para Paraguay. Seguila con tu pareja y tu familia, y funciona sin internet.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

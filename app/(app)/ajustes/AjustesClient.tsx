@@ -24,6 +24,7 @@ import {
   GESTATION_DAYS,
 } from "@/lib/pregnancy";
 import {
+  MIN_PIN_LENGTH,
   isPinSet,
   setPin as savePin,
   clearPin,
@@ -32,9 +33,10 @@ import {
 } from "@/lib/crypto";
 import { exportBackup, backupFileName, importBackup } from "@/lib/backup";
 import { PushSettings } from "@/components/PushSettings";
-import { refreshReminders } from "@/lib/push/client";
+import { saveNextAppointment } from "@/lib/appointments.client";
 import { syncNow } from "@/lib/sync/client";
 import { PrivacyLine } from "@/components/PrivacyLine";
+import { FamiliaSettings } from "@/components/FamiliaSettings";
 import { InstallCard } from "@/components/InstallCard";
 import { InviteFriend } from "@/components/InviteFriend";
 
@@ -295,17 +297,11 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
   }
 
   async function persistAppointment(value: number | undefined) {
-    const rows = await db().profile.toArray();
-    const first = rows[0];
-    if (!first?.id) return;
-    await db().profile.update(first.id, { nextAppointment: value });
-    // B5: the server holds a fire time, not an appointment, so a moved control
-    // has to be re-scheduled from here. No-op when push is off.
-    //
-    // K8: the schedule is replaced wholesale on every publish, so a device
-    // that is ALSO accompanying somebody has to re-send that poke in the same
-    // breath — otherwise editing her own control silently cancels his reminder.
-    await refreshReminders(companionAppointmentAt);
+    // K7: the write, the push re-schedule and the snapshot republish moved into
+    // `lib/appointments/save.ts`, which the home screen's inline editor now
+    // shares. Two editors for one field is two chances to forget one of the
+    // three — see that file's comment for what each is for.
+    await saveNextAppointment(value, companionAppointmentAt);
     setApptMsg(value ? "Control guardado." : "Control quitado.");
     setTimeout(() => setApptMsg(""), 2500);
   }
@@ -382,8 +378,11 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
   }
 
   async function handleSetPin() {
-    if (pinInput.length < 4) {
-      setPinMsg("El PIN debe tener al menos 4 dígitos.");
+    // K18 — six digits, not four. The encrypted note is not only on this
+    // phone any more; it syncs, so the ciphertext is somewhere it can be
+    // attacked offline (see MIN_PIN_LENGTH in lib/crypto.ts).
+    if (pinInput.length < MIN_PIN_LENGTH) {
+      setPinMsg(`El PIN tiene que tener al menos ${MIN_PIN_LENGTH} dígitos.`);
       return;
     }
     await savePin(pinInput);
@@ -431,6 +430,12 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
           session, a token or lib/server/*. */}
       <SettingsGroup title="Cuenta">
         {account}
+      </SettingsGroup>
+
+      {/* K7 — the Familia group. `/familia` shipped with E1 and was reachable
+          from nowhere in the app; this is the settings half of the fix. */}
+      <SettingsGroup title="Familia">
+        <FamiliaSettings />
       </SettingsGroup>
 
       <SettingsGroup title="Embarazo">
@@ -790,15 +795,20 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
       <section className="rounded-card bg-white p-4 shadow-soft">
         <h2 className="text-base font-extrabold text-ink">PIN opcional</h2>
         <p className="mt-1 text-sm text-muted">
-          Si activás un PIN, las notas de tu diario se guardan cifradas en este
-          dispositivo. {pinExists ? "Tenés un PIN activo." : "No tenés PIN."}
+          Si activás un PIN, las notas de tu diario se cifran en este teléfono
+          antes de guardarse. Se sincronizan cifradas: ni nosotros podemos
+          leerlas. {pinExists ? "Tenés un PIN activo." : "No tenés PIN."}
         </p>
         <input
           type="password"
           inputMode="numeric"
           value={pinInput}
           onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ""))}
-          placeholder={pinExists ? "Ingresá tu PIN para desactivarlo" : "Nuevo PIN (4+ dígitos)"}
+          placeholder={
+            pinExists
+              ? "Ingresá tu PIN para desactivarlo"
+              : `Nuevo PIN (${MIN_PIN_LENGTH}+ dígitos)`
+          }
           className="mt-3 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-3 focus:border-petrol focus:outline-none"
         />
         {!pinExists ? (
@@ -819,9 +829,17 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
           </button>
         )}
         {pinMsg && <p className="mt-2 text-sm text-muted">{pinMsg}</p>}
+        {/* K18 — what it protects against, said plainly. The old line ("no es
+            seguridad de grado bancario") was honest about the tone and vague
+            about the thing that matters: the ciphertext leaves the phone, so
+            the PIN's length is what stands between a leaked table and a
+            readable diary. A user choosing a number deserves to know that. */}
         <p className="mt-2 text-[11px] leading-relaxed text-muted">
-          El PIN protege las notas con cifrado del navegador. No es seguridad de
-          grado bancario: depende de que tu teléfono también esté protegido.
+          El PIN no se guarda en ningún lado: de él se deriva la clave, cada
+          vez. Por eso, si lo olvidás, esas notas no se recuperan — ni por
+          nosotros. Y por eso pedimos {MIN_PIN_LENGTH} dígitos: un número corto
+          se puede adivinar probando todas las combinaciones. No reemplaza el
+          bloqueo de pantalla de tu teléfono.
         </p>
       </section>
 

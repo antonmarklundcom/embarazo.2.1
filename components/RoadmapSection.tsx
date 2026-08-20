@@ -3,18 +3,28 @@
 import { useState } from "react";
 
 // Roadmap placeholders (build spec §8). These are intentionally NON-functional:
-// tapping shows a calm "Próximamente" message. No accounts, no backend.
+// tapping shows a calm "Próximamente" message.
+//
+// K7 (§7) removed two of the three, for opposite reasons and the same rule —
+// **a card must not promise something the app already does, or something it
+// has decided not to do.**
+//
+//   • "Compartir con tu pareja — Próximamente" was the worst card in the app.
+//     It shipped in E1, months ago. A user who wanted exactly this feature read
+//     "próximamente" on the home screen and stopped looking, while `/familia`
+//     sat there, built and linked from nowhere. Its replacement is <FamilyCard>
+//     higher up the same screen, which is a button rather than a promise.
+//
+//   • "Comunidad de mamás" is now a decision, not a plan: §5 D5 scopes
+//     community to **curated Q&A** — questions answered by an admin, growing a
+//     public FAQ, with no free text between users. That is a different product
+//     from what this card describes, and leaving the card up would be a promise
+//     of an open forum nobody intends to build. K20 ships the real thing at
+//     `/preguntas`, which is linked from the shortcuts below.
+//
+// "Grupos de mamás cerca tuyo" stays: still planned, still not built, still
+// honestly described.
 const ITEMS = [
-  {
-    id: "comunidad",
-    title: "Comunidad de mamás",
-    desc: "Un espacio para compartir experiencias con otras embarazadas.",
-  },
-  {
-    id: "pareja",
-    title: "Compartir con tu pareja",
-    desc: "Que tu pareja siga el embarazo semana a semana con vos.",
-  },
   {
     id: "grupos",
     title: "Grupos de mamás cerca tuyo",

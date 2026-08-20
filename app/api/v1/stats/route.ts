@@ -5,13 +5,19 @@ import { popularContent, recordView } from "@/lib/server/stats";
 import { clientKeyFromHeaders, isRateLimited } from "@/lib/rateLimit";
 import { RecordViewSchema } from "@/lib/stats/contentStats";
 
-// BUILD-PLAN C7 — /api/v1/stats (feature map #16).
+// BUILD-PLAN C7 — /api/v1/stats (feature map #16). **Amended by K5.**
 //
 // POST counts one view. GET returns the most-read content of the last seven
-// days. **Neither verb takes an identity and GET takes no parameters at all**,
-// which is J3's rule applied to a route J3 never saw: a route that accepts
-// nothing cannot transmit anything, and the Play listing keeps saying "No data
-// collected" (`docs/ANDROID-LAUNCH.md` §3.1).
+// days, per week bucket, in one payload.
+//
+// **Neither verb takes an identity, and GET still takes no parameters at all.**
+// K5 restored the reader's `week` to the POST — §5 D2 gave up the "No data
+// collected" badge that J3 was protecting, and without the week "lo más leído
+// esta semana" meant "in the last seven days", not "by women as far along as
+// you". The read side is untouched: one URL, one cache key, one answer for
+// everybody, and the client picks its bucket. A `?week=` would put a health
+// datum in a URL that proxies and logs can see, and give every reader their own
+// cache entry, which is a worse design regardless of any badge.
 //
 // There is deliberately no session check. This counter works for a user with no
 // account, which is the majority path, and reading a session here would put an
@@ -52,8 +58,9 @@ export async function POST(req: NextRequest) {
   }
 
   // The body is validated BEFORE the database is looked at, deliberately: the
-  // whitelist is a promise about what this route accepts, and a deployment with
-  // no database must not quietly accept a request carrying a week.
+  // whitelist is a promise about what this route accepts, and it is `.strict()`
+  // so a field nobody designed — a user id, a device id, a department — is a
+  // 400 the first time it is sent, not a silent regression.
   let body: unknown;
   try {
     body = await req.json();
@@ -68,7 +75,9 @@ export async function POST(req: NextRequest) {
 
   const database = dbOrNull();
   // Nothing to count against, and nothing for the caller to do about it.
-  if (database) await recordView(database, parsed.data.contentId);
+  if (database) {
+    await recordView(database, parsed.data.contentId, parsed.data.week ?? null);
+  }
 
   // No body: there is nothing to tell the caller, and a count is not news.
   return new NextResponse(null, { status: 204 });

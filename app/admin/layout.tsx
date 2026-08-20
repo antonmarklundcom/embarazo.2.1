@@ -39,9 +39,18 @@ export default async function AdminLayout({
     <div className="min-h-dvh bg-cream">
       <header className="border-b border-line bg-white">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3">
-          <Link href="/admin" className="text-[15px] font-black text-ink">
-            Mi Bebé · Panel
-          </Link>
+          <div className="flex items-baseline gap-4">
+            <Link href="/admin" className="text-[15px] font-black text-ink">
+              Mi Bebé · Panel
+            </Link>
+            {/* K16 — the panel has a second page now. */}
+            <Link
+              href="/admin/metricas"
+              className="text-[13px] font-extrabold text-petrol"
+            >
+              Métricas
+            </Link>
+          </div>
           <p className="truncate text-xs text-muted">{actor.email}</p>
         </div>
       </header>

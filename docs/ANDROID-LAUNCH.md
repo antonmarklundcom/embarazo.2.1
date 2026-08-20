@@ -6,6 +6,12 @@
 >
 > Everything here was checked against Google's current rules in August 2026.
 > Play policy moves; re-check anything with a date on it before you act on it.
+>
+> **Amended by K5 (August 2026).** §3.1 was rewritten for the account-first
+> launch: the app declares account data and health data honestly rather than
+> protecting a "No data collected" badge, per §5 D2 of
+> `docs/FABLE-PLAN-2026-08.md`. §3.3's deletion requirements are now
+> unconditional, because accounts ship in v1.0.
 
 ---
 
@@ -152,28 +158,96 @@ and confirm **no URL bar**. That single check catches most packaging errors.
 
 These are forms, not code, and each one blocks publishing.
 
-### 3.1 Data safety form — protect the "No data collected" answer
+### 3.1 Data safety form — declare it honestly
 
-Right now the app can plausibly answer **"No data collected"**, which is rare
-and is a visible badge on the listing. Two things stand between you and it,
-both fixable:
+> **Rewritten by K5 (August 2026).** This section used to be called "protect the
+> 'No data collected' answer" and told you which two parameters to strip to keep
+> the badge. **That badge is gone, on purpose.** §5 D2 of
+> `docs/FABLE-PLAN-2026-08.md` gave it up: the app has accounts, sync, family
+> sharing and opt-in photo backup, so the honest answer is "yes, and here is
+> what". Keep the opaque-payload architecture (ARCHITECTURE.md §4.3) — it is
+> engineering, and it is what keeps the *contents* of that declaration small —
+> but the badge no longer vetoes product decisions.
+>
+> The old advice is preserved below as "what J3 removed, and what stays
+> removed", because two of those three removals were right for reasons that had
+> nothing to do with the badge.
 
-- **`department` sent to `/api/v1/directory` and `/api/v1/placements`.** A
-  department is a coarse region, and Play's form has an "Approximate location"
-  category. Cleanest fix: the directory seed is already precached — filter by
-  department **on the client** and stop sending it. Then there is nothing to
-  declare.
-- **`/api/v1/go/[id]` attribution** (only if `SHEETS_WEBHOOK_URL` is set) sends
-  id + trimester + department fire-and-forget. Same call: either drop the
-  parameters to the id alone, or declare it.
+**A wrong "no" here is a policy strike, and health apps get looked at.** Answer
+every row from this table, which is the app as it actually behaves.
 
-If you keep either, declare honestly — *collected, not linked to the user, not
-shared, app functionality*. A wrong "no" here is a policy strike, and health
-apps get looked at.
+| Data type | Collected? | Linked to identity? | Shared? | Purpose | Optional? |
+|---|---|---|---|---|---|
+| **Name** | Yes | Yes | No | Account management, app functionality | Yes — "seguir sin cuenta" |
+| **Email address** | Yes | Yes | No | Account management | Yes — same |
+| **User IDs** | Yes | Yes | No | Account management, app functionality | Yes — same |
+| **Health info** | Yes | Yes | No | App functionality | Yes — same |
+| **Photos** | Yes | Yes | No | App functionality | **Yes — separate opt-in**, off by default (K4) |
+| **App interactions** | Yes | **No** | No | Analytics | No |
+| **Approximate location** | **No** | — | — | — | — |
+| **Contacts / SMS / call log / calendar** | **No** | — | — | — | — |
+| **Financial info** | **No** | — | — | — | — |
 
-**When accounts ship (Phase A), this answer changes to "health data, linked to
-identity"** and drags the deletion requirements in §3.3 with it. That is one of
-the reasons `OPUS-REVIEW-2026-08.md` §4.1 argues for launching first.
+Row by row, with the thing that makes each answer defensible:
+
+- **Name · email · user id.** The minimum Google and Facebook will give
+  (ARCHITECTURE.md §4.7). No friend lists, no other scopes, ever. Present only
+  for a user who signed in; "seguir sin cuenta" collects none of it, which is
+  what makes the **optional** column a yes rather than a technicality.
+- **Health info — "linked to identity", and say so.** Synced records are keyed
+  to a user id, and pretending otherwise because the payload is opaque would be
+  a lie about the shape of the data rather than about its contents. What §4.3
+  buys is real and worth stating in the *privacy policy* (not this form, which
+  has no box for it): the server stores a typed envelope it never queries into
+  and never indexes, so it does not learn which symptom, which week, or which
+  note — even though it knows whose.
+- **Photos — a second, separate opt-in.** K4's backup is off unless she turns
+  it on, the bytes go to object storage via a short-lived presigned URL, and
+  turning it off deletes the server copies. Declare it as optional, because it
+  genuinely is.
+- **App interactions — collected, NOT linked.** This is `/api/v1/stats`, and it
+  is the one row where the architecture does the arguing for you: the table has
+  no identity column at all (A1), no session is ever read, no IP is retained,
+  and the finest timestamp is a calendar day. K5 put the pregnancy `week` back
+  on this counter (§5 D2, §7) — declare it under this row, not under Health
+  info, because the row is `(week, content_id, day, count)` with nothing to
+  join it to. `lib/stats/contentStats.test.ts` asserts the whole POST shape, so
+  this answer stays true by test rather than by memory.
+- **Approximate location — still no**, and this is J3's win that survives. See
+  below.
+
+**What J3 removed, and what stays removed.** J3 stripped `department` from
+`/api/v1/directory` and `/api/v1/placements`, `trimester` + `department` from
+`/api/v1/go/[id]`'s attribution, and the `week` from `/api/v1/stats`. K5 put
+back **only the last one**. The first three stay gone, and not for the badge:
+
+- The directory and placement seeds are precached, tens of entries, filtered on
+  the device in a millisecond. A parameterless route caches under **one key**
+  for every user in the country, which is a better offline design than a
+  per-department cache would ever be. That is worth more than the badge was.
+- `/go`'s attribution is a fire-and-forget redirect to `wa.me`. Sending a
+  sponsor a trimester tells them a health fact about whoever just tapped, which
+  ARCHITECTURE.md §4.6 rules out independently of any Play form.
+
+So: **"Approximate location: not collected" is still an honest answer**, and it
+is the one row of this table that is honest by construction rather than by
+policy.
+
+### 3.1.1 The consequences that come with the honest answer
+
+Declaring accounts and health data pulls in obligations the "No data collected"
+version dodged. All of them are already built; this is the checklist that they
+are still true at submission time.
+
+- **§3.3's web deletion URL is now mandatory, not conditional.** Read it.
+- **The privacy policy must match this table**, and be the lawyer's version —
+  ARCHITECTURE.md §8 requires that before any account feature reaches real
+  users, and a policy that contradicts the Data safety form is a rejection.
+- **Consent for storing health data is collected explicitly at sign-up** (A4),
+  not buried in a "by continuing you agree" line.
+- **Re-do the Data safety form when K20 (curated Q&A) ships.** A user-submitted
+  question is user-generated content, and it changes the IARC content rating in
+  §3.4 as well.
 
 ### 3.2 Health apps declaration — mandatory
 
@@ -188,16 +262,22 @@ health data for employment or insurance eligibility, or for unauthorised social
 sharing. None of that is a problem here; the E2 share card just has to keep
 doing what it already promises — share the *week*, never the health details.
 
-### 3.3 Account deletion — only when accounts exist, and it needs a *web* URL
+### 3.3 Account deletion — required, and it needs a *web* URL
 
-If the app ever lets a user create an account, Play requires **both**:
+> **K5 (August 2026): this is no longer conditional.** The app ships with
+> accounts (§5 D1). Both items below are launch blockers.
+
+Play requires **both**:
 
 1. an in-app path to request deletion (planned as A5), **and**
 2. a **publicly reachable web URL** where deletion can be requested **without
    installing the app or signing in** — submitted in the Data safety form.
 
-The second one is the one people forget and get rejected for. When Phase A
-lands, ship a `/borrar-cuenta` page with it.
+The second one is the one people forget and get rejected for. A5 built the
+in-app path (Ajustes → "Borrar mi cuenta", server rows + an offer to wipe the
+device). **The public web page does not exist yet** — `/borrar-cuenta`, reachable
+signed-out, explaining how to request deletion without installing the app. It is
+a small page and it is on the critical path for submission.
 
 ### 3.4 The rest of the forms
 
@@ -206,8 +286,9 @@ lands, ship a `/borrar-cuenta` page with it.
   Get the lawyer's version up *before* you submit; a placeholder policy is a
   rejection.
 - **Content rating (IARC questionnaire)** — health/reference content, no user
-  generated content, no gambling. Answer honestly; re-do it if you ever add a
-  community feature.
+  generated content, no gambling. Answer honestly; **re-do it when K20's
+  curated Q&A ships** — a user-submitted question is user-generated content
+  even when nothing publishes without admin approval.
 - **Target audience** — adults. Do **not** select any child age band; that pulls
   you into the Families policy programme for no reason.
 - **Ads declaration** — "contains ads" is about promotional content shown in the

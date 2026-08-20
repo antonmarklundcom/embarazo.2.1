@@ -1,13 +1,20 @@
 name: CI
 
 on:
-  # Only `main` on push: every other branch is covered by the pull_request
-  # trigger, and listing "**" here queued two full runs of this job (build +
-  # Playwright + a browser download) for every push to a PR branch, doubling
-  # the Actions minutes this private repo burns.
+  # `main` on push: the branch that ships. Every other branch is covered by
+  # the pull_request trigger below.
   push:
     branches: ["main"]
+  # K21 (docs/FABLE-PLAN-2026-08.md §6, founder-approved as D9): the PR
+  # trigger is label-gated. An ordinary push to a PR branch runs nothing —
+  # the builder validates lint + validate:content + tests + build + e2e in
+  # their own session (0 Actions minutes) and only then applies the `run-ci`
+  # label, which fires exactly one run per PR to gate auto-merge.
+  #
+  # `types: [labeled]` (not the default synchronize/opened/reopened set) is
+  # what makes that true: without it every push re-ran the whole job.
   pull_request:
+    types: [labeled]
 
 # One run per branch/PR. A new push cancels the run still in flight for the
 # same ref instead of leaving it to compete for a runner.
@@ -17,8 +24,14 @@ concurrency:
 
 jobs:
   build:
+    # Push to `main` always runs. A pull_request event only runs when the
+    # label just applied is `run-ci` — any other label (or a re-label) is a
+    # no-op, so labels stay usable for their normal purpose.
+    if: >-
+      github.event_name == 'push' ||
+      github.event.label.name == 'run-ci'
     runs-on: ubuntu-latest
-    # The job normally finishes in ~2 minutes; this caps a hung step rather
+    # The job normally finishes in ~5 minutes; this caps a hung step rather
     # than letting it run to the 6-hour default.
     timeout-minutes: 20
     steps:
@@ -36,9 +49,31 @@ jobs:
       # stay inert. The real deployment build does set it and will fail if the
       # medical reviewer is still a placeholder.
       - run: npm run build
+
+      # K21: the Chromium download is the single most expensive step in this
+      # job (~40 s and ~150 MB every run). Cache it against the resolved
+      # @playwright/test version — the browser revision is pinned per version,
+      # so the key changes exactly when the browser must be refetched.
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      # On a cache hit only the OS-level shared libraries are missing; on a
+      # miss we fetch the browser too.
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+      - name: Install Playwright system dependencies
+        run: npx playwright install-deps chromium
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+
       # E2E runs against the production build above — the service worker is
       # disabled in `next dev`, so offline coverage needs `next start`.
-      - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v4
         if: failure()

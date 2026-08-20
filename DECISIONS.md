@@ -2403,3 +2403,99 @@ The lesson worth keeping: a data-contract change has a copy surface, and the
 task that changes the contract owns finding it. K4's own PR flagged this line;
 nothing enforced it. `faq.test.ts` is the closest thing to enforcement and it
 was pointing the wrong way.
+
+## PR-1 — K21 label-gated CI, K13a Next bump (August 2026)
+
+The first PR of the §8 batch, and the one that decides what the other seven
+cost. Both halves are about the same thing: work that used to happen by
+accident now happens on purpose.
+
+### The CI trigger is a label, not a push
+
+`ci.yml` used a bare `pull_request:`, which is the default set —
+`opened`, `reopened`, **`synchronize`**. `synchronize` is every push. A PR
+that took four pushes to get right ran the full job (npm ci → lint →
+content → tests → build → Chromium download → 81 Playwright specs) four
+times, and this repo's Actions budget is a real number.
+
+Now: `pull_request: types: [labeled]`, and the job is guarded on
+`github.event.label.name == 'run-ci'`. The push trigger on `main` is
+unchanged — the branch that ships still runs on every merge, unconditionally.
+
+The guard has to be on the **job**, not only the trigger, because
+`types: [labeled]` fires for *any* label. Without
+`github.event.label.name == 'run-ci'` the workflow would start (and burn a
+runner reaching its first `if`) every time somebody tagged a PR
+`dependencies`. With it, labels stay usable for labelling.
+
+What this trades away is honest and worth writing down: **CI no longer
+notices a bad push on a PR branch by itself.** The safety net moved from
+GitHub to the builder's session, and it only works if the protocol is kept —
+lint, `validate:content`, tests, build **and the relevant e2e specs** run
+locally before the push, and the label goes on after they are green, not
+before. A `run-ci` label applied hopefully is the failure mode this design
+has, and it costs the same minutes the old trigger did plus a red PR.
+
+`concurrency.cancel-in-progress` stays, and matters more now: relabelling a
+PR cancels the run still in flight rather than racing it.
+
+### The Playwright browser is cached
+
+The Chromium download was ~40 s and ~150 MB of every run, unchanged between
+runs. It is now an `actions/cache` entry keyed on the resolved
+`@playwright/test` version, read out of the installed package rather than
+hand-copied from `package.json` — the browser revision is pinned per
+Playwright version, so that key changes exactly when the bytes must change,
+and never otherwise.
+
+The cache holds the browser, not the OS libraries it links against, so the
+two steps split: a miss runs `playwright install --with-deps chromium`, a hit
+runs `install-deps chromium` alone. Skipping the deps step on a hit would
+produce the failure that looks like a broken cache and is actually a missing
+`libnss3`.
+
+### Next.js 15.1.6 → 15.5.23
+
+15.1.6 was four minor versions and eight months stale, with published
+advisories in the cache-poisoning / DoS class against it. 15.5.23 is the
+current 15.x line (`backport` dist-tag); 16.x is a major and out of scope for
+a housekeeping task before launch.
+
+**The middleware-bypass CVE never applied to this app**, and the reason is
+now written down twice — in ARCHITECTURE.md §11 and, better, in
+`lib/invariants/middleware.test.ts`, which fails if anyone adds
+`middleware.ts`. That advisory was a crafted request header persuading
+Next.js that a request had already passed the middleware chain, so every auth
+check living in middleware was skipped. It could not touch this app because
+there is no middleware: `/admin` checks the session inside the handler
+(and 404s, per §9), the API routes check their own. That was luck the first
+time and a documented invariant from here on — a security property nobody was
+maintaining is one bad refactor from gone, and the test is cheaper than the
+refactor.
+
+### `next lint` → `eslint .`
+
+Forced, not chosen: `next lint` is deprecated in the 15.5 line and removed in
+16. The flat config in `eslint.config.mjs` already did the real work, so the
+script change is one line — but the coverage is not identical, and wider in
+the useful direction. `next lint` linted a fixed list of directories
+(`app`, `components`, `lib`, `pages`, `src`); `eslint .` lints everything the
+config's `ignores` does not exclude, which adds `e2e/`, `scripts/` and
+`test/` — 298 files. They were already clean.
+
+### Dependabot, monthly and grouped
+
+The bump above was found by a human reading a plan, eight months late.
+`.github/dependabot.yml` is so the next one is found by a robot.
+
+Monthly rather than weekly, grouped production/development, capped at three
+open PRs: with label-gated CI a Dependabot PR costs **zero** Actions minutes
+until somebody applies `run-ci`, so the cost of this is review attention, and
+monthly is the amount of it this repo has.
+
+`npm audit` currently reports findings in transitive **dev** dependencies
+(`brace-expansion`, `nanoid`, `postcss`, `esbuild` under vitest/eslint, and
+`sharp` under the image scripts). None reach the shipped runtime. They were
+deliberately **not** fixed here — a lockfile-wide `audit fix` inside the PR
+that bumps the framework is how you lose the ability to say which change
+broke the build. Dependabot will bring them one group at a time.

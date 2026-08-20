@@ -54,7 +54,7 @@ User modes, switchable without data loss:
 | PWA | Serwist 9 (`app/sw.ts` → `public/sw.js`, git-ignored) | disabled in dev; test via `npm run build && npm start` |
 | Validation | zod on every API boundary | |
 | Tests | Vitest (`npm test`) + Playwright (`npm run test:e2e`) | |
-| CI | `.github/workflows/ci.yml` | lint + test + build (+ e2e, planned) |
+| CI | `.github/workflows/ci.yml` | lint + content + test + build + e2e; **label-gated** on PRs (`run-ci`), see K21 |
 
 **Deployment target is Hostinger managed Node.js** (see the
 `nextjs-deploy-hostinger` skill). MySQL was chosen over Neon Postgres
@@ -290,6 +290,16 @@ Constraints that are part of the design, not polish:
 - **Seeds marked PLACEHOLDER never render.** Gate them (`PUBLISHED_*`
   pattern) — this now applies to directory, events and placements too.
 - **New runtime dependencies** need a DECISIONS.md trade-off note.
+- **Never add Next.js middleware for authentication.** This app has no
+  `middleware.ts` and that is now an invariant, asserted by
+  `lib/invariants/middleware.test.ts`. Next.js has shipped more than one
+  middleware auth-bypass (a crafted request header skipping the middleware
+  chain entirely); none of them applied here because there is no gate in
+  front of a route to bypass. Every protected surface checks its session
+  **inside the handler** — `/admin` through `lib/server/admin.ts`, the API
+  routes through their own session lookups. Middleware for something that is
+  not a security boundary still needs that test amended and a DECISIONS.md
+  entry.
 - Tests: pure logic in `lib/*.test.ts`; API boundary behaviour in
   `app/api/v1/api.test.ts`; sync + auth get their own test files.
 - Branch/PR flow: work on `claude/*` branches, push, PR to `main`.

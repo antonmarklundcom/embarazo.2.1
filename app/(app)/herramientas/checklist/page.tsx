@@ -3,10 +3,19 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
 import { CHECKLISTS } from "@/lib/checklists";
+import { personaliseChecklists } from "@/lib/onboarding/personalisation";
+import { useProfile } from "@/lib/useProfile";
 
 export default function ChecklistPage() {
+  const profile = useProfile();
   const state = useLiveQuery(() => db().checklistState.toArray(), []);
   const done = new Set((state ?? []).filter((s) => s.done).map((s) => s.key));
+  // K9-F5. Wording only: two rows in the catalogue hedge ("Carné de IPS o
+  // seguro (si tenés)") because it could not know, and for a woman who told us
+  // she is seen at IPS the hedge is noise on a list she reads while packing a
+  // bag at 3am. No item is ever added or removed — the keys are shared state
+  // that a pareja can be assigned by key (`lib/sharing/fields.ts`).
+  const groups = personaliseChecklists(CHECKLISTS, profile);
 
   async function toggle(key: string) {
     const existing = await db().checklistState.where("key").equals(key).first();
@@ -26,7 +35,7 @@ export default function ChecklistPage() {
         </p>
       </header>
 
-      {CHECKLISTS.map((group) => {
+      {groups.map((group) => {
         const total = group.items.length;
         const completed = group.items.filter((i) => done.has(i.key)).length;
         return (

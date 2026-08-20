@@ -3022,3 +3022,147 @@ Two smaller ones:
   the row a `GROUP BY` omits. Both "people" and "records" are shown, because
   4 000 kick sessions from 12 women and 4 000 from 900 are different products
   and one number cannot tell them apart.
+
+---
+
+## PR-5a / K9-F5 — the questions we had no business asking, and the ones we never asked
+
+`docs/FABLE-PLAN-2026-08.md` §8 PR-5, first half: F5 onboarding depth, the
+`Onboarding.tsx` split it was scheduled to carry, and the "Me invitaron / tengo
+un código" entry.
+
+### The bug the invited path exists for
+
+A papá who taps the WhatsApp link his pareja sent him was asked, before the app
+would show him anything: **when the first day of his last menstruation was**,
+by which method he knew it, and which department he lives in. Then he reached a
+home screen built from dates he does not have.
+
+The fix is not a better question. It is a shorter flow: **mode → role → cuenta
+→ código**, four steps, none of which is about a body he does not have.
+
+`invited` is deliberately **not** a third `AppMode`. A mode is stored on the
+profile and switchable from Ajustes forever; this is a fact about *this run of
+onboarding* — which questions are absurd to ask right now — and it is never
+written to the profile at all. A companion is following a pregnancy, so his
+mode stays `embarazada`, which is what makes `/familia`, `CompanionHome` and
+every existing role branch keep working untouched.
+
+Three consequences worth a reviewer's eye:
+
+- **The code step comes after the account step, and the test pins the order.**
+  Redeeming an invite is a server call made as somebody; there is no anonymous
+  way to join a pregnancy. A código step before `cuenta` would be a screen that
+  can only fail.
+- **The device row is written on leaving `role`, not `department`.** K1's rule
+  is that everything typed is durable before the account step can navigate the
+  browser to Google. The invited flow has no department step, so the write moved
+  to the step before the account — same rule, same guarantee.
+- **`Profile.department` is now optional.** It had to be: there is a real
+  profile, belonging to a real user, that was never asked. Every reader already
+  guarded for it — the home screen's `profile.department!` sits behind a branch
+  only an owner reaches — so this makes the type say what the code already did.
+
+**Nothing traps anybody.** "Seguir sin código" finishes onboarding into a
+working app, and `/familia` accepts the code any day later. A code that does not
+work — expired, spent, no connection — must not be the wall between somebody and
+the app they just installed.
+
+The código step also **does not redeem automatically**, even when the code
+arrives prefilled from `/?codigo=`. A single-use capability that spends itself
+on page load can be burned by a link preview, a mis-tap, or the wrong person
+opening a forwarded message. Same rule K1 gave `/familia`.
+
+### `NoPregnancyYet` — a state the app now creates on purpose
+
+Everything below the companion branch on the home screen reads `profile.week!`,
+and that assertion used to hold because the only way to get a profile was to
+walk through the LMP step. The invited flow removes that guarantee deliberately:
+a companion's device has a real profile and no pregnancy row, and until the
+shared view arrives from the server there is no week to render. Offline, or with
+a revoked membership, it never arrives.
+
+So this is not a defensive branch, it is a screen — and it says opposite things
+to the two people who reach it. A companion is missing a *connection*, so he is
+pointed at Familia and his code. A mamá in this state is missing her *dates*, so
+she is pointed at the field that sets them. It waits on `shared.loading` first,
+because for a companion this is usually a half-second gap and telling him his
+invitation failed while it is still in flight would be wrong more often than
+right.
+
+### F5 depth: three questions, and what stops them being a survey
+
+¿primer embarazo? · ¿dónde te vas a atender? · ¿trabajás? — one screen, after
+the date and before the department, and **all three skippable**.
+
+Each is here because the app already had a place that needed the answer and
+asked for it too late or not at all. `/derechos` asked "¿cuál es tu situación de
+trabajo?" **on every single visit and forgot it on every single exit** — the
+answer lived in `useState` and died with the page. That is the clearest case for
+onboarding depth in the codebase: the question was already worth asking, it was
+just being asked in the wrong place.
+
+The rules, all enforced in `lib/onboarding/personalisation.ts` rather than by
+convention:
+
+1. **Unanswered is a first-class answer.** `isUnanswered` gates everything, and
+   a test asserts that with nothing answered `articlesForReader` is
+   `articlesForWeek` *exactly*, for every week 1–42. If skipping degraded the
+   app, the questions would not really be skippable. A pregnancy app that makes
+   a woman declare where she is treated before it will show her anything has
+   misunderstood what it is for.
+2. **`false` is an answer; absent is not.** `answeredProfileFields` turns a
+   skipped question into `undefined`, never into a default, and Ajustes clears a
+   field back to absent rather than to `false`. Defaulting somebody to "ips"
+   would show her a subsidio she may have no claim to.
+3. **Personalisation reorders and rewords. It never removes.** Hiding a guía
+   because of an answer is a guía she can no longer find; dropping a checklist
+   row is worse, because the keys are shared state — `lib/sharing/fields.ts`
+   lets a pareja be assigned one *by key*, so a personalisation that removed
+   `tramite-ips` would silently orphan her partner's task. A test walks every
+   answer combination and asserts the key list never changes.
+4. **Week relevance still wins, and the first version of this was wrong.** The
+   boost started as the primary sort key, which meant a woman who works could be
+   shown "derechos de la embarazada que trabaja" ahead of "qué llevar al
+   sanatorio" *in week 35*. The test caught it. `weekSpan` is now exported from
+   `lib/articles/forWeek.ts` and is the primary key in both places, so the two
+   rankings cannot drift; the personal boost sorts only the guías that are
+   equally about her week — which, for most of the pregnancy, is all of them.
+
+The **negative** boost matters as much as the positive one. The single shipped
+`derechos` guía is "la embarazada que trabaja". For a woman who told us she does
+not work, leaving it at neutral would mean the question changed nothing at all
+for a third of the people who answer it — so it is demoted, and still one tap
+away in `/guias`.
+
+Boosts are keyed on **cluster, not slug**. A rule about
+`derechos-embarazada-que-trabaja` is a rule about one file a content editor
+could delete without noticing; clusters are the seed's own vocabulary.
+
+### Changeable forever
+
+The three answers get a "Tu situación" section in Ajustes, saving on tap. A
+question asked once during first run that could never be corrected would be
+worse than not asking it: "trabajo sin IPS" today is "trabajo y aporto" next
+month, and a first pregnancy is only ever a first one once.
+
+`/derechos` seeds from the stored answer **once**, when the profile lands, and
+then leaves the screen alone — a later Dexie notification must not snap the page
+back while she is reading it. The choice still renders as selected and
+changeable rather than being applied silently.
+
+### The split
+
+`components/Onboarding.tsx` was 1,039 lines and PR-5 adds two steps to it. It is
+now 507 — the machine, the persistence and the chrome — with one file per step
+under `components/onboarding/`. Nothing changed in the move; the two new steps
+are new files, which is the point of doing the split in the same PR that needed
+them.
+
+One reuse fell out of it. Onboarding's código step and `/familia` both redeem a
+code, and `/familia` mapped every unrecognised failure to "No encontramos ese
+código" — **including `offline`**, which `acceptInviteCode` returns when the
+fetch itself threw. Telling a woman on a dropped connection that her sister's
+code is wrong sends her back to WhatsApp to ask for a replacement that will fail
+identically. `lib/sharing/inviteMessages.ts` is now the one mapping, used by
+both, with the offline case answered honestly.

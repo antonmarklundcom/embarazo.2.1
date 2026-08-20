@@ -12,8 +12,15 @@ import {
 } from "./pregnancy";
 import type { Trimester } from "./types";
 import type { AppMode, BabyIdentity, Pregnancy, Role } from "./db";
+import type { PregnancyAnswers } from "./onboarding/personalisation";
 
-export interface ProfileState {
+/**
+ * K9-F5's three answers are spread into `ProfileState` rather than nested,
+ * so that the state itself satisfies `PregnancyAnswers` and every consumer —
+ * the article rail, `/derechos`, the checklist — can pass the profile straight
+ * to a personalisation function without unpacking it first.
+ */
+export interface ProfileState extends PregnancyAnswers {
   loading: boolean;
   hasProfile: boolean;
   /** "embarazada" (default) or "planeando" — see build spec §3. */
@@ -92,6 +99,11 @@ export function useProfile(): ProfileState {
     city: profile.city,
     nextAppointment: profile.nextAppointment,
     sanatorioPhone: profile.sanatorioPhone,
+    // K9-F5. Absent stays absent — no defaults here, because "she skipped the
+    // question" and "she answered no" are different states downstream.
+    firstPregnancy: profile.firstPregnancy,
+    careSetting: profile.careSetting,
+    workSituation: profile.workSituation,
   };
 
   // "Planeando" users (and any profile without a pregnancy record yet) have no

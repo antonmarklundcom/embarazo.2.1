@@ -27,6 +27,7 @@ function babyAtWeekLabel(babies: BabyIdentity[], role: Role, week: number): stri
 }
 import { Onboarding } from "@/components/Onboarding";
 import { hasOnboardingDraft } from "@/lib/onboarding/draftStorage";
+import { INVITE_CODE_PARAM } from "@/lib/sharing/inviteLink";
 import { CompanionHome } from "@/components/CompanionHome";
 import { CheersCard } from "@/components/CheersCard";
 import {
@@ -59,6 +60,17 @@ import { FamilyCard } from "@/components/FamilyCard";
 // rail. Paraguay-specific cards (derechos, recursos, temporada) stay below.
 export default function InicioPage() {
   const profile = useProfile();
+  // K9-F5 — a code from the WhatsApp invitation link, when the app was opened
+  // on one. Read from `window` in an effect rather than through
+  // `useSearchParams`, which would drag this statically rendered route into a
+  // Suspense boundary for a value nothing above the fold depends on.
+  const [inviteCode, setInviteCode] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    const found = new URLSearchParams(window.location.search).get(
+      INVITE_CODE_PARAM,
+    );
+    if (found) setInviteCode(found.toUpperCase());
+  }, []);
   // K1: onboarding now writes the profile row *before* its last steps (the
   // account, the baby's name, the invite), so "has a profile" stopped being the
   // same question as "has finished onboarding" — and a gate that asked the old
@@ -95,7 +107,7 @@ export default function InicioPage() {
   }
 
   if (flow === "active") {
-    return <Onboarding onDone={() => setFlow("done")} />;
+    return <Onboarding onDone={() => setFlow("done")} initialCode={inviteCode} />;
   }
 
   // K2 — a companion's home screen is the pregnancy they are accompanying.
@@ -117,6 +129,23 @@ export default function InicioPage() {
   // Pre-pregnancy "planeando / buscando" mode shows its own dashboard.
   if (profile.mode === "planeando") {
     return <PlaneandoHome />;
+  }
+
+  // K9-F5 — a profile in pregnancy mode with no pregnancy on it.
+  //
+  // Everything below this line reads `profile.week!`, and that assertion used
+  // to hold because the only way to get a profile was to walk through the LMP
+  // step. The invited flow removed that guarantee on purpose: a companion is
+  // never asked for a date, so his device has a real profile and no pregnancy
+  // row, and until the shared view arrives from the server there is nothing to
+  // render a week from. Offline, or with a revoked membership, it never
+  // arrives.
+  //
+  // So this is not a defensive branch — it is the screen for a state the app
+  // now creates deliberately, and it says something different to each of the
+  // two people who can reach it.
+  if (!profile.hasPregnancy) {
+    return <NoPregnancyYet role={profile.role} loading={shared.loading} />;
   }
 
   // K7/K2: the owner's server-side view, read once. Null for a signed-out or
@@ -273,7 +302,7 @@ export default function InicioPage() {
       {/* C6: guías that are actually about this week, with read time
           (map #15, #17). Replaces the old rail, whose three cards pointed at
           two destinations. */}
-      <WeekArticleFeed week={week} />
+      <WeekArticleFeed week={week} answers={profile} />
 
       {/* C7: aggregate counts, no identity anywhere (map #16). Renders
           nothing when there is no data. */}
@@ -564,6 +593,64 @@ function HomeSkeleton() {
           <div key={i} className="h-20 animate-pulse rounded-tile bg-black/5" />
         ))}
       </div>
+    </div>
+  );
+}
+
+/**
+ * K9-F5 — pregnancy mode, no pregnancy.
+ *
+ * Two people land here and they need opposite things. A companion has no dates
+ * of his own and never will: what he is missing is the connection, so he is
+ * pointed at Familia and at his code. A mamá in this state has lost or never
+ * finished her own dates, and what she needs is the field that sets them.
+ *
+ * `loading` matters because for a companion this is usually a half-second gap
+ * before the shared view lands, and telling him his invitation did not work
+ * while it is still in flight would be wrong more often than right.
+ */
+function NoPregnancyYet({ role, loading }: { role: Role; loading: boolean }) {
+  if (loading) return <HomeSkeleton />;
+
+  const companion = role !== "mama";
+  return (
+    <div className="space-y-4 py-6">
+      <section className="rounded-card border border-line bg-white p-5">
+        <h1 className="text-xl font-black text-ink">
+          {companion ? "Todavía no te conectamos" : "Falta tu fecha"}
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-muted">
+          {companion
+            ? "Para seguir un embarazo desde acá necesitás el código que te pasaron, o que quien te invitó vuelva a mandártelo. Si ya lo usaste, puede que estés sin internet en este momento."
+            : "Guardamos tu perfil pero no la fecha de tu embarazo. Poniéndola volvés a ver tu semana, tu fecha probable de parto y todo lo demás."}
+        </p>
+        <Link
+          href={companion ? "/familia" : "/ajustes"}
+          className="mt-4 flex min-h-[44px] w-full items-center justify-center rounded-tile bg-petrol px-4 text-sm font-extrabold text-white transition active:scale-[0.99]"
+        >
+          {companion ? "Ir a Familia" : "Poner mi fecha"}
+        </Link>
+      </section>
+      <section className="rounded-card border border-line bg-white p-5">
+        <h2 className="text-base font-extrabold text-ink">Mientras tanto</h2>
+        <p className="mt-1 text-sm text-muted">
+          Las guías, el directorio y las herramientas funcionan igual.
+        </p>
+        <div className="mt-3 flex gap-2">
+          <Link
+            href="/guias"
+            className="flex min-h-[44px] flex-1 items-center justify-center rounded-tile bg-cream text-sm font-extrabold text-petrol"
+          >
+            Guías
+          </Link>
+          <Link
+            href="/herramientas"
+            className="flex min-h-[44px] flex-1 items-center justify-center rounded-tile bg-cream text-sm font-extrabold text-petrol"
+          >
+            Herramientas
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

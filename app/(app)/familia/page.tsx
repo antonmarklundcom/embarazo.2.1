@@ -15,6 +15,10 @@ import {
 import { CHECKLISTS } from "@/lib/checklists";
 import { SharingLevels } from "@/components/SharingLevels";
 import { isValidInviteCode } from "@/lib/sharing/fields";
+import {
+  INVITE_CODE_MALFORMED,
+  inviteFailureMessage,
+} from "@/lib/sharing/inviteMessages";
 import { inviteCodeFromSearch } from "@/lib/sharing/inviteLink";
 import { fetchAuthStatus, type AuthStatus } from "@/lib/auth/status";
 import { SignInCard } from "@/components/SignInCard";
@@ -99,7 +103,7 @@ export default function FamiliaPage() {
     const value = code.trim().toUpperCase();
     setMessage("");
     if (!isValidInviteCode(value)) {
-      setMessage("Ese código no parece válido. Fijate que esté completo.");
+      setMessage(INVITE_CODE_MALFORMED);
       return;
     }
     setBusy(true);
@@ -110,13 +114,10 @@ export default function FamiliaPage() {
       await reload();
       return;
     }
-    setMessage(
-      result.reason === "expired"
-        ? "Ese código venció. Pedile uno nuevo."
-        : result.reason === "used"
-          ? "Ese código ya fue usado por otra persona."
-          : "No encontramos ese código.",
-    );
+    // K9-F5 — shared with onboarding's código step, so the two screens cannot
+    // give different answers to the same server reason. It also stopped this
+    // page telling somebody on a dropped connection that her code is wrong.
+    setMessage(inviteFailureMessage(result.reason));
   }
 
   // The answer has not arrived yet. Rendering the signed-out screen first and

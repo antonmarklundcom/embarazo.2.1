@@ -360,6 +360,64 @@ export const FoodEntrySchema = z.object({
 });
 export type FoodEntry = z.infer<typeof FoodEntrySchema>;
 
+// ---------------------------------------------------------------------------
+// K10 — "¿Cuánto cuesta?" (P6)
+// ---------------------------------------------------------------------------
+
+/** Where a procedure is paid for. Same three settings K9-F5 asks about. */
+export const CareSettingSchema = z.enum(["ips", "publico", "privado"]);
+
+/**
+ * One price band, in guaraníes.
+ *
+ * A **range**, never a number, and both ends are required. Paraguay has no
+ * published tariff for most of this, so every figure is a range somebody
+ * sourced — and a single number would read as a quote the app is not in a
+ * position to give. `min` and `max` may be equal when a fee genuinely is fixed
+ * (a public hospital charging nothing is `0`–`0`, which is the honest way to
+ * say free rather than omitting the row).
+ */
+export const PriceBandSchema = z
+  .object({
+    setting: CareSettingSchema,
+    min: z.number().int().min(0),
+    max: z.number().int().min(0),
+    /** What the band does not cover, when that is the thing people get wrong. */
+    note: z.string().min(1).optional(),
+  })
+  .refine((band) => band.max >= band.min, {
+    message: "max no puede ser menor que min",
+  });
+
+export const PriceEntrySchema = z
+  .object({
+    id: idSchema,
+    /** "Ecografía", "Parto vaginal", "Cesárea", "Laboratorio de rutina". */
+    name: z.string().min(1),
+    /** One line saying what it is, for somebody who has never had one. */
+    summary: z.string().min(1),
+    bands: z.array(PriceBandSchema).min(1),
+    /**
+     * Where the figures came from, and **when**.
+     *
+     * Both required, unlike D3's food entries, which carry a source and no
+     * date. Guaraní prices move with inflation in a way that "no comer sushi"
+     * does not, and a price with no date is not a fact — it is a rumour with a
+     * citation. The UI shows the date next to every figure.
+     */
+    source: z.string().min(1),
+    sourceDate: isoDateSchema,
+    // Unset = not yet reviewed. Gated by lib/seed/gate.ts's reviewedOnly().
+    reviewedBy: z.string().min(1).optional(),
+  })
+  .refine(
+    (entry) =>
+      new Set(entry.bands.map((band) => band.setting)).size === entry.bands.length,
+    { message: "no puede haber dos bandas para el mismo lugar de atención" },
+  );
+export type PriceBand = z.infer<typeof PriceBandSchema>;
+export type PriceEntry = z.infer<typeof PriceEntrySchema>;
+
 /**
  * Formats a zod error into one readable line per issue, naming the file, the
  * entry (by index and id when available) and the field.

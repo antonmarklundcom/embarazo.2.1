@@ -1,0 +1,1 @@
+ALTER TABLE `pushReminders` MODIFY COLUMN `category` enum('consejos','recordatorios','avisos','mimos') NOT NULL;

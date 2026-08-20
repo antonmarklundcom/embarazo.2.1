@@ -457,8 +457,21 @@ export const syncRecords = mysqlTable(
 // Push (B5)
 // ---------------------------------------------------------------------------
 
-export const PUSH_CATEGORIES = ["consejos", "recordatorios", "avisos"] as const;
-export type PushCategory = (typeof PUSH_CATEGORIES)[number];
+// PR-5b — re-exported from `lib/push/categories.ts`, not redeclared.
+//
+// This file used to carry its own copy of the list, and the copies drifted the
+// moment `mimos` was added: the enum column still described three categories
+// while the app offered four, so the *type* of a subscription row stopped
+// matching the type of the value being written into it. A `mysqlEnum` built
+// from a stale literal is worse than a type error, because the column it
+// generates silently rejects the new value at runtime.
+//
+// The import direction is safe: `lib/push/categories.ts` is pure and
+// dependency-free (it is imported by the service worker), so nothing
+// server-only travels with it.
+import { PUSH_CATEGORIES, type PushCategory } from "@/lib/push/categories";
+
+export { PUSH_CATEGORIES, type PushCategory };
 
 export const pushSubscriptions = mysqlTable(
   "pushSubscriptions",

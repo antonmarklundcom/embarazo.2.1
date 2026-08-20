@@ -1,0 +1,100 @@
+[
+  {
+    "id": "precio-ecografia",
+    "name": "Ecografía obstétrica",
+    "summary": "La imagen que confirma el embarazo, mide al bebé y ajusta tu fecha probable de parto. En un embarazo sin complicaciones se piden entre 3 y 5 en total.",
+    "bands": [
+      {
+        "setting": "ips",
+        "min": 0,
+        "max": 0,
+        "note": "Sin costo con tu carné de IPS al día, pedida por el médico del servicio. El turno puede demorar."
+      },
+      {
+        "setting": "publico",
+        "min": 0,
+        "max": 0,
+        "note": "Gratuita en hospitales y centros del MSPBS (Ley 5099/2013). Puede que te pidan traer el gel o que el turno demore."
+      },
+      {
+        "setting": "privado",
+        "min": 150000,
+        "max": 450000,
+        "note": "La 4D o 5D cuesta más y no reemplaza a la obstétrica: es la misma imagen presentada distinto."
+      }
+    ],
+    "source": "(placeholder) relevamiento de aranceles pendiente",
+    "sourceDate": "2026-08-01"
+  },
+  {
+    "id": "precio-parto-vaginal",
+    "name": "Parto vaginal",
+    "summary": "El nacimiento por vía vaginal, con la internación de uno o dos días que normalmente lo acompaña.",
+    "bands": [
+      {
+        "setting": "ips",
+        "min": 0,
+        "max": 0,
+        "note": "Cubierto para la asegurada y para la esposa o concubina del asegurado."
+      },
+      {
+        "setting": "publico",
+        "min": 0,
+        "max": 0,
+        "note": "Gratuito en el sistema público (Ley 5099/2013), incluida la internación."
+      },
+      {
+        "setting": "privado",
+        "min": 6000000,
+        "max": 18000000,
+        "note": "Suele cotizarse como paquete. Preguntá qué pasa si termina en cesárea, y si el neonatólogo está incluido."
+      }
+    ],
+    "source": "(placeholder) relevamiento de aranceles pendiente",
+    "sourceDate": "2026-08-01"
+  },
+  {
+    "id": "precio-cesarea",
+    "name": "Cesárea",
+    "summary": "El nacimiento por cirugía, programada o de urgencia. La internación es más larga que en un parto vaginal.",
+    "bands": [
+      {
+        "setting": "ips",
+        "min": 0,
+        "max": 0,
+        "note": "Cubierta, igual que el parto vaginal, cuando la indica el servicio."
+      },
+      { "setting": "publico", "min": 0, "max": 0, "note": "Gratuita en el sistema público." },
+      {
+        "setting": "privado",
+        "min": 9000000,
+        "max": 25000000,
+        "note": "Casi siempre más cara que el parto vaginal. Pedí el presupuesto por escrito, con quirófano y anestesista adentro."
+      }
+    ],
+    "source": "(placeholder) relevamiento de aranceles pendiente",
+    "sourceDate": "2026-08-01"
+  },
+  {
+    "id": "precio-laboratorio",
+    "name": "Laboratorio de rutina",
+    "summary": "El paquete que te piden en el primer control: grupo y factor, hemograma, glicemia, orina, VDRL, VIH, hepatitis B y toxoplasmosis.",
+    "bands": [
+      { "setting": "ips", "min": 0, "max": 0, "note": "Sin costo con la orden del médico del servicio." },
+      {
+        "setting": "publico",
+        "min": 0,
+        "max": 0,
+        "note": "Gratuito en el sistema público. El test de VIH y el de sífilis son gratuitos y voluntarios en todo el país."
+      },
+      {
+        "setting": "privado",
+        "min": 250000,
+        "max": 800000,
+        "note": "El precio depende de cuántos estudios entran en la orden."
+      }
+    ],
+    "source": "(placeholder) relevamiento de aranceles pendiente",
+    "sourceDate": "2026-08-01"
+  }
+]

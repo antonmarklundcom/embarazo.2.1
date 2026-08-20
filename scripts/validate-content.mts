@@ -14,6 +14,7 @@ import {
   InsightTemplateSchema,
   FaqEntrySchema,
   BabyNameSchema,
+  PriceEntrySchema,
   validateContentArray,
 } from "../lib/content/schemas.ts";
 
@@ -176,6 +177,12 @@ const checks: Check[] = [];
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     // food.json not created yet (pre-D3) — nothing to validate.
   }
+}
+
+{
+  // K10 price guide — same pipeline as D3.
+  const raw = readJson("lib/seed/prices.json") as unknown[];
+  checks.push(validateContentArray("lib/seed/prices.json", raw, PriceEntrySchema));
 }
 
 // Extra guard for "timestamps computed at module load" (BUILD-PLAN G1): a

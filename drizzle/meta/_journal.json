@@ -78,6 +78,13 @@
       "when": 1787218020796,
       "tag": "0010_lonely_ghost_rider",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1787243063309,
+      "tag": "0011_giant_magdalene",
+      "breakpoints": true
     }
   ]
 }

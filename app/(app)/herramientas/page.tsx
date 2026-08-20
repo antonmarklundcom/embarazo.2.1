@@ -37,6 +37,17 @@ const TOOLS: Tool[] = [
     tone: "bg-pastel-salvia",
   },
   {
+    // K10 — placed right after the food lookup, the other "answer a question
+    // nobody will answer straight" tool, and above the practical ones. It
+    // renders its own empty state until a reviewer signs the figures off, so
+    // the tile leads somewhere honest from the day it ships.
+    href: "/herramientas/precios",
+    title: "¿Cuánto cuesta?",
+    desc: "Ecografía, parto, cesárea y laboratorio: qué se paga en IPS, en el público y en privado.",
+    icon: "price",
+    tone: "bg-pastel-arena",
+  },
+  {
     href: "/herramientas/carne",
     title: "Carné perinatal",
     desc: "Llevá una copia en fotos de tu carné y tus datos clave, siempre con vos.",

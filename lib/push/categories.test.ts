@@ -13,7 +13,15 @@ import {
 
 describe("the category vocabulary", () => {
   it("matches the documented one (FEATURE-MAP #7)", () => {
-    expect(PUSH_CATEGORIES).toEqual(["consejos", "recordatorios", "avisos"]);
+    expect(PUSH_CATEGORIES).toEqual([
+      "consejos",
+      "recordatorios",
+      "avisos",
+      // PR-5b. A cheer from her pareja was landing silently; `mimos` is the
+      // opt-in that lets it poke her, and lets her turn it off on its own
+      // rather than by giving up notifications entirely.
+      "mimos",
+    ]);
   });
 
   it("describes every category it offers", () => {
@@ -27,9 +35,12 @@ describe("the category vocabulary", () => {
   });
 
   it("defaults to control reminders only", () => {
-    // The one a user loses something by missing. Defaulting weekly tips on is
+    // The ones a user loses something by missing. Defaulting weekly tips on is
     // how an app gets its notifications turned off entirely and permanently.
-    expect(DEFAULT_CATEGORIES).toEqual(["recordatorios"]);
+    // A prenatal control, and a message a person deliberately sent her.
+    // Neither can become noise; a weekly tip nobody asked for can.
+    expect(DEFAULT_CATEGORIES).toEqual(["recordatorios", "mimos"]);
+    expect(DEFAULT_CATEGORIES).not.toContain("consejos");
   });
 });
 

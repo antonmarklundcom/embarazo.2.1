@@ -6,6 +6,7 @@ import {
   normaliseCategories,
   type PushCategory,
 } from "./categories";
+import { weeklyTipTimes } from "./weekly";
 
 // BUILD-PLAN B5 — the device half.
 //
@@ -222,9 +223,9 @@ export async function setCompanionReminder(
 /**
  * Send the subscription, its opt-ins, and the times to poke it.
  *
- * The reminder times are computed HERE, from local data, because the server
- * cannot read an appointment (§4.3). It receives a list of epoch milliseconds
- * and nothing that says what they are for.
+ * Every schedule is computed HERE, from local data, because the server cannot
+ * read an appointment (§4.3) and does not know her timezone. It receives lists
+ * of epoch milliseconds and nothing that says what any of them will say.
  */
 async function syncSubscription(
   subscription: PushSubscription,
@@ -232,9 +233,17 @@ async function syncSubscription(
   companionAppointmentAt: number | null = null,
 ): Promise<void> {
   const json = subscription.toJSON();
+  const now = Date.now();
   const reminders = categories.includes("recordatorios")
-    ? await computeReminderTimes(Date.now(), companionAppointmentAt)
+    ? await computeReminderTimes(now, companionAppointmentAt)
     : [];
+  // PR-5b. An empty array is not the same as omitting the field: it is how a
+  // device that has just turned "consejos" off **clears** the twelve weeks it
+  // had already enqueued. Sending nothing would leave them to fire against an
+  // opt-in that no longer exists — the send-time check in `dispatchDueReminders`
+  // would swallow them, but a queue full of pokes nobody will ever receive is
+  // a queue that lies about what the server is going to do.
+  const consejos = categories.includes("consejos") ? weeklyTipTimes(now) : [];
 
   try {
     await fetch("/api/v1/push", {
@@ -245,6 +254,7 @@ async function syncSubscription(
         keys: { p256dh: json.keys?.p256dh, auth: json.keys?.auth },
         categories,
         reminders,
+        consejos,
       }),
     });
   } catch {
@@ -321,4 +331,44 @@ export async function refreshReminders(
     readLocalCategories(),
     companionAppointmentAt,
   );
+}
+
+/**
+ * PR-5b — re-enqueue the weekly tips, and nothing else.
+ *
+ * Twelve weeks are enqueued at a time and the list is replaced on every
+ * publish, so something has to top it up or the tips quietly stop for anyone
+ * who has not opened Ajustes in three months. This is that something, and it
+ * is called on app start.
+ *
+ * It deliberately does **not** go through `refreshReminders`. That function
+ * takes `companionAppointmentAt` and treats `null` as "I do not know" — but
+ * the server replaces a category's schedule wholesale, so publishing a
+ * recordatorios list assembled without it would silently cancel the K8
+ * companion reminder on every single app open. Omitting the `reminders` field
+ * entirely is the route's own way of saying "leave that category alone"
+ * (`/api/v1/push` only touches a schedule whose field is present), which makes
+ * this the narrow write it needs to be.
+ */
+export async function refreshWeeklyTips(): Promise<void> {
+  const subscription = await existingSubscription();
+  if (!subscription) return;
+
+  const categories = readLocalCategories();
+  const json = subscription.toJSON();
+
+  try {
+    await fetch("/api/v1/push", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        endpoint: subscription.endpoint,
+        keys: { p256dh: json.keys?.p256dh, auth: json.keys?.auth },
+        categories,
+        consejos: categories.includes("consejos") ? weeklyTipTimes() : [],
+      }),
+    });
+  } catch {
+    // Offline. The queue still holds whatever was enqueued last time.
+  }
 }

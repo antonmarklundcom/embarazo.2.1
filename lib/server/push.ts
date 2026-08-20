@@ -270,3 +270,59 @@ export async function pruneSentReminders(
     .delete(pushReminders)
     .where(sql`${pushReminders.sentAt} is not null and ${pushReminders.sentAt} < ${before}`);
 }
+
+// ---------------------------------------------------------------------------
+// PR-5b — the one poke the device cannot schedule
+// ---------------------------------------------------------------------------
+
+/**
+ * Poke the owner's devices because a cheer just arrived.
+ *
+ * Every other reminder in this table is scheduled by the device that wants it,
+ * which is what keeps §4.3 intact: the server is told a time and never a
+ * reason. A cheer is the exception in one direction only — the *time* is
+ * something only the server can know, because it is the moment somebody else
+ * pressed a button on their own phone. It still learns nothing new by
+ * scheduling it: it wrote the `companionCheers` row a line earlier.
+ *
+ * The poke carries no body, exactly like the others. The service worker
+ * notices the unseen cheer for itself (`app/sw.ts`) and writes the sentence.
+ * That is not ceremony — a payload would mean this table starts carrying text,
+ * and the next feature would put a name in it.
+ *
+ * `fireAt: now` rather than an immediate send, so a cheer rides the same
+ * dispatcher, retry and opt-in path as everything else. The cost is the
+ * dispatch interval; the benefit is that `acceptsCategory` is enforced in
+ * exactly one place for every notification the product sends.
+ *
+ * Appends rather than replaces: `scheduleReminders` is a wholesale replace per
+ * category, and two cheers arriving a minute apart are two events. Best-effort
+ * by design — a failure here must never fail the cheer itself, which is
+ * already stored and already visible in her app.
+ */
+export async function scheduleCheerPoke(
+  database: Database,
+  ownerUserId: string,
+  now: number,
+): Promise<void> {
+  try {
+    const subscriptions = await database
+      .select({ endpoint: pushSubscriptions.endpoint })
+      .from(pushSubscriptions)
+      .where(eq(pushSubscriptions.userId, ownerUserId));
+
+    if (subscriptions.length === 0) return;
+
+    await database.insert(pushReminders).values(
+      subscriptions.map((row) => ({
+        id: crypto.randomUUID(),
+        endpoint: row.endpoint,
+        category: "mimos" as const,
+        fireAt: now,
+      })),
+    );
+  } catch {
+    // The cheer is already saved and already in her app. A push that failed to
+    // enqueue is a missed notification, not a lost message.
+  }
+}

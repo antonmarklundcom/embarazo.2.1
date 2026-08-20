@@ -5,6 +5,7 @@ import { getArticles } from "@/lib/wordpress";
 import { getArticleBySlug } from "@/lib/seed/articles";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { readTimeLabel } from "@/lib/articles/readTime";
+import { relatedTool } from "@/lib/articles/relatedTool";
 import { RecordContentView } from "@/components/RecordContentView";
 
 // Statically generate the guías so they precache for offline (spec §9).
@@ -32,6 +33,7 @@ export default async function GuiaDetailPage({
   const { slug } = await params;
   const article = getArticleBySlug(slug);
   if (!article) notFound();
+  const related = relatedTool(slug);
 
   return (
     <article className="space-y-4">
@@ -63,6 +65,22 @@ export default async function GuiaDetailPage({
         // Seed HTML is authored in-repo (not user input); safe to render.
         dangerouslySetInnerHTML={{ __html: article.html }}
       />
+
+      {/* K10 — the tool that answers the rest of the question this guía
+          raises. Typed and tested (lib/articles/relatedTool.ts), and absent
+          for most guías on purpose. */}
+      {related && (
+        <Link
+          href={related.href}
+          className="block rounded-card border border-line bg-pastel-arena p-4 transition active:scale-[0.99]"
+        >
+          <p className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">
+            Te puede servir
+          </p>
+          <p className="mt-1 text-base font-extrabold text-ink">{related.label}</p>
+          <p className="mt-1 text-sm leading-relaxed text-muted">{related.blurb}</p>
+        </Link>
+      )}
 
       <div className="mt-6 rounded-card border border-sage/30 bg-sage/5 p-4">
         <p className="text-[11px] leading-relaxed text-muted">

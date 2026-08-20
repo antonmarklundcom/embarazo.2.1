@@ -1,4 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  CHEAP_READ_LIMIT,
+  clientKeyFromHeaders,
+  isRateLimited,
+} from "@/lib/rateLimit";
 import { getPlacements } from "@/lib/wordpress";
 
 // BUILD-PLAN J3 — this route takes no parameters at all.
@@ -15,6 +20,15 @@ import { getPlacements } from "@/lib/wordpress";
 // does the trimester match (`matchesTrimester`, unit-tested) locally.
 
 export async function GET(req: NextRequest) {
+  // K14: Same as /directory: cheap to answer, and cheap to ask a thousand
+  // times a second on a host with one process.
+  if (isRateLimited(`placements:${clientKeyFromHeaders(req.headers)}`, Date.now(), CHEAP_READ_LIMIT)) {
+    return NextResponse.json(
+      { error: "demasiadas solicitudes" },
+      { status: 429 },
+    );
+  }
+
   const params = req.nextUrl.searchParams;
   for (const key of params.keys()) {
     return NextResponse.json(

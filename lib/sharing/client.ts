@@ -92,6 +92,7 @@ export async function publishCompanionSnapshot(): Promise<boolean> {
     const res = await fetch(URL_PATH, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      cache: "no-store",
       body: JSON.stringify({
         action: "publish",
         ...withoutUpdatedAt(snapshot),
@@ -187,7 +188,12 @@ function firstBabyName(profile: { babies?: unknown } | undefined): string | null
 
 export async function fetchSharedViews(): Promise<SharedView[]> {
   try {
-    const res = await fetch(URL_PATH);
+    // K14: `no-store`, explicitly. K2's guarantee is that revoking a companion
+    // cuts everything instantly, and that is only true if this answer is never
+    // read from anywhere but the server. The service worker now refuses to
+    // cache this path (`SESSION_BEARING_API` in app/sw.ts); this stops the
+    // HTTP cache doing the same thing one layer down.
+    const res = await fetch(URL_PATH, { cache: "no-store" });
     if (!res.ok) return [];
     const body = (await res.json()) as { views: SharedView[] };
     return body.views ?? [];
@@ -203,6 +209,7 @@ export async function createInviteCode(
     const res = await fetch(URL_PATH, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      cache: "no-store",
       body: JSON.stringify({ action: "invite", role }),
     });
     if (!res.ok) return null;
@@ -219,6 +226,7 @@ export async function acceptInviteCode(
     const res = await fetch(URL_PATH, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      cache: "no-store",
       body: JSON.stringify({ action: "accept", code }),
     });
     return (await res.json()) as { ok: boolean; reason?: string };
@@ -235,6 +243,7 @@ export async function revokeMember(
     const res = await fetch(URL_PATH, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      cache: "no-store",
       body: JSON.stringify({ action: "revoke-member", pregnancyId, userId }),
     });
     return res.ok;
@@ -258,6 +267,7 @@ async function post(body: unknown): Promise<boolean> {
     const res = await fetch(URL_PATH, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      cache: "no-store",
       body: JSON.stringify(body),
     });
     return res.ok;

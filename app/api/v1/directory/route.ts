@@ -1,4 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  CHEAP_READ_LIMIT,
+  clientKeyFromHeaders,
+  isRateLimited,
+} from "@/lib/rateLimit";
 import { getDirectory } from "@/lib/wordpress";
 
 // BUILD-PLAN J3 — this route takes no parameters at all.
@@ -22,6 +27,16 @@ import { getDirectory } from "@/lib/wordpress";
 // both cheaper and quieter.
 
 export async function GET(req: NextRequest) {
+  // K14: The list is a few dozen entries read from a seed file, so this is
+  // about the request, not the query: an unthrottled endpoint on a small
+  // Hostinger Node process is a way to occupy it.
+  if (isRateLimited(`directory:${clientKeyFromHeaders(req.headers)}`, Date.now(), CHEAP_READ_LIMIT)) {
+    return NextResponse.json(
+      { error: "demasiadas solicitudes" },
+      { status: 429 },
+    );
+  }
+
   // Not "ignore unexpected params" — reject them. Silently accepting a
   // `?department=` would let an old cached client keep transmitting it while
   // the store listing says nothing is collected.

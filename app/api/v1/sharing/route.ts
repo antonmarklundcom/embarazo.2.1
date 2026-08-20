@@ -30,6 +30,7 @@ import {
 } from "@/lib/sharing/fields";
 import { CHEER_IDS } from "@/lib/sharing/cheers";
 import { SHARING_DEFAULTS, emptyExtras } from "@/lib/sharing/levels";
+import { clientKeyFromHeaders, isRateLimited } from "@/lib/rateLimit";
 
 // BUILD-PLAN E1 — family sharing.
 //
@@ -170,8 +171,20 @@ function unavailable() {
   );
 }
 
-async function context() {
+// K14 — every route that reads a session is throttled, copying the sync
+// pattern. This one matters more than most: `accept` takes an invite code, and
+// an unthrottled accept is an invite-code oracle. Six characters guessed at
+// network speed is a stranger inside somebody's pregnancy.
+async function context(req: NextRequest) {
   if (!isAuthAvailable()) return { error: unavailable() } as const;
+  if (isRateLimited(`sharing:${clientKeyFromHeaders(req.headers)}`)) {
+    return {
+      error: NextResponse.json(
+        { error: "demasiadas solicitudes" },
+        { status: 429, headers: HEADERS },
+      ),
+    } as const;
+  }
   const session = await getSession();
   const userId = session?.user?.id;
   if (!userId) {
@@ -188,8 +201,8 @@ async function context() {
 }
 
 /** What this user can currently see: their own pregnancy and any shared ones. */
-export async function GET() {
-  const ctx = await context();
+export async function GET(req: NextRequest) {
+  const ctx = await context(req);
   if ("error" in ctx) return ctx.error;
 
   const memberships = await membershipsOf(ctx.database, ctx.userId);
@@ -247,7 +260,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const ctx = await context();
+  const ctx = await context(req);
   if ("error" in ctx) return ctx.error;
 
   let body: unknown;

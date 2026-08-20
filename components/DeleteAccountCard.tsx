@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 
 import {
   deleteAccountAction,
@@ -9,6 +9,7 @@ import {
 import { wipeAllData } from "@/lib/db";
 import { clearOnboardingDraft } from "@/lib/onboarding/draftStorage";
 import { clearPin } from "@/lib/crypto";
+import { purgePrivateCaches } from "@/lib/sw/privateCaches";
 
 // BUILD-PLAN A5 — "Borrar mi cuenta", two taps from Ajustes: one to open the
 // confirmation, one to confirm. No separate page, no settings sub-menu.
@@ -28,22 +29,38 @@ export function DeleteAccountCard() {
     FormData
   >(deleteAccountAction, {});
 
+  // K14: set once the pre-submit work is done, so the `requestSubmit()` below
+  // does not re-enter this handler and start over.
+  const preparedRef = useRef(false);
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    if (!wipeDevice) return;
+    if (preparedRef.current) return;
     event.preventDefault();
     const form = event.currentTarget;
     setWiping(true);
-    try {
-      await wipeAllData();
-      // K1: see AjustesClient.handleWipe — a stale draft would resume onboarding
-      // into a state that never writes a profile row.
-      clearOnboardingDraft();
-      clearPin();
-    } catch {
-      // A browser that refuses to drop IndexedDB must not block the server
-      // deletion — that is the half the user cannot do themselves.
+
+    // K14: unconditional, and first. The device-wipe checkbox is about *her*
+    // data; the service worker's cached copies of /familia and
+    // /api/v1/sharing are ours, and leaving them readable offline after the
+    // account is gone is the same failure K14 exists to fix. There is no
+    // version of "delete my account" where they should survive.
+    await purgePrivateCaches();
+
+    if (wipeDevice) {
+      try {
+        await wipeAllData();
+        // K1: see AjustesClient.handleWipe — a stale draft would resume
+        // onboarding into a state that never writes a profile row.
+        clearOnboardingDraft();
+        clearPin();
+      } catch {
+        // A browser that refuses to drop IndexedDB must not block the server
+        // deletion — that is the half the user cannot do themselves.
+      }
     }
+
     setWiping(false);
+    preparedRef.current = true;
     form.requestSubmit();
   }
 
@@ -75,7 +92,7 @@ export function DeleteAccountCard() {
       ) : (
         <form
           action={formAction}
-          onSubmit={wipeDevice ? handleSubmit : undefined}
+          onSubmit={handleSubmit}
           className="mt-3 space-y-3"
         >
           <input type="hidden" name="confirm" value="borrar" />

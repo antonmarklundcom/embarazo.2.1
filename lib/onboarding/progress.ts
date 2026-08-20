@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 import type { AppMode, Role } from "@/lib/db";
+import type { WorkSituation } from "@/lib/derechos";
+import type { CareSetting } from "./personalisation";
 
 // BUILD-PLAN K1 (docs/FABLE-PLAN-2026-08.md §3) — the account-first onboarding
 // flow, as data.
@@ -20,8 +22,10 @@ export const ONBOARDING_STEPS = [
   "mode",
   "role",
   "lmp",
+  "perfil",
   "department",
   "cuenta",
+  "codigo",
   "bebe",
   "invitar",
 ] as const;
@@ -38,21 +42,53 @@ export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 export interface OnboardingContext {
   mode: AppMode;
   signedIn: boolean;
+  /**
+   * K9-F5 — this person arrived holding an invite code.
+   *
+   * It is not a `mode`: she is not planning and he is not pregnant, and modes
+   * are stored on the profile and switchable from Ajustes forever. This is a
+   * fact about *how onboarding started*, true once, and it exists to answer
+   * one question — which questions is it absurd to ask this person? Today a
+   * papá following the link his pareja sent him is asked for the first day of
+   * his last period. That is the bug.
+   */
+  invited: boolean;
+  /**
+   * B1's role answer, which decides whether the F5 questions are hers to
+   * answer. See `stepsFor`.
+   */
+  role: Role;
 }
 
 /**
  * The steps this user actually walks through, in order.
  *
  * - `lmp` is pregnancy-only: "planeando" has no gestational date to ask for.
- * - `bebe` is pregnancy-only for the same reason — there is no baby to name yet.
+ * - `perfil` (K9-F5) is for the pregnant woman herself. The three questions it
+ *   asks — primer embarazo, dónde te atendés, trabajás — personalise *her*
+ *   derechos, *her* checklist and *her* reading. Asking a papá whether he
+ *   aporta a IPS would produce an answer the app would then apply to the wrong
+ *   person's benefits, which is worse than not asking.
+ * - `bebe` is pregnancy-only for the same reason as `lmp` — there is no baby
+ *   to name yet.
  * - `invitar` needs an account, because an invite code is a server object.
+ * - `codigo` (K9-F5) is the invited path and the *only* step it adds. It comes
+ *   after `cuenta` because redeeming a code is a server call made as somebody:
+ *   there is no anonymous way to join a pregnancy.
+ *
+ * The invited flow is short on purpose — mode, role, cuenta, código — because
+ * every question it drops is one it had no business asking a companion.
  */
 export function stepsFor(context: OnboardingContext): OnboardingStep[] {
   const pregnant = context.mode === "embarazada";
+  const own = pregnant && !context.invited;
   return ONBOARDING_STEPS.filter((step) => {
-    if (step === "lmp") return pregnant;
-    if (step === "bebe") return pregnant;
-    if (step === "invitar") return pregnant && context.signedIn;
+    if (step === "codigo") return context.invited;
+    if (step === "lmp") return own;
+    if (step === "perfil") return own && context.role === "mama";
+    if (step === "department") return !context.invited;
+    if (step === "bebe") return own;
+    if (step === "invitar") return own && context.signedIn;
     return true;
   });
 }
@@ -140,6 +176,25 @@ const ROLE_VALUES = [
 
 const MODE_VALUES = ["embarazada", "planeando"] as const satisfies readonly AppMode[];
 
+/**
+ * The F5 answers as the draft stores them, and the conversion back out.
+ *
+ * `satisfies` for the same reason `ROLE_VALUES` uses it: if `CareSetting` or
+ * `WorkSituation` gains a member and this list does not, the build fails here
+ * rather than at runtime when a stored draft stops parsing.
+ */
+const CARE_SETTING_VALUES = [
+  "ips",
+  "publico",
+  "privado",
+] as const satisfies readonly CareSetting[];
+
+const WORK_SITUATION_VALUES = [
+  "ips",
+  "sin-ips",
+  "no-trabaja",
+] as const satisfies readonly WorkSituation[];
+
 const DraftSchema = z
   .object({
     version: z.literal(1),
@@ -155,6 +210,19 @@ const DraftSchema = z
     department: z.string().max(64),
     city: z.string().max(120),
     babyName: z.string().max(64),
+    /** K9-F5 — arrived on an invite link. See `OnboardingContext.invited`. */
+    invited: z.boolean(),
+    /**
+     * The three F5 answers, each with `""` meaning "skipped, and skipping is
+     * allowed". They are strings rather than `boolean | undefined` because a
+     * draft is a form's contents, and a form's contents are what was typed —
+     * `firstPregnancy: false` and "she has not reached the question yet" are
+     * different states that a bare boolean cannot hold apart across an OAuth
+     * round trip.
+     */
+    firstPregnancy: z.enum(["", "si", "no"]),
+    careSetting: z.enum(["", "ips", "publico", "privado"]),
+    workSituation: z.enum(["", "ips", "sin-ips", "no-trabaja"]),
     /**
      * Whether the profile has already been written to IndexedDB.
      *
@@ -170,7 +238,7 @@ const DraftSchema = z
 
 export type OnboardingDraft = z.infer<typeof DraftSchema>;
 
-export { ROLE_VALUES, MODE_VALUES };
+export { ROLE_VALUES, MODE_VALUES, CARE_SETTING_VALUES, WORK_SITUATION_VALUES };
 
 export type OnboardingAnswers = Omit<OnboardingDraft, "version" | "updatedAt">;
 
@@ -188,6 +256,10 @@ export function emptyAnswers(): OnboardingAnswers {
     department: "",
     city: "",
     babyName: "",
+    invited: false,
+    firstPregnancy: "",
+    careSetting: "",
+    workSituation: "",
     profileSaved: false,
   };
 }
@@ -235,7 +307,36 @@ export function draftAnswers(draft: OnboardingDraft): OnboardingAnswers {
     department: draft.department,
     city: draft.city,
     babyName: draft.babyName,
+    invited: draft.invited,
+    firstPregnancy: draft.firstPregnancy,
+    careSetting: draft.careSetting,
+    workSituation: draft.workSituation,
     profileSaved: draft.profileSaved,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// The F5 answers, on their way to the profile row
+// ---------------------------------------------------------------------------
+
+/**
+ * The three answers as `lib/onboarding/personalisation.ts` wants them.
+ *
+ * `""` becomes `undefined`, not a default. A woman who skipped "¿es tu primer
+ * embarazo?" must land in exactly the state she would have been in before this
+ * feature existed — and `false` is an answer, not an absence.
+ */
+export function answeredProfileFields(answers: OnboardingAnswers): {
+  firstPregnancy?: boolean;
+  careSetting?: CareSetting;
+  workSituation?: WorkSituation;
+} {
+  return {
+    firstPregnancy:
+      answers.firstPregnancy === "" ? undefined : answers.firstPregnancy === "si",
+    careSetting: answers.careSetting === "" ? undefined : answers.careSetting,
+    workSituation:
+      answers.workSituation === "" ? undefined : answers.workSituation,
   };
 }
 

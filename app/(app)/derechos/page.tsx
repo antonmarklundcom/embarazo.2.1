@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useProfile } from "@/lib/useProfile";
 import {
   PHASE_LABELS,
@@ -11,13 +11,30 @@ import {
   type BenefitItem,
   type WorkSituation,
 } from "@/lib/derechos";
+import { defaultWorkSituation } from "@/lib/onboarding/personalisation";
 
 // "¿Qué me corresponde?" — benefits & rights navigator. Pure client UI over
 // the typed catalog in lib/derechos.ts; the only personal input (work
 // situation) stays in component state and is never transmitted.
+//
+// K9-F5: the answer is no longer thrown away on every exit. Onboarding asks it
+// once, and this page opens on it — still as a selected, changeable choice
+// rather than silently applied, because "trabajo sin IPS" today can be
+// "trabajo y aporto" next month and she has to be able to say so. A woman who
+// skipped the question in onboarding gets the page exactly as it always was:
+// nothing selected, and it asks.
 export default function DerechosPage() {
   const profile = useProfile();
   const [situation, setSituation] = useState<WorkSituation | null>(null);
+  // Once, when the profile lands. Not a derived value: after the first read
+  // this is *her* choice on this screen, and a later Dexie notification must
+  // not snap the page back to the stored answer while she is reading.
+  const [seeded, setSeeded] = useState(false);
+  useEffect(() => {
+    if (seeded || profile.loading) return;
+    setSeeded(true);
+    setSituation(defaultWorkSituation(profile));
+  }, [seeded, profile]);
 
   const plan =
     profile.hasPregnancy && profile.dueDate

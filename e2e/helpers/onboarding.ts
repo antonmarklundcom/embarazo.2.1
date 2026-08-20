@@ -15,7 +15,11 @@ import { expect, type Page } from "@playwright/test";
 
 export interface OnboardOptions {
   mode?: "embarazada" | "planeando";
-  /** The role button's label, e.g. "Mamá" (default) or "Papá". */
+  /**
+   * The role button's label, e.g. "Mamá" (default) or "Papá". Also decides
+   * whether K9-F5's "tu situación" step appears — it is only asked of the
+   * pregnant woman herself.
+   */
   role?: string;
   /** How many days ago the LMP was. Ignored unless `method` is "lmp". */
   daysAgo?: number;
@@ -67,6 +71,17 @@ export async function completeOnboarding(
         .fill(new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10));
     }
     await page.getByRole("button", { name: "Continuar" }).click();
+
+    // K9-F5 — "Contanos un poco más", between the date and the department, and
+    // only for the mamá. Every answer on it is optional, so the shared
+    // walk-through skips straight through: specs that care about what the
+    // answers *do* set them explicitly (see onboarding.spec.ts).
+    if (role === "Mamá") {
+      await expect(
+        page.getByRole("heading", { name: "Contanos un poco más" }),
+      ).toBeVisible();
+      await page.getByRole("button", { name: "Continuar" }).click();
+    }
   }
 
   await page.locator("#dep").selectOption({ index: 1 });

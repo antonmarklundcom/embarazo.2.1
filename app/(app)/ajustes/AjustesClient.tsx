@@ -3,7 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { db, wipeAllData, type AppMode, type BabyIdentity, type Role } from "@/lib/db";
+import {
+  db,
+  wipeAllData,
+  type AppMode,
+  type BabyIdentity,
+  type Profile,
+  type Role,
+} from "@/lib/db";
 import { clearOnboardingDraft } from "@/lib/onboarding/draftStorage";
 import { CompanionReminderSettings } from "@/components/CompanionReminderSettings";
 import { PhotoBackupSettings } from "@/components/PhotoBackupSettings";
@@ -16,6 +23,11 @@ import {
 import { ROLE_ONBOARDING_COPY, ROLE_ORDER } from "@/lib/roleCopy";
 import { useProfile } from "@/lib/useProfile";
 import { DEPARTMENTS } from "@/lib/departments";
+import { WORK_SITUATIONS, type WorkSituation } from "@/lib/derechos";
+import {
+  CARE_SETTINGS,
+  type CareSetting,
+} from "@/lib/onboarding/personalisation";
 import {
   getDueDate,
   lmpFromDueDate,
@@ -118,6 +130,7 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
 
   // Relationship role (B1). Editable, per feature map #1's "editable later".
   const [roleMsg, setRoleMsg] = useState("");
+  const [situationMsg, setSituationMsg] = useState("");
 
   // Backup / restore (Phase 0 hardening — data never leaves the device).
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -367,6 +380,41 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
     setTimeout(() => setRoleMsg(""), 3500);
   }
 
+  /**
+   * K9-F5 — change one of the three onboarding answers.
+   *
+   * Writes on tap, with no "Guardar": each is a single choice out of a closed
+   * set, and a woman who taps "trabajo sin IPS" and leaves the screen has said
+   * what she meant. `null` clears the field back to unanswered, which is a
+   * real state — `lib/onboarding/personalisation.ts` treats absent as "she did
+   * not say" everywhere, never as a default.
+   */
+  async function saveSituation(patch: {
+    firstPregnancy?: boolean | null;
+    careSetting?: CareSetting | null;
+    workSituation?: WorkSituation | null;
+  }) {
+    const rows = await db().profile.toArray();
+    const first = rows[0];
+    if (!first?.id) return;
+    // Dexie's `update` deletes a key set to `undefined`, which is exactly what
+    // clearing an answer has to do: leaving `false` behind would say "no, it is
+    // not my first" on behalf of somebody who withdrew the answer. Spelled out
+    // one key at a time rather than mapped, so `undefined` reaches Dexie with
+    // the field's own type on it.
+    const fields: Partial<Profile> = {};
+    if ("firstPregnancy" in patch) {
+      fields.firstPregnancy = patch.firstPregnancy ?? undefined;
+    }
+    if ("careSetting" in patch) fields.careSetting = patch.careSetting ?? undefined;
+    if ("workSituation" in patch) {
+      fields.workSituation = patch.workSituation ?? undefined;
+    }
+    await db().profile.update(first.id, fields);
+    setSituationMsg("Guardado.");
+    setTimeout(() => setSituationMsg(""), 2500);
+  }
+
   async function saveDepartment() {
     const row = await db().profile.toArray();
     const first = row[0];
@@ -529,6 +577,72 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
         </button>
         {savedMsg && <p className="mt-2 text-sm text-sage">{savedMsg}</p>}
       </section>
+
+      {/* K9-F5 — the three onboarding answers, changeable forever. A question
+          asked once during first run that could never be corrected would be
+          worse than not asking: "trabajo sin IPS" today is "trabajo y aporto"
+          next month, and a first pregnancy is only ever a first one once. */}
+      {profile.mode === "embarazada" && profile.role === "mama" && (
+        <section className="rounded-card bg-white p-4 shadow-soft">
+          <h2 className="text-base font-extrabold text-ink">Tu situación</h2>
+          <p className="mt-1 text-sm text-muted">
+            Ajusta tus derechos, tu checklist y las guías que te mostramos. Queda
+            en tu teléfono y podés dejarlo sin responder.
+          </p>
+
+          <SituationRow label="¿Es tu primer embarazo?">
+            <SituationPill
+              label="Sí"
+              selected={profile.firstPregnancy === true}
+              onClick={() => void saveSituation({ firstPregnancy: true })}
+            />
+            <SituationPill
+              label="No"
+              selected={profile.firstPregnancy === false}
+              onClick={() => void saveSituation({ firstPregnancy: false })}
+            />
+            <SituationPill
+              label="Prefiero no decir"
+              selected={profile.firstPregnancy === undefined}
+              onClick={() => void saveSituation({ firstPregnancy: null })}
+            />
+          </SituationRow>
+
+          <SituationRow label="¿Dónde te atendés?">
+            {CARE_SETTINGS.map((setting) => (
+              <SituationPill
+                key={setting.key}
+                label={setting.label}
+                selected={profile.careSetting === setting.key}
+                onClick={() => void saveSituation({ careSetting: setting.key })}
+              />
+            ))}
+            <SituationPill
+              label="Todavía no sé"
+              selected={profile.careSetting === undefined}
+              onClick={() => void saveSituation({ careSetting: null })}
+            />
+          </SituationRow>
+
+          <SituationRow label="¿Trabajás?">
+            {WORK_SITUATIONS.map((situation) => (
+              <SituationPill
+                key={situation.key}
+                label={situation.label}
+                selected={profile.workSituation === situation.key}
+                onClick={() => void saveSituation({ workSituation: situation.key })}
+              />
+            ))}
+            <SituationPill
+              label="Prefiero no decir"
+              selected={profile.workSituation === undefined}
+              onClick={() => void saveSituation({ workSituation: null })}
+            />
+          </SituationRow>
+
+          {situationMsg && <p className="mt-3 text-sm text-sage">{situationMsg}</p>}
+        </section>
+      )}
 
       {/* Editable pregnancy date (build spec §1) — only in pregnancy mode */}
       {profile.mode === "embarazada" && (
@@ -1014,5 +1128,46 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
       </section>
       </SettingsGroup>
     </div>
+  );
+}
+
+/** K9-F5 — one question in the "Tu situación" section. */
+function SituationRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <fieldset className="mt-4">
+      <legend className="text-sm font-extrabold text-ink">{label}</legend>
+      <div className="mt-2 flex flex-wrap gap-2">{children}</div>
+    </fieldset>
+  );
+}
+
+function SituationPill({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={`min-h-[44px] rounded-tile border px-3 text-sm font-semibold transition active:scale-[0.98] ${
+        selected
+          ? "border-petrol bg-petrol text-white"
+          : "border-black/10 bg-cream text-ink"
+      }`}
+    >
+      {label}
+    </button>
   );
 }

@@ -1,5 +1,7 @@
 import Dexie, { type Table } from "dexie";
 import type { DepartmentSlug } from "./types";
+import type { WorkSituation } from "./derechos";
+import type { CareSetting } from "./onboarding/personalisation";
 import type { SyncMeta } from "./sync/merge";
 import { notifyLocalChange } from "./sync/signal";
 import {
@@ -36,7 +38,17 @@ export type Role = "mama" | "papa" | "acompanante" | "familiar";
 
 export interface Profile extends Partial<SyncMeta> {
   id?: number;
-  department: DepartmentSlug;
+  /**
+   * Where she lives. Optional since K9-F5.
+   *
+   * Onboarding asks everyone who is tracking their own pregnancy, and always
+   * did. What changed is that a companion arriving on an invite code no longer
+   * walks through the pregnant woman's questions at all — so there is now a
+   * real profile row, belonging to a real user, that has no department. Every
+   * reader already guarded for it (the home screen asserted it non-null behind
+   * a branch only an owner reaches); this makes the type say so.
+   */
+  department?: DepartmentSlug;
   city?: string;
   // Next prenatal appointment (build spec §4). Local-only, NO push. Optional.
   nextAppointment?: number;
@@ -79,6 +91,21 @@ export interface Profile extends Partial<SyncMeta> {
   sanatorioPhone?: string;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
+  /**
+   * K9-F5 — the three "onboarding depth" answers.
+   *
+   * All optional, all skippable in the flow, and every reader treats absent as
+   * "she did not say" rather than as a default (`lib/onboarding/personalisation.ts`
+   * is the only module that interprets them). Plain non-indexed fields, so no
+   * Dexie schema version bump.
+   *
+   * They ride the sync engine with the rest of the profile row, i.e. as opaque
+   * payload the server never reads (ARCHITECTURE.md §4.3) — the same standing
+   * that `department` and `nextAppointment` have had since A3.
+   */
+  firstPregnancy?: boolean;
+  careSetting?: CareSetting;
+  workSituation?: WorkSituation;
   createdAt: number;
 }
 

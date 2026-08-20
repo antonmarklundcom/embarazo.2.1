@@ -9,7 +9,16 @@ import type { Article } from "../types";
 /** How many the home rail shows. Three fits without becoming a second /guias. */
 export const WEEK_FEED_SIZE = 3;
 
-function width(article: Article): number {
+/**
+ * How wide a slice of the pregnancy this article claims. Narrower sorts first.
+ *
+ * Exported since K9-F5 so that personalised ranking can use *this* rule as its
+ * primary key rather than re-deriving a second, subtly different notion of "is
+ * this about her week". A reader's answers may reorder guías that are equally
+ * about her week; they may never push a guía about week 34 behind a general
+ * one in week 34.
+ */
+export function weekSpan(article: Article): number {
   if (article.fromWeek === undefined || article.toWeek === undefined) {
     return Number.POSITIVE_INFINITY;
   }
@@ -41,7 +50,7 @@ export function articlesForWeek(
   return articles
     .filter((article) => matchesWeek(article, week))
     .map((article, index) => ({ article, index }))
-    .sort((a, b) => width(a.article) - width(b.article) || a.index - b.index)
+    .sort((a, b) => weekSpan(a.article) - weekSpan(b.article) || a.index - b.index)
     .slice(0, limit)
     .map((entry) => entry.article);
 }

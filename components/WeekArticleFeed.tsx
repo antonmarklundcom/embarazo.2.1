@@ -3,8 +3,11 @@
 import Link from "next/link";
 
 import { ARTICLES } from "@/lib/seed/articles";
-import { articlesForWeek } from "@/lib/articles/forWeek";
 import { readTimeLabel } from "@/lib/articles/readTime";
+import {
+  articlesForReader,
+  type PregnancyAnswers,
+} from "@/lib/onboarding/personalisation";
 
 // BUILD-PLAN C6 — week-linked article feed + read time (feature map #15, #17).
 //
@@ -16,11 +19,24 @@ import { readTimeLabel } from "@/lib/articles/readTime";
 //
 // Read time is computed from the body, never stored (`lib/articles/readTime.ts`),
 // so it cannot go stale when somebody edits an article.
+//
+// K9-F5: `answers` are onboarding's three optional questions. They break ties
+// among guías that are equally about this week — a woman who told us she works
+// sees "derechos de la embarazada que trabaja" ahead of "dengue" in a week
+// neither is specifically about. With nothing answered this renders exactly
+// what it rendered before (`articlesForReader` falls through to
+// `articlesForWeek`), which is what makes the questions genuinely skippable.
 
 const TONES = ["bg-pastel-rosa", "bg-pastel-celeste", "bg-pastel-salvia"];
 
-export function WeekArticleFeed({ week }: { week: number }) {
-  const articles = articlesForWeek(ARTICLES, week);
+export function WeekArticleFeed({
+  week,
+  answers = {},
+}: {
+  week: number;
+  answers?: PregnancyAnswers;
+}) {
+  const articles = articlesForReader(ARTICLES, week, answers);
   if (articles.length === 0) return null;
 
   return (

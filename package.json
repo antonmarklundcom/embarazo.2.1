@@ -18,7 +18,9 @@
     "optimize:images": "node scripts/optimize-images.mjs",
     "gen:icons": "node scripts/gen-icons.mjs",
     "gen:og": "node scripts/gen-og.mjs",
-    "gen:screenshots": "node scripts/gen-screenshots.mjs"
+    "gen:screenshots": "node scripts/gen-screenshots.mjs",
+    "prebuild": "node --experimental-strip-types scripts/build-article-index.mts",
+    "gen:article-index": "node --experimental-strip-types scripts/build-article-index.mts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",

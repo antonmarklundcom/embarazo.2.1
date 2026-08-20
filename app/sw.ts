@@ -1,8 +1,11 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { Serwist, NetworkFirst, NetworkOnly } from "serwist";
+import { Serwist, CacheFirst, NetworkFirst, NetworkOnly } from "serwist";
 import { MIN_WEEK, MAX_WEEK, getCurrentWeek } from "@/lib/pregnancy";
-import { ARTICLES } from "@/lib/seed/articles";
+// K11: the *index*, not the articles — the service worker needs eight slugs
+// to precache, and importing the loader put every article body and zod into
+// the worker bundle, which every user downloads.
+import { ARTICLE_INDEX } from "@/lib/articles/loadIndex";
 import {
   companionReminderSentence,
   ownReminderSentence,
@@ -44,7 +47,7 @@ const pageRoutes: string[] = [
     { length: MAX_WEEK - MIN_WEEK + 1 },
     (_, i) => `/semana/${MIN_WEEK + i}`,
   ),
-  ...ARTICLES.map((a) => `/guias/${a.slug}`),
+  ...ARTICLE_INDEX.map((a) => `/guias/${a.slug}`),
 ];
 
 // ---------------------------------------------------------------------------
@@ -142,6 +145,25 @@ const serwist = new Serwist({
         cacheName: "mibebe-api",
         networkTimeoutSeconds: 5,
       }),
+    },
+    // K11 (G3): the weekly hero renders.
+    //
+    // NOT precached, and that is a fact about the repo rather than a decision:
+    // `public/assets/semanas/` is empty today — the founder has not added the
+    // renders yet (REDESIGN-PLAN.md §4), and `WeekHeroImage` falls back to the
+    // week number. Listing `bebe-12.webp` in `precacheEntries` now would make
+    // every install fetch a 404, and a precache entry that 404s fails the
+    // whole install — taking the app's offline mode with it.
+    //
+    // A runtime rule costs nothing while the directory is empty and starts
+    // working the day the images land: the week she is on is the screen she
+    // opens daily, so the second visit is already offline-capable. CacheFirst
+    // because `bebe-24.webp` is immutable content at a versioned-by-meaning
+    // URL — if the render changes, it is a different week.
+    {
+      matcher: ({ url, sameOrigin }) =>
+        sameOrigin && /^\/assets\/semanas\/bebe-\d+\.webp$/.test(url.pathname),
+      handler: new CacheFirst({ cacheName: "mibebe-semanas" }),
     },
     ...defaultCache,
   ],

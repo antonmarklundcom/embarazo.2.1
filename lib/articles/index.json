@@ -1,0 +1,60 @@
+[
+  {
+    "slug": "dengue-zika-chikungunya-embarazo",
+    "title": "Dengue, zika y chikungunya en el embarazo",
+    "cluster": "salud",
+    "minutes": 2
+  },
+  {
+    "slug": "terere-mate-cocido-cafeina-embarazo",
+    "title": "Tereré, mate cocido y cafeína en el embarazo",
+    "cluster": "alimentacion",
+    "minutes": 1
+  },
+  {
+    "slug": "que-llevar-al-sanatorio",
+    "title": "Qué llevar al sanatorio: el bolso para vos y para el bebé",
+    "fromWeek": 30,
+    "toWeek": 42,
+    "cluster": "logistica",
+    "minutes": 1
+  },
+  {
+    "slug": "despues-del-nacimiento-tramites",
+    "title": "Después del nacimiento: certificado, Registro Civil y cédula del bebé",
+    "fromWeek": 36,
+    "toWeek": 42,
+    "cluster": "tramites",
+    "minutes": 1
+  },
+  {
+    "slug": "control-prenatal-ips-vs-privado",
+    "title": "Control prenatal en Paraguay: IPS, sanatorio privado y carné perinatal",
+    "fromWeek": 1,
+    "toWeek": 14,
+    "cluster": "salud",
+    "minutes": 1
+  },
+  {
+    "slug": "senales-de-alarma-embarazo",
+    "title": "Señales de alarma en el embarazo: cuándo contactar a tu sanatorio",
+    "cluster": "salud",
+    "minutes": 1
+  },
+  {
+    "slug": "vacunas-en-el-embarazo-pai",
+    "title": "Vacunas en el embarazo (esquema PAI Paraguay)",
+    "fromWeek": 20,
+    "toWeek": 36,
+    "cluster": "salud",
+    "minutes": 1
+  },
+  {
+    "slug": "derechos-embarazada-que-trabaja",
+    "title": "Derechos de la embarazada que trabaja en Paraguay",
+    "fromWeek": 12,
+    "toWeek": 34,
+    "cluster": "derechos",
+    "minutes": 2
+  }
+]

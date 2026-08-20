@@ -11,6 +11,7 @@ import {
   type BenefitItem,
   type WorkSituation,
 } from "@/lib/derechos";
+import { Bilingual } from "@/components/Bilingual";
 import { defaultWorkSituation } from "@/lib/onboarding/personalisation";
 
 // "¿Qué me corresponde?" — benefits & rights navigator. Pure client UI over
@@ -142,7 +143,12 @@ function BenefitCard({
 }) {
   return (
     <article className="rounded-card bg-white p-4 shadow-soft">
-      <h3 className="text-base font-extrabold text-ink">{benefit.title}</h3>
+      <Bilingual
+        as="div"
+        className="text-base font-extrabold text-ink"
+        gnClassName="mt-0.5 block text-sm font-bold italic text-muted"
+        text={benefit.title}
+      />
       <p className="mt-1 text-sm leading-relaxed text-ink/90">{benefit.body}</p>
       {dates && (
         <p className="mt-2 rounded-tile bg-sage/10 p-3 text-sm leading-relaxed text-ink">

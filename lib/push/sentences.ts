@@ -62,6 +62,6 @@ export function cheerSentence(cheerId: string): NotificationText {
     title: "Te mandaron un mimo",
     // An id that no longer exists degrades to the generic line rather than
     // crashing the poke — the same rule `cheerById` gives the home screen.
-    body: cheer ? `${cheer.emoji} ${cheer.text}` : "Alguien de tu familia te mandó ánimo.",
+    body: cheer ? `${cheer.emoji} ${cheer.text.es}` : "Alguien de tu familia te mandó ánimo.",
   };
 }

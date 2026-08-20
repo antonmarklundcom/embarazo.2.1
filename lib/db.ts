@@ -3,6 +3,7 @@ import type { DepartmentSlug } from "./types";
 import type { WorkSituation } from "./derechos";
 import type { CareSetting } from "./onboarding/personalisation";
 import type { SyncMeta } from "./sync/merge";
+import type { Locale } from "./i18n/dict";
 import { notifyLocalChange } from "./sync/signal";
 import {
   SYNCED_STORES,
@@ -106,6 +107,16 @@ export interface Profile extends Partial<SyncMeta> {
   firstPregnancy?: boolean;
   careSetting?: CareSetting;
   workSituation?: WorkSituation;
+  /**
+   * K19-L1 — which language the core UI renders in ("es" | "gn").
+   *
+   * Absent means Spanish, and absent is what every existing row has: the
+   * toggle is opt-in, so no migration writes a value and no user's app changes
+   * language because they updated. Plain non-indexed field — no Dexie schema
+   * version bump — and it rides the profile row's existing sync, which is why
+   * the choice reaches her second device without a line of server code.
+   */
+  locale?: Locale;
   createdAt: number;
 }
 

@@ -7,24 +7,29 @@ import { db } from "@/lib/db";
 import { useProfile } from "@/lib/useProfile";
 import { formatCompletedGestation } from "@/lib/pregnancy";
 import {
+  ALARM_HEADING,
   ALARM_SIGNS,
   CALL_SCRIPT_STEPS,
+  EMERGENCY_INTRO,
   EMERGENCY_NUMBERS,
+  GO_NOW_LINE,
 } from "@/lib/emergency";
+import { Bilingual } from "@/components/Bilingual";
+import { useT } from "@/lib/i18n/useLocale";
 import { waLink } from "@/lib/whatsapp";
 
 // Emergency mode: everything works offline and all contacts are local-only.
 export default function EmergenciaPage() {
   const profile = useProfile();
+  const t = useT();
 
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-black tracking-tight text-ink">Emergencia</h1>
-        <p className="mt-1 text-sm text-muted">
-          Ante una señal de alarma, llamá o andá a la guardia más cercana. Esta
-          pantalla funciona sin internet.
-        </p>
+        <h1 className="text-2xl font-black tracking-tight text-ink">
+          {t("emergency.title")}
+        </h1>
+        <Bilingual as="p" className="mt-1 text-sm text-muted" text={EMERGENCY_INTRO} />
       </header>
 
       {/* National numbers — big tap targets */}
@@ -38,7 +43,12 @@ export default function EmergenciaPage() {
             <div>
               <p className="text-2xl font-black">{n.number}</p>
               <p className="text-sm text-white/90">{n.name}</p>
-              <p className="text-xs text-white/70">{n.detail}</p>
+              <Bilingual
+                as="p"
+                className="text-xs text-white/70"
+                gnClassName="mt-0.5 block italic text-white/60"
+                text={n.detail}
+              />
             </div>
             <PhoneIcon />
           </a>
@@ -47,21 +57,23 @@ export default function EmergenciaPage() {
 
       {/* Personal contacts (local-only, editable) */}
       <ContactCard
-        title="Tu sanatorio o guardia"
-        hint="Guardá el número de tu sanatorio para llamar con un toque."
+        title={t("emergency.yourHospital")}
+        hint={t("emergency.yourHospitalHint")}
         nameKey="sanatorioName"
         phoneKey="sanatorioPhone"
       />
       <ContactCard
-        title="Tu contacto de emergencia"
-        hint="Alguien de confianza que pueda acompañarte o buscarte."
+        title={t("emergency.yourContact")}
+        hint={t("emergency.yourContactHint")}
         nameKey="emergencyContactName"
         phoneKey="emergencyContactPhone"
       />
 
       {/* What to say */}
       <section className="rounded-card bg-white p-4 shadow-soft">
-        <h2 className="text-base font-extrabold text-ink">Cuando llames, decí:</h2>
+        <h2 className="text-base font-extrabold text-ink">
+          {t("emergency.whenYouCall")}
+        </h2>
         {profile.hasPregnancy && profile.completed && (
           <p className="mt-2 rounded-tile bg-sage/10 p-3 text-sm text-ink">
             &ldquo;Estoy embarazada de{" "}
@@ -71,45 +83,47 @@ export default function EmergenciaPage() {
         )}
         <ClinicalLine />
         <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-relaxed text-ink/90">
-          {CALL_SCRIPT_STEPS.map((s) => (
-            <li key={s}>{s}</li>
+          {CALL_SCRIPT_STEPS.map((step) => (
+            <li key={step.es}>
+              <Bilingual text={step} />
+            </li>
           ))}
         </ol>
       </section>
 
       {/* Alarm signs */}
       <section className="rounded-card border border-terracotta/20 bg-terracotta/5 p-4">
-        <h2 className="text-base font-extrabold text-ink">
-          Señales de alarma: consultá ya si tenés
-        </h2>
+        <Bilingual
+          as="div"
+          className="text-base font-extrabold text-ink"
+          gnClassName="mt-0.5 block text-sm font-bold italic text-ink/70"
+          text={ALARM_HEADING}
+        />
         <ul className="mt-2 space-y-2 text-sm leading-relaxed text-ink/90">
           {ALARM_SIGNS.map((s) => (
             <li key={s.id} className="flex gap-2">
               <span className="text-terracotta" aria-hidden>
                 •
               </span>
-              <span>
-                {s.text}
-                {s.textGu && (
-                  <span lang="gn" className="block text-xs italic text-muted">
-                    {s.textGu}
-                  </span>
-                )}
-              </span>
+              <Bilingual text={s.text} />
             </li>
           ))}
         </ul>
+        <Bilingual
+          as="p"
+          className="mt-3 rounded-tile bg-terracotta/10 p-3 text-sm font-semibold leading-relaxed text-ink"
+          text={GO_NOW_LINE}
+        />
         <Link
           href="/guias/senales-de-alarma-embarazo"
           className="mt-3 inline-block text-sm font-medium text-petrol underline"
         >
-          Leer la guía completa
+          {t("emergency.readFullGuide")}
         </Link>
       </section>
 
       <p className="text-xs leading-relaxed text-muted">
-        Mi Bebé es informativa y no reemplaza la atención médica. Ante la duda,
-        consultá igual: vale más una consulta de más.
+        {t("emergency.disclaimer")}
       </p>
     </div>
   );
@@ -135,6 +149,7 @@ function ContactCard({
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const t = useT();
 
   // Live-read the saved contact straight from the local profile row.
   const row = useLiveQuery(async () => {
@@ -162,7 +177,7 @@ function ContactCard({
           <div>
             <h2 className="text-base font-extrabold text-ink">{title}</h2>
             <p className="mt-0.5 text-sm text-muted">
-              {savedName || "Sin nombre"} · {savedPhone}
+              {savedName || t("emergency.noName")} · {savedPhone}
             </p>
           </div>
           <button
@@ -174,7 +189,7 @@ function ContactCard({
             }}
             className="text-xs text-petrol underline"
           >
-            Editar
+            {t("action.edit")}
           </button>
         </div>
         <div className="mt-3 flex gap-2">
@@ -182,13 +197,13 @@ function ContactCard({
             href={`tel:${digits}`}
             className="flex-1 rounded-tile bg-petrol py-2.5 text-center text-sm font-medium text-white transition active:scale-[0.98]"
           >
-            Llamar
+            {t("emergency.callNow")}
           </a>
           <a
             href={waLink(savedPhone, "Necesito ayuda, es una emergencia.")}
             className="flex-1 rounded-tile bg-whatsapp py-2.5 text-center text-sm font-medium text-white transition active:scale-[0.98]"
           >
-            WhatsApp
+            {t("emergency.whatsapp")}
           </a>
         </div>
       </section>
@@ -221,7 +236,7 @@ function ContactCard({
             disabled={!phone.trim() || !row?.id}
             className="flex-1 rounded-tile bg-petrol py-2.5 text-sm font-medium text-white transition active:scale-[0.98] disabled:opacity-40"
           >
-            Guardar
+            {t("action.save")}
           </button>
           {editing && (
             <button
@@ -229,7 +244,7 @@ function ContactCard({
               onClick={() => setEditing(false)}
               className="rounded-tile px-4 py-2.5 text-sm text-muted"
             >
-              Cancelar
+              {t("action.cancel")}
             </button>
           )}
         </div>

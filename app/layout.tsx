@@ -3,6 +3,7 @@ import { Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { UpdateToast } from "@/components/UpdateToast";
+import { HtmlLang } from "@/components/HtmlLang";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { SyncProvider } from "@/components/SyncProvider";
 
@@ -77,10 +78,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
+    // K19: the SSR default. `<HtmlLang />` below patches this to "gn" once the
+    // profile row is read — the locale lives in IndexedDB, so no server render
+    // can know it (see lib/i18n/dict.ts on why there are no locale routes).
     <html lang="es-PY" className={nunito.variable}>
       <body className="bg-cream text-ink antialiased">
         <Providers>{children}</Providers>
         <UpdateToast />
+        <HtmlLang />
         <ServiceWorkerRegistration />
         <SyncProvider />
       </body>

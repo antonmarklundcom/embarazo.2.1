@@ -293,9 +293,16 @@ test("the situación answers are optional, stored, and changeable", async ({ pag
   // And Ajustes can change it, because "trabajo sin IPS" today is "trabajo y
   // aporto" next month.
   await page.goto("/ajustes");
-  await page
-    .getByRole("button", { name: "Trabajo y aporto a IPS", exact: true })
-    .click();
+  const ipsPill = page.getByRole("button", {
+    name: "Trabajo y aporto a IPS",
+    exact: true,
+  });
+  await ipsPill.click();
+  // Wait for the write, don't race it. The pill's `aria-pressed` is bound to
+  // the live profile row, so it flips only once Dexie has actually stored the
+  // answer — navigating on the click alone passes on a fast machine and fails
+  // on a loaded CI runner, which is exactly what it did.
+  await expect(ipsPill).toHaveAttribute("aria-pressed", "true");
   await page.goto("/derechos");
   await expect(
     page.getByRole("button", { name: /Trabajo y aporto a IPS/ }),

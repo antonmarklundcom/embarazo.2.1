@@ -17,18 +17,21 @@
 // handled at read time (`cheerById` returns null), so an id that used to exist
 // degrades to nothing rather than crashing somebody's home screen.
 
+import type { BilingualText } from "../content/schemas.ts";
+
 export interface Cheer {
   id: string;
   emoji: string;
-  /** What the mamá reads, es-PY voseo. */
-  text: string;
   /**
-   * Guaraní (jopara) companion, where the phrase is one people actually say in
+   * What the mamá reads, es-PY voseo, with an optional Guaraní companion —
+   * K19-L0's `{ es, gn? }` shape, the same one the alarm signs use.
+   *
+   * `gn` is present only where the phrase is one people actually say in
    * Guaraní. Not every entry has one, and inventing one for the sake of
-   * symmetry would be worse than leaving it out — these are terms of affection,
-   * and a wrong one lands badly.
+   * symmetry would be worse than leaving it out — these are terms of
+   * affection, and a wrong one lands badly.
    */
-  textGu?: string;
+  text: BilingualText;
   /** How the *sender* sees the button. */
   buttonLabel: string;
 }
@@ -37,34 +40,31 @@ export const CHEERS = [
   {
     id: "fuerza",
     emoji: "💪",
-    text: "¡Fuerza! Estoy con vos.",
-    textGu: "Py'aguasu! Aime nendive.",
+    text: { es: "¡Fuerza! Estoy con vos.", gn: "Py'aguasu! Aime nendive." },
     buttonLabel: "¡Fuerza!",
   },
   {
     id: "te-quiero",
     emoji: "❤️",
-    text: "Te quiero.",
-    textGu: "Rohayhu.",
+    text: { es: "Te quiero.", gn: "Rohayhu." },
     buttonLabel: "Te quiero",
   },
   {
     id: "gracias",
     emoji: "🙏",
-    text: "Gracias por todo lo que estás haciendo.",
-    textGu: "Aguyje.",
+    text: { es: "Gracias por todo lo que estás haciendo.", gn: "Aguyje." },
     buttonLabel: "Gracias",
   },
   {
     id: "pensando",
     emoji: "🌼",
-    text: "Estoy pensando en vos y en el bebé.",
+    text: { es: "Estoy pensando en vos y en el bebé." },
     buttonLabel: "Pensando en vos",
   },
   {
     id: "orgullo",
     emoji: "✨",
-    text: "Estoy orgullosa/o de vos.",
+    text: { es: "Estoy orgullosa/o de vos." },
     buttonLabel: "Orgullo",
   },
 ] as const satisfies readonly Cheer[];

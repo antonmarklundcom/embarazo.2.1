@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+
+import { PUSH_CATEGORIES as APP_PUSH_CATEGORIES } from "@/lib/push/categories";
 import { getTableColumns } from "drizzle-orm";
 import {
   MEMBER_ROLES,
@@ -105,8 +107,16 @@ describe("role and category vocabularies", () => {
     expect(MEMBER_ROLES).toEqual(["owner", "partner", "family"]);
   });
 
-  it("matches the documented push categories (FEATURE-MAP #7)", () => {
-    expect(PUSH_CATEGORIES).toEqual(["consejos", "recordatorios", "avisos"]);
+  it("is the app's category list, not a second copy of it", () => {
+    // This test used to repeat the literal, and so did the schema. Adding
+    // `mimos` in PR-5b broke both at once — and a stale literal here is worse
+    // than a stale test, because `mysqlEnum` builds the column from it: the
+    // enum would have rejected the new value at runtime, on a write the type
+    // checker was perfectly happy with.
+    //
+    // So the property is identity, not contents. `lib/push/categories.test.ts`
+    // owns what the list *says*.
+    expect(PUSH_CATEGORIES).toBe(APP_PUSH_CATEGORIES);
   });
 });
 

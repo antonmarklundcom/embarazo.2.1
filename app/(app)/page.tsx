@@ -14,7 +14,7 @@ import { getWeek } from "@/lib/weeks";
 import { getDailyTip } from "@/lib/dailyTips";
 import { departmentName } from "@/lib/departments";
 import { primaryBabyName } from "@/lib/babies";
-import { babyAtWeekLabel as roleBabyAtWeekLabel, moodCheckInLabel } from "@/lib/roleCopy";
+import { babyAtWeekLabel as roleBabyAtWeekLabel } from "@/lib/roleCopy";
 import type { BabyIdentity, Role } from "@/lib/db";
 
 // B1 (role-aware "Tu bebé"/"El bebé") and B2 (nickname, e.g. "Silvia") each
@@ -29,6 +29,7 @@ import { Onboarding } from "@/components/Onboarding";
 import { hasOnboardingDraft } from "@/lib/onboarding/draftStorage";
 import { INVITE_CODE_PARAM } from "@/lib/sharing/inviteLink";
 import { CompanionHome } from "@/components/CompanionHome";
+import { MoodCheckIn } from "@/components/MoodCheckIn";
 import { CheersCard } from "@/components/CheersCard";
 import {
   companionViewOf,
@@ -261,26 +262,8 @@ export default function InicioPage() {
         </p>
       </section>
 
-      {/* Daily mood check-in */}
-      <section className="rounded-card border border-line bg-white p-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-extrabold text-ink">
-            {moodCheckInLabel(profile.role)}
-          </h3>
-          <Link
-            href="/herramientas/sintomas"
-            className="text-[13px] font-extrabold text-terracotta"
-          >
-            Registrar
-          </Link>
-        </div>
-        <div className="mt-3.5 flex gap-2.5">
-          <MoodButton tone="bg-pastel-rosa" mouth="M8.5 15.5c1 1 2.2 1.5 3.5 1.5s2.5-.5 3.5-1.5" />
-          <MoodButton tone="bg-pastel-arena" mouth="M9 15.5h6" />
-          <MoodButton tone="bg-pastel-celeste" mouth="M8.5 16.5c1-1 2.2-1.5 3.5-1.5s2.5.5 3.5 1.5" />
-          <MoodButton tone="bg-pastel-lavanda" mouth="M8.5 16c1-1 2.2-1.5 3.5-1.5s2.5.5 3.5 1.5" />
-        </div>
-      </section>
+      {/* K9-F6: the check-in records on tap now, and carries the streak. */}
+      <MoodCheckIn role={profile.role} week={week} />
 
       {/* Tool cards */}
       <section aria-labelledby="herramientas" className="space-y-2.5 pt-1">
@@ -532,31 +515,6 @@ function HeroStat({ value, label }: { value: string; label: string }) {
   );
 }
 
-function MoodButton({ tone, mouth }: { tone: string; mouth: string }) {
-  return (
-    <Link
-      href="/herramientas/sintomas"
-      aria-label="Registrar cómo te sentís"
-      className={`flex h-[46px] flex-1 items-center justify-center rounded-xl ${tone} transition active:scale-95`}
-    >
-      <svg
-        width="22"
-        height="22"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="#322E29"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        aria-hidden
-      >
-        <circle cx="12" cy="12" r="9" />
-        <path d={mouth} />
-        <circle cx="9" cy="10" r="0.6" fill="#322E29" />
-        <circle cx="15" cy="10" r="0.6" fill="#322E29" />
-      </svg>
-    </Link>
-  );
-}
 
 function ToolCard({
   href,

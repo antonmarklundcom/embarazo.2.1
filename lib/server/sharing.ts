@@ -570,12 +570,18 @@ export async function readTasksFor(
 // ---------------------------------------------------------------------------
 
 /**
- * Send one cheer.
+ * Send one cheer, returning the owner it reached.
  *
  * The caller must hold a live NON-owner membership: this is a companion
  * cheering the pregnant user, and an owner cheering herself is not a thing the
  * product does. `cheerId` is validated against the pinned list at the API
  * boundary before it reaches here.
+ *
+ * PR-5b changed the return from `boolean` to the owner's user id, because
+ * cheers stopped landing silently: the route needs somebody to poke, and
+ * looking the owner up a second time would be a second query for a row this
+ * function has to read anyway. `null` still means "not sent", and every caller
+ * checks it the same way.
  */
 export async function sendCheer(
   database: Database,
@@ -583,9 +589,18 @@ export async function sendCheer(
   pregnancyId: string,
   cheerId: string,
   now: number,
-): Promise<boolean> {
+): Promise<string | null> {
   const membership = await liveMembership(database, userId, pregnancyId);
-  if (!membership || membership.role === "owner") return false;
+  if (!membership || membership.role === "owner") return null;
+
+  const owner = (
+    await database
+      .select({ ownerUserId: pregnancies.ownerUserId })
+      .from(pregnancies)
+      .where(eq(pregnancies.id, pregnancyId))
+      .limit(1)
+  )[0];
+  if (!owner) return null;
 
   await database.insert(companionCheers).values({
     id: crypto.randomUUID(),
@@ -595,7 +610,7 @@ export async function sendCheer(
     createdAt: now,
     seenAt: null,
   });
-  return true;
+  return owner.ownerUserId;
 }
 
 export interface ReceivedCheer {

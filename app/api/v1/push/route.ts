@@ -56,6 +56,19 @@ const SubscriptionSchema = z
       .array(z.number().int().positive())
       .max(MAX_REMINDERS)
       .optional(),
+    /**
+     * PR-5b — the weekly `consejos` slots, same shape and same rule.
+     *
+     * A separate field rather than a `{category, times}` list because the two
+     * schedules are *replaced independently*: a control that moved must not
+     * clear the weekly tips, and vice versa. It is also the narrower contract
+     * — the client cannot name a category here, so this route can never be
+     * talked into scheduling `avisos` for one device.
+     */
+    consejos: z
+      .array(z.number().int().positive())
+      .max(MAX_REMINDERS)
+      .optional(),
   })
   .strict();
 
@@ -120,7 +133,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { endpoint, keys, categories, reminders } = parsed.data;
+  const { endpoint, keys, categories, reminders, consejos } = parsed.data;
 
   // A session links the subscription to an account when there is one, so A5's
   // deletion removes it. Its absence is not an error.
@@ -134,14 +147,18 @@ export async function POST(req: NextRequest) {
     userId: session?.user?.id ?? null,
   });
 
+  // Two device-scheduled categories now. `avisos` stays broadcast (I5), and
+  // `mimos` is scheduled by the server when a cheer actually arrives — it is
+  // the one poke the device cannot know the time of in advance.
+  const now = Date.now();
+  const bounded = (times: number[]) =>
+    times.filter((at) => at > now - 60_000 && at < now + MAX_SCHEDULE_AHEAD_MS);
+
   if (reminders) {
-    const now = Date.now();
-    const bounded = reminders.filter(
-      (at) => at > now - 60_000 && at < now + MAX_SCHEDULE_AHEAD_MS,
-    );
-    // Only `recordatorios` is device-scheduled today; the other categories are
-    // broadcast (I5) and have nothing per-device to enqueue.
-    await scheduleReminders(database, endpoint, "recordatorios", bounded);
+    await scheduleReminders(database, endpoint, "recordatorios", bounded(reminders));
+  }
+  if (consejos) {
+    await scheduleReminders(database, endpoint, "consejos", bounded(consejos));
   }
 
   return NextResponse.json({ ok: true }, { headers: HEADERS });

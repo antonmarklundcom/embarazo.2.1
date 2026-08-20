@@ -1,12 +1,16 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
 import { Serwist, NetworkFirst, NetworkOnly } from "serwist";
-import { MIN_WEEK, MAX_WEEK } from "@/lib/pregnancy";
+import { MIN_WEEK, MAX_WEEK, getCurrentWeek } from "@/lib/pregnancy";
 import { ARTICLES } from "@/lib/seed/articles";
 import {
   companionReminderSentence,
   ownReminderSentence,
 } from "@/lib/appointments";
+// PR-5b — the two sentences push learned to write. Pure, and unit-tested in
+// lib/push/sentences.test.ts, because a service worker is the hardest place in
+// the app to assert anything about.
+import { cheerSentence, weeklyTipSentence } from "@/lib/push/sentences";
 
 // Service worker (build spec §9). Compiled from app/sw.ts → public/sw.js.
 declare global {
@@ -164,11 +168,28 @@ serwist.addEventListeners();
 
 const NOTIFICATION_TAG = "mibebe-recordatorio";
 
+/**
+ * PR-5b — how recent a cheer has to be for a poke to be about it.
+ *
+ * The poke carries no body (see `scheduleCheerPoke`), so the service worker
+ * works out what it is for the way it works out everything else: by looking at
+ * local state. A cheer that arrived in the last few minutes is what a
+ * `mimos` poke is; anything older is a cheer she has already had a poke about.
+ *
+ * Generous rather than tight, because the gap between the cheer and the poke
+ * is one dispatch interval, and the failure mode of being too tight — a mimo
+ * poke that resolves to a weekly tip — is the notification saying the wrong
+ * true thing.
+ */
+const CHEER_WINDOW_MS = 30 * 60 * 1000;
+
 interface LocalReminderState {
   /** The mamá's own next control, if she has one. */
   nextAppointment: number | null;
   /** K8 — whether this device asked to be reminded of somebody else's. */
   companionReminder: boolean;
+  /** PR-5b — her gestational week, for the weekly tip. Null when unknown. */
+  week: number | null;
 }
 
 /** Read what the notification needs straight from Dexie's object store. */
@@ -178,6 +199,7 @@ async function readLocalReminderState(): Promise<LocalReminderState> {
     const NOTHING: LocalReminderState = {
       nextAppointment: null,
       companionReminder: false,
+      week: null,
     };
     const done = (value: LocalReminderState) => {
       if (!settled) {
@@ -197,24 +219,36 @@ async function readLocalReminderState(): Promise<LocalReminderState> {
     request.onsuccess = () => {
       const database = request.result;
       try {
-        const tx = database.transaction("profile", "readonly");
-        const all = tx.objectStore("profile").getAll();
-        all.onsuccess = () => {
-          const rows = (all.result ?? []) as {
+        // Both stores in one transaction: two sequential ones would be two
+        // chances for the push event to be killed halfway through.
+        const tx = database.transaction(["profile", "pregnancy"], "readonly");
+        const profiles = tx.objectStore("profile").getAll();
+        const pregnancies = tx.objectStore("pregnancy").getAll();
+        tx.oncomplete = () => {
+          const rows = (profiles.result ?? []) as {
             nextAppointment?: number;
             companionReminder?: boolean;
             deletedAt?: number | null;
           }[];
           const live = rows.find((row) => !row.deletedAt);
+          const pregnancy = ((pregnancies.result ?? []) as {
+            lmpDate?: number;
+            deletedAt?: number | null;
+          }[]).find((row) => !row.deletedAt);
           done({
             nextAppointment:
               typeof live?.nextAppointment === "number"
                 ? live.nextAppointment
                 : null,
             companionReminder: live?.companionReminder === true,
+            week:
+              typeof pregnancy?.lmpDate === "number"
+                ? getCurrentWeek(pregnancy.lmpDate)
+                : null,
           });
         };
-        all.onerror = () => done(NOTHING);
+        tx.onerror = () => done(NOTHING);
+        tx.onabort = () => done(NOTHING);
       } catch {
         done(NOTHING);
       }
@@ -253,6 +287,46 @@ async function readCompanionAppointment(): Promise<number | null> {
   }
 }
 
+/**
+ * PR-5b — the cheer somebody just sent, if there is one.
+ *
+ * The poke that a cheer produces carries no body, exactly like every other
+ * poke in this app, so the device works out what it is for by looking at local
+ * state — here, the owner's own view, which already lists her cheers.
+ *
+ * The freshness window is what makes this unambiguous rather than clever: a
+ * `mimos` poke is enqueued the moment a cheer is stored, so the only cheer
+ * that can be minutes old when a poke lands is the one it is about. An older
+ * unseen cheer is one she has already been poked about and has chosen not to
+ * open, and poking her again about it would be nagging.
+ */
+async function readFreshCheer(now: number): Promise<string | null> {
+  try {
+    const res = await fetch("/api/v1/sharing", {
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const body = (await res.json()) as {
+      views?: {
+        role?: string;
+        cheers?: { cheerId?: string; createdAt?: number; seenAt?: number | null }[];
+      }[];
+    };
+    const owner = (body.views ?? []).find((view) => view.role === "owner");
+    const fresh = (owner?.cheers ?? []).find(
+      (cheer) =>
+        !cheer.seenAt &&
+        typeof cheer.createdAt === "number" &&
+        now - cheer.createdAt < CHEER_WINDOW_MS &&
+        cheer.createdAt <= now,
+    );
+    return fresh?.cheerId ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function composeNotification(): Promise<{ title: string; body: string }> {
   const now = Date.now();
   const local = await readLocalReminderState();
@@ -270,9 +344,24 @@ async function composeNotification(): Promise<{ title: string; body: string }> {
     if (companion) return companion;
   }
 
-  // The appointment moved or was cleared between scheduling and firing, or
-  // access was revoked. We still have to show something, so show something
-  // true and useless rather than something specific and wrong.
+  // PR-5b — a cheer beats a weekly tip, and sits below both control reminders.
+  //
+  // The ordering is by cost of being wrong. Missing a control is the only
+  // thing in this list she loses something by missing, so it wins even on the
+  // rare day a cheer arrives an hour before one. A cheer beats a tip because
+  // somebody is waiting for her to see it.
+  const cheerId = await readFreshCheer(now);
+  if (cheerId) return cheerSentence(cheerId);
+
+  // The weekly tip. Also the honest landing place for a control reminder whose
+  // appointment moved between scheduling and firing: there is something true
+  // to say about her week either way.
+  const weekly = weeklyTipSentence(local.week);
+  if (weekly) return weekly;
+
+  // Nothing local to say — no week, no cheer, no control. We still have to
+  // show something (`userVisibleOnly`), so show something true and useless
+  // rather than something specific and wrong.
   return {
     title: "Mi Bebé",
     body: "Tocá para ver cómo va tu semana.",

@@ -15,23 +15,10 @@ import {
 } from "@/lib/crypto";
 import { PrivacyLine } from "@/components/PrivacyLine";
 import { SymptomInsight } from "@/components/SymptomInsight";
-
-const MOODS: { key: Mood; label: string; emoji: string }[] = [
-  { key: "muy_bien", label: "Muy bien", emoji: "😄" },
-  { key: "bien", label: "Bien", emoji: "🙂" },
-  { key: "regular", label: "Regular", emoji: "😐" },
-  { key: "mal", label: "Mal", emoji: "🙁" },
-  { key: "muy_mal", label: "Muy mal", emoji: "😣" },
-];
-
-
-
-function moodLabel(key?: Mood): string {
-  return MOODS.find((m) => m.key === key)?.label ?? "—";
-}
-function moodEmoji(key?: Mood): string {
-  return MOODS.find((m) => m.key === key)?.emoji ?? "•";
-}
+// K9-F6 — the scale moved to lib/mood.ts when the home screen started
+// recording with it. Two surfaces that write the same field have to agree on
+// what each face means.
+import { MOODS, moodEmoji, moodLabel } from "@/lib/mood";
 
 function fmtDate(ts: number): string {
   return new Date(ts).toLocaleDateString("es-PY", {

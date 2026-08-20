@@ -73,3 +73,59 @@ describe("an anonymous replay cannot un-own a subscription", () => {
     expect(values).toContain("userId: input.userId");
   });
 });
+
+// ---------------------------------------------------------------------------
+// PR-5b — two device-scheduled categories
+// ---------------------------------------------------------------------------
+
+describe("the route schedules only what the device may schedule", () => {
+  it("never lets a client name the category", () => {
+    // The body carries two named fields — `reminders` and `consejos` — rather
+    // than a `{category, times}` list. A client that could name a category
+    // could enqueue `avisos` for one device, or `mimos` for itself, and the
+    // send-time opt-in check would happily let both through.
+    const calls = ROUTE.match(/scheduleReminders\([^)]*\)/gs) ?? [];
+    expect(calls.length).toBe(2);
+    expect(ROUTE).toContain('scheduleReminders(database, endpoint, "recordatorios"');
+    expect(ROUTE).toContain('scheduleReminders(database, endpoint, "consejos"');
+    expect(ROUTE).not.toMatch(/scheduleReminders\([^)]*(category|parsed\.data\.category)/s);
+  });
+
+  it("bounds both schedules, not just the one that existed first", () => {
+    // An unbounded list is how one request enqueues a year of pokes.
+    const post = ROUTE.slice(ROUTE.indexOf("export async function POST("));
+    for (const field of ["reminders", "consejos"]) {
+      expect(post, field).toContain(`bounded(${field})`);
+    }
+    expect(post).toContain("MAX_SCHEDULE_AHEAD_MS");
+  });
+
+  it("leaves a category alone when its field is absent", () => {
+    // Load-bearing: `refreshWeeklyTips` posts `consejos` and no `reminders`
+    // precisely so that topping up the tips on every app open cannot cancel
+    // the K8 companion control reminder, which is scheduled from data that
+    // call site does not have.
+    const post = ROUTE.slice(ROUTE.indexOf("export async function POST("));
+    expect(post).toMatch(/if \(reminders\) \{/);
+    expect(post).toMatch(/if \(consejos\) \{/);
+  });
+});
+
+describe("the poke still carries no body", () => {
+  it("sends headers only, on every path", () => {
+    // B5's whole architecture: the server pokes, the service worker writes the
+    // words. A `body:` here would mean this table starts carrying text, and
+    // the next feature would put a name in it.
+    const sender = PUSH_SERVER.slice(PUSH_SERVER.indexOf("export const fetchSender"));
+    expect(sender).toContain("headers: vapidHeaders(");
+    expect(sender).not.toMatch(/body:/);
+  });
+
+  it("schedules a cheer poke without recording what it is about", () => {
+    const start = PUSH_SERVER.indexOf("export async function scheduleCheerPoke");
+    expect(start).toBeGreaterThan(-1);
+    const body = PUSH_SERVER.slice(start);
+    // An endpoint, a category and a time. No cheer id, no sender, no text.
+    expect(body).not.toMatch(/cheerId|fromUserId|text/);
+  });
+});

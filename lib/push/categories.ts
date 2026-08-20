@@ -7,7 +7,12 @@
 // category is independently on or off, and turning one off must not turn
 // another on or silently re-enable anything.
 
-export const PUSH_CATEGORIES = ["consejos", "recordatorios", "avisos"] as const;
+export const PUSH_CATEGORIES = [
+  "consejos",
+  "recordatorios",
+  "avisos",
+  "mimos",
+] as const;
 export type PushCategory = (typeof PUSH_CATEGORIES)[number];
 
 export interface PushCategoryInfo {
@@ -21,10 +26,12 @@ export interface PushCategoryInfo {
 /**
  * The categories, in the order they are shown.
  *
- * `recordatorios` is the only one on by default. It is the one a user
- * actively loses something by missing — a prenatal control — whereas a weekly
- * tip they did not ask for is the reason people turn notifications off
- * entirely and never come back.
+ * A category is on by default only when missing it costs the user something.
+ * `recordatorios` is a prenatal control; `mimos` is a message a person
+ * deliberately sent her. A weekly tip nobody asked for is the reason people
+ * turn notifications off entirely and never come back, so `consejos` is off
+ * until she says otherwise — and, since PR-5b, it finally does something when
+ * she does (`lib/push/weekly.ts`).
  */
 export const PUSH_CATEGORY_INFO: readonly PushCategoryInfo[] = [
   {
@@ -39,6 +46,19 @@ export const PUSH_CATEGORY_INFO: readonly PushCategoryInfo[] = [
     label: "Consejos de la semana",
     description: "Un mensaje por semana con lo que está pasando en tu embarazo.",
     defaultOn: false,
+  },
+  {
+    key: "mimos",
+    label: "Mimos de tu familia",
+    description:
+      "Cuando tu pareja o tu familia te manda un mimo desde su celular.",
+    // On by default, and the only category besides `recordatorios` that is.
+    // The rule this list follows is "on by default only when missing it costs
+    // her something", and a mimo is a message a person deliberately sent her —
+    // the same standing a message from a human has in every other app. It also
+    // cannot become noise: nobody but the people she invited can send one, and
+    // they are rare by nature.
+    defaultOn: true,
   },
   {
     key: "avisos",

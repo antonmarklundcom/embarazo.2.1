@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { getSession, isAuthAvailable } from "@/lib/server/auth";
 import { dbOrNull } from "@/lib/server/db";
+import { scheduleCheerPoke } from "@/lib/server/push";
 import {
   acceptInvite,
   assignTask,
@@ -352,19 +353,26 @@ export async function POST(req: NextRequest) {
   }
 
   if (data.action === "cheer") {
-    const sent = await sendCheer(
+    const ownerUserId = await sendCheer(
       ctx.database,
       ctx.userId,
       data.pregnancyId,
       data.cheerId,
       now,
     );
-    if (!sent) {
+    if (!ownerUserId) {
       return NextResponse.json(
         { error: "no disponible" },
         { status: 404, headers: HEADERS },
       );
     }
+    // PR-5b — cheers used to land silently, waiting for her to happen to open
+    // the app. This is the only notification in the product whose *time* the
+    // server has to choose, because it is the moment another person pressed a
+    // button; the poke still carries no body and the service worker writes the
+    // sentence. Awaited but never able to fail the request: the cheer is
+    // already stored and already visible in her app.
+    await scheduleCheerPoke(ctx.database, ownerUserId, now);
     return NextResponse.json({ ok: true }, { headers: HEADERS });
   }
 

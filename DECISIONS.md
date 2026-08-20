@@ -3166,3 +3166,164 @@ fetch itself threw. Telling a woman on a dropped connection that her sister's
 code is wrong sends her back to WhatsApp to ask for a replacement that will fail
 identically. `lib/sharing/inviteMessages.ts` is now the one mapping, used by
 both, with the offline case answered honestly.
+
+---
+
+## PR-5b / K9-F6 + push + K10 — the switch that did nothing, and the price nobody will quote
+
+`docs/FABLE-PLAN-2026-08.md` §8 PR-5, second half: F6's mood streak, §7's
+"new push work" (weekly consejos + cheers), and K10's price guide.
+
+### F6 — a control that looked like an answer and was a link
+
+The home screen had four faces under "¿Cómo te sentís hoy?". Tapping one
+navigated to `/herramientas/sintomas` and recorded nothing. The distance
+between being asked how you feel and having answered was a page load, which is
+most of why a daily check-in is a thing people stop doing.
+
+Two things had to change before a streak could exist:
+
+- **Four faces for five moods.** Survivable while a tap led to a labelled
+  screen; a bug the moment a tap *is* the answer. The scale moved to
+  `lib/mood.ts` — key, label, emoji, mouth path and tone in one record — so the
+  drawn face and the stored value cannot drift apart in a refactor, and so the
+  two surfaces that write `JournalEntry.mood` agree on what each face means.
+- **A tap upserts today's entry, it does not append.** Tapping "bien", changing
+  your mind and tapping "regular" is one day with one answer. Appending would
+  put two contradictory rows in a journal she reads back — and still count as
+  one day to the streak, which is the tell that appending was wrong. It writes
+  onto an entry that already carries symptoms or a note rather than beside it:
+  logging headaches this morning and tapping a face tonight is one day, not two.
+
+**The guilt-trip is a design, and `lib/journal/streak.ts` cannot express it.**
+Every streak feature that hurts people does the same three things: counts the
+run from the day it broke, tells you the number you lost, and gives a missed day
+its own screen. `StreakState` is `{ days, loggedToday }` — there is no
+`brokenAt`, no `longest`, no `lostDays` — so a woman who was too sick to open
+the app for a week gets a counter that starts again at one and nothing that
+mentions the week. A test walks 400 lengths and asserts the sentence never
+matches `/perd|romp|fall|volv[eé]/`.
+
+Two smaller calls with the same shape:
+
+- **A run of one says nothing at all.** "Día 1 de tu racha" turns a single tap
+  into an obligation the app has just invented for her, and it is the sentence
+  every one of these features opens with.
+- **A run survives until the end of the following day.** A streak that dies at
+  midnight makes the app something you owe. "I forgot yesterday, I logged this
+  morning" is a continuous run for a person, and the stricter rule punishes
+  exactly the woman with morning sickness who slept in.
+
+Days are **local** calendar days. A UTC boundary files a 21:00 check-in in
+Asunción under tomorrow and breaks a run she can watch herself keeping.
+
+### Push — two senders for toggles that had none
+
+"Consejos de la semana" has been a switch in Ajustes since B5 with **nothing
+behind it**: the category existed, the opt-in was stored and synced, and no
+code anywhere ever enqueued one. Cheers landed silently, waiting for her to
+happen to open the app. A switch that does nothing is worse than an absent
+feature, because she has already decided to trust it.
+
+**The weekly tip stays payload-free in B5's exact sense.** The device computes
+*when* — 10:00 local, same weekday, twelve weeks ahead — and the server learns
+a list of epoch milliseconds. It is never told these are tips, what week she is
+in, or what the notification will say. Local time because the server cannot
+know her timezone, and a tip at 06:00 is a tip that arrives while she is
+asleep. The slots are re-derived through `Date` per step rather than by adding
+604 800 000 ms, because Paraguay observes DST and a fixed span walks the tip an
+hour off at the boundary and leaves it there.
+
+Twelve weeks are enqueued and the list is replaced on every publish, so
+something has to top it up. `refreshWeeklyTips` runs on app start and
+deliberately does **not** go through `refreshReminders`: that function takes
+`companionAppointmentAt` and treats `null` as "I do not know", and since the
+server replaces a category's schedule wholesale, publishing a recordatorios
+list assembled without it would have silently cancelled K8's companion reminder
+on every single app open. Omitting the field is the route's own way of saying
+"leave that category alone", which makes this the narrow write it needs to be.
+A route-contract test pins that `if (reminders)` and `if (consejos)` stay
+independent.
+
+**The cheer poke is the one exception, in one direction only.** Its *time* is
+something only the server can know, because it is the moment somebody else
+pressed a button on their own phone. It learns nothing new by scheduling it —
+it wrote the `companionCheers` row a line earlier — and the poke still carries
+no body: the service worker notices the unseen cheer itself and writes the
+sentence. That is not ceremony. A payload would mean this table starts carrying
+text, and the next feature puts a name in it.
+
+It is enqueued at `fireAt: now` rather than sent directly, so a cheer rides the
+same dispatcher, retry and opt-in path as everything else and `acceptsCategory`
+is enforced in exactly one place for every notification the product sends. It
+appends rather than replaces, because two cheers a minute apart are two events.
+
+**The notification never says who sent it.** The service worker *could* read a
+name out of `/api/v1/sharing`. A lock screen is the one part of a phone other
+people read over your shoulder, and "Tu pareja te mandó un mimo" on a shared or
+borrowed phone says more about her than she chose to say. The app shows who,
+behind the lock.
+
+`mimos` is a fourth category and the second one on by default. The rule the
+list follows is "on by default only when missing it costs her something": a
+prenatal control, and a message a person deliberately sent her. It cannot
+become noise — only the people she invited can send one — and it can be turned
+off on its own rather than by giving up notifications entirely.
+
+**A duplicated list, caught by the compiler.** `lib/server/schema.ts` carried
+its own copy of `PUSH_CATEGORIES`, and adding `mimos` broke the two apart
+immediately: the `mysqlEnum` column still described three categories while the
+app offered four. That is worse than a type error, because the column it
+generates would have rejected the new value *at runtime*, on a write the type
+checker was happy with. The schema now imports the app's list, and the test
+that used to repeat the literal asserts identity instead.
+
+Migration `0011` is a single additive `MODIFY COLUMN` on the enum.
+
+### K10 — the number that decides where she gives birth
+
+"¿Cuánto cuesta?" is the question nobody in Paraguay answers straight, and the
+one that decides where a woman has her baby. Same pipeline as D3's food lookup:
+validated JSON, client-side, offline.
+
+**It ships rendering nothing, on purpose, and both gates are applied.** The
+seed's figures are marked `(placeholder)` in `source`, which `publishedOnly`
+catches, *and* carry no `reviewedBy`, which `reviewedOnly` catches. Either
+alone would hide them; both are there because they fail differently — one
+catches "we made this up", the other catches "nobody has signed this off yet".
+A wrong price is not a wrong fact. It is a decision somebody makes: a woman
+reading "cesárea: ₲ 18.000.000" and concluding she cannot afford a sanatorio
+has been given financial advice by a number nobody checked. An e2e test asserts
+each seeded figure never reaches a screen.
+
+The empty state is a real state rather than a spinner, and it still answers the
+part of the question that needs no relevamiento: in IPS and the public system,
+the control, the studies and the parto are not charged to her.
+
+Decisions in the shape of the data:
+
+- **A range, never a number, and both ends required.** Paraguay publishes no
+  tariff for most of this. One number reads as a quote the app is in no
+  position to give.
+- **`sourceDate` is required**, unlike D3's food entries, which carry a source
+  and no date. Guaraní prices move with inflation in a way that "no comer
+  sushi" does not; a price with no date is a rumour with a citation. Shown to
+  the **month** — a day would imply the figures were checked that exact day.
+- **Zero renders as "Sin costo", never "₲ 0".** A covered service is not one
+  that costs nothing to provide, it is one she does not pay for, and "₲ 0"
+  invites the reading that it is worth nothing in a country where "gratis" is
+  often heard as "worse". It is also the difference between a price and a
+  right: IPS and the public system cover these because the law says so.
+- **Every procedure shows all three columns at once.** The tool is a
+  comparison; an entry that only priced the privado column would be an
+  advertisement for going privado. K9-F5's `careSetting` highlights her column
+  rather than isolating it, and somebody who skipped that question sees all
+  three plain — she is exactly who the comparison is for.
+
+"Linked from herramientas + week articles" is a typed map
+(`lib/articles/relatedTool.ts`) rather than an `<a>` inside `articles.json`. No
+article in the seed contains a link today, so that would have been the first
+piece of markup in the content files able to rot into a 404 with nothing
+noticing — and a map can be tested: every slug exists, every href is a real
+route, and the map stays sparse, because a "related tool" on every article is a
+slot somebody eventually fills with the nearest-looking tool.

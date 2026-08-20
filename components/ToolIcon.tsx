@@ -22,6 +22,7 @@ export type ToolIconName =
   | "guides"
   | "video"
   | "checklist"
+  | "price"
   // D2
   | "names"
   | "kegel"
@@ -196,6 +197,16 @@ export function ToolIcon({
         <svg {...common}>
           <path d="M9 5h9M9 12h9M9 19h9" />
           <path d="M4 5.5 5 6.5 7 4.5M4 12.5l1 1 2-2M4 19.5l1 1 2-2" />
+        </svg>
+      );
+    // K10 — a price tag, not a banknote: the tool answers "what does this
+    // cost", and every currency glyph in this set would have to be a guaraní
+    // sign at 24px, which is unreadable.
+    case "price":
+      return (
+        <svg {...common}>
+          <path d="M12.5 3.5H19a1.5 1.5 0 0 1 1.5 1.5v6.5a2 2 0 0 1-.6 1.4l-6.6 6.6a1.5 1.5 0 0 1-2.1 0l-6.6-6.6a1.5 1.5 0 0 1 0-2.1l6.6-6.6a2 2 0 0 1 1.3-.7Z" />
+          <circle cx="16.5" cy="7.5" r="1.2" />
         </svg>
       );
   }

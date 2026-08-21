@@ -48,7 +48,14 @@ jobs:
       # check, not a deployment, so the Z2 launch checks (lib/launchChecks.ts)
       # stay inert. The real deployment build does set it and will fail if the
       # medical reviewer is still a placeholder.
+      #
+      # A support address IS set, because /borrar-cuenta renders whichever
+      # contact channels exist and its e2e asserts that a person can actually
+      # reach somebody. Without one the page would build fine and test nothing.
+      # It is a test value; the real one is a deploy-time env var.
       - run: npm run build
+        env:
+          NEXT_PUBLIC_SUPPORT_EMAIL: hola@mibebe.example.py
 
       # K21: the Chromium download is the single most expensive step in this
       # job (~40 s and ~150 MB every run). Cache it against the resolved

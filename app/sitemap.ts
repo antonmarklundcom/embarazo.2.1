@@ -19,6 +19,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${appUrl}/directorio`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
     { url: `${appUrl}/preguntas`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${appUrl}/privacidad`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
+    // Play requires this URL to be publicly reachable; it is also the one page
+    // somebody may need to find from a search engine rather than from the app.
+    { url: `${appUrl}/borrar-cuenta`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
     { url: `${appUrl}/terminos`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
   ];
 

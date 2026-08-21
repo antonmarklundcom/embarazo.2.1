@@ -3780,3 +3780,46 @@ only cheap moment to decide what it means.
 K16's comment about doing this "the only time adding it is free" applies again;
 the exemption from the `requireAdmin` rule is now a named list rather than two
 `||`'d identifiers, so the fifth module does not have to reopen the assertion.
+
+---
+
+## PR-12 / K19 follow-through — the review sheet, and the number that was an estimate
+
+D6 made native-speaker review a founder gate on the Guaraní strings, the same
+mechanism as the medical reviewer. A gate needs something a reviewer can sit
+down with, and "here are four TypeScript files" is not it.
+
+`scripts/gen-guarani-review.mts` walks the four sources and writes
+`docs/GUARANI-REVIEW.md`: one table per surface, es-PY beside Guaraní, with an
+empty "Corrección" column.
+
+Three things about it are decisions rather than formatting:
+
+**It is ordered by what it costs to be wrong.** The nine alarm signs come
+first, then the emergency screen's own copy, then the call script, then the
+derechos titles, then the cheers, and the navigation labels last. A reviewer
+who gets through two sections and stops has still covered the strings a woman
+reads at 3 a.m. while frightened; a sheet in file order would have spent her
+attention on "Hoy" and "Guardar".
+
+**It states the register before the first table.** Without that instruction a
+reviewer corrects jopara into academic Guaraní, and the loanwords people
+actually say — "checklist", "WhatsApp", "internet" — come back as coined
+equivalents nobody recognises. The sheet also says explicitly that not
+everything has to be translated: two of the five cheers ship with no Guaraní on
+purpose, because a term of affection chosen wrong lands worse than one left in
+Spanish, and the sheet invites her to say if that judgement was wrong.
+
+**It is committed and pinned.** `guaraniReview.test.ts` regenerates it and
+fails if the tree changes, the same contract as `lib/articles/index.json`. The
+failure mode it prevents is precise: a reviewer signs off on 78 phrases, three
+of which the app no longer ships, and a string nobody read goes out under a
+review that appears to cover it.
+
+### The count
+
+**78 phrases**, not "~100". The plan's figure was an estimate written before
+the dictionary existed; the dictionary shipped with 45 keys, and the other 33
+are the safety surfaces. Both docs now say the counted number, and the sheet
+counts itself in a test — an estimate in a handoff is how a reviewer is told to
+budget an afternoon for a morning's work.

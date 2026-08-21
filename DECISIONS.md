@@ -3823,3 +3823,63 @@ the dictionary existed; the dictionary shipped with 45 keys, and the other 33
 are the safety surfaces. Both docs now say the counted number, and the sheet
 counts itself in a test — an estimate in a handoff is how a reviewer is told to
 budget an afternoon for a morning's work.
+
+---
+
+## PR-13 — the safe half of four Dependabot PRs, and the majors that are a project
+
+Dependabot opened four PRs (#55–#58). Merging them as offered would have taken
+**Next 15→16, zod 3→4, Tailwind 3→4, TypeScript 5→7, vitest 2→4, eslint 9→10,
+@types/node 22→26 and dexie-react-hooks 1→4** in two commits, weeks before a
+Play submission. Each of those is a migration with its own failure modes; taken
+together they are a fortnight of debugging our own build instead of shipping,
+and a red build at that point is indistinguishable from a red build caused by
+the launch work itself.
+
+So this takes the half that is genuinely routine — everything staying inside
+its current major — and leaves the majors named, with what each one costs, so
+the next person does not have to re-derive the decision from a closed PR.
+
+### Taken
+
+`@tanstack/react-query` 5.59→5.101 · `dexie` 4.0→4.4 · `mysql2` 3.23.1→3.23.3 ·
+`react`/`react-dom` 19.0→19.2 · `@types/react` · `@types/react-dom` ·
+`@playwright/test` 1.61→1.62 · `@serwist/next` **and** `serwist` 9.0→9.5 ·
+`@typescript-eslint/*` 8.64→8.67 · `autoprefixer` · `postcss`.
+
+Two of those are pairs that Dependabot split and this batch keeps together:
+`@serwist/next` with `serwist`, and the eslint plugin with its parser. A
+service-worker builder one minor ahead of the runtime it emits code for is the
+kind of mismatch that fails at install time if you are lucky and at runtime if
+you are not.
+
+The two GitHub Actions bumps (#55, #56 — `actions/cache` 4→6,
+`actions/upload-artifact` 4→7) ride along **because this batch already spends a
+CI run**, and CI is the only thing that can test them. If they break, the
+failure is loud, contained to the workflow file, and reverting is one commit.
+
+### Deferred, with the reason
+
+| Bump | Why it is its own task |
+|---|---|
+| **Next 15→16** | A framework migration. Also the one that must be done *deliberately*: `next-auth` is still on `5.0.0-beta.32` (K13b), and moving the framework under an unreleased auth beta is two unknowns at once. |
+| **zod 3→4** | Every schema in `lib/content/` and every API route's whitelist. The zod 4 error API differs, and `validateContentArray` reports errors by hand. |
+| **Tailwind 3→4** | A config rewrite. `tailwind.config.ts` carries the whole "Mi Bebé" token set; v4 moves it into CSS. Cheap to get wrong in a way that only shows on a screen nobody opened. |
+| **TypeScript 5→7** | New compiler. Worth doing, not worth doing the week before a store submission. |
+| **vitest 2→4** | Two majors of a test runner. If it goes wrong, the thing that tells us whether anything else went wrong is what is broken. |
+| **eslint 9→10** | Drags `eslint-config-next` with it, which is pinned to the Next major — so this is really part of the Next 16 task. |
+| **@types/node 22→26** | `engines` says `>=22.6.0`. Bumping the types past the runtime we actually target is backwards. |
+| **dexie-react-hooks 1→4** | Dexie is the source of truth for every piece of health data on the device. This one needs its own offline e2e pass, not a lockfile diff. |
+
+The honest summary for whoever picks this up: **the majors are a post-launch
+batch, in roughly the order Next → zod → Tailwind → TypeScript → vitest**, and
+each deserves its own PR and its own e2e run.
+
+### One thing this batch established about CI
+
+`e2e/borrar-cuenta.spec.ts`'s "names a way to reach a human" fails locally
+unless the build itself was made with `NEXT_PUBLIC_SUPPORT_EMAIL` set — it is a
+`NEXT_PUBLIC_*` value, inlined at build time, so exporting it only for the test
+run changes nothing. CI has always set it on the build step. A local run that
+skips it is testing a different binary, which is worth knowing before somebody
+"fixes" a test that was never broken.

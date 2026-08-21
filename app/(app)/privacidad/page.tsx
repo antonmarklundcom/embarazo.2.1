@@ -98,8 +98,12 @@ export default function PrivacidadPage() {
           notificaciones e imágenes generadas — vos misma, desde
           <strong> Ajustes → Borrar mi cuenta</strong>. Se borra del servidor,
           no queda una copia nuestra, y en el mismo paso podés borrar también
-          los datos de este teléfono. Si preferís pedirlo, escribinos por
-          WhatsApp desde el botón de contacto. Sin cuenta,
+          los datos de este teléfono. Si preferís pedirlo, o si ya no tenés la
+          app instalada, seguí los pasos de{" "}
+          <Link href="/borrar-cuenta" className="font-bold underline">
+            borrar tu cuenta
+          </Link>
+          . Sin cuenta,
           borrar los datos del sitio en tu navegador o desinstalar la app
           elimina esta información de inmediato, ahí no guardamos copia en
           ningún lado.

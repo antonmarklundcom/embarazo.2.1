@@ -3606,3 +3606,60 @@ Lighthouse 12 no longer scores a PWA category, so "PWA pass" is asserted where
 it is actually checkable: the manifest, icons, offline fallback and precache
 are covered by `e2e/offline.spec.ts` and the installability checks that shipped
 with P1.
+
+## PR-9 — the deletion page Play asks for, and the check that keeps it honest
+
+`docs/ANDROID-LAUNCH.md` §3.3. Play requires **two** deletion paths and the app
+had one. A5 built the in-app route; this is the other — a URL that works
+**without installing the app and without signing in**, submitted in the Data
+safety form. It is the requirement people forget and get rejected for.
+
+### There is no form on it, deliberately
+
+The obvious build is a box that takes an email address and deletes the account.
+That is an **unauthenticated deletion endpoint**: a way for anyone to erase
+somebody else's pregnancy by typing their address. No amount of rate limiting
+fixes it, because the malicious request is byte-identical to the real one.
+
+So the page describes a human process, and A5's authenticated path stays the
+only thing that deletes anything. Play asks for a way to *request* deletion,
+which is exactly what this is. An e2e asserts no `form`, `input` or `textarea`
+ever appears on it — the failure mode is somebody helpfully adding one later.
+
+### A deployment cannot be built without somebody to write to
+
+The page says "escribinos". A page that says that and then shows no address is
+not a deletion path, it is a rejection with extra steps — and worse, it is a
+promise to a woman who wants her health data gone that nobody is on the other
+end.
+
+`lib/support.ts` follows C8's `businessWhatsApp` exactly: an unconfigured
+channel answers `null`, never a placeholder. Three files once shipped
+`process.env.X || "+595000000000"`, a dead number wearing a fallback's clothes;
+an email default would be the same mistake in a different field. The validator
+is deliberately stricter than RFC — this string is printed as a promise that
+somebody reads it, so "looks roughly like an address" is the wrong bar.
+
+`launchCheckErrors` gained a second check: a deployment build (one with
+`NEXT_PUBLIC_APP_URL`) with neither `NEXT_PUBLIC_SUPPORT_EMAIL` nor
+`NEXT_PUBLIC_BUSINESS_WHATSAPP` configured **fails**. One channel is enough —
+requiring both would be a rule invented here rather than one Play asks for.
+
+Fixing that surfaced a real bug in Z2's existing code: `ALLOW_PLACEHOLDER_REVIEWER=1`
+returned early from the **whole** function, which was harmless when there was
+one check and would have silently disabled this one. An escape hatch for the
+medical byline is not consent to ship a broken deletion page. The override is
+now scoped to the check it names, with a test that pins it.
+
+### What the page says goes, and the one thing that stays
+
+The list tracks `TABLE_DISPOSITION` rather than being written fresh, including
+the entry that surprises people: an approved question is public FAQ content by
+then and it still goes (K20). The single retained item is named in plain words —
+the admin audit trail, without her name, her email or any health data, because
+without it we could not show what was done with her own request.
+
+It also says the thing users get wrong in the other direction: **data that only
+ever lived on the phone was never ours to delete.** Someone who used the app
+without an account is told to clear the site data or uninstall, rather than
+being invited to write to us about rows that do not exist.

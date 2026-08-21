@@ -275,9 +275,27 @@ Play requires **both**:
 
 The second one is the one people forget and get rejected for. A5 built the
 in-app path (Ajustes → "Borrar mi cuenta", server rows + an offer to wipe the
-device). **The public web page does not exist yet** — `/borrar-cuenta`, reachable
-signed-out, explaining how to request deletion without installing the app. It is
-a small page and it is on the critical path for submission.
+device). **Both now exist.** `/borrar-cuenta` is live: a static, signed-out page
+outside the `(app)` route group, with no client JavaScript, listing what
+deletion removes and how to request it without installing anything. Submit that
+URL in the Data safety form.
+
+Two things about it are deliberate and should not be "fixed" later:
+
+- **It has no form.** A box that takes an email address and deletes the account
+  is an unauthenticated deletion endpoint — a way for anyone to erase somebody
+  else's pregnancy by typing their address, and no rate limit fixes it because
+  the request is indistinguishable from the real one. The page describes a
+  human process; A5's authenticated path stays the only mechanism.
+  `e2e/borrar-cuenta.spec.ts` asserts no form, input or textarea ever appears.
+- **A deployment build fails without a contact channel.** `NEXT_PUBLIC_SUPPORT_EMAIL`
+  or `NEXT_PUBLIC_BUSINESS_WHATSAPP` must be set to something real, or
+  `lib/launchChecks.ts` refuses the build (§Z2's mechanism, second check). A
+  page telling a woman to write to us, with no address under it, is worse than
+  no page.
+
+**Founder task:** decide which address receives these and make sure a human
+reads it. The page promises a reply within 30 days.
 
 ### 3.4 The rest of the forms
 

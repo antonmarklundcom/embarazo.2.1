@@ -11,6 +11,7 @@ import {
   companionTasks,
   contentStats,
   photoBlobs,
+  placementClicks,
   schema,
   syncRecords,
   users,
@@ -38,6 +39,29 @@ describe("contentStats carries no identity (§4.5)", () => {
 
   it("buckets by day, not by timestamp", () => {
     expect(columnNames(contentStats)).toContain("day");
+  });
+});
+
+describe("placementClicks carries no identity either (K15)", () => {
+  it("is the second aggregate table and holds to the first one's rule", () => {
+    const columns = columnNames(placementClicks).map((c) => c.toLowerCase());
+    for (const forbidden of ["user", "session", "device", "ip", "token"]) {
+      expect(
+        columns.some((c) => c.includes(forbidden)),
+        `placementClicks must not carry a "${forbidden}" column`,
+      ).toBe(false);
+    }
+    expect(columns).toContain("day");
+  });
+
+  it("is the complete list of aggregate tables, so a third one lands here", () => {
+    // Adding a counter is a data-contract decision (§4.5), and this is the
+    // cheapest moment to have to make it: the test fails on whoever adds the
+    // table, not on whoever notices a year later.
+    const aggregates = Object.keys(schema).filter((name) =>
+      /Stats$|Clicks$/.test(name),
+    );
+    expect(aggregates.sort()).toEqual(["contentStats", "placementClicks"]);
   });
 });
 
@@ -203,6 +227,7 @@ describe("schema export", () => {
         "communityQuestions",
         "contentStats",
         "photoBlobs",
+        "placementClicks",
         "invites",
         "pregnancies",
         "pregnancyMembers",

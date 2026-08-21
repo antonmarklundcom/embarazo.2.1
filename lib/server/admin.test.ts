@@ -24,7 +24,13 @@ const ADMIN_MODULE = join(process.cwd(), "lib", "server", "admin.ts");
 // K16 added a second server module behind the panel. It is on this list from
 // the day it was written, which is the only time adding it is free.
 const METRICS_MODULE = join(process.cwd(), "lib", "server", "adminMetrics.ts");
+// K15 and D4 added two more modules read by the panel. Same rule, same day.
+const CLICKS_MODULE = join(process.cwd(), "lib", "server", "placementClicks.ts");
+const CONTENT_MODULE = join(process.cwd(), "lib", "server", "contentDebt.ts");
 const ADMIN_ROUTES = join(process.cwd(), "app", "admin");
+
+/** The server modules behind the panel. They are what is gated, not a gate. */
+const SERVER_MODULES = [ADMIN_MODULE, METRICS_MODULE, CLICKS_MODULE, CONTENT_MODULE];
 
 function filesUnder(dir: string): string[] {
   const out: string[] = [];
@@ -43,7 +49,7 @@ function code(path: string): string {
     .replace(/^\s*\/\/.*$/gm, "");
 }
 
-const ADMIN_SOURCES = [ADMIN_MODULE, METRICS_MODULE, ...filesUnder(ADMIN_ROUTES)];
+const ADMIN_SOURCES = [...SERVER_MODULES, ...filesUnder(ADMIN_ROUTES)];
 
 describe("the admin panel cannot reach health content", () => {
   it("scans a real, non-empty set of admin sources", () => {
@@ -52,6 +58,8 @@ describe("the admin panel cannot reach health content", () => {
     expect(ADMIN_SOURCES.length).toBeGreaterThanOrEqual(4);
     expect(ADMIN_SOURCES.some((p) => p.endsWith("admin.ts"))).toBe(true);
     expect(ADMIN_SOURCES.some((p) => p.endsWith("adminMetrics.ts"))).toBe(true);
+    expect(ADMIN_SOURCES.some((p) => p.endsWith("placementClicks.ts"))).toBe(true);
+    expect(ADMIN_SOURCES.some((p) => p.endsWith("contentDebt.ts"))).toBe(true);
     expect(ADMIN_SOURCES.some((p) => p.endsWith("page.tsx"))).toBe(true);
   });
 
@@ -89,8 +97,8 @@ describe("the admin panel cannot reach health content", () => {
     // because a route segment can be rendered without its parent layout's
     // work being awaited in the same request.
     for (const path of ADMIN_SOURCES) {
-      // The two server modules are the thing being gated, not a gate.
-      if (path === ADMIN_MODULE || path === METRICS_MODULE) continue;
+      // The server modules are the thing being gated, not a gate.
+      if (SERVER_MODULES.includes(path)) continue;
       expect(code(path), path).toContain("requireAdmin");
     }
   });

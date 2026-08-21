@@ -33,7 +33,9 @@ import {
 //      rewrite, and it is what makes the admin panel defensible.
 //   2. `contentStats` carries NO user identity. Not a user id, not a session,
 //      not an IP. If a future counter needs to know "who", it does not belong
-//      in this table.
+//      in this table. K15's `placementClicks` is the second counter and holds
+//      to the same rule — the two of them are the complete list of tables the
+//      app aggregates into, and neither can be joined to a person.
 //
 // `import "server-only"` at the top makes a client component importing this
 // file a build error rather than a silent bundle leak.
@@ -596,6 +598,55 @@ export const contentStats = mysqlTable(
 );
 
 // ---------------------------------------------------------------------------
+// Sponsor click reporting (K15)
+// ---------------------------------------------------------------------------
+
+/**
+ * How many people tapped a sponsored placement or a directory listing, per day.
+ *
+ * The shape is `contentStats`'s, deliberately and for the same reason: the
+ * founder needs to be able to answer a sponsor's "what did we get last month?"
+ * without leaving the app, and answering it needs a count, not a log.
+ *
+ * §5 D3 scopes K15 to **reporting only** — no sponsor role, no portal — and
+ * this table is the whole of it. What it does not have is the point:
+ *
+ *   * **No user column, no session, no device, no IP.** J3 removed `week` and
+ *     `department` from `/api/v1/go` precisely so a click could not be tied to
+ *     a pregnancy, and K15 does not put them back through the side door. A
+ *     sponsor asking for clicks by department is answered from the directory
+ *     itself — every listing already has one — without the *user's* department
+ *     ever travelling.
+ *   * **No timestamp finer than a day.** A minute-resolution click trail on a
+ *     handful of sponsors is a session reconstruction; a day bucket is a count.
+ *
+ * `placementId` holds the id the `/go` route resolved, which is a placement id
+ * (`lib/seed/placements.json`) *or* a directory listing id
+ * (`lib/seed/directory.json`) — one route serves both, both are sponsor-facing,
+ * and splitting them into two tables would only mean writing the same insert
+ * twice. `/admin/patrocinios` resolves each id back to its name against the
+ * seed at read time, so an id that has since left the content shows as exactly
+ * that instead of a number nobody can attribute.
+ */
+export const placementClicks = mysqlTable(
+  "placementClicks",
+  {
+    // Long enough for our slug ids; deliberately not a foreign key — the
+    // content lives in git (§5 D4), not in a table to point at.
+    placementId: varchar("placementId", { length: 128 }).notNull(),
+    // "YYYY-MM-DD", same daily bucket as `contentStats`.
+    day: varchar("day", { length: 10 }).notNull(),
+    clicks: int("clicks").default(0).notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({
+      columns: [table.placementId, table.day],
+    }),
+    // NO user column here either. See the note above, and §4.5.
+  }),
+);
+
+// ---------------------------------------------------------------------------
 // Curated Q&A (K20)
 // ---------------------------------------------------------------------------
 
@@ -689,6 +740,7 @@ export const schema = {
   pushReminders,
   aiGenerations,
   contentStats,
+  placementClicks,
   communityQuestions,
   adminAudit,
 };

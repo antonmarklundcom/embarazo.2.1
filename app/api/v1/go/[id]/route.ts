@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getDirectory, getPlacements } from "@/lib/wordpress";
 import { waLink, defaultPrefill } from "@/lib/whatsapp";
 import { isRateLimited, clientKeyFromHeaders } from "@/lib/rateLimit";
+import { countClick } from "@/lib/server/placementClicks";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,16 @@ export const dynamic = "force-dynamic";
 // holds — to our server on every tap, to save the business one question.
 
 const ALLOWED_PARAMS = new Set<string>();
+
+// K15 amends this route in exactly one way: the tap is also counted in
+// `placementClicks`, a (placementId, day, clicks) row with no identity column.
+// Everything the comment above says about what does NOT travel is unchanged —
+// the count is of the id, per day, and there is no parameter on `recordClick`
+// to pass anything else into.
+//
+// The Sheets webhook stays as an optional mirror (§6 K15). It was the only
+// reporting there was, it works, and a founder with a spreadsheet open should
+// not have it taken away on the day the in-app page ships.
 
 function fireAttribution(id: string) {
   const url = process.env.SHEETS_WEBHOOK_URL;
@@ -78,6 +89,7 @@ export async function GET(
   }
 
   fireAttribution(id);
+  countClick(id);
 
   const destination = waLink(target.whatsappNumber, defaultPrefill());
   return NextResponse.redirect(destination, 302);

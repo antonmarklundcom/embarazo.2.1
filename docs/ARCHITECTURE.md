@@ -139,12 +139,23 @@ it is what the privacy policy must say:
      sharing level, which is a separate opt-in from this one.
    - **Turning backup off deletes the server copies immediately**, and account
      deletion removes every object as well as every row (§8).
-5. **Aggregate stats are never joined to a user.** The "popular this week"
-   counters (`/api/v1/stats`) write only `(week, content_id, day)` — no
-   user id, no session, no IP retained.
-6. **Ads and sponsors never receive personal data.** `/api/v1/go/[id]`
-   still 302s to `wa.me` with fire-and-forget attribution carrying only
-   id/trimester/department.
+5. **Aggregate stats are never joined to a user.** *(Amended by K15, August
+   2026 — there are two counters now, and the clause names both.)* The
+   "popular this week" counter (`/api/v1/stats` → `contentStats`) writes only
+   `(week, content_id, day)`, and the sponsor click counter (`/api/v1/go/[id]`
+   → `placementClicks`, K15) writes only `(placement_id, day)`. No user id, no
+   session, no IP retained, and no timestamp finer than a calendar day in
+   either. **These two are the complete list of tables the app aggregates
+   into**, pinned by a test in `lib/server/schema.test.ts`: a third counter is
+   a data-contract decision and fails that test until somebody makes it.
+6. **Ads and sponsors never receive personal data.** *(Corrected, August 2026:
+   this clause still described the pre-J3 wire.)* `/api/v1/go/[id]` 302s to
+   `wa.me` with fire-and-forget attribution carrying **the listing id and
+   nothing else** — J3 removed `trimester` and `department` from it, and K5
+   deliberately did not put them back. Sending a sponsor a trimester tells them
+   a health fact about whoever just tapped. A sponsor asking for clicks by
+   department is answered from the directory, where every listing already has
+   one; the *user's* department never travels.
 7. **Sign-in identity is the minimum Google/Facebook will give**: name,
    email, avatar URL. No friend lists, no other scopes, ever.
 8. **The user can delete everything.** Account deletion wipes the server
@@ -257,9 +268,22 @@ control what costs money. Rules that are part of the design:
   language, same tokens — not a debug page.
 
 Scope by phase: **A7** is the support floor (find user, account state,
-deletion, invite repair). **Phase I** adds the support console, business
-and content stats, the subscription/payment ledger, AI spend control, and
-segmented push broadcasts.
+deletion, invite repair). **K16** adds `/admin/metricas` (aggregates only),
+**K20** the Q&A moderation queue, **K15** `/admin/patrocinios` (sponsor
+clicks per month) and **D4** `/admin/contenido` (what the content gates are
+hiding, and which gate). **Phase I** adds the support console, the
+subscription/payment ledger, AI spend control, and segmented push broadcasts.
+
+Two rules the later pages added, both structural:
+
+- **`/admin/contenido` is read-only, and stays that way.** §5 D4 of
+  `docs/FABLE-PLAN-2026-08.md` declined an editor role: content lives in git so
+  it can be validated at build time (G1) and precached by the service worker. A
+  publish button on that page would be the editor role arriving through the
+  back door, and it would publish content that had neither.
+- **`/admin/patrocinios` reports clicks, not impressions.** There is no honest
+  impression count in an app whose placements API is precached; the page says
+  so rather than showing a ratio nobody can stand behind.
 
 ## 10. AI baby image (opt-in, entertainment)
 

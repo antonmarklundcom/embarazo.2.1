@@ -15,6 +15,12 @@ const ADMIN_URLS = [
   // is worth naming here rather than trusting the layout: this is the page that
   // would tell a stranger how many users the app has.
   "/admin/metricas",
+  // K15 — sponsor click counts. Not health data, but it is the page that tells
+  // a competitor what a sponsor is paying for.
+  "/admin/patrocinios",
+  // D4 — the review-debt page. It names every seed file and how much of the
+  // app is dark, which is a map of what is worth probing.
+  "/admin/contenido",
 ];
 
 test("every /admin URL 404s for someone who is not an administrator", async ({

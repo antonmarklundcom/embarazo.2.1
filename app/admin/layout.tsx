@@ -50,6 +50,20 @@ export default async function AdminLayout({
             >
               Métricas
             </Link>
+            {/* K15 — sponsor click reporting. */}
+            <Link
+              href="/admin/patrocinios"
+              className="text-[13px] font-extrabold text-petrol"
+            >
+              Patrocinios
+            </Link>
+            {/* D4 — the review-debt page. Read-only, by design. */}
+            <Link
+              href="/admin/contenido"
+              className="text-[13px] font-extrabold text-petrol"
+            >
+              Contenido
+            </Link>
             {/* K20 — the moderation queue. */}
             <Link
               href="/admin/preguntas"

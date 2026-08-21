@@ -94,6 +94,12 @@ export const TABLE_DISPOSITION = {
   // (week, contentId, day), so there is nothing here that belongs to anyone.
   contentStats: "no user data",
 
+  // K15. Same as `contentStats` and for the same reason: the row is
+  // (placementId, day, clicks) and carries no identity at all, so there is
+  // nothing here belonging to the account being deleted. Deleting a woman's
+  // account must not un-count a sponsor's month.
+  placementClicks: "no user data",
+
   // K20. DELETED, and this was the decision worth arguing about.
   //
   // An approved question is public FAQ content by then, and deleting it takes

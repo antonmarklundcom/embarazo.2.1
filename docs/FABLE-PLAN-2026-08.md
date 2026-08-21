@@ -269,7 +269,7 @@ es-PY voseo, offline-and-accountless keeps working.
 | D1 | This document is updated **in place** (no V2 doc). |
 | D2 | **K14 (security & cache correctness) is first and blocks launch.** The SW cache leak makes K2's "revocation cuts instantly" guarantee false in a built app; the push endpoint is an open SSRF surface. |
 | D3 | **Sponsor work deferred to a later batch**, scoped to *reporting only* (K15): `placementClicks` day-bucket counts + `/admin/patrocinios`. No sponsor role, no portal — revisit a read-only sponsor login at ~10 paying sponsors. |
-| D4 | **No editor/employee role.** Content stays in git (build-time validation + offline precache is the point). A read-only `/admin/contenido` review-debt page ships in a later batch. Platform roles stay `user \| admin`; a capability module is built only when a second privileged human exists. |
+| D4 | **No editor/employee role.** Content stays in git (build-time validation + offline precache is the point). A read-only `/admin/contenido` review-debt page ships in a later batch — **shipped in PR-11**. Platform roles stay `user \| admin`; a capability module is built only when a second privileged human exists. |
 | D5 | **Minimal community ships**, scoped to **curated Q&A** (K20): users submit questions, nothing is public until admin approves and answers, answers grow a public FAQ. No free-text between users, no moderator role. |
 | D6 | **Language = L0 + L1** (K19): Guaraní on all safety-critical copy (stacked, always shown), plus a typed dictionary + Ajustes toggle over ~100 core UI strings. Full Guaraní weekly content stays out until institutionally funded. No neutral Spanish, no English UI. |
 | D7 | **Postpartum deferred** (K17 is a spec note, not a build task yet). Open product decision recorded: one app vs. a separate baby app on the stores. Technical recommendation: same app (third `AppMode`, data carries over birth day); distribution decision is the founder's, later. |
@@ -304,13 +304,23 @@ push POST with a non-push-service URL is rejected; all 12 API routes are
 throttled; headers verified; DECISIONS.md notes that K2's "never cached"
 claim only became true here.
 
-### K15 Sponsor click reporting — **M** [OPUS] — LATER BATCH (post-launch)
+### K15 Sponsor click reporting — **M** [OPUS] ✅ DONE (PR-11)
 `placementClicks` table (placementId, day bucket, count — **no user
 identity**, preserving J3) written by `/api/v1/go/[id]`; a
 `/admin/patrocinios` page with impressions/clicks per placement per month.
 The Sheets webhook stays as an optional mirror.
 **Done when:** the admin can answer "what did placement X get in month Y"
 without leaving the app; no per-user rows exist by construction (test).
+**Status:** done — PR-11. See DECISIONS.md "PR-11 / K15 + D4". One new table,
+`placementClicks` (placementId, day, clicks), with no identity column and no
+parameter on `recordClick` to pass one into. Directory listings are counted
+alongside placements — one route serves both. **Impressions are deliberately
+NOT counted**, and therefore neither is CTR: `/api/v1/placements` is cached for
+an hour and precached by the service worker, so counting server requests would
+undercount by an order of magnitude, and the accurate alternative is a
+per-view beacon from the user's device. The page states this in Spanish rather
+than showing a number that needs a caveat. Revisit only if a paying sponsor
+makes CTR a condition.
 
 ### K16 Admin metrics — **S** [OPUS]
 `/admin/metricas`: onboarding completion by step, invites sent→accepted,
@@ -433,11 +443,19 @@ in-session before push, auto-merge on green. Dependency order:
 
 Estimated Actions cost: ~8 runs ≈ 40–70 minutes total.
 
+> **Post-launch batch, 2026-08-21 (PR-11):** K15 and D4's
+> `/admin/contenido` are built. What remains uncoded in this document is
+> K13b (blocked on the `next-auth` v5 stable release) and K17 (blocked on the
+> one-app-vs-two founder decision, D7). Everything else on the critical path
+> is a founder task — see `docs/HANDOFF-2026-08-21.md` §3.
+
 **v1.0 cut line (supersedes §4's):** everything merged today + PR-1…PR-5
 + PR-8, plus K5 within PR-4. K19 (language) and K20 (Q&A) ship in v1.0 if
 ready, v1.1 otherwise — they must not block the Play submission. K15
 (sponsor reporting), K17 (postpartum), `/admin/contenido` (review-debt
-page) and K13b are post-launch.
+page) and K13b are post-launch — K15 and `/admin/contenido` landed in
+PR-11 (2026-08-21), ahead of launch rather than after it, because they were
+the only remaining unblocked code work.
 
 **Founder tasks in parallel (unchanged + new):** Meta verification (K12);
 native Guaraní reviewer for K19-L0; the one-app-vs-two decision for K17;

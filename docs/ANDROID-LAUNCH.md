@@ -213,6 +213,14 @@ Row by row, with the thing that makes each answer defensible:
   info, because the row is `(week, content_id, day, count)` with nothing to
   join it to. `lib/stats/contentStats.test.ts` asserts the whole POST shape, so
   this answer stays true by test rather than by memory.
+- **App interactions, second row — the sponsor click counter (K15).** Declare
+  it under the same row and for the same reason: `placementClicks` is
+  `(placement_id, day, clicks)`, there is no identity column, and
+  `recordClick` has no parameter to pass a user, a session or an IP into.
+  `lib/server/placementClicks.test.ts` asserts that shape, so this answer also
+  stays true by test rather than by memory. It does **not** move any other row
+  on this form — in particular it does not touch Approximate location, which
+  is the next bullet.
 - **Approximate location — still no**, and this is J3's win that survives. See
   below.
 
@@ -227,7 +235,10 @@ back **only the last one**. The first three stay gone, and not for the badge:
   per-department cache would ever be. That is worth more than the badge was.
 - `/go`'s attribution is a fire-and-forget redirect to `wa.me`. Sending a
   sponsor a trimester tells them a health fact about whoever just tapped, which
-  ARCHITECTURE.md §4.6 rules out independently of any Play form.
+  ARCHITECTURE.md §4.6 rules out independently of any Play form. **K15 counts
+  that tap and does not change this**: the count is of the listing id, per
+  calendar day, and a sponsor asking for clicks by department is answered from
+  the directory itself, where every listing already has one.
 
 So: **"Approximate location: not collected" is still an honest answer**, and it
 is the one row of this table that is honest by construction rather than by

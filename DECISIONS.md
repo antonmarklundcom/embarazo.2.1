@@ -3663,3 +3663,120 @@ It also says the thing users get wrong in the other direction: **data that only
 ever lived on the phone was never ours to delete.** Someone who used the app
 without an account is told to clear the site data or uninstall, rather than
 being invited to write to us about rows that do not exist.
+
+---
+
+## PR-11 / K15 + D4 — what a sponsor bought, and what the app is hiding
+
+Two post-launch items from the round-2 addendum, built together because they
+are the same page twice: both answer "what is actually there?" for a founder
+who currently has to guess. K15 (§6, D3) is sponsor click reporting; D4's
+`/admin/contenido` is the review-debt page the no-editor-role decision promised.
+
+Neither is on the v1.0 cut line, and neither is blocked on anything. That is
+the whole reason they are here: the rest of the plan's remaining code work
+waits on an upstream release (K13b) or on a founder decision (K17), so this was
+what could honestly be built.
+
+### The second table with no identity
+
+`placementClicks` is `(placementId, day, clicks)` and that is the entire row.
+It is `contentStats`'s shape on purpose, and the schema header now names both
+of them as the app's complete list of aggregate tables, with a pinned test that
+fails when a third one appears.
+
+J3 spent real product value removing `week` and `department` from `/api/v1/go`,
+and K5 was careful to restore the week to `/api/v1/stats` **and nowhere else**.
+Adding a click counter is exactly the change that would put them back through
+the side door — "just the department, so sponsors can see where their clicks
+come from" is a sentence somebody will say, and it means storing a woman's
+coarse location against a timestamped action. So `recordClick(database, id,
+now)` has no parameter to pass it into. The signature is the enforcement: a
+caller who wants to attach anything has to change it, which is the moment
+somebody should have to argue for it out loud.
+
+A sponsor asking for clicks by department is still answerable — every directory
+listing already has one — without the *user's* department ever travelling.
+
+### The tap is never slower for the counter
+
+`countClick` is fire-and-forget: not awaited, failures swallowed, and a no-op
+with no `DATABASE_URL`. A woman tapping WhatsApp on a sanatorio's listing is
+mid-errand, possibly a worried one. A counter that adds latency to that tap —
+or 500s it when the database is down — has inverted its own importance. The
+Sheets webhook stays alongside it as an optional mirror (§6): it works, and a
+founder with a spreadsheet open should not have it taken away on the day the
+in-app page ships.
+
+### Impressions are not counted, and the page says so
+
+§6 K15 asks for "impressions/clicks per placement per month". **Clicks ship;
+impressions do not**, and this is a deliberate deviation rather than an
+oversight.
+
+There is no honest way to count them here. `/api/v1/placements` is cached for
+an hour by the browser *and* precached by the service worker — that is what
+makes the resources block work offline — so a woman who sees a sponsor's card
+every day for a week generates roughly one server request. Counting requests
+would report her as one impression and undercount by an order of magnitude, per
+sponsor, unevenly. The only accurate alternative is a beacon fired from her
+device each time a card scrolls into view: a new write path, a new rate limit,
+and a new per-view tracking surface on a pregnancy app — bought to produce a
+denominator.
+
+So `/admin/patrocinios` reports clicks and states in Spanish, on the page, that
+impressions are not counted and why. A sponsor asking for CTR gets an honest
+"we count taps, here is the number" instead of a ratio we would have to caveat
+anyway. If impressions ever matter enough to pay for, they are their own task
+with their own data-contract classification.
+
+The page also says the days are UTC. A click at 21:30 in Asunción lands in the
+next day's bucket, and on the last day of a month, in the next month's. That is
+the skew `contentStats` already has; stating it on the page is cheaper than a
+timezone the whole app would have to agree on.
+
+### `/admin/contenido`: the gates were working and saying nothing
+
+D4 declined an editor role and settled that content stays in git — build-time
+validation and offline precache are the point, and a CMS-backed article can
+have neither. What it left behind is a silence: `publishedOnly` hides an
+invented sanatorio with a dead +595 number, `reviewedOnly` hides a price nobody
+signed off, and neither says a word. The screen just renders its empty state.
+K18 made those states honest, but an honest empty screen still cannot tell the
+founder that eleven real listings would light it up.
+
+The page reports, per collection: how many entries exist, how many users can
+see, and which gate is holding the rest — "faltan datos reales" versus "falta
+que la revisora médica los firme", which are two different people to call. It
+sorts fully-dark surfaces first, because a screen with nothing on it is a worse
+problem than one missing three of twenty entries. It also counts the weekly
+hero renders from the filesystem, which is the one piece of content debt that
+does not look like content debt: `WeekHeroImage` falls back to a coloured block
+with the week number, renders fine, and never complains — while being the home
+screen's LCP element on every phone.
+
+Two properties keep it honest:
+
+- **It reuses the gates' own functions.** `isPlaceholderRecord` and
+  `isUnreviewed`, not a second idea of what "looks unfinished" means. A report
+  with its own copy would drift on the first change to either gate, and it
+  would drift in the direction that matters — saying "publicado" about
+  something no user can see, so the founder stops looking for the reason the
+  screen is empty. Tests assert the counts equal `PUBLISHED_*.length`.
+- **There is no button on it.** No approve, no publish, no override. An entry
+  lights up when somebody edits the JSON in git. A page that could publish
+  would be the editor role D4 declined, arriving through the back door — and
+  it would publish content that was never validated at build time and never
+  entered the precache.
+
+Adding a `lib/seed/*.json` file with no row on this page fails
+`contentDebt.test.ts`, in the same style as `TABLE_DISPOSITION` and
+`ADMIN_ACTIONS`: the failure lands on whoever adds the collection, which is the
+only cheap moment to decide what it means.
+
+### Both modules joined the admin source scan on the day they were written
+
+`lib/server/admin.test.ts` now scans four server modules instead of two.
+K16's comment about doing this "the only time adding it is free" applies again;
+the exemption from the `requireAdmin` rule is now a named list rather than two
+`||`'d identifiers, so the fifth module does not have to reopen the assertion.

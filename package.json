@@ -2,7 +2,7 @@
   "name": "mibebe-app",
   "version": "2.1.0",
   "private": true,
-  "description": "Mi Bebé — privacy-by-design pregnancy PWA for Paraguay",
+  "description": "Mi Beb\u00e9 \u2014 privacy-by-design pregnancy PWA for Paraguay",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -20,7 +20,8 @@
     "gen:og": "node scripts/gen-og.mjs",
     "gen:screenshots": "node scripts/gen-screenshots.mjs",
     "prebuild": "node --experimental-strip-types scripts/build-article-index.mts",
-    "gen:article-index": "node --experimental-strip-types scripts/build-article-index.mts"
+    "gen:article-index": "node --experimental-strip-types scripts/build-article-index.mts",
+    "gen:guarani-review": "node --experimental-strip-types scripts/gen-guarani-review.mts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",

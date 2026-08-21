@@ -360,7 +360,9 @@ protects against.
 - **L1:** homegrown typed dictionary (`lib/i18n/dict.ts`, missing key =
   type error; **not** next-intl, **no** locale routes, **no** middleware);
   `locale` field on the Dexie profile (syncs free); toggle in Ajustes
-  switching ~100 core navigation/safety strings; locale-parity test in the
+  switching the core navigation/safety strings (the estimate was ~100; the
+  dictionary shipped with 45 keys, and the app carries 78 Guaraní phrases in
+  total — see `docs/GUARANI-REVIEW.md`); locale-parity test in the
   repo's source-scan style; all locales ship in one chunk (~25 KB gz each).
 **Done when:** toggle works offline; parity test green; 42-week content
 untouched (stays es-PY); `<html lang>` follows the locale.

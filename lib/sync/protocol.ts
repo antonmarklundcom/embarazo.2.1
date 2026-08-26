@@ -40,7 +40,10 @@ export const SyncRecordSchema = z
     deletedAt: timestampSchema.nullable().optional(),
     // Opaque to the server. Validated for shape and size only — never for
     // content, and never queried into (ARCHITECTURE.md §4.3).
-    payload: z.record(z.unknown()).nullable().optional(),
+    // zod 4 removed the single-argument `z.record(valueSchema)` form; the key
+    // schema is now required. `z.string()` is the same key contract v3 applied
+    // implicitly, so the accepted wire shape is unchanged.
+    payload: z.record(z.string(), z.unknown()).nullable().optional(),
     // Populated by E1 (family sharing). Accepted now so adding sharing does
     // not change the wire format; the A3 client always leaves it unset.
     pregnancyId: z.string().min(1).max(64).nullable().optional(),

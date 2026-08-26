@@ -4007,3 +4007,77 @@ blocked upstream. Not forced.**
 
 This also holds **eslint 9→10**, which drags `eslint-config-next` — pinned to
 the Next major — along with it.
+
+## PR-16 — vitest 2→4, and three majors that are not ours to take
+
+Third of the deferred majors from PR-13, and the mildest: **935 tests passed on
+the first run under vitest 4, with no config change and no test rewritten.**
+Two majors of a test runner turned out to be a version bump.
+
+The one thing the upgrade surfaced was a warning, not a failure:
+
+> Your Vite config uses features that are unsupported by `configLoader:
+> 'native'` … ESM syntax in a file loaded as CommonJS (vitest.config.ts)
+
+`vitest.config.ts` was written as ESM and loaded as CommonJS, which works today
+and will not once Vite's native config loader becomes the default. The fix is
+the rename it always wanted: **`vitest.config.ts` → `vitest.config.mts`**, with
+`__dirname` (CommonJS-only) replaced by `import.meta.dirname` — available since
+Node 20.11, and `engines` already demands >=22.6.0.
+
+It was worth doing properly rather than setting
+`VITE_CONFIG_NATIVE_IGNORE_WARNING`: the two aliases in that file are
+load-bearing. `@/` is every import in the suite, and the `server-only` stub is
+the only reason `lib/server/*` can be unit-tested at all (BUILD-PLAN A1). The
+evidence they still resolve is all 85 files passing, not a reading of the diff.
+
+### One thing found and deliberately not fixed
+
+The rename puts the config alongside `scripts/build-article-index.mts`,
+`scripts/gen-guarani-review.mts` and `scripts/validate-content.mts` — and
+**none of those are typechecked**. `tsconfig.json` includes `**/*.ts`, which
+does not match `.mts`. So the config left `tsc`'s coverage by being renamed,
+which is worth knowing, though it lands it in the same bucket as every other
+`.mts` file in the repo rather than creating a new gap.
+
+Extending `include` with `**/*.mts` was tried, and it surfaces **two real
+pre-existing type errors** in `scripts/gen-guarani-review.mts`: `.gn` is read
+off a union whose members do not all carry it — the two cheers that ship with
+no Guaraní on purpose (PR-12). That is a latent bug in a generator script, it
+is unrelated to vitest, and it sits in the Guaraní content the founder gate
+covers. Fixing it inside a dependency migration would be widening the PR, so it
+is written down here instead. **It is a genuine follow-up, not a nit.**
+
+### The three majors this batch could not take, and why
+
+PR-13 listed eight. This batch and PR-14/PR-15 took zod, Tailwind and vitest.
+The other three are blocked upstream — checked against the registry on
+2026-08-26, not assumed:
+
+| Bump | Blocker | Not forceable because |
+|---|---|---|
+| **Next 15→16** | `next-auth` v5 is still `5.0.0-beta.32` (K13b), unchanged since 2026-07-20; `latest` is the v4 line at 4.24.15 | `lib/server/auth.ts` uses the v5-only API (`NextAuth`, `NextAuthConfig`, `next-auth/providers/*`), so there is no downgrade-to-stable escape either |
+| **TypeScript 5→7** | `@typescript-eslint` **8.68.0 — the newest stable** — peers `typescript@">=4.8.4 <6.1.0"` | `npm install` fails ERESOLVE. Forcing it breaks `npm run lint`, which is a CI gate; the only way through is disabling type-aware linting |
+| **eslint 9→10** | `eslint-config-next@15.5.23` peers `eslint@"^7.23.0 \|\| ^8.0.0 \|\| ^9.0.0"` — no v10 | Pinned to the Next major, so it is blocked behind Next 16, which is blocked behind `next-auth` |
+
+Two details worth recording because they are not obvious from the table.
+
+**TypeScript 7 is not the migration anyone was expecting.** `typescript@7.0.2`
+is the **native Go port** — its dependency list is a set of per-platform
+binaries (`@typescript/typescript-linux-x64` and friends), not the JavaScript
+compiler that has shipped since 1.0. PR-13 filed this as "new compiler, expect
+strictness changes". The real obstacle is that the tooling ecosystem has not
+caught up: nothing that consumes TypeScript's JS API supports it yet. This one
+is **independent of `next-auth`** and will unblock on typescript-eslint's
+schedule, not Next's.
+
+**PR-13's reasoning about eslint was right, for a slightly different reason
+than stated.** It said eslint 10 "drags `eslint-config-next` with it, which is
+pinned to the Next major — so this is really part of the Next 16 task". True.
+But `@typescript-eslint` 8.68.0 **already** peers `eslint@"^10.0.0"`, so the
+typescript-eslint half is ready; `eslint-config-next` is the sole blocker.
+
+So the honest summary for whoever picks this up: **one upstream release —
+`next-auth` v5 stable — unblocks Next 16 and eslint 10 as a single combined
+task.** TypeScript 7 waits on a different clock. Nothing else in the PR-13 list
+remains.

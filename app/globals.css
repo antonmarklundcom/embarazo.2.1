@@ -1,6 +1,43 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* "Mi Bebé" design language — docs/REDESIGN-PLAN.md §1 (canvas 1d).
+   Moved here from tailwind.config.ts by the Tailwind 3→4 migration: v4 is
+   CSS-first, and `@theme` is where tokens live now. Every token below kept its
+   value AND its generated class name, so `bg-petrol`, `text-sand-text`,
+   `rounded-card` and `shadow-soft` all still mean what they meant.
+
+   `@theme` extends the default theme rather than replacing it, which is the
+   same semantics as v3's `theme.extend`. */
+@theme {
+  --color-cream: #FBF7F1;
+  --color-petrol: #2F5D50;
+  --color-petrol-dark: #24463D;
+  --color-terracotta: #C96342;
+  /* rose/sage stay mid-tone: used as text color in ~20 places. */
+  --color-rose: #E0A4A0;
+  --color-sage: #6F8A66;
+  --color-ink: #322E29;
+  --color-muted: #7A7369;
+  --color-line: #EDE5DA;
+  --color-whatsapp: #25D366;
+
+  --color-sand-bg: #F8E2CB;
+  --color-sand-text: #8A5A2E;
+
+  --color-pastel-rosa: #F3DAD4;
+  --color-pastel-celeste: #D9E5EC;
+  --color-pastel-salvia: #DFE8D8;
+  --color-pastel-lavanda: #E6E0F0;
+  --color-pastel-arena: #F8E2CB;
+
+  --radius-card: 16px;
+  --radius-tile: 14px;
+
+  --font-sans: var(--font-nunito), system-ui, sans-serif;
+
+  --shadow-soft:
+    0 1px 3px rgba(42, 39, 36, 0.06), 0 1px 2px rgba(42, 39, 36, 0.04);
+}
 
 :root {
   color-scheme: light;

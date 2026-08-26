@@ -4008,6 +4008,97 @@ blocked upstream. Not forced.**
 This also holds **eslint 9→10**, which drags `eslint-config-next` — pinned to
 the Next major — along with it.
 
+## PR-15 — Tailwind 3→4, and proving a redesign did not happen by accident
+
+Second of the deferred majors from PR-13. That entry called this one "cheap to
+get wrong in a way that only shows on a screen nobody opened", which is exactly
+right and is the whole reason this PR is shaped the way it is.
+
+### The rewrite
+
+v4 is CSS-first, so `tailwind.config.ts` is **deleted** and its token set moves
+into an `@theme` block in `app/globals.css`:
+
+- `@tailwind base/components/utilities` → `@import "tailwindcss"`.
+- `colors` → `--color-*`, `borderRadius` → `--radius-*`, `fontFamily` →
+  `--font-*`, `boxShadow` → `--shadow-*`. Every token kept its value **and its
+  generated class name**: `bg-petrol`, `bg-petrol-dark`, `text-sand-text`,
+  `bg-pastel-rosa`, `rounded-card`, `rounded-tile`, `shadow-soft` all still
+  mean what they meant, so not one `className` in the app changed.
+- `@theme` extends the default theme, which is the same semantics as v3's
+  `theme.extend` — not a replacement, so the stock palette and scales survive.
+- `postcss.config.mjs` now loads `@tailwindcss/postcss`, and **`autoprefixer`
+  is removed from the dependency list**, not left in as a no-op: v4 does its
+  own prefixing through Lightning CSS.
+- The `content` globs are gone. v4 detects sources itself; the check that this
+  actually worked is below, because a missed source directory shows up as
+  utilities silently not being emitted.
+
+### Verifying it, which is the point
+
+A green build proves nothing here — it would compile just as happily with half
+the colours wrong. So the check is a **computed-style diff in a real browser**:
+12 screens at a 390px viewport, ~30 properties on every element carrying a
+class, captured against a Tailwind 3 build and a Tailwind 4 build.
+
+**918 elements. 26,622 property values compared.**
+
+| | |
+|---|---|
+| elements missing after | **0** |
+| elements newly appearing | **0** |
+| **rendered box (w×h) changed** | **0** |
+| **border-width changed** | **0** |
+
+Zero box changes across every element on every screen is the strong result: it
+means the layout is not merely similar, it is identical. That also settles the
+`content`-globs question — a utility that stopped being emitted would move a
+box.
+
+What *did* change, and why none of it is a regression:
+
+- **`space-y-*` moved from `margin-top` on later siblings to `margin-bottom` on
+  earlier ones** (~120 elements). Reads alarming in a raw diff. It is v4's new
+  `:not(:last-child)` implementation, and the zero-box-change result is the
+  proof that the rendered rhythm is unchanged.
+- **Preflight's default border colour went from `gray-200` to `currentColor`**
+  (686 elements). This is v4's most-cited silent regression, and it is inert
+  here: every one of those elements has `border-width: 0`. A scan for a bare
+  `border` utility with no `border-<colour>` beside it found **none** — the
+  codebase consistently writes `border border-line`.
+- **Opacity modifiers re-express as `oklab()`** — `border-sage/30`,
+  `border-terracotta/20`, `border-black/10`, `text-ink/90` (42 elements, the
+  only visible borders that changed colour). Same colour, different notation.
+  Checked by compositing both notations over the app's cream background in a
+  canvas and reading the pixels back: **209,214,199 vs 209,214,199** and so on
+  for all four — byte-identical.
+- **`rounded-full` is `calc(infinity * 1px)`** rather than `9999px`. Both clamp
+  to a pill.
+- **`box-shadow` gains two empty `rgba(0,0,0,0) 0 0 0 0` slots** (v4's ring
+  layers). The two visible `shadow-soft` layers are untouched.
+
+### The one thing that is a decision, not a fix
+
+**Tailwind 4 requires Chrome 111+, Safari 16.4+, Firefox 128+.** It is built on
+`@property` and `color-mix()`, and there is no compatibility mode — this is not
+a flag that can be turned off.
+
+That matters more here than it would elsewhere. Mi Bebé ships as a **TWA**
+(`ANDROID-LAUNCH.md` §0), so the UI renders in whatever Chrome is on the user's
+phone, and the audience is mid-range Android on Paraguayan mobile data. Chrome
+111 shipped March 2023 and Android's Chrome auto-updates, so in practice this
+should be effectively everyone — but on a device where it is not, the failure
+mode is not a slightly-off shade. `@property`-backed custom properties and
+`oklab()` colours simply do not resolve, and the screen degrades badly.
+
+**This is the founder's number to accept, not the builder's.** Nothing in the
+code can hedge it. The relevant question is what the Play Console's device/
+Android-version breakdown says once there is one, and §3.9's "measure on a real
+phone" should now also mean "on the oldest phone worth supporting".
+
+The migration is complete and verified either way; this is a note on who owns
+the consequence, not an unfinished edge.
+
 ## PR-16 — vitest 2→4, and three majors that are not ours to take
 
 Third of the deferred majors from PR-13, and the mildest: **935 tests passed on

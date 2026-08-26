@@ -27,7 +27,7 @@
     "@auth/drizzle-adapter": "^1.11.3",
     "@tanstack/react-query": "^5.101.4",
     "dexie": "^4.4.5",
-    "dexie-react-hooks": "^1.1.7",
+    "dexie-react-hooks": "^4.4.0",
     "drizzle-orm": "^0.45.2",
     "mysql2": "^3.23.3",
     "next": "^15.5.23",

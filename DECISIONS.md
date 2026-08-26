@@ -3884,6 +3884,130 @@ run changes nothing. CI has always set it on the build step. A local run that
 skips it is testing a different binary, which is worth knowing before somebody
 "fixes" a test that was never broken.
 
+## PR-14 — zod 3→4, and the error messages nothing was watching
+
+First of the deferred majors from PR-13, in the order that entry recommended.
+Next 16 was checked first and skipped; see the end of this entry.
+
+### The code changes are three lines
+
+zod 4 needed exactly three source edits, which is the good news:
+
+- **`lib/sync/protocol.ts`** — `z.record(z.unknown())` no longer exists. v4
+  requires the key schema: `z.record(z.string(), z.unknown())`. That is the
+  same contract v3 applied implicitly, so the accepted wire shape is unchanged.
+- **`lib/content/schemas.ts`** — `departmentSlugSchema` used
+  `.refine(check, (value) => ({ message }))`. v4 removed the function form of
+  the second argument; the replacement is an `error` callback that receives the
+  *issue* rather than the value, so the slug is `issue.input`. Message text
+  preserved verbatim.
+- **`package.json`** — `zod` `^3.24.1` → `^4.4.3`.
+
+Nothing else. `.strict()`, `.refine()`, `z.coerce`, `z.enum`, `z.infer` and
+`safeParse` all still mean what they meant.
+
+One incidental win in the lockfile: `@serwist/build`, `@serwist/next` and
+`@serwist/webpack-plugin` were each carrying their **own nested copy of zod
+4.4.3**, because the root was pinned to 3. Three duplicate copies collapse into
+the root one. The repo was already installing zod 4 three times over in the
+service-worker toolchain — it just was not the copy the app imported.
+
+### The part worth actually reading
+
+**927 tests passed on the first run, before any of the verification below.**
+That is the trap. Not one test in this repo asserted on a validation *message*,
+so the entire suite was blind to the thing PR-13 flagged as this migration's
+main risk — and a green suite would have been reported as a clean migration.
+
+So the migration was verified differentially instead: a probe ran **104
+malformed inputs** through the repo's real schemas — content, sync, community,
+stats — under zod 3 and zod 4, and the two outputs were diffed.
+
+The result that matters:
+
+> **Zero accept/reject differences.** Across all 104 cases, nothing that
+> validated under v3 fails under v4, and nothing rejected under v3 is accepted
+> under v4. For a health app whose validation layer is the boundary around
+> every piece of data on the device, that is the property worth proving, and it
+> holds.
+
+Including the coercion edge cases that looked most likely to move:
+`since: ""` → `0`, `since: null` → `0`, `since: true` → `1`, `limit: "5"` → `5`
+all behave identically.
+
+What *did* change is text and issue codes — 90 of the 104 cases:
+
+| | zod 3 | zod 4 |
+|---|---|---|
+| missing value | `Required` | `Invalid input: expected string, received undefined` |
+| short string | `String must contain at least 15 character(s)` | `Too small: expected string to have >=15 characters` |
+| bad enum | code `invalid_enum_value` | code `invalid_value` |
+| bad regex | code `invalid_string` | code `invalid_format` |
+| unknown key | `Unrecognized key(s) in object: 'zzz'` | `Unrecognized key: "zzz"` |
+
+`invalid_type` issues also **no longer carry `received`**. Nothing in this repo
+reads `issue.received` or switches on an issue `code` — `formatContentIssues`
+and the two routes below use `path` and `message` only — so the renames are
+inert here. They are written down because the next person to reach for
+`issue.code` should know it moved.
+
+One behavioural nuance, harmless but real: **v4 reports more issues than v3 for
+some inputs.** A non-string question trips the type check *and* the length
+check, where v3 stopped at the first. The routes read `issues[0]`, and the
+first issue is still the type error, so the ordering holds — but it is now
+load-bearing in a way it was not before, and there is a test for it.
+
+### Why any of this reaches a user
+
+`/api/v1/mis-preguntas` answers a bad body with
+`parsed.error.issues[0]?.message`, and `components/CommunityQuestions.tsx` does
+`setError(body.error)`. **The string zod picks is the UI copy** — rendered to a
+pregnant woman in a Spanish-language app.
+
+The realistic failures are safe, and were verified one at a time:
+`questionSchema` carries hand-written Spanish for `.min()` and `.max()`, and
+both messages survive the migration byte-identical. Only the type failures fall
+back to zod's English, and those are a malformed client rather than a person
+typing — English there is pre-existing, not a regression this PR introduces.
+
+### `lib/invariants/validationMessages.test.ts` — new
+
+The gap was that nothing enforced the above. Eight tests now do, and the rule is
+deliberately **not** "these issue codes" — codes are zod's to rename, and
+pinning them would just fail on the next major for no reason. The rule is *a
+message a user can see is ours, written in Spanish, and does not come from
+zod's default catalogue*, checked against a regex covering both majors'
+defaults.
+
+The guard was verified to actually fire rather than pass vacuously:
+`answerSchema` has no custom message, and its v4 default
+(`Too small: expected string to have >=15 characters`) matches the regex, which
+is what makes a green result on the schemas that *do* carry Spanish meaningful.
+
+`answerSchema` is left in English deliberately: it is the admin's answer box in
+`/admin/preguntas`, not a user surface. Worth Spanish eventually; not worth
+smuggling into a dependency migration.
+
+### Next 15→16 was checked first, and is still blocked
+
+PR-13 deferred Next 16 on K13b — `next-auth` still being an unreleased beta.
+Re-checked 2026-08-26 against the registry:
+
+- `next-auth@latest` is **4.24.15**, still the v4 line.
+- `next-auth@beta` is **5.0.0-beta.32** — the exact version already pinned here,
+  unchanged since 2026-07-20.
+
+`lib/server/auth.ts` imports `NextAuth`, `NextAuthConfig` and
+`next-auth/providers/*`, which is the v5 API and does not exist in v4, so there
+is no "downgrade to stable" escape either. beta.32 *declares*
+`next: ^16.0.0` in its peer range, so the install would succeed — but a declared
+range on an unreleased beta is not a release, and K13b's actual argument (do not
+move the framework under an unreleased auth beta) is unchanged. **Still
+blocked upstream. Not forced.**
+
+This also holds **eslint 9→10**, which drags `eslint-config-next` — pinned to
+the Next major — along with it.
+
 ## PR-15 — Tailwind 3→4, and proving a redesign did not happen by accident
 
 Second of the deferred majors from PR-13. That entry called this one "cheap to

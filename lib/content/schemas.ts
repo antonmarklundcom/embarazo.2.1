@@ -49,12 +49,13 @@ export const paraguayPhoneOptionalSchema = paraguayPhoneSchema.optional();
 /** A department slug that exists in lib/departments.ts. */
 export const departmentSlugSchema = z
   .string()
-  .refine(
-    (slug) => DEPARTMENT_SLUGS.has(slug),
-    (slug) => ({
-      message: `departamento desconocido: "${slug}" — tiene que ser uno de los 18 departamentos de lib/departments.ts`,
-    }),
-  );
+  .refine((slug) => DEPARTMENT_SLUGS.has(slug), {
+    // zod 4 removed the `(value) => ({ message })` second-argument form. The
+    // replacement is an `error` callback, which receives the issue rather than
+    // the value — `issue.input` is the slug that failed. Same text as before.
+    error: (issue) =>
+      `departamento desconocido: "${issue.input}" — tiene que ser uno de los 18 departamentos de lib/departments.ts`,
+  });
 
 /** `YYYY-MM-DD`, and must round-trip through Date (catches 2026-02-30 etc). */
 export const isoDateSchema = z

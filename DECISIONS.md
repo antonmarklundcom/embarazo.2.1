@@ -4172,3 +4172,61 @@ So the honest summary for whoever picks this up: **one upstream release —
 `next-auth` v5 stable — unblocks Next 16 and eslint 10 as a single combined
 task.** TypeScript 7 waits on a different clock. Nothing else in the PR-13 list
 remains.
+
+## PR-17 — dexie-react-hooks 1→4, which is one bump wearing three majors
+
+Last of the deferred majors from PR-13, and the one that entry was most wary
+of: *"Dexie is the source of truth for every piece of health data on the
+device. This one needs its own offline e2e pass, not a lockfile diff."*
+
+That wariness was right about the risk and wrong about the size, and the
+version list is why:
+
+```
+1.0.7 · 1.1.0 · … · 1.1.6 · 1.1.7 · 4.2.0 · 4.4.0
+```
+
+**There is no 2.x and no 3.x.** dexie-react-hooks jumped its major from 1 to 4
+to line up with Dexie's, which is already at 4. So "1→4" reads as three majors
+of breaking changes in a Dependabot list and is in fact a single
+version-alignment bump. The repo is on `dexie@4.4.5`, comfortably inside v4's
+`dexie >=4.2.0-alpha.1 <5.0.0` peer range.
+
+### The property that actually mattered
+
+`useLiveQuery` is used in **20 files** across the offline layer. Its signature
+in 4.4.0:
+
+```ts
+useLiveQuery<T>(querier: () => Promise<T> | T, deps?: any[]): T | undefined
+useLiveQuery<T, TDefault>(querier, deps, defaultResult): T | TDefault
+```
+
+Byte-identical to 1.1.7, and the `T | undefined` is the load-bearing part:
+**every one of those 20 call sites treats `undefined` as "still loading"**. Had
+v4 switched to a sentinel value or to Suspense, all twenty loading states would
+have broken silently — and they would have broken *on a slow phone first*,
+which is the failure nobody sees in a container. v4 does add
+`useSuspendingLiveQuery` as a separate export, which is the right way to ship
+that change and is not what the existing call sites import.
+
+### Verified where it counts
+
+A clean `tsc` proves the types line up and nothing about IndexedDB. The unit
+suite does not touch `useLiveQuery` at all. So the gate that matters here is
+the Playwright suite, and specifically `e2e/sync.spec.ts`, which drives real
+reads and writes through the hook:
+
+- an offline edit reaching a second device on reconnect
+- a deletion propagating instead of coming back
+- the app working with no account and no sync server at all
+- a local-only user's data uploading once when they sign in
+
+Those are the offline-mode paths the handoff asks for, and they are the only
+place in the repo where the hook is exercised against a real IndexedDB.
+
+One thing to know before reading a red run here: §5 of the handoff records a
+known flake shape — `net::ERR_ABORTED` when navigating to a `NetworkOnly`
+route around an offline transition, or under parallel load. A spec failing
+that way is racing a Dexie write or a service-worker route, and is worth
+checking against before concluding the migration broke something.

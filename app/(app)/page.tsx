@@ -112,7 +112,14 @@ function babyAtWeekLabel(babies: BabyIdentity[], role: Role, week: number): stri
 }
 
 import { hasOnboardingDraft } from "@/lib/onboarding/draftStorage";
+import { siteParamsToAnswers } from "@/lib/onboarding/siteParams";
+import type { OnboardingAnswers } from "@/lib/onboarding/progress";
 import { INVITE_CODE_PARAM } from "@/lib/sharing/inviteLink";
+
+// SITE-PLAN-EMBARAZO-COM-PY.md §5.3 — params the marketing site's deep
+// links may carry. Stripped from the URL once read (below), same as any
+// one-time landing param.
+const SITE_PARAM_NAMES = ["w", "fpp", "fum", "modo"];
 
 import {
   companionViewOf,
@@ -140,6 +147,24 @@ export default function InicioPage() {
       INVITE_CODE_PARAM,
     );
     if (found) setInviteCode(found.toUpperCase());
+  }, []);
+
+  // SITE-PLAN-EMBARAZO-COM-PY.md §5.3 — the marketing site's CTA deep link
+  // (`?w=`, `?fpp=`, `?fum=`, `?modo=planeando`). Read once from `window`,
+  // same reasoning as the invite code above (statically rendered route,
+  // nothing above the fold needs it) — then dropped from the URL before
+  // onboarding can write anything to storage, per the plan's requirement.
+  const [siteAnswers, setSiteAnswers] = useState<
+    Partial<OnboardingAnswers> | undefined
+  >(undefined);
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const patch = siteParamsToAnswers(url.search);
+    if (patch) setSiteAnswers(patch);
+    if (SITE_PARAM_NAMES.some((name) => url.searchParams.has(name))) {
+      SITE_PARAM_NAMES.forEach((name) => url.searchParams.delete(name));
+      window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+    }
   }, []);
   // K1: onboarding now writes the profile row *before* its last steps (the
   // account, the baby's name, the invite), so "has a profile" stopped being the
@@ -177,7 +202,13 @@ export default function InicioPage() {
   }
 
   if (flow === "active") {
-    return <Onboarding onDone={() => setFlow("done")} initialCode={inviteCode} />;
+    return (
+      <Onboarding
+        onDone={() => setFlow("done")}
+        initialCode={inviteCode}
+        initialSiteAnswers={siteAnswers}
+      />
+    );
   }
 
   // K2 — a companion's home screen is the pregnancy they are accompanying.

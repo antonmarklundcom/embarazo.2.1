@@ -78,6 +78,7 @@ type Step = OnboardingStep;
 export function Onboarding({
   onDone,
   initialCode,
+  initialSiteAnswers,
 }: {
   onDone: () => void;
   /**
@@ -86,6 +87,13 @@ export function Onboarding({
    * "¿cómo querés usar Mi Bebé?" by tapping it.
    */
   initialCode?: string;
+  /**
+   * A prefill from the marketing site's deep link (SITE-PLAN-EMBARAZO-COM-PY.md
+   * §5.3 — `?w=`, `?fpp=`, `?fum=`, `?modo=planeando`), already parsed by
+   * `lib/onboarding/siteParams.ts`. Only *values* are prefilled — she still
+   * walks through mode/role/date like anyone else, and can correct them.
+   */
+  initialSiteAnswers?: Partial<OnboardingAnswers>;
 }) {
   const [answers, setAnswers] = useState<OnboardingAnswers>(emptyAnswers);
   const [hydrated, setHydrated] = useState(false);
@@ -126,6 +134,17 @@ export function Onboarding({
         : current,
     );
   }, [hydrated, initialCode]);
+
+  // Same guard as the invite code above: a prefill from the site only ever
+  // applies to a fresh flow, never on top of an in-progress one (including
+  // one just started by an invite code, which is why this runs after it and
+  // does not touch `step` or `invited`).
+  useEffect(() => {
+    if (!hydrated || !initialSiteAnswers) return;
+    setAnswers((current) =>
+      isBlankAnswers(current) ? { ...current, ...initialSiteAnswers } : current,
+    );
+  }, [hydrated, initialSiteAnswers]);
 
   useEffect(() => {
     if (!hydrated) return;

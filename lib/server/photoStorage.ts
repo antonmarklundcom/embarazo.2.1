@@ -117,7 +117,7 @@ export async function deleteObject(
         expiresIn: 60,
         now: new Date(),
       }),
-      { method: "DELETE" },
+      { method: "DELETE", signal: AbortSignal.timeout(10_000) },
     );
     // S3 answers 204 for a delete and 204 again for an object that was never
     // there. 404 is what some compatible implementations send instead; both

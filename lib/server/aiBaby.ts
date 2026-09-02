@@ -273,6 +273,9 @@ export const geminiModel: ImageModel = async (photos, model, apiKey) => {
           },
         ],
       }),
+      // Image generation can be slow; 60s bounds a hung request rather than
+      // leaving the route (and its process) blocked indefinitely.
+      signal: AbortSignal.timeout(60_000),
     },
   );
 

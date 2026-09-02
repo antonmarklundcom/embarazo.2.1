@@ -253,6 +253,7 @@ export const fetchSender: PushSender = async (endpoint, keys, now) => {
     const res = await fetch(endpoint, {
       method: "POST",
       headers: vapidHeaders(endpoint, keys, {}, now),
+      signal: AbortSignal.timeout(10_000),
     });
     if (res.status === 404 || res.status === 410) return "gone";
     return res.ok ? "sent" : "failed";

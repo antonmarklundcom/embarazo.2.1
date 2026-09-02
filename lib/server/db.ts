@@ -55,6 +55,11 @@ export function db(): Database {
     // that waits beats a large one that gets refused.
     connectionLimit: 5,
     waitForConnections: true,
+    // Bounded queue rather than unbounded: a burst of requests should fail
+    // loudly once the wait line is long, not pile up forever on one process.
+    queueLimit: 20,
+    // Don't let a stalled TCP handshake hang a request indefinitely.
+    connectTimeout: 8_000,
     // Keep BIGINT columns (our epoch-millisecond timestamps) as JS numbers.
     // Every value we store is well inside Number.MAX_SAFE_INTEGER.
     supportBigNumbers: true,

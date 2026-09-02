@@ -49,6 +49,7 @@ function fireAttribution(id: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id, ts: Date.now() }),
     keepalive: true,
+    signal: AbortSignal.timeout(10_000),
   }).catch(() => {});
 }
 

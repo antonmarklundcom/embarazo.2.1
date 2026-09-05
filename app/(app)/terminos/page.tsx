@@ -18,6 +18,10 @@ export default function TerminosPage() {
         <p className="mt-1 text-xs text-muted">
           Última actualización: {LAST_UPDATED}
         </p>
+        <p className="mt-2 text-xs text-muted">
+          Este texto fue redactado con asistencia de inteligencia artificial y
+          todavía no fue revisado por un abogado.
+        </p>
       </header>
 
       <section className="rounded-card border border-terracotta/30 bg-terracotta/5 p-4">

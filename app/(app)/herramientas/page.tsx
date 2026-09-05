@@ -19,6 +19,8 @@ interface Tool {
   desc: string;
   icon: ToolIconName;
   tone: string;
+  /** Shown, but not tappable — "Pronto" badge instead of navigating. */
+  locked?: boolean;
 }
 
 const TOOLS: Tool[] = [
@@ -167,18 +169,20 @@ const TOOLS: Tool[] = [
   },
 ];
 
+// The video gallery is shown either way — locked with a "Pronto" badge until
+// real entries replace the placeholder YouTube ids (Z1, `lib/seed/videos.ts`)
+// — so people know the feature exists rather than never seeing it at all.
 const VIDEOS: Tool = {
   href: "/guias/videos",
   title: "Videos",
   desc: "Galería de videos educativos, filtrable por tema y trimestre.",
   icon: "video",
   tone: "bg-pastel-rosa",
+  locked: PUBLISHED_VIDEOS.length === 0,
 };
 
 export default function HerramientasPage() {
-  // The video gallery stays hidden until real entries replace the placeholder
-  // YouTube ids (Z1, `lib/seed/videos.ts`).
-  const tools = PUBLISHED_VIDEOS.length > 0 ? [...TOOLS, VIDEOS] : TOOLS;
+  const tools = [...TOOLS, VIDEOS];
 
   return (
     <div className="space-y-4">
@@ -196,24 +200,45 @@ export default function HerramientasPage() {
       </header>
 
       <div className="grid grid-cols-3 gap-3">
-        {tools.map((tool) => (
-          <Link
-            key={tool.href}
-            href={tool.href}
-            className="flex min-h-[112px] flex-col items-center justify-start gap-2 rounded-card border border-line bg-white p-3 text-center transition active:scale-[0.97]"
-          >
-            <span
-              className={`flex h-11 w-11 items-center justify-center rounded-full ${tool.tone}`}
+        {tools.map((tool) =>
+          tool.locked ? (
+            <div
+              key={tool.href}
+              aria-disabled="true"
+              className="relative flex min-h-[112px] flex-col items-center justify-start gap-2 rounded-card border border-line bg-white p-3 text-center opacity-60"
             >
-              <ToolIcon name={tool.icon} />
-            </span>
-            <span className="text-[12px] font-extrabold leading-tight text-ink">
-              {tool.title}
-            </span>
-            {/* Kept for screen readers and for anyone who needs the sentence. */}
-            <span className="sr-only">{tool.desc}</span>
-          </Link>
-        ))}
+              <span className="absolute right-2 top-2 rounded-full bg-cream px-2 py-0.5 text-[10px] font-extrabold text-muted">
+                Pronto
+              </span>
+              <span
+                className={`flex h-11 w-11 items-center justify-center rounded-full ${tool.tone}`}
+              >
+                <ToolIcon name={tool.icon} />
+              </span>
+              <span className="text-[12px] font-extrabold leading-tight text-ink">
+                {tool.title}
+              </span>
+              <span className="sr-only">{tool.desc} (disponible pronto)</span>
+            </div>
+          ) : (
+            <Link
+              key={tool.href}
+              href={tool.href}
+              className="flex min-h-[112px] flex-col items-center justify-start gap-2 rounded-card border border-line bg-white p-3 text-center transition active:scale-[0.97]"
+            >
+              <span
+                className={`flex h-11 w-11 items-center justify-center rounded-full ${tool.tone}`}
+              >
+                <ToolIcon name={tool.icon} />
+              </span>
+              <span className="text-[12px] font-extrabold leading-tight text-ink">
+                {tool.title}
+              </span>
+              {/* Kept for screen readers and for anyone who needs the sentence. */}
+              <span className="sr-only">{tool.desc}</span>
+            </Link>
+          ),
+        )}
       </div>
     </div>
   );

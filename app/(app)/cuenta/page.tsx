@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { AccountCard } from "@/components/AccountCard";
 import { SignInCard } from "@/components/SignInCard";
-import { availableProviders, getSession } from "@/lib/server/auth";
+import { availableProviders, getSession, isAuthAvailable } from "@/lib/server/auth";
 
 // BUILD-PLAN A2 — the branded sign-in screen (ARCHITECTURE.md §6).
 //
@@ -30,6 +30,8 @@ function errorMessage(code: string | undefined): string | undefined {
       return "Ese correo ya tiene una cuenta creada con otro método. Entrá con el método que usaste la primera vez.";
     case "AccessDenied":
       return "No pudimos completar el ingreso. Probá de nuevo o seguí sin cuenta.";
+    case "CredentialsSignin":
+      return "Correo o contraseña incorrectos.";
     case "Configuration":
       return "El ingreso con cuenta no está bien configurado en este servidor. Podés seguir usando Mi Bebé sin cuenta.";
     default:
@@ -68,5 +70,11 @@ export default async function CuentaPage({
     );
   }
 
-  return <SignInCard providers={availableProviders()} initialError={error} />;
+  return (
+    <SignInCard
+      providers={availableProviders()}
+      credentialsAvailable={isAuthAvailable()}
+      initialError={error}
+    />
+  );
 }

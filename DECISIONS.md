@@ -4230,3 +4230,71 @@ known flake shape — `net::ERR_ABORTED` when navigating to a `NetworkOnly`
 route around an offline transition, or under parallel load. A spec failing
 that way is racing a Dexie write or a service-worker route, and is worth
 checking against before concluding the migration broke something.
+
+## PR-19 (planned) — founder decision: launch without the reviewer/lawyer gate
+
+Founder decision, 2026-09-05, made explicitly to unblock a launch that does
+not wait on recruiting a gineco-obstetra or getting a lawyer to sign off on
+`/privacidad` and `/terminos`. Recorded here so the reasoning survives
+independent of the PR that implements it.
+
+**What changed:**
+
+- **Disclaimer model, not a named reviewer.** `lib/launchChecks.ts` no longer
+  fails a deployment build over `NEXT_PUBLIC_MEDICAL_REVIEWER` being unset or
+  a placeholder. `MedicalReviewByline` now renders a generic "contenido
+  informativo, no reemplaza la consulta con tu médico" sentence instead of
+  rendering nothing when no reviewer is configured. The env var still exists
+  and, once set to a real name, switches the byline back to "Revisado por
+  {reviewer}" with no other change needed.
+- **What this explicitly does NOT touch, and why:** `ObstetraCard` /
+  `lib/seed/obstetraNotes.ts` (the 42 weekly notes "written in the voice of
+  the gineco-obstetra whose name appears on the card") and
+  `lib/seed/gate.ts`'s `reviewedOnly()` (which hides the D3 food-safety
+  verdicts until each entry carries a real `reviewedBy`) are unchanged and
+  still hidden without a real reviewer. A general disclaimer is honest cover
+  for "we have not had this reviewed"; it is not cover for inventing specific
+  clinical directives (test-timing, "is X safe to eat while pregnant") and
+  publishing them as if a professional had signed off. That distinction is
+  the whole point of the gate and is not something this decision waives —
+  the founder agreed to this framing rather than asking for those gates to
+  be removed too.
+- **Legal pages ship AI-drafted and unreviewed.** `/privacidad` and
+  `/terminos` now carry a visible one-line note that the text was drafted
+  with AI assistance and has not been reviewed by a lawyer yet. Unlike the
+  medical gates above, this risk is the founder's own to accept (business/
+  legal exposure to the company, not a direct safety risk to a reader
+  following clinical guidance), so it is a disclosure rather than a second
+  gate.
+- **Play Store is not the v1 launch channel.** The app launches as an
+  installable PWA on the open web first (`https://mibebe.com.py` or
+  whichever domain, "Agregar a la pantalla de inicio"). No Play Console
+  account, no D-U-N-S, no Meta business verification is required for this.
+  Play/TWA packaging (`docs/ANDROID-LAUNCH.md`, BUILD-PLAN Phase J) becomes a
+  post-launch upgrade, not a blocker — the same Next.js app, database and
+  user accounts carry over unchanged when it ships; there is nothing to
+  migrate.
+- **Facebook login stays off** (`AUTH_FACEBOOK_ENABLED` unset, its existing
+  default) rather than pursuing Meta business verification for v1 — see
+  PR-20 below for the auth work this launch does add.
+- **Video gallery: locked, not hidden.** The `herramientas` grid and `guias`
+  index used to omit the Videos tile entirely while `PUBLISHED_VIDEOS` was
+  empty (all 6 seed entries carry the placeholder YouTube id and are
+  filtered out by `publishedOnly()`). They now always show the tile with a
+  "Pronto" badge and no working link, so the feature is discoverable instead
+  of invisible. The seed data itself is untouched — still gated on real,
+  sourced video ids replacing the placeholder.
+
+See `docs/LAUNCH-CHECKLIST.md` and `docs/ANDROID-LAUNCH.md` for the items
+this does and does not remove from the founder's plate.
+
+## PR-20 (planned) — email + password sign-in alongside Google
+
+Founder decision, 2026-09-05: add a `Credentials` provider so someone can
+create an account with just an email and a password, in addition to the
+existing Google OAuth provider. Facebook stays flagged off (see PR-19).
+Implementation notes belong in the PR itself; this entry exists so the
+"why now" isn't lost. Rationale: OAuth-only sign-in is one more thing
+standing between a first-time visitor and using the app, and Google-only
+excludes anyone who would rather not link a Google account to a pregnancy
+tracker.

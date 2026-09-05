@@ -3,8 +3,10 @@ import "server-only";
 import NextAuth, { type NextAuthConfig, type Session } from "next-auth";
 import Google from "next-auth/providers/google";
 import Facebook from "next-auth/providers/facebook";
+import Credentials from "next-auth/providers/credentials";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { cookies } from "next/headers";
+import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
 
@@ -21,6 +23,13 @@ import {
   CONSENT_VERSION,
   hasValidConsent,
 } from "@/lib/auth/consent";
+import {
+  DUMMY_HASH_FOR_TIMING,
+  EmailSchema,
+  PasswordSchema,
+  hashPassword,
+  verifyPassword,
+} from "@/lib/auth/password";
 
 // BUILD-PLAN A2 — Auth.js (NextAuth v5) wiring.
 //
@@ -105,6 +114,49 @@ function buildConfig(): NextAuthConfig {
       }),
     );
   }
+
+  // PR-20: email + password, always present once we get this far (this
+  // function only ever runs from behind an `isAuthAvailable()` check, i.e.
+  // AUTH_SECRET and the database are both already there). Unlike Google or
+  // Facebook this needs no client id and no `enabledProviders()` flag — the
+  // provider itself is the whole configuration.
+  providers.push(
+    Credentials({
+      id: "credentials",
+      name: "Credentials",
+      credentials: {
+        email: { label: "Correo", type: "email" },
+        password: { label: "Contraseña", type: "password" },
+      },
+      async authorize(raw) {
+        const email = EmailSchema.safeParse(raw?.email);
+        const password = PasswordSchema.safeParse(raw?.password);
+        if (!email.success || !password.success) return null;
+        if (!isDatabaseConfigured()) return null;
+
+        const [row] = await db()
+          .select()
+          .from(users)
+          .where(eq(users.email, email.data))
+          .limit(1);
+
+        // Compare against a real bcrypt hash either way, so a request for an
+        // email that does not exist takes the same time as a wrong password
+        // for one that does — otherwise the response time itself would tell
+        // an attacker which emails are registered.
+        const hash = row?.passwordHash ?? DUMMY_HASH_FOR_TIMING;
+        const matches = await verifyPassword(password.data, hash);
+        if (!row?.passwordHash || !matches) return null;
+
+        return {
+          id: row.id,
+          name: row.name,
+          email: row.email,
+          image: row.image,
+        };
+      },
+    }),
+  );
 
   return {
     // Hostinger terminates TLS in front of the Node process, so the forwarded
@@ -227,6 +279,63 @@ export async function signIn(
   options: { redirectTo?: string } = {},
 ): Promise<void> {
   await instance().signIn(provider, options);
+}
+
+/**
+ * Start an email + password sign-in. Same shape as `signIn()` above — throws
+ * NEXT_REDIRECT on success, or redirects to `/cuenta?error=CredentialsSignin`
+ * when `authorize()` returned null (unknown email, wrong password, or an
+ * email that only ever signed in with Google/Facebook and has no password).
+ */
+export async function signInWithCredentials(
+  email: string,
+  password: string,
+  options: { redirectTo?: string } = {},
+): Promise<void> {
+  await instance().signIn("credentials", {
+    email,
+    password,
+    redirectTo: options.redirectTo,
+  });
+}
+
+export type RegisterCredentialsResult =
+  | { ok: true }
+  | { ok: false; error: "email-taken" | "not-configured" };
+
+/**
+ * Creates a new email + password account. Returns an outcome instead of
+ * throwing — a duplicate email is an expected, user-facing case, not a bug.
+ *
+ * Deliberately refuses rather than attaching a password to an existing row:
+ * if the email is already registered, whether through credentials or through
+ * Google/Facebook, this is not the place that links accounts. A user who
+ * signed up with Google and later wants a password sees the same
+ * "ese correo ya tiene una cuenta" message an OAuth mismatch already gives
+ * (`OAuthAccountNotLinked`) rather than silently gaining a second way in.
+ */
+export async function registerCredentialsUser(
+  email: string,
+  password: string,
+): Promise<RegisterCredentialsResult> {
+  if (!isDatabaseConfigured()) return { ok: false, error: "not-configured" };
+
+  const existing = await db()
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+  if (existing.length > 0) return { ok: false, error: "email-taken" };
+
+  await db()
+    .insert(users)
+    .values({
+      id: randomUUID(),
+      email,
+      passwordHash: await hashPassword(password),
+    });
+
+  return { ok: true };
 }
 
 /** End the session and clear the cookie. Redirects on success. */

@@ -22,7 +22,7 @@ export default async function GuiasPage() {
         </p>
       </header>
 
-      {PUBLISHED_VIDEOS.length > 0 && (
+      {PUBLISHED_VIDEOS.length > 0 ? (
         <Link
           href="/guias/videos"
           className="block rounded-card bg-pastel-celeste p-4 transition active:scale-[0.99]"
@@ -37,6 +37,26 @@ export default async function GuiasPage() {
             Videos seleccionados, filtrables por tema y trimestre.
           </p>
         </Link>
+      ) : (
+        // Shown locked rather than hidden, so people know the feature exists
+        // instead of never seeing it at all — see herramientas/page.tsx.
+        <div
+          aria-disabled="true"
+          className="relative block rounded-card bg-pastel-celeste/50 p-4 opacity-70"
+        >
+          <span className="absolute right-3 top-3 rounded-full bg-white px-2 py-0.5 text-[10px] font-extrabold text-muted">
+            Pronto
+          </span>
+          <span className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">
+            Videos
+          </span>
+          <h2 className="mt-1 text-base font-extrabold text-ink">
+            Galería de videos educativos
+          </h2>
+          <p className="mt-1 text-sm font-semibold text-ink/70">
+            Estamos armando esta sección. Volvé pronto.
+          </p>
+        </div>
       )}
 
       <section className="space-y-2.5">

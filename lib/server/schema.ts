@@ -61,6 +61,14 @@ export const users = mysqlTable(
     // admin can exist before anyone can grant the role.
     role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
 
+    // PR-20: email + password sign-in, alongside Google/Facebook. Null for
+    // every account created through an OAuth provider — those never have a
+    // password, and `authorize()` in lib/server/auth.ts treats a null hash
+    // as "credentials sign-in is not possible for this email" rather than
+    // ever comparing against it. Not part of the Auth.js adapter's own
+    // column set, so it will never be touched by adapter-owned writes.
+    passwordHash: varchar("passwordHash", { length: 255 }),
+
     // A2: the explicit health-data consent taken at sign-up (ARCHITECTURE.md
     // §8). Nullable because a row can exist without it — the sign-in callback
     // refuses those, and a null here is the evidence that it did. The version

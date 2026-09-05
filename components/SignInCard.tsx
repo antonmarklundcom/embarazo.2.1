@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { useActionState, useId, useState } from "react";
 
-import { startSignIn, type SignInState } from "@/app/(app)/cuenta/actions";
+import {
+  registerWithPassword,
+  signInWithPasswordAction,
+  startSignIn,
+  type SignInState,
+} from "@/app/(app)/cuenta/actions";
 import { PROVIDER_LABELS, type ProviderId } from "@/lib/auth/config";
 
 // BUILD-PLAN A2 — the branded sign-in screen.
@@ -15,7 +20,9 @@ import { PROVIDER_LABELS, type ProviderId } from "@/lib/auth/config";
 // Two things about the layout are requirements rather than taste:
 //   1. The consent checkbox is a real control the user acts on, in its own
 //      block above the buttons — not a "by continuing you agree" line under
-//      them (ARCHITECTURE.md §8).
+//      them (ARCHITECTURE.md §8). PR-20 moved it outside every individual
+//      `<form>` so the same tick gates Google/Facebook AND email + password;
+//      each form carries it forward as a hidden field.
 //   2. "Seguir sin cuenta" is a full-width button of its own with its own
 //      explanation, not a grey footnote. It is a supported way to use the app
 //      (ARCHITECTURE.md §4.2), so it has to look like one.
@@ -59,11 +66,130 @@ const MARKS: Record<ProviderId, () => React.ReactElement> = {
   facebook: FacebookMark,
 };
 
+/** PR-20 — the email + password block, toggling between signup and login. */
+function CredentialsForms({
+  consented,
+  errorId,
+  pendingOAuth,
+}: {
+  consented: boolean;
+  errorId: string;
+  /** True while an OAuth submit is in flight, so both paths disable together. */
+  pendingOAuth: boolean;
+}) {
+  const [mode, setMode] = useState<"register" | "login">("register");
+  const [registerState, registerAction, registerPending] = useActionState<
+    SignInState,
+    FormData
+  >(registerWithPassword, {});
+  const [loginState, loginAction, loginPending] = useActionState<
+    SignInState,
+    FormData
+  >(signInWithPasswordAction, {});
+
+  const emailId = useId();
+  const passwordId = useId();
+  const pending = pendingOAuth || registerPending || loginPending;
+  const state = mode === "register" ? registerState : loginState;
+  const action = mode === "register" ? registerAction : loginAction;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setMode("register")}
+          className={`flex-1 rounded-full border px-3 py-2 text-[13px] font-extrabold transition ${
+            mode === "register"
+              ? "border-petrol bg-petrol text-white"
+              : "border-line bg-white text-muted"
+          }`}
+        >
+          Crear cuenta
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("login")}
+          className={`flex-1 rounded-full border px-3 py-2 text-[13px] font-extrabold transition ${
+            mode === "login"
+              ? "border-petrol bg-petrol text-white"
+              : "border-line bg-white text-muted"
+          }`}
+        >
+          Ya tengo cuenta
+        </button>
+      </div>
+
+      <form action={action} className="space-y-2">
+        <input type="hidden" name="consent" value={consented ? "on" : ""} />
+        <div>
+          <label htmlFor={emailId} className="sr-only">
+            Correo
+          </label>
+          <input
+            id={emailId}
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            placeholder="tu@correo.com"
+            className="min-h-[48px] w-full rounded-full border border-line bg-white px-4 text-[15px] font-semibold text-ink placeholder:text-muted/70"
+          />
+        </div>
+        <div>
+          <label htmlFor={passwordId} className="sr-only">
+            Contraseña
+          </label>
+          <input
+            id={passwordId}
+            name="password"
+            type="password"
+            autoComplete={
+              mode === "register" ? "new-password" : "current-password"
+            }
+            minLength={mode === "register" ? 8 : undefined}
+            required
+            placeholder={
+              mode === "register" ? "Mínimo 8 caracteres" : "Tu contraseña"
+            }
+            className="min-h-[48px] w-full rounded-full border border-line bg-white px-4 text-[15px] font-semibold text-ink placeholder:text-muted/70"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={pending}
+          aria-describedby={state.error ? errorId : undefined}
+          className="flex min-h-[48px] w-full items-center justify-center gap-3 rounded-full border border-line bg-white px-4 text-[15px] font-extrabold text-ink shadow-soft transition active:scale-[0.99] disabled:opacity-60"
+        >
+          {pending
+            ? "Un momento…"
+            : mode === "register"
+              ? "Crear cuenta con correo"
+              : "Entrar con correo"}
+        </button>
+      </form>
+
+      {state.error && (
+        <p
+          id={errorId}
+          role="alert"
+          className="rounded-tile border border-terracotta/30 bg-terracotta/5 px-3 py-2 text-sm font-semibold text-terracotta"
+        >
+          {state.error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function SignInCard({
   providers,
+  credentialsAvailable,
   initialError,
 }: {
   providers: ProviderId[];
+  /** PR-20 — true once email + password sign-in can complete (secret + db). */
+  credentialsAvailable: boolean;
   /** Set when the sign-in callback bounced the user back (e.g. no consent). */
   initialError?: string;
 }) {
@@ -74,8 +200,10 @@ export function SignInCard({
   const [consented, setConsented] = useState(false);
   const consentId = useId();
   const errorId = useId();
+  const credentialsErrorId = useId();
 
   const error = state.error ?? initialError;
+  const hasAnySignIn = providers.length > 0 || credentialsAvailable;
 
   return (
     <div className="space-y-4">
@@ -104,11 +232,12 @@ export function SignInCard({
         </ul>
         <p className="mt-3 text-xs leading-relaxed text-muted">
           De Google recibimos solo tu nombre, tu correo y tu foto de perfil.
-          Nada más, nunca.
+          Con correo y contraseña, solo eso: tu correo y una contraseña que
+          nunca guardamos en texto plano.
         </p>
       </section>
 
-      {providers.length === 0 ? (
+      {!hasAnySignIn ? (
         <section className="rounded-card border border-line bg-pastel-arena p-4">
           <h2 className="text-[15px] font-extrabold text-sand-text">
             Las cuentas todavía no están activas
@@ -119,8 +248,8 @@ export function SignInCard({
           </p>
         </section>
       ) : (
-        <form action={formAction} className="space-y-3">
-          {/* The consent step. A control the user acts on, above the buttons. */}
+        <div className="space-y-3">
+          {/* The consent step. A control the user acts on, above every form. */}
           <section className="rounded-card border border-line bg-pastel-celeste p-4">
             <p className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">
               Paso 1 · Tu permiso
@@ -131,7 +260,6 @@ export function SignInCard({
             >
               <input
                 id={consentId}
-                name="consent"
                 type="checkbox"
                 checked={consented}
                 onChange={(e) => setConsented(e.target.checked)}
@@ -172,40 +300,66 @@ export function SignInCard({
             <p className="px-1 text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">
               Paso 2 · Entrá
             </p>
-            {providers.map((id) => {
-              const Mark = MARKS[id];
-              return (
-                <button
-                  key={id}
-                  type="submit"
-                  name="provider"
-                  value={id}
-                  disabled={pending}
-                  aria-describedby={error ? errorId : undefined}
-                  className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-full border border-line bg-white px-4 text-[15px] font-extrabold text-ink shadow-soft transition active:scale-[0.99] disabled:opacity-60"
-                >
-                  <Mark />
-                  {pending ? "Abriendo…" : `Continuar con ${PROVIDER_LABELS[id]}`}
-                </button>
-              );
-            })}
+
+            {providers.length > 0 && (
+              <form action={formAction} className="space-y-2">
+                <input
+                  type="hidden"
+                  name="consent"
+                  value={consented ? "on" : ""}
+                />
+                {providers.map((id) => {
+                  const Mark = MARKS[id];
+                  return (
+                    <button
+                      key={id}
+                      type="submit"
+                      name="provider"
+                      value={id}
+                      disabled={pending}
+                      aria-describedby={error ? errorId : undefined}
+                      className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-full border border-line bg-white px-4 text-[15px] font-extrabold text-ink shadow-soft transition active:scale-[0.99] disabled:opacity-60"
+                    >
+                      <Mark />
+                      {pending ? "Abriendo…" : `Continuar con ${PROVIDER_LABELS[id]}`}
+                    </button>
+                  );
+                })}
+                {error && (
+                  <p
+                    id={errorId}
+                    role="alert"
+                    className="rounded-tile border border-terracotta/30 bg-terracotta/5 px-3 py-2 text-sm font-semibold text-terracotta"
+                  >
+                    {error}
+                  </p>
+                )}
+              </form>
+            )}
+
+            {providers.length > 0 && credentialsAvailable && (
+              <div className="flex items-center gap-3 py-1">
+                <span className="h-px flex-1 bg-line" />
+                <span className="text-xs font-bold text-muted">o con tu correo</span>
+                <span className="h-px flex-1 bg-line" />
+              </div>
+            )}
+
+            {credentialsAvailable && (
+              <CredentialsForms
+                consented={consented}
+                errorId={credentialsErrorId}
+                pendingOAuth={pending}
+              />
+            )}
+
             {!consented && (
               <p className="px-1 text-xs text-muted">
                 Marcá la casilla de arriba para poder continuar.
               </p>
             )}
           </section>
-
-          {error && (
-            <p
-              id={errorId}
-              role="alert"
-              className="rounded-tile border border-terracotta/30 bg-terracotta/5 px-3 py-2 text-sm font-semibold text-terracotta"
-            >
-              {error}
-            </p>
-          )}
-        </form>
+        </div>
       )}
 
       {/* "Seguir sin cuenta" — a supported path, given the same weight. */}

@@ -30,8 +30,8 @@ describe("isAuthConfigured", () => {
     expect(isAuthConfigured({})).toBe(false);
   });
 
-  it("is false with a secret but no provider", () => {
-    expect(isAuthConfigured({ AUTH_SECRET: "s3cr3t" })).toBe(false);
+  it("is true with only a secret — credentials sign-in needs nothing else (PR-20)", () => {
+    expect(isAuthConfigured({ AUTH_SECRET: "s3cr3t" })).toBe(true);
   });
 
   it("is false with a provider but no secret", () => {
@@ -44,11 +44,14 @@ describe("isAuthConfigured", () => {
     expect(isAuthConfigured(GOOGLE)).toBe(true);
   });
 
-  it("treats blank and whitespace-only values as unset", () => {
+  it("treats a blank or whitespace-only secret as unset", () => {
     expect(isAuthConfigured({ ...GOOGLE, AUTH_SECRET: "" })).toBe(false);
     expect(isAuthConfigured({ ...GOOGLE, AUTH_SECRET: "   " })).toBe(false);
+  });
+
+  it("does not depend on Google being fully provisioned (PR-20: credentials still works)", () => {
     expect(isAuthConfigured({ ...GOOGLE, AUTH_GOOGLE_SECRET: "  " })).toBe(
-      false,
+      true,
     );
   });
 });

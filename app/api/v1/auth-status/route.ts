@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { availableProviders, getSession } from "@/lib/server/auth";
+import { availableProviders, getSession, isAuthAvailable } from "@/lib/server/auth";
 import {
   CHEAP_READ_LIMIT,
   clientKeyFromHeaders,
@@ -65,7 +65,13 @@ export async function GET(req: NextRequest) {
   const session = await getSession();
 
   return NextResponse.json(
-    { providers, signedIn: Boolean(session?.user?.id) },
+    {
+      providers,
+      // PR-20 — email + password needs no provider-specific config, so it is
+      // reported alongside but separately from the OAuth `providers` list.
+      credentialsAvailable: isAuthAvailable(),
+      signedIn: Boolean(session?.user?.id),
+    },
     { headers: HEADERS },
   );
 }

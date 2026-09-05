@@ -7,7 +7,7 @@ import {
 } from "./launchChecks";
 
 const REAL_REVIEWER = "Dra. Pérez, gineco-obstetra";
-/** A configured deletion channel, so the reviewer tests test the reviewer. */
+/** A configured deletion channel, so tests that don't care about it pass. */
 const REAL_EMAIL = "hola@mibebe.com.py";
 
 describe("isDeploymentBuild", () => {
@@ -23,6 +23,10 @@ describe("isDeploymentBuild", () => {
 });
 
 describe("isPlaceholderReviewer", () => {
+  // No longer used to gate the build (DECISIONS.md "disclaimer model, not a
+  // named reviewer") — still used at render time by MedicalReviewByline and
+  // ObstetraCard to choose between the named byline and the generic
+  // disclaimer.
   it("flags unset and blank", () => {
     expect(isPlaceholderReviewer(undefined)).toBe(true);
     expect(isPlaceholderReviewer("   ")).toBe(true);
@@ -40,56 +44,24 @@ describe("isPlaceholderReviewer", () => {
 });
 
 describe("launchCheckErrors", () => {
-  it("stays silent for non-deployment builds even with no reviewer", () => {
+  it("stays silent for non-deployment builds", () => {
     expect(launchCheckErrors({})).toEqual([]);
   });
 
-  it("blocks a deployment build with a placeholder reviewer", () => {
-    const errors = launchCheckErrors({
-      NEXT_PUBLIC_APP_URL: "https://mibebe.com.py",
-      NEXT_PUBLIC_MEDICAL_REVIEWER: "Dra. ___, gineco-obstetra",
-      NEXT_PUBLIC_SUPPORT_EMAIL: REAL_EMAIL,
-    });
-    expect(errors).toHaveLength(1);
-    expect(errors[0]).toContain("NEXT_PUBLIC_MEDICAL_REVIEWER");
-  });
-
-  it("passes a deployment build with a real reviewer", () => {
+  it("passes a deployment build with a deletion channel and no reviewer set", () => {
+    // The reviewer is no longer a build gate — a deployment with nobody named
+    // as medical reviewer ships fine, with the disclaimer instead of a byline.
     expect(
       launchCheckErrors({
         NEXT_PUBLIC_APP_URL: "https://mibebe.com.py",
-        NEXT_PUBLIC_MEDICAL_REVIEWER: REAL_REVIEWER,
         NEXT_PUBLIC_SUPPORT_EMAIL: REAL_EMAIL,
       }),
     ).toEqual([]);
-  });
-
-  it("honours the explicit override, for the check it names only", () => {
-    expect(
-      launchCheckErrors({
-        NEXT_PUBLIC_APP_URL: "https://mibebe.com.py",
-        ALLOW_PLACEHOLDER_REVIEWER: "1",
-        NEXT_PUBLIC_SUPPORT_EMAIL: REAL_EMAIL,
-      }),
-    ).toEqual([]);
-  });
-
-  it("still blocks a missing deletion channel when the reviewer is overridden", () => {
-    // The override used to return early from the whole function. An escape
-    // hatch for the medical byline is not consent to ship a deletion page
-    // that tells people to contact nobody.
-    const errors = launchCheckErrors({
-      NEXT_PUBLIC_APP_URL: "https://mibebe.com.py",
-      ALLOW_PLACEHOLDER_REVIEWER: "1",
-    });
-    expect(errors).toHaveLength(1);
-    expect(errors[0]).toContain("NEXT_PUBLIC_SUPPORT_EMAIL");
   });
 
   it("blocks a deployment build where nobody can be contacted", () => {
     const errors = launchCheckErrors({
       NEXT_PUBLIC_APP_URL: "https://mibebe.com.py",
-      NEXT_PUBLIC_MEDICAL_REVIEWER: REAL_REVIEWER,
     });
     expect(errors).toHaveLength(1);
     expect(errors[0]).toMatch(/borrar-cuenta/);
@@ -101,7 +73,6 @@ describe("launchCheckErrors", () => {
     expect(
       launchCheckErrors({
         NEXT_PUBLIC_APP_URL: "https://mibebe.com.py",
-        NEXT_PUBLIC_MEDICAL_REVIEWER: REAL_REVIEWER,
         NEXT_PUBLIC_BUSINESS_WHATSAPP: "+595981123456",
       }),
     ).toEqual([]);
@@ -111,7 +82,6 @@ describe("launchCheckErrors", () => {
     // C8's dead number wearing a fallback's clothes must not satisfy this.
     const errors = launchCheckErrors({
       NEXT_PUBLIC_APP_URL: "https://mibebe.com.py",
-      NEXT_PUBLIC_MEDICAL_REVIEWER: REAL_REVIEWER,
       NEXT_PUBLIC_BUSINESS_WHATSAPP: "+595000000000",
     });
     expect(errors).toHaveLength(1);
@@ -127,14 +97,13 @@ describe("assertLaunchReady", () => {
   it("throws with the problem listed", () => {
     expect(() =>
       assertLaunchReady({ NEXT_PUBLIC_APP_URL: "https://mibebe.com.py" }),
-    ).toThrow(/NEXT_PUBLIC_MEDICAL_REVIEWER/);
+    ).toThrow(/NEXT_PUBLIC_SUPPORT_EMAIL/);
   });
 
   it("does not throw when ready", () => {
     expect(() =>
       assertLaunchReady({
         NEXT_PUBLIC_APP_URL: "https://mibebe.com.py",
-        NEXT_PUBLIC_MEDICAL_REVIEWER: REAL_REVIEWER,
         NEXT_PUBLIC_SUPPORT_EMAIL: REAL_EMAIL,
       }),
     ).not.toThrow();

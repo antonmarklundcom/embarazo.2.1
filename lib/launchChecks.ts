@@ -1,16 +1,27 @@
 // Launch-readiness checks run at build time (BUILD-PLAN Z2).
 //
-// The failure this prevents: shipping a real deployment whose medical byline is
-// still a placeholder, or worse, whose byline silently claims review by "el
-// equipo médico" when nobody has reviewed anything. For a health app that is a
-// credibility and liability problem, and it is exactly the kind of thing that
-// slips through because the app looks fine.
+// The failure this prevents: shipping a real deployment whose publicly
+// reachable deletion page tells people to contact nobody.
 //
 // Scope: checks fire only when NEXT_PUBLIC_APP_URL is set, which is the signal
 // that this build is a configured deployment rather than a local `npm run
-// build` or a CI compile check. Set ALLOW_PLACEHOLDER_REVIEWER=1 to override in
-// an emergency — deliberately awkward, and it should never live in a deploy
-// config.
+// build` or a CI compile check.
+//
+// 2026-09 — the medical-reviewer hard gate that used to live here was removed
+// (DECISIONS.md "disclaimer model, not a named reviewer"). Requiring a real
+// named gineco-obstetra before the build would even compile made "launch"
+// wait on recruiting a clinician; the honest alternative is to say plainly,
+// everywhere medical-adjacent content renders, that it is informational and
+// not reviewed by a professional (`components/MedicalReviewByline.tsx`)
+// instead of pretending nobody built the app until one signs on. That
+// disclaimer is unconditional now, so there is nothing left here to check —
+// `isPlaceholderReviewer` stays exported because the byline and the obstetra
+// card still use it to decide which of the two messages to show, and
+// `lib/seed/gate.ts`'s `reviewedOnly()` still hides any *specific* clinical
+// content (food-safety verdicts, the obstetra's weekly notes) that has not
+// been signed off — a general disclaimer does not make a wrong answer to
+// "is X safe to eat during pregnancy" safe to publish as reviewed. That gate
+// is untouched by this file and is not something a deployment build can skip.
 
 import { hasDeletionChannel, supportChannels } from "./support";
 
@@ -21,9 +32,7 @@ export interface LaunchCheckEnv {
   // Index signature so `process.env` (NodeJS.ProcessEnv) is assignable.
   [key: string]: string | undefined;
   NEXT_PUBLIC_APP_URL?: string;
-  NEXT_PUBLIC_MEDICAL_REVIEWER?: string;
-  ALLOW_PLACEHOLDER_REVIEWER?: string;
-  // The deletion request channels — see the second check below.
+  // The deletion request channels — see the check below.
   NEXT_PUBLIC_SUPPORT_EMAIL?: string;
   NEXT_PUBLIC_BUSINESS_WHATSAPP?: string;
 }
@@ -33,6 +42,12 @@ export function isDeploymentBuild(env: LaunchCheckEnv): boolean {
   return Boolean(env.NEXT_PUBLIC_APP_URL?.trim());
 }
 
+/**
+ * True when `value` is not a real reviewer name — unset, blank, or one of the
+ * placeholder markers left in `.env.example`. Still used at render time by
+ * `MedicalReviewByline` and `ObstetraCard` to choose between the named byline
+ * and the generic disclaimer; no longer used to block a build.
+ */
 export function isPlaceholderReviewer(value: string | undefined): boolean {
   const reviewer = value?.trim() ?? "";
   if (reviewer === "") return true;
@@ -48,20 +63,6 @@ export function launchCheckErrors(env: LaunchCheckEnv): string[] {
   if (!isDeploymentBuild(env)) return [];
 
   const errors: string[] = [];
-  // The override is scoped to the check it names. It used to return early from
-  // the whole function, which was fine when there was one check and would have
-  // silently disabled the deletion-channel check below — an escape hatch for
-  // the medical byline is not consent to ship a broken deletion page.
-  const allowPlaceholderReviewer = env.ALLOW_PLACEHOLDER_REVIEWER === "1";
-  if (!allowPlaceholderReviewer && isPlaceholderReviewer(env.NEXT_PUBLIC_MEDICAL_REVIEWER)) {
-    errors.push(
-      "NEXT_PUBLIC_MEDICAL_REVIEWER is unset or still a placeholder. " +
-        'Set it to the real reviewer (e.g. "Dra. Pérez, gineco-obstetra") ' +
-        "before deploying — the app must not claim medical review it has " +
-        "not had. Override with ALLOW_PLACEHOLDER_REVIEWER=1 only if you " +
-        "know why you are doing it.",
-    );
-  }
 
   // `/borrar-cuenta` is the publicly reachable deletion page Google Play
   // requires (`docs/ANDROID-LAUNCH.md` §3.3). It tells a person to contact us,

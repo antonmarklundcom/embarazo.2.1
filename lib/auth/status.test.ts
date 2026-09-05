@@ -7,22 +7,46 @@ import { LOCAL_ONLY, parseAuthStatus } from "./status";
 
 describe("parseAuthStatus", () => {
   it("reads a configured, signed-in deployment", () => {
-    expect(parseAuthStatus({ providers: ["google"], signedIn: true })).toEqual({
+    expect(
+      parseAuthStatus({
+        providers: ["google"],
+        credentialsAvailable: true,
+        signedIn: true,
+      }),
+    ).toEqual({
       providers: ["google"],
+      credentialsAvailable: true,
       signedIn: true,
     });
   });
 
   it("reads a configured, signed-out deployment", () => {
     expect(
-      parseAuthStatus({ providers: ["google", "facebook"], signedIn: false }),
-    ).toEqual({ providers: ["google", "facebook"], signedIn: false });
+      parseAuthStatus({
+        providers: ["google", "facebook"],
+        credentialsAvailable: true,
+        signedIn: false,
+      }),
+    ).toEqual({
+      providers: ["google", "facebook"],
+      credentialsAvailable: true,
+      signedIn: false,
+    });
   });
 
   it("drops providers it does not know", () => {
     expect(
-      parseAuthStatus({ providers: ["google", "myspace", 7, null], signedIn: false }),
-    ).toEqual({ providers: ["google"], signedIn: false });
+      parseAuthStatus({
+        providers: ["google", "myspace", 7, null],
+        signedIn: false,
+      }),
+    ).toEqual({ providers: ["google"], credentialsAvailable: false, signedIn: false });
+  });
+
+  it("credentials can be available with zero OAuth providers configured", () => {
+    expect(
+      parseAuthStatus({ providers: [], credentialsAvailable: true, signedIn: false }),
+    ).toEqual({ providers: [], credentialsAvailable: true, signedIn: false });
   });
 
   it("treats anything it cannot read as a local-only device", () => {
@@ -40,8 +64,14 @@ describe("parseAuthStatus", () => {
     }
   });
 
-  it("never treats a truthy non-true value as a session", () => {
-    expect(parseAuthStatus({ providers: [], signedIn: "true" }).signedIn).toBe(false);
-    expect(parseAuthStatus({ providers: [], signedIn: 1 }).signedIn).toBe(false);
+  it("never treats a truthy non-true value as a session or as credentials", () => {
+    expect(
+      parseAuthStatus({ providers: [], credentialsAvailable: "true", signedIn: "true" })
+        .signedIn,
+    ).toBe(false);
+    expect(
+      parseAuthStatus({ providers: [], credentialsAvailable: 1, signedIn: 1 })
+        .credentialsAvailable,
+    ).toBe(false);
   });
 });

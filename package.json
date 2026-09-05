@@ -25,18 +25,18 @@
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
-    "@tanstack/react-query": "^5.101.4",
+    "@tanstack/react-query": "^5.102.8",
     "bcryptjs": "^3.0.3",
     "dexie": "^4.4.5",
     "dexie-react-hooks": "^4.4.0",
     "drizzle-orm": "^0.45.2",
-    "mysql2": "^3.23.3",
-    "next": "^15.5.23",
+    "mysql2": "^3.24.3",
+    "next": "^16.3.4",
     "next-auth": "^5.0.0-beta.32",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "^0.0.1",
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

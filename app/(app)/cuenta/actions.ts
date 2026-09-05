@@ -6,10 +6,13 @@ import { z } from "zod";
 import {
   availableProviders,
   isAuthAvailable,
+  registerCredentialsUser,
   signIn,
+  signInWithCredentials,
   signOut,
 } from "@/lib/server/auth";
 import { PROVIDER_IDS } from "@/lib/auth/config";
+import { EmailSchema, PasswordSchema } from "@/lib/auth/password";
 import {
   CONSENT_COOKIE,
   CONSENT_TTL_MS,
@@ -38,17 +41,43 @@ const SIGN_IN_DESTINATIONS = {
   onboarding: "/",
 } as const;
 
+/** Shared by every sign-in/sign-up action below — see SIGN_IN_DESTINATIONS. */
+const FromSchema = z
+  .enum(Object.keys(SIGN_IN_DESTINATIONS) as ["cuenta", "onboarding"])
+  .default("cuenta");
+
 const StartSignInSchema = z
   .object({
     provider: z.enum(PROVIDER_IDS),
     // An unchecked checkbox is absent from the FormData entirely, so the only
     // value that can ever satisfy this is a deliberate tick.
     consent: z.literal("on"),
-    from: z
-      .enum(Object.keys(SIGN_IN_DESTINATIONS) as ["cuenta", "onboarding"])
-      .default("cuenta"),
+    from: FromSchema,
   })
   .strict();
+
+/** PR-20 — email + password, shared shape for both signup and login. */
+const CredentialsFormSchema = z
+  .object({
+    email: EmailSchema,
+    password: PasswordSchema,
+    consent: z.literal("on"),
+    from: FromSchema,
+  })
+  .strict();
+
+function setConsentCookie(jar: Awaited<ReturnType<typeof cookies>>): void {
+  jar.set(CONSENT_COOKIE, encodeConsent(Date.now()), {
+    httpOnly: true,
+    // `lax` (not `strict`) so the cookie is still sent when Google redirects
+    // the user back to us — a strict cookie would be dropped on that hop and
+    // every sign-in would fail the consent gate.
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: Math.floor(CONSENT_TTL_MS / 1000),
+  });
+}
 
 export interface SignInState {
   error?: string;
@@ -87,21 +116,92 @@ export async function startSignIn(
     return { error: "Ese método de ingreso no está disponible ahora mismo." };
   }
 
-  const jar = await cookies();
-  jar.set(CONSENT_COOKIE, encodeConsent(Date.now()), {
-    httpOnly: true,
-    // `lax` (not `strict`) so the cookie is still sent when Google redirects
-    // the user back to us — a strict cookie would be dropped on that hop and
-    // every sign-in would fail the consent gate.
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: Math.floor(CONSENT_TTL_MS / 1000),
-  });
+  setConsentCookie(await cookies());
 
   // Throws NEXT_REDIRECT on success — deliberately not wrapped in try/catch,
   // which would swallow the redirect and strand the user on this page.
   await signIn(provider, { redirectTo: SIGN_IN_DESTINATIONS[from] });
+  return {};
+}
+
+/** PR-20 — create an account with email + password. */
+export async function registerWithPassword(
+  _previous: SignInState,
+  formData: FormData,
+): Promise<SignInState> {
+  if (!isAuthAvailable()) {
+    return {
+      error:
+        "Las cuentas no están disponibles en esta versión. Podés seguir usando Mi Bebé sin cuenta.",
+    };
+  }
+
+  const parsed = CredentialsFormSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+    consent: formData.get("consent") ?? undefined,
+    from: formData.get("from") ?? undefined,
+  });
+  if (!parsed.success) {
+    return {
+      error:
+        "Revisá tu correo, tu contraseña (mínimo 8 caracteres) y marcá la casilla de consentimiento.",
+    };
+  }
+
+  const { email, password, from } = parsed.data;
+  const result = await registerCredentialsUser(email, password);
+  if (!result.ok) {
+    return {
+      error:
+        result.error === "email-taken"
+          ? "Ese correo ya tiene una cuenta. Iniciá sesión en su lugar."
+          : "No pudimos crear tu cuenta ahora. Probá de nuevo en un momento.",
+    };
+  }
+
+  setConsentCookie(await cookies());
+
+  // Throws NEXT_REDIRECT on success, same as startSignIn above.
+  await signInWithCredentials(email, password, {
+    redirectTo: SIGN_IN_DESTINATIONS[from],
+  });
+  return {};
+}
+
+/** PR-20 — sign in with an existing email + password account. */
+export async function signInWithPasswordAction(
+  _previous: SignInState,
+  formData: FormData,
+): Promise<SignInState> {
+  if (!isAuthAvailable()) {
+    return {
+      error:
+        "Las cuentas no están disponibles en esta versión. Podés seguir usando Mi Bebé sin cuenta.",
+    };
+  }
+
+  const parsed = CredentialsFormSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+    consent: formData.get("consent") ?? undefined,
+    from: formData.get("from") ?? undefined,
+  });
+  if (!parsed.success) {
+    return {
+      error:
+        "Revisá tu correo y tu contraseña, y marcá la casilla de consentimiento.",
+    };
+  }
+
+  const { email, password, from } = parsed.data;
+  setConsentCookie(await cookies());
+
+  // Throws NEXT_REDIRECT on success, or redirects to
+  // /cuenta?error=CredentialsSignin when authorize() rejected it.
+  await signInWithCredentials(email, password, {
+    redirectTo: SIGN_IN_DESTINATIONS[from],
+  });
   return {};
 }
 

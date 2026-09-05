@@ -75,12 +75,18 @@ export function enabledProviders(env: AuthEnv): ProviderId[] {
 }
 
 /**
- * True when sign-in can actually complete: a session secret plus at least one
- * provider. Call sites branch on this the same way they branch on
- * `isDatabaseConfigured()` in lib/server/db.ts — never throw, degrade.
+ * True when sign-in can actually complete: a session secret is set. Call
+ * sites branch on this the same way they branch on `isDatabaseConfigured()`
+ * in lib/server/db.ts — never throw, degrade.
+ *
+ * PR-20: this used to also require at least one OAuth provider configured.
+ * Email + password (`lib/server/auth.ts`'s Credentials provider) needs
+ * nothing beyond the secret and a database — no client id, no external
+ * verification — so a deployment with neither Google nor Facebook
+ * provisioned still has a working sign-in path and this must say so.
  */
 export function isAuthConfigured(env: AuthEnv): boolean {
-  return value(env.AUTH_SECRET) !== undefined && enabledProviders(env).length > 0;
+  return value(env.AUTH_SECRET) !== undefined;
 }
 
 /** Human label for a provider, used in the sign-in copy. */

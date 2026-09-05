@@ -153,9 +153,12 @@ export default function FamiliaPage() {
             <strong>No van a ver</strong> tus notas, tus síntomas, tu peso ni
             tus fotos, y podés sacarles el acceso cuando quieras.
           </p>
-          {auth.providers.length > 0 ? (
+          {auth.providers.length > 0 || auth.credentialsAvailable ? (
             <div className="mt-3">
-              <SignInCard providers={auth.providers} />
+              <SignInCard
+                providers={auth.providers}
+                credentialsAvailable={auth.credentialsAvailable}
+              />
             </div>
           ) : (
             <p className="mt-3 rounded-tile bg-cream p-3 text-sm text-muted">

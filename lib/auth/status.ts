@@ -12,21 +12,35 @@ export const AUTH_STATUS_PATH = "/api/v1/auth-status";
 
 export interface AuthStatus {
   providers: ProviderId[];
+  /** PR-20 — true once email + password sign-in can complete (secret + db). */
+  credentialsAvailable: boolean;
   signedIn: boolean;
 }
 
 /** What we assume when we could not find out: a local-only, signed-out device. */
-export const LOCAL_ONLY: AuthStatus = { providers: [], signedIn: false };
+export const LOCAL_ONLY: AuthStatus = {
+  providers: [],
+  credentialsAvailable: false,
+  signedIn: false,
+};
 
 export function parseAuthStatus(body: unknown): AuthStatus {
   if (typeof body !== "object" || body === null) return LOCAL_ONLY;
-  const raw = body as { providers?: unknown; signedIn?: unknown };
+  const raw = body as {
+    providers?: unknown;
+    credentialsAvailable?: unknown;
+    signedIn?: unknown;
+  };
   const providers = Array.isArray(raw.providers)
     ? raw.providers.filter((id): id is ProviderId =>
         (PROVIDER_IDS as readonly unknown[]).includes(id),
       )
     : [];
-  return { providers, signedIn: raw.signedIn === true };
+  return {
+    providers,
+    credentialsAvailable: raw.credentialsAvailable === true,
+    signedIn: raw.signedIn === true,
+  };
 }
 
 export async function fetchAuthStatus(): Promise<AuthStatus> {

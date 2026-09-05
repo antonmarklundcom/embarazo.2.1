@@ -14,13 +14,38 @@ item below is a founder task, an external party, or a decision only you can
 make. That is not a gap in the plan — it is the plan, and the code got there
 first.
 
----
+> **2026-09-05 — founder decision, see `DECISIONS.md` "PR-19/PR-20".** The
+> plan below assumed Play Store distribution and a signed-off medical
+> reviewer were on the v1 critical path. They no longer are:
+>
+> - **v1 launches as a PWA on the open web**, not through Play. Everything in
+>   §5 ("the Play sequence") and §2.1/§2.2 (D-U-N-S, developer identity
+>   verification, TWA packaging) becomes a **post-launch upgrade**, not a
+>   blocker — see `DECISIONS.md` for why nothing needs migrating when it
+>   ships later.
+> - **§2.2 (reviewer) is no longer a hard blocker.** The build no longer
+>   refuses without `NEXT_PUBLIC_MEDICAL_REVIEWER` — see "disclaimer model"
+>   in `DECISIONS.md`. Recruiting a real reviewer is still valuable (it's
+>   still your best distribution channel, and it's what unlocks the
+>   obstetra-card/food-safety content, which stay gated), just not something
+>   v1 waits on.
+> - **§2.4 (lawyer review) is no longer a blocker either** — `/privacidad`
+>   and `/terminos` ship AI-drafted, with a visible note that they have not
+>   had a lawyer's review yet. That is a risk the founder accepted directly.
+> - **§2.5 (directory) and the video gallery (§4) stay non-blocking** exactly
+>   as designed — the publication gate hides unfinished entries, and the
+>   video tile now shows locked with a "Pronto" badge instead of vanishing.
+>
+> The line below is kept for history; read it as "if you also want the Play
+> Store", not as "before you can launch."
 
 ## 0. The one-line summary
 
 > **Request the D-U-N-S number and call a gineco-obstetra today.** Everything
 > else on this list can be done in a week. Those two cannot, and everything
 > waits behind them.
+>
+> *(2026-09-05: neither blocks the v1 web launch — see the note above.)*
 
 ---
 
@@ -46,22 +71,24 @@ Run all of these **in parallel**. None depends on another.
 
 - [ ] **2.1 — D-U-N-S number** (1–4 weeks) — only if organization. Free, from
       Dun & Bradstreet. Blocks §1.1, which blocks everything downstream.
-- [ ] **2.2 — Gineco-obstetra reviewer** (weeks) — **HARD BLOCKER.** The
-      production build *refuses to compile* with a placeholder
-      `NEXT_PUBLIC_MEDICAL_REVIEWER` (`lib/launchChecks.ts`). It is also your
-      single best distribution channel: their patients are your first users,
-      and a printed QR in the consultorio beats any ad.
-- [ ] **2.3 — Meta business verification** (longest lead of all) — for Facebook
-      Login. Start it now even though it does not block v1: `HANDOFF` §3.8
-      flags it as the item most likely to be the last thing you are waiting on.
-- [ ] **2.4 — Lawyer: privacy policy + terms** (1–2 weeks) — Play requires a
-      **live, public, app-specific** policy URL. A placeholder policy is a
-      rejection, and `/privacidad` is currently flagged as a draft. Have them
-      also check the legal figures in `lib/derechos.ts`.
+- [ ] **2.2 — Gineco-obstetra reviewer** (weeks) — no longer a build blocker
+      (`DECISIONS.md` "disclaimer model"), but still worth doing: it's your
+      single best distribution channel (their patients are your first users,
+      a printed QR in the consultorio beats any ad), and it's what unlocks
+      the obstetra-card weekly notes and the food-safety lookup, which stay
+      hidden until a real name is on them.
+- [ ] **2.3 — Meta business verification** (longest lead of all) — only
+      needed if you turn Facebook Login on later. Not part of v1 (it stays
+      off, `AUTH_FACEBOOK_ENABLED` unset).
+- [ ] **2.4 — Lawyer: privacy policy + terms** (1–2 weeks) — only required
+      before a **Play Store** listing, which requires a live, lawyer-safe
+      policy URL. Not required for the v1 web launch, which ships these
+      AI-drafted and clearly marked as such. Have them also check the legal
+      figures in `lib/derechos.ts` whenever this happens.
 - [ ] **2.5 — Directory listings: 15–30 real, consented** (2–4 weeks of calls) —
       Asunción + Central. **15 real beats 50 invented**; the publication gate
-      hides the rest automatically. Every one of these calls is also a
-      distribution conversation.
+      hides the rest automatically — the directory simply shows fewer entries
+      until these calls happen, which does not block v1.
 
 ---
 
@@ -130,15 +157,21 @@ Run all of these **in parallel**. None depends on another.
 
 ---
 
-## 5. Then, in this order — the Play sequence
+## 5. Then, in this order — the Play sequence (post-launch upgrade, not v1)
+
+**v1 ships as a PWA on the open web without any of this** — "Agregar a la
+pantalla de inicio" from a browser, no Play Console account needed. Come
+back to this section when you decide to add a Play Store listing; nothing
+below blocks the web launch, and nothing here needs re-doing later — same
+app, same accounts, same database.
 
 Each step genuinely waits on the one before it (`ANDROID-LAUNCH.md` §5).
 
 1. [ ] Account decision made, D-U-N-S in hand if organization (§1.1)
 2. [ ] Register developer account, pay $25, complete **developer identity
        verification** — note the address becomes publicly visible on the listing
-3. [ ] Deploy to the real domain with `NEXT_PUBLIC_APP_URL` **and a real
-       `NEXT_PUBLIC_MEDICAL_REVIEWER`** — the build refuses otherwise
+3. [ ] Deploy to the real domain with `NEXT_PUBLIC_APP_URL` set (a real
+       `NEXT_PUBLIC_MEDICAL_REVIEWER` is optional — see the 2026-09-05 note above)
 4. [ ] Publish lawyer-reviewed `/privacidad` and `/terminos`
 5. [ ] Package the TWA, upload to **internal testing** (up to 100 testers, no
        review wait) — this is your friends-and-family round

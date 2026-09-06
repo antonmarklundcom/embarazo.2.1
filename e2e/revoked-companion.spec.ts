@@ -1,6 +1,7 @@
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
+import { waitForPrecache } from "./helpers/offline";
 
 // K14 — the test the task exists for.
 //
@@ -202,7 +203,7 @@ test("the public content a companion is entitled to still works offline", async 
   const page = await context.newPage();
 
   await completeOnboarding(page, { role: "Papá", landsOnHome: false });
-  await page.evaluate(() => navigator.serviceWorker.ready);
+  await waitForPrecache(page, ["/semana/24"]);
 
   server.state.revoked = true;
   server.state.offline = true;

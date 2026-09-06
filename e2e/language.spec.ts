@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
+import { waitForPrecache } from "./helpers/offline";
 
 // K19 — "Done when: toggle works offline; `<html lang>` follows the locale;
 // 42-week content untouched."
@@ -16,7 +17,9 @@ test("the language toggle works with the network off", async ({ page, context })
   // Install the service worker first, then cut the network — the point is a
   // toggle that works for a woman with no data left, not one that quietly
   // fetches a locale bundle.
-  await page.evaluate(() => navigator.serviceWorker.ready);
+  // `/semana/15` is navigated to at the end of this test, with the network
+  // still off, so it has to be in the precache before the plug is pulled.
+  await waitForPrecache(page, ["/semana/15"]);
   await expect(page.getByRole("link", { name: "Hoy" })).toBeVisible();
 
   await page.goto("/ajustes");

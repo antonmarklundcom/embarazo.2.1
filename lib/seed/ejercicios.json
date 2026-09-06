@@ -1,0 +1,306 @@
+[
+  {
+    "id": "caminar",
+    "title": "Caminar",
+    "trimesters": [1, 2, 3],
+    "durationMin": 20,
+    "equipment": "sin equipo",
+    "benefits": [
+      "Mejora la circulación y el ánimo",
+      "Ayuda a controlar el aumento de peso",
+      "Prepara el cuerpo para el trabajo de parto"
+    ],
+    "steps": [
+      {
+        "text": "Caminá a un ritmo cómodo, donde puedas hablar sin quedarte sin aire.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      },
+      {
+        "text": "Usá calzado cómodo y llevá agua, sobre todo con calor.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      }
+    ],
+    "avoidIf": [
+      "si tu médico te indicó reposo",
+      "si hace mucho calor, caminá temprano o al atardecer"
+    ],
+    "stopSigns": ["dolor en el pecho", "mareos fuertes", "sangrado o pérdida de líquido", "contracciones regulares"],
+    "source": "ACOG"
+  },
+  {
+    "id": "inclinacion-pelvica",
+    "title": "Inclinación pélvica de pie",
+    "trimesters": [1, 2, 3],
+    "durationMin": 5,
+    "equipment": "una pared",
+    "benefits": [
+      "Alivia el dolor de espalda baja",
+      "Fortalece el abdomen de pie, sin necesidad de acostarte"
+    ],
+    "steps": [
+      {
+        "text": "Apoyá la espalda contra la pared, rodillas un poco flexionadas.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      },
+      {
+        "text": "Aplaná la zona lumbar contra la pared apretando suave el abdomen, sostené unos segundos y soltá.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      }
+    ],
+    "avoidIf": [
+      "si tu médico te indicó reposo",
+      "si tenés dolor pélvico que empeora con el movimiento"
+    ],
+    "stopSigns": ["dolor fuerte", "sangrado o pérdida de líquido"],
+    "source": "ACOG"
+  },
+  {
+    "id": "gato-vaca",
+    "title": "Gato-vaca",
+    "trimesters": [1, 2, 3],
+    "durationMin": 5,
+    "equipment": "sin equipo",
+    "benefits": [
+      "Alivia la tensión de la espalda",
+      "Ayuda a la movilidad de la columna a medida que crece la panza"
+    ],
+    "steps": [
+      {
+        "text": "Apoyate en manos y rodillas, con las muñecas debajo de los hombros.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      },
+      {
+        "text": "Al inhalar, arqueá la espalda suave hacia abajo (vaca); al exhalar, redondeála hacia arriba (gato).",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      }
+    ],
+    "avoidIf": [
+      "si tu médico te indicó reposo",
+      "si te cuesta apoyarte en manos y rodillas, hacelo sentada en una silla"
+    ],
+    "stopSigns": ["dolor fuerte en la panza", "mareos al cambiar de posición"],
+    "source": "ACOG"
+  },
+  {
+    "id": "sentadilla-con-apoyo",
+    "title": "Sentadilla con apoyo",
+    "trimesters": [1, 2, 3],
+    "durationMin": 5,
+    "equipment": "una silla",
+    "benefits": [
+      "Fortalece piernas y glúteos para el parto y la vida diaria",
+      "El respaldo de la silla ayuda con el equilibrio"
+    ],
+    "steps": [
+      {
+        "text": "Parate frente a una silla, pies separados al ancho de la cadera.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      },
+      {
+        "text": "Bajá despacio como si te fueras a sentar, sin llegar a tocar la silla, y volvé a subir.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      }
+    ],
+    "avoidIf": [
+      "si tu médico te indicó reposo",
+      "si sentís inestable el equilibrio, sujetate del respaldo de la silla"
+    ],
+    "stopSigns": ["dolor pélvico agudo", "mareos"],
+    "source": "ACOG"
+  },
+  {
+    "id": "elevacion-lateral-de-pierna",
+    "title": "Elevación lateral de pierna, acostada de costado",
+    "trimesters": [1, 2, 3],
+    "durationMin": 6,
+    "equipment": "sin equipo",
+    "benefits": [
+      "Fortalece cadera y glúteos",
+      "Posición de costado, cómoda en cualquier trimestre"
+    ],
+    "steps": [
+      {
+        "text": "Acostate de costado, con la cabeza apoyada en el brazo o una almohada.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      },
+      {
+        "text": "Levantá la pierna de arriba despacio, sin girar la cadera hacia atrás, y bajala.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      }
+    ],
+    "avoidIf": [
+      "si tu médico te indicó reposo",
+      "si tenés dolor en la cadera o el pubis"
+    ],
+    "stopSigns": ["dolor agudo en la cadera o la pelvis"],
+    "source": "ACOG"
+  },
+  {
+    "id": "estiramiento-de-pantorrilla",
+    "title": "Estiramiento de pantorrilla",
+    "trimesters": [1, 2, 3],
+    "durationMin": 4,
+    "equipment": "una pared",
+    "benefits": [
+      "Alivia los calambres de pantorrilla, comunes en el embarazo",
+      "Mejora la circulación en las piernas"
+    ],
+    "steps": [
+      {
+        "text": "Parate frente a una pared, manos apoyadas a la altura de los hombros.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      },
+      {
+        "text": "Llevá un pie hacia atrás, talón en el piso, e inclinate suave hacia la pared hasta sentir el estiramiento.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      }
+    ],
+    "avoidIf": ["si tenés hinchazón brusca o dolor en una sola pantorrilla (consultá antes de estirar)"],
+    "stopSigns": ["dolor que no cede", "hinchazón de un solo lado con calor local"],
+    "source": "ACOG"
+  },
+  {
+    "id": "estiramiento-de-cuello-y-hombros",
+    "title": "Estiramiento de cuello y hombros",
+    "trimesters": [1, 2, 3],
+    "durationMin": 4,
+    "equipment": "sin equipo",
+    "benefits": [
+      "Alivia la tensión de cargar el peso de la panza de forma distinta",
+      "Rápido, se puede hacer sentada"
+    ],
+    "steps": [
+      {
+        "text": "Sentada o parada, inclinná la cabeza suave hacia un hombro y sostené unos segundos.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      },
+      {
+        "text": "Hacé círculos lentos con los hombros hacia atrás.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      }
+    ],
+    "avoidIf": ["si tenés mareos al mover la cabeza"],
+    "stopSigns": ["mareos fuertes", "hormigueo en los brazos que no pasa"],
+    "source": "OMS"
+  },
+  {
+    "id": "respiracion-diafragmatica",
+    "title": "Respiración diafragmática",
+    "trimesters": [1, 2, 3],
+    "durationMin": 5,
+    "equipment": "sin equipo",
+    "benefits": [
+      "Ayuda a relajarte y a manejar el estrés",
+      "Es la misma respiración que se usa durante el trabajo de parto"
+    ],
+    "steps": [
+      {
+        "text": "Sentada cómoda, una mano en el pecho y otra en la panza.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      },
+      {
+        "text": "Inhalá por la nariz sintiendo que la panza se infla, exhalá despacio por la boca. Nunca aguantes el aire.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      }
+    ],
+    "avoidIf": ["si sentís falta de aire en reposo (consultá antes de seguir)"],
+    "stopSigns": ["falta de aire que no mejora al respirar despacio"],
+    "source": "OMS"
+  },
+  {
+    "id": "circulos-de-tobillo",
+    "title": "Círculos de tobillo",
+    "trimesters": [1, 2, 3],
+    "durationMin": 3,
+    "equipment": "sin equipo",
+    "benefits": [
+      "Ayuda contra la hinchazón de pies y tobillos",
+      "Se puede hacer sentada, incluso en el trabajo"
+    ],
+    "steps": [
+      {
+        "text": "Sentada, levantá un pie del piso y girá el tobillo en círculos.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      },
+      {
+        "text": "Cambiá de dirección y después probá con el otro pie.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      }
+    ],
+    "avoidIf": ["si la hinchazón aparece de golpe y de un solo lado (consultá antes)"],
+    "stopSigns": ["hinchazón brusca de un solo lado", "dolor en la pantorrilla al mover el tobillo"],
+    "source": "ACOG"
+  },
+  {
+    "id": "elevacion-de-talones",
+    "title": "Elevación de talones",
+    "trimesters": [1, 2, 3],
+    "durationMin": 4,
+    "equipment": "una silla o una pared",
+    "benefits": [
+      "Fortalece las pantorrillas y ayuda a la circulación",
+      "Mejora el equilibrio con apoyo"
+    ],
+    "steps": [
+      {
+        "text": "Parate sujetándote del respaldo de una silla o de una pared.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      },
+      {
+        "text": "Subite de puntitas despacio y bajá con control.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      }
+    ],
+    "avoidIf": ["si el equilibrio te cuesta, no lo hagas sin apoyo"],
+    "stopSigns": ["mareos", "dolor en la pantorrilla"],
+    "source": "ACOG"
+  },
+  {
+    "id": "estiramiento-de-espalda-alta",
+    "title": "Estiramiento de espalda alta, sentada",
+    "trimesters": [1, 2, 3],
+    "durationMin": 4,
+    "equipment": "una silla",
+    "benefits": [
+      "Alivia la tensión entre los omóplatos",
+      "Se hace sentada, buena opción cuando ya cuesta estar en el piso"
+    ],
+    "steps": [
+      {
+        "text": "Sentada, cruzá los brazos por delante del pecho tomando cada mano el hombro opuesto.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      },
+      {
+        "text": "Redondeá la espalda alta suave, como abrazándote, y sostené unos segundos.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      }
+    ],
+    "avoidIf": ["si tenés dolor agudo en la espalda (consultá antes de estirar)"],
+    "stopSigns": ["dolor que baja por un brazo o una pierna"],
+    "source": "OMS"
+  },
+  {
+    "id": "kegel-piso-pelvico",
+    "title": "Piso pélvico (Kegel)",
+    "trimesters": [1, 2, 3],
+    "durationMin": 3,
+    "equipment": "sin equipo",
+    "benefits": [
+      "Ayuda con las pérdidas de pis del embarazo",
+      "Prepara el piso pélvico para el parto y la recuperación"
+    ],
+    "steps": [
+      {
+        "text": "Apretá como si quisieras aguantar el pis, sin apretar la panza ni los glúteos, y soltá del todo.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      },
+      {
+        "text": "Para contar las repeticiones con un cronómetro guiado, abrí la herramienta Kegel en Herramientas.",
+        "imageSrc": "/assets/ejercicios/placeholder.webp"
+      }
+    ],
+    "avoidIf": ["mientras hacés pis (podés lastimarte la vejiga)"],
+    "stopSigns": ["dolor pélvico"],
+    "source": "ACOG"
+  }
+]

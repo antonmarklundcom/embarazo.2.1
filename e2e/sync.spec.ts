@@ -318,3 +318,91 @@ test("data is not uploaded into a different account", async ({ browser }) => {
 
   await contextA.close();
 });
+
+// ---------------------------------------------------------------------------
+// BUILD-PLAN I1 / U6 — the support-forced resync, in a real browser
+// ---------------------------------------------------------------------------
+//
+// `lib/server/sync.test.ts` proves the protocol converges. What only a browser
+// can prove is the half that lives in Dexie: that a device which has already
+// caught up, and would otherwise pull nothing, actually forgets its cursor when
+// the epoch moves and re-downloads an account it had lost locally.
+//
+// That is the ticket this feature exists for — "perdí mis datos" — and the
+// failure it is guarding against is a device that cheerfully reports "synced"
+// while showing an empty app.
+
+test("a forced resync brings an emptied device's records back", async ({
+  browser,
+}) => {
+  const server = fakeServer();
+  // The epoch support bumps. Served on every response from the moment the
+  // fake server is installed, exactly as the real route does.
+  let epoch = 1;
+  const withEpoch = <T,>(body: T) => ({ ...body, epoch });
+
+  const context = await browser.newContext();
+  await context.route("**/api/v1/sync**", async (route) => {
+    const request = route.request();
+    if (request.method() === "POST") {
+      const body = request.postDataJSON() as { records: StoredRecord[] };
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(withEpoch(server.push(body.records))),
+      });
+    }
+    const since = Number(new URL(request.url()).searchParams.get("since") ?? 0);
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(withEpoch(server.pull(since))),
+    });
+  });
+
+  const page = await context.newPage();
+  await completeOnboarding(page);
+
+  await page.goto("/herramientas/peso");
+  await page.locator("#kg").fill("61.5");
+  await page.getByRole("button", { name: /Guardar/ }).click();
+  await expect(page.getByText("61,5 kg").or(page.getByText("61.5 kg"))).toBeVisible();
+
+  await reconnect(page);
+  await expect
+    .poll(() => [...server.rows.values()].filter((r) => r.store === "weightEntries").length)
+    .toBe(1);
+
+  // Now lose the local copy the way a real device does — the browser's storage
+  // is cleared, the server still has everything — while the cursor stays where
+  // it was. Without the epoch this device asks for "everything since my
+  // cursor", gets nothing, and reports success over an empty screen.
+  await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("mibebe");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const tx = db.transaction(["weightEntries"], "readwrite");
+    tx.objectStore("weightEntries").clear();
+    await new Promise((resolve) => {
+      tx.oncomplete = resolve;
+    });
+  });
+
+  await page.reload();
+  await expect(page.getByText("61,5 kg").or(page.getByText("61.5 kg"))).toHaveCount(0);
+
+  // Support presses "forzar resincronización".
+  epoch = 2;
+
+  await reconnect(page);
+  await page.waitForTimeout(1_000);
+  await page.reload();
+
+  await expect(
+    page.getByText("61,5 kg").or(page.getByText("61.5 kg")),
+  ).toBeVisible();
+
+  await context.close();
+});

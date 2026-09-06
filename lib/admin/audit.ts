@@ -23,6 +23,14 @@ export const ADMIN_ACTIONS = [
   // record that it happened, which makes it the reason `setFlag` writes both
   // or neither.
   "flag_changed",
+  // I1/U6 — the support console's four repairs. Each one acts on somebody
+  // else's account at their request over WhatsApp, which is exactly the kind
+  // of access that needs a name attached to it afterwards.
+  "member_revoked",
+  "device_removed",
+  "sessions_revoked",
+  "resync_forced",
+  "record_restored",
 ] as const;
 
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
@@ -71,6 +79,27 @@ export const AUDIT_META_SCHEMAS = {
   // into another to narrow a 64-char string buys nothing a test does not).
   flag_changed: z
     .object({ key: z.string().min(1).max(64), value: z.boolean() })
+    .strict(),
+
+  // I1/U6. Ids and a store name — never a record's contents, and never the
+  // push endpoint, which is a bearer secret (see lib/server/support.ts).
+  member_revoked: z
+    .object({
+      pregnancyId: z.string().min(1).max(64),
+      memberUserId: z.string().min(1).max(255),
+    })
+    .strict(),
+  device_removed: z.object({ subscriptionId: z.string().min(1).max(64) }).strict(),
+  // Nothing to record beyond who did it to whom, which the row already holds.
+  sessions_revoked: z.object({}).strict(),
+  resync_forced: z.object({}).strict(),
+  // The store is a category ("weightEntries"), not content — the panel already
+  // says "Peso: 37 registros". The record id is opaque.
+  record_restored: z
+    .object({
+      store: z.string().min(1).max(64),
+      recordId: z.string().min(1).max(128),
+    })
     .strict(),
 } as const satisfies Record<AdminAction, z.ZodType>;
 

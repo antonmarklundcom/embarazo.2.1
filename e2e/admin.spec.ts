@@ -25,6 +25,10 @@ const ADMIN_URLS = [
   // features exist but are switched off, and the only page in the panel with a
   // button that changes production behaviour for everybody.
   "/admin/flags",
+  // I1/U6 — the support console. This is the page with buttons that cut a
+  // family member off, end every session and un-delete a record, so its guard
+  // is worth naming here rather than trusting the layout.
+  "/admin/usuarios/anyone/",
 ];
 
 test("every /admin URL 404s for someone who is not an administrator", async ({

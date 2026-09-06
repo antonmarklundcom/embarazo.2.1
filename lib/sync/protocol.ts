@@ -89,6 +89,15 @@ export interface PushResponse {
   /** Server clock, so the client can measure its own drift. */
   serverTime: number;
   /**
+   * I1/U6 — the account's sync epoch. See `PullResponse.epoch`.
+   *
+   * OPTIONAL on the wire, in both directions, and that is the compatibility
+   * contract: a client built before U6 ignores a field it does not know, and a
+   * server built before U6 sends none, which this client reads as "unchanged".
+   * Neither half needs the other to be deployed first.
+   */
+  epoch?: number;
+  /**
    * Which account this session belongs to (A6). The client's own user id —
    * it already rides in the session cookie, so this discloses nothing new —
    * and it is what lets a device notice that the data it is holding belongs
@@ -111,6 +120,17 @@ export interface PullResponse {
   serverTime: number;
   /** Which account this session belongs to (A6). See PushResponse. */
   accountId: string;
+  /**
+   * I1/U6 — a counter support can bump to mean "pull everything again".
+   *
+   * The device stores it alongside its cursor. When the value it receives
+   * differs from the one it stored, it resets the cursor to 0 and re-pulls the
+   * whole account. Last-write-wins makes that idempotent: every record is
+   * still compared on its own `updatedAt`, so a full re-pull cannot overwrite
+   * anything newer, and pressing the button twice costs bandwidth and nothing
+   * else.
+   */
+  epoch?: number;
   /**
    * Opaque continuation token. Present when more records are waiting; pass it
    * back as `?cursor=` to get the next page.

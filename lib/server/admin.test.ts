@@ -27,10 +27,22 @@ const METRICS_MODULE = join(process.cwd(), "lib", "server", "adminMetrics.ts");
 // K15 and D4 added two more modules read by the panel. Same rule, same day.
 const CLICKS_MODULE = join(process.cwd(), "lib", "server", "placementClicks.ts");
 const CONTENT_MODULE = join(process.cwd(), "lib", "server", "contentDebt.ts");
+// I1/U6 added a fifth. Same rule, same day — the convention K16 set is that a
+// new server module behind the panel joins this list when it is written, which
+// is the only moment adding it is free. It matters more here than for the
+// others: this is the module that can clear a tombstone, so "it may not read
+// one" is the assertion that keeps restore an un-delete rather than a peek.
+const SUPPORT_MODULE = join(process.cwd(), "lib", "server", "support.ts");
 const ADMIN_ROUTES = join(process.cwd(), "app", "admin");
 
 /** The server modules behind the panel. They are what is gated, not a gate. */
-const SERVER_MODULES = [ADMIN_MODULE, METRICS_MODULE, CLICKS_MODULE, CONTENT_MODULE];
+const SERVER_MODULES = [
+  ADMIN_MODULE,
+  METRICS_MODULE,
+  CLICKS_MODULE,
+  CONTENT_MODULE,
+  SUPPORT_MODULE,
+];
 
 function filesUnder(dir: string): string[] {
   const out: string[] = [];
@@ -55,11 +67,12 @@ describe("the admin panel cannot reach health content", () => {
   it("scans a real, non-empty set of admin sources", () => {
     // Guards the guard: a rename that emptied this list would turn every
     // assertion below into a vacuous pass.
-    expect(ADMIN_SOURCES.length).toBeGreaterThanOrEqual(4);
+    expect(ADMIN_SOURCES.length).toBeGreaterThanOrEqual(5);
     expect(ADMIN_SOURCES.some((p) => p.endsWith("admin.ts"))).toBe(true);
     expect(ADMIN_SOURCES.some((p) => p.endsWith("adminMetrics.ts"))).toBe(true);
     expect(ADMIN_SOURCES.some((p) => p.endsWith("placementClicks.ts"))).toBe(true);
     expect(ADMIN_SOURCES.some((p) => p.endsWith("contentDebt.ts"))).toBe(true);
+    expect(ADMIN_SOURCES.some((p) => p.endsWith("support.ts"))).toBe(true);
     expect(ADMIN_SOURCES.some((p) => p.endsWith("page.tsx"))).toBe(true);
   });
 

@@ -7,6 +7,12 @@ import {
   invitesForUser,
   requireAdmin,
 } from "@/lib/server/admin";
+import {
+  RESTORE_WINDOW_DAYS,
+  devicesOf,
+  membershipsAround,
+  recentTombstones,
+} from "@/lib/server/support";
 import { AdminUserActions } from "@/components/admin/AdminUserActions";
 
 // BUILD-PLAN A7 — account state for one user.
@@ -61,6 +67,10 @@ export default async function AdminUserPage({
   if (!overview) notFound();
 
   const userInvites = await invitesForUser(database, id);
+  // I1/U6 — the three support tickets, answered from this screen.
+  const memberships = await membershipsAround(database, id);
+  const devices = await devicesOf(database, id);
+  const tombstones = await recentTombstones(database, id, Date.now());
   const totalRecords = overview.recordCounts.reduce(
     (sum, row) => sum + row.total,
     0,
@@ -186,6 +196,150 @@ export default async function AdminUserPage({
             ))}
           </ul>
         )}
+      </section>
+
+      {/* I1/U6 — "sacá a mi ex del embarazo". */}
+      <section className="rounded-card border border-line bg-white p-4 shadow-soft">
+        <h2 className="text-base font-extrabold text-ink">Quién ve qué</h2>
+        <p className="mt-1 text-xs leading-relaxed text-muted">
+          Cortar el acceso es inmediato: deja de ver la semana, la fecha de
+          parto y el próximo control en el momento, sin esperar a que se le
+          venza nada.
+        </p>
+        {memberships.length === 0 ? (
+          <p className="mt-3 text-sm text-muted">
+            Nadie comparte un embarazo con esta cuenta.
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-2">
+            {memberships.map((row) => (
+              <li
+                key={row.id}
+                className="rounded-tile border border-black/10 bg-cream p-3 text-sm"
+              >
+                <p className="font-semibold text-ink">
+                  {row.memberEmail ?? row.memberUserId} · {row.role}
+                </p>
+                <p className="text-xs text-muted">
+                  {row.ownedByThisUser
+                    ? "ve el embarazo de esta cuenta"
+                    : "esta cuenta ve el embarazo de otra persona"}
+                  {" · desde "}
+                  {formatDate(row.createdAt)}
+                  {row.revokedAt
+                    ? ` · cortado ${formatDate(row.revokedAt)}`
+                    : ""}
+                </p>
+                {!row.revokedAt && (
+                  <div className="mt-2">
+                    <AdminUserActions kind="membership" membershipId={row.id} />
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* I1/U6 — "no puedo entrar" and the stolen phone. */}
+      <section className="rounded-card border border-line bg-white p-4 shadow-soft">
+        <h2 className="text-base font-extrabold text-ink">Dispositivos</h2>
+        <p className="mt-1 text-xs leading-relaxed text-muted">
+          Solo el servicio de avisos y las fechas. La dirección completa del
+          dispositivo no se muestra nunca: sirve para mandarle notificaciones a
+          ese teléfono, así que es una llave, no un dato.
+        </p>
+        {devices.length === 0 ? (
+          <p className="mt-3 text-sm text-muted">
+            Ningún dispositivo pidió avisos.
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-2">
+            {devices.map((device) => (
+              <li
+                key={device.id}
+                className="rounded-tile border border-black/10 bg-cream p-3 text-sm"
+              >
+                <p className="font-semibold text-ink">{device.host}</p>
+                <p className="text-xs text-muted">
+                  desde {formatDate(device.createdAt)}
+                  {device.lastSeenAt
+                    ? ` · último aviso ${formatDate(device.lastSeenAt)}`
+                    : " · todavía sin avisos"}
+                </p>
+                <div className="mt-2">
+                  <AdminUserActions
+                    kind="device"
+                    userId={overview.id}
+                    subscriptionId={device.id}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="mt-3 border-t border-line pt-3">
+          <p className="text-xs leading-relaxed text-muted">
+            Si perdió el teléfono: cerrar la sesión en todos lados. Vuelve a
+            entrar con su contraseña cuando quiera; quien tenga el teléfono, no.
+          </p>
+          <div className="mt-2">
+            <AdminUserActions kind="sessions" userId={overview.id} />
+          </div>
+        </div>
+      </section>
+
+      {/* I1/U6 — "perdí mis datos". */}
+      <section className="rounded-card border border-line bg-white p-4 shadow-soft">
+        <h2 className="text-base font-extrabold text-ink">Perdió sus datos</h2>
+        <p className="mt-1 text-xs leading-relaxed text-muted">
+          Forzar la resincronización hace que cada teléfono de esta cuenta
+          vuelva a bajar todo. Es seguro apretarlo dos veces y seguro apretarlo
+          en una cuenta sana: nada de lo que esté más nuevo en el teléfono se
+          pisa.
+        </p>
+        <div className="mt-2">
+          <AdminUserActions kind="resync" userId={overview.id} />
+        </div>
+
+        <div className="mt-4 border-t border-line pt-3">
+          <h3 className="text-sm font-extrabold text-ink">
+            Borrados en los últimos {RESTORE_WINDOW_DAYS} días ({tombstones.length})
+          </h3>
+          <p className="mt-1 text-xs leading-relaxed text-muted">
+            Qué tipo de registro y cuándo se borró — nunca qué decía. Al
+            restaurar, el registro reaparece en un teléfono que todavía lo
+            tenga guardado; el servidor no se queda con el contenido de algo
+            borrado, así que no puede devolverlo por su cuenta.
+          </p>
+          {tombstones.length === 0 ? (
+            <p className="mt-3 text-sm text-muted">
+              No borró nada en ese período.
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-1">
+              {tombstones.map((row) => (
+                <li
+                  key={`${row.store}:${row.recordId}`}
+                  className="flex flex-wrap items-center justify-between gap-2 border-b border-line py-2 text-sm last:border-0"
+                >
+                  <span className="text-ink">
+                    {STORE_LABELS[row.store] ?? row.store}
+                    <span className="ml-2 text-xs text-muted">
+                      {formatDate(row.deletedAt)}
+                    </span>
+                  </span>
+                  <AdminUserActions
+                    kind="restore"
+                    userId={overview.id}
+                    store={row.store}
+                    recordId={row.recordId}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </section>
 
       <AdminUserActions

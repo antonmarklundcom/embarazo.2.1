@@ -288,6 +288,17 @@ export interface SyncStateRow {
   accountId?: string;
   /** True once a first upload for `accountId` has completed (A6). */
   linkedAt?: number;
+  /**
+   * I1/U6 — the account's sync epoch, as last seen from the server.
+   *
+   * When a response carries a different value, the engine resets
+   * `lastPulledAt` to 0 and re-pulls everything: this is how support answers
+   * "perdí mis datos" without anyone touching the database. Optional, and
+   * absent on every device that has not synced since U6 — no Dexie version
+   * bump, because `syncState` holds one row keyed `"default"` and a new
+   * optional field on it is not a schema change.
+   */
+  epoch?: number;
 }
 
 /**

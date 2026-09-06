@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getSession, isAuthAvailable } from "@/lib/server/auth";
 import { dbOrNull } from "@/lib/server/db";
 import { drizzleBackend, pullRecords, pushRecords } from "@/lib/server/sync";
+import { userSyncState } from "@/lib/server/support";
 import { clientKeyFromHeaders, isRateLimited } from "@/lib/rateLimit";
 import {
   PULL_ALLOWED_PARAMS,
@@ -78,11 +79,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // I1/U6: read alongside the write so a support-forced resync reaches the
+  // device on the very next request it makes, in either direction.
+  const state = await userSyncState(ctx.database, ctx.userId);
+
   const result = await pushRecords(
     drizzleBackend(ctx.database),
     ctx.userId,
     parsed.data.records,
     Date.now(),
+    state?.syncEpoch,
   );
 
   return NextResponse.json(result, { headers: HEADERS });
@@ -114,11 +120,14 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  const state = await userSyncState(ctx.database, ctx.userId);
+
   const result = await pullRecords(
     drizzleBackend(ctx.database),
     ctx.userId,
     parsed.data,
     Date.now(),
+    state?.syncEpoch,
   );
 
   return NextResponse.json(result, { headers: HEADERS });

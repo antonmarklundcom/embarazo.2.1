@@ -256,4 +256,5 @@ bands (reviewer-gated), share card with the themed hero (backlog note in U7).
 One line per unit as it merges: `U<n> — PR #… — docs/log/u<n>.md`.
 
 - U1 — runtime flag store + `/admin/flags` — PR #86 — `docs/log/u1.md`
+- U6 — I1 support console gaps — PR #89 — `docs/log/u6.md`
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PUBLISHED_VIDEOS } from "@/lib/seed/videos";
+import { PUBLISHED_EJERCICIOS } from "@/lib/seed/ejercicios";
 import { ToolIcon, type ToolIconName } from "@/components/ToolIcon";
 
 // BUILD-PLAN D1 — illustrated tools grid (feature map #20).
@@ -69,6 +70,16 @@ const TOOLS: Tool[] = [
     desc: "Ejercicios de piso pélvico, con el tiempo contado por vos.",
     icon: "kegel",
     tone: "bg-pastel-rosa",
+  },
+  {
+    href: "/herramientas/ejercicios",
+    title: "Ejercicios",
+    desc: "Ejercicios suaves para el embarazo, paso a paso con fotos.",
+    icon: "checklist",
+    tone: "bg-pastel-salvia",
+    // D6 — locked with a "Pronto" badge until real step photos replace the
+    // placeholder (same pattern as the video gallery below).
+    locked: PUBLISHED_EJERCICIOS.length === 0,
   },
   {
     href: "/herramientas/pataditas",

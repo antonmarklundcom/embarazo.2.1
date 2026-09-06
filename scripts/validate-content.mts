@@ -16,6 +16,7 @@ import {
   FaqEntrySchema,
   BabyNameSchema,
   PriceEntrySchema,
+  ExerciseSchema,
   validateContentArray,
 } from "../lib/content/schemas.ts";
 
@@ -202,6 +203,33 @@ const checks: Check[] = [];
   // K10 price guide — same pipeline as D3.
   const raw = readJson("lib/seed/prices.json") as unknown[];
   checks.push(validateContentArray("lib/seed/prices.json", raw, PriceEntrySchema));
+}
+
+{
+  // D6 "Ejercicios" — schema-valid the same way as everything else, plus an
+  // extra check no other collection needs: every step's `imageSrc` must be a
+  // real file under public/assets/ejercicios/, UNLESS it carries
+  // "placeholder" (the same substring `publishedOnly()` scans for) — those
+  // entries validate and simply stay hidden until the file lands.
+  const raw = readJson("lib/seed/ejercicios.json") as unknown[];
+  const { valid, errors } = validateContentArray(
+    "lib/seed/ejercicios.json",
+    raw,
+    ExerciseSchema,
+  );
+  const { existsSync } = await import("node:fs");
+  for (const exercise of valid) {
+    exercise.steps.forEach((step, stepIndex) => {
+      if (step.imageSrc.toLowerCase().includes("placeholder")) return;
+      const onDisk = repoRoot + "public" + step.imageSrc;
+      if (!existsSync(onDisk)) {
+        errors.push(
+          `lib/seed/ejercicios.json — entrada #${exercise.id} — paso ${stepIndex + 1}: la imagen "${step.imageSrc}" no existe en public${step.imageSrc} — subí el archivo o volvé a poner "placeholder" en el nombre`,
+        );
+      }
+    });
+  }
+  checks.push({ errors });
 }
 
 // Extra guard for "timestamps computed at module load" (BUILD-PLAN G1): a

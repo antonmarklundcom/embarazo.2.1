@@ -488,6 +488,60 @@ export const PriceEntrySchema = z
 export type PriceBand = z.infer<typeof PriceBandSchema>;
 export type PriceEntry = z.infer<typeof PriceEntrySchema>;
 
+// ---------------------------------------------------------------------------
+// D6 — "Ejercicios" (feature map #22): images + text, no video.
+// ---------------------------------------------------------------------------
+
+/** week ≤ 13 · week 14–27 · week ≥ 28 (same bands as `getTrimester`). */
+export const ExerciseTrimesterSchema = z.union([
+  z.literal(1),
+  z.literal(2),
+  z.literal(3),
+]);
+
+/**
+ * `imageSrc` has one shape for both states: a real filename once the founder
+ * drops the file in, or the literal `placeholder.webp` until then. The
+ * `"placeholder"` substring is what `lib/seed/gate.ts`'s `publishedOnly()`
+ * already scans for — no second mechanism, and `scripts/validate-content.mts`
+ * skips the on-disk file check for exactly the same substring.
+ */
+const exerciseImageSrcSchema = z
+  .string()
+  .regex(
+    /^\/assets\/ejercicios\/[a-z0-9-]+\.webp$/,
+    "la imagen tiene que vivir en /assets/ejercicios/ y ser un .webp",
+  );
+
+export const ExerciseStepSchema = z.object({
+  text: z.string().min(1).max(240),
+  imageSrc: exerciseImageSrcSchema,
+});
+export type ExerciseStep = z.infer<typeof ExerciseStepSchema>;
+
+/**
+ * General prenatal wellness content (PR-19: ships under the generic
+ * disclaimer, no medical reviewer required) — never a clinical instruction
+ * for a diagnosed condition. `avoidIf` and `stopSigns` are required on every
+ * entry, in plain language a non-clinician wrote and a non-clinician reads:
+ * this is the content-level guardrail standing in for a reviewer's sign-off.
+ */
+export const ExerciseSchema = z.object({
+  id: idSchema,
+  title: z.string().min(1).max(60),
+  trimesters: z.array(ExerciseTrimesterSchema).min(1).max(3),
+  durationMin: z.number().int().positive().max(30),
+  /** `"sin equipo"` or a short real thing ("una silla"). */
+  equipment: z.string().min(1).max(40),
+  benefits: z.array(z.string().min(1).max(140)).min(1),
+  steps: z.array(ExerciseStepSchema).min(1).max(4),
+  avoidIf: z.array(z.string().min(1).max(160)).min(1),
+  stopSigns: z.array(z.string().min(1).max(80)).min(1),
+  /** A public guideline: "ACOG", "OMS", "MSPBS". */
+  source: z.string().min(1).max(80),
+});
+export type Exercise = z.infer<typeof ExerciseSchema>;
+
 /**
  * Formats a zod error into one readable line per issue, naming the file, the
  * entry (by index and id when available) and the field.

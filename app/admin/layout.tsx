@@ -78,6 +78,13 @@ export default async function AdminLayout({
             >
               Preguntas
             </Link>
+            {/* I4 — AI usage & spend. */}
+            <Link
+              href="/admin/ia"
+              className="text-[13px] font-extrabold text-petrol"
+            >
+              IA
+            </Link>
           </div>
           <p className="truncate text-xs text-muted">{actor.email}</p>
         </div>

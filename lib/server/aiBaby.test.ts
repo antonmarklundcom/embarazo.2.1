@@ -272,6 +272,53 @@ describe("the kill switch still wins", () => {
   });
 });
 
+describe("the admin pause flag (I4/U1)", () => {
+  it("refuses with the same shape as the kill switch when paused", async () => {
+    const { store, rows } = memoryStore();
+    const model: ImageModel = async () => ({ mimeType: "image/png", data: "x" });
+    const result = await generateBabyImage(
+      store,
+      "u1",
+      PHOTOS,
+      model,
+      NOW,
+      async () => true,
+    );
+    expect(result).toEqual({ ok: false, failure: "disabled" });
+    // Paused before reserving: no row, exactly like the env kill switch.
+    expect(rows).toHaveLength(0);
+  });
+
+  it("proceeds when not paused", async () => {
+    const { store } = memoryStore();
+    const model: ImageModel = async () => ({ mimeType: "image/png", data: "x" });
+    const result = await generateBabyImage(
+      store,
+      "u1",
+      PHOTOS,
+      model,
+      NOW,
+      async () => false,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it("can never enable a feature the env left off — the env is checked first", async () => {
+    const { store, rows } = memoryStore();
+    process.env.AI_BABY_ENABLED = "false";
+    const result = await generateBabyImage(
+      store,
+      "u1",
+      PHOTOS,
+      undefined,
+      NOW,
+      async () => false, // not paused, but the env is still the master switch
+    );
+    expect(result).toEqual({ ok: false, failure: "disabled" });
+    expect(rows).toHaveLength(0);
+  });
+});
+
 describe("quotaSnapshot", () => {
   it("reports what is left for the screen to show", async () => {
     const { store } = memoryStore();

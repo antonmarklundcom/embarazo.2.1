@@ -29,6 +29,9 @@ const ADMIN_URLS = [
   // family member off, end every session and un-delete a record, so its guard
   // is worth naming here rather than trusting the layout.
   "/admin/usuarios/anyone/",
+  // I4/U2 — AI usage & spend. The page with the Pausar button and the one
+  // number ("what did AI cost this month") a competitor would want most.
+  "/admin/ia",
 ];
 
 test("every /admin URL 404s for someone who is not an administrator", async ({

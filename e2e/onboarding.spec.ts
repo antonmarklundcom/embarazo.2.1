@@ -162,7 +162,16 @@ test("/api/v1/auth-status answers honestly and takes no parameters", async ({
 }) => {
   const res = await request.get("/api/v1/auth-status");
   expect(res.status()).toBe(200);
-  expect(await res.json()).toEqual({ providers: [], signedIn: false });
+  // `credentialsAvailable` arrived with PR-20 (email + password sign-in) and
+  // this assertion was never told. It is false here for the same reason
+  // `providers` is empty: CI configures no AUTH_SECRET and no database, which
+  // is local-only mode. Asserted exactly rather than loosely — the point of
+  // this test is that the route answers with this shape and nothing more.
+  expect(await res.json()).toEqual({
+    providers: [],
+    signedIn: false,
+    credentialsAvailable: false,
+  });
   expect(res.headers()["cache-control"]).toBe("no-store");
 
   for (const param of ["week=24", "department=capital", "email=a@b.c"]) {

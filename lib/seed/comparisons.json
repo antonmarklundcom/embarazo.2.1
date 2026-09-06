@@ -1,0 +1,242 @@
+[
+  {
+    "week": 3,
+    "item": "una semilla de chía",
+    "itemCm": 0.2,
+    "imageSrc": "/assets/comparaciones/semilla-de-chia.webp"
+  },
+  {
+    "week": 4,
+    "item": "una semilla de amapola",
+    "itemCm": 0.1,
+    "imageSrc": "/assets/comparaciones/semilla-de-amapola.webp"
+  },
+  {
+    "week": 5,
+    "item": "un grano de sésamo",
+    "itemCm": 0.35,
+    "imageSrc": "/assets/comparaciones/grano-de-sesamo.webp"
+  },
+  {
+    "week": 6,
+    "item": "una lenteja",
+    "itemCm": 0.6,
+    "imageSrc": "/assets/comparaciones/lenteja.webp"
+  },
+  {
+    "week": 7,
+    "item": "un grano de maíz",
+    "itemCm": 1.2,
+    "imageSrc": "/assets/comparaciones/grano-de-maiz.webp"
+  },
+  {
+    "week": 8,
+    "item": "un poroto",
+    "itemCm": 1.8,
+    "imageSrc": "/assets/comparaciones/poroto.webp"
+  },
+  {
+    "week": 9,
+    "item": "una aceituna",
+    "itemCm": 2.2,
+    "imageSrc": "/assets/comparaciones/aceituna.webp"
+  },
+  {
+    "week": 10,
+    "item": "una guinda",
+    "itemCm": 2.5,
+    "imageSrc": "/assets/comparaciones/guinda.webp"
+  },
+  {
+    "week": 11,
+    "item": "una frutilla",
+    "itemCm": 3.5,
+    "imageSrc": "/assets/comparaciones/frutilla.webp"
+  },
+  {
+    "week": 12,
+    "item": "una lima",
+    "itemCm": 5.0,
+    "imageSrc": "/assets/comparaciones/lima.webp"
+  },
+  {
+    "week": 13,
+    "item": "un durazno",
+    "itemCm": 6.5,
+    "imageSrc": "/assets/comparaciones/durazno.webp"
+  },
+  {
+    "week": 14,
+    "item": "un limón",
+    "itemCm": 7.0,
+    "imageSrc": "/assets/comparaciones/limon.webp"
+  },
+  {
+    "week": 15,
+    "item": "una mandarina",
+    "itemCm": 7.5,
+    "imageSrc": "/assets/comparaciones/mandarina.webp"
+  },
+  {
+    "week": 16,
+    "item": "una palta pequeña",
+    "itemCm": 9.5,
+    "imageSrc": "/assets/comparaciones/palta-pequena.webp"
+  },
+  {
+    "week": 17,
+    "item": "una granada",
+    "itemCm": 11.0,
+    "imageSrc": "/assets/comparaciones/granada.webp"
+  },
+  {
+    "week": 18,
+    "item": "un mamón pequeño",
+    "itemCm": 14.0,
+    "imageSrc": "/assets/comparaciones/mamon-pequeno.webp"
+  },
+  {
+    "week": 19,
+    "item": "un mango",
+    "itemCm": 15.0,
+    "imageSrc": "/assets/comparaciones/mango.webp"
+  },
+  {
+    "week": 20,
+    "item": "una banana",
+    "itemCm": 19.0,
+    "imageSrc": "/assets/comparaciones/banana.webp"
+  },
+  {
+    "week": 21,
+    "item": "una mazorca de choclo",
+    "itemCm": 22.0,
+    "imageSrc": "/assets/comparaciones/mazorca-de-choclo.webp"
+  },
+  {
+    "week": 22,
+    "item": "un mamón mediano",
+    "itemCm": 25.0,
+    "imageSrc": "/assets/comparaciones/mamon-mediano.webp"
+  },
+  {
+    "week": 23,
+    "item": "un pomelo",
+    "itemCm": 14.0,
+    "imageSrc": "/assets/comparaciones/pomelo.webp"
+  },
+  {
+    "week": 24,
+    "item": "una mandioca",
+    "itemCm": 30.0,
+    "imageSrc": "/assets/comparaciones/mandioca.webp"
+  },
+  {
+    "week": 25,
+    "item": "un coco",
+    "itemCm": 30.0,
+    "imageSrc": "/assets/comparaciones/coco.webp"
+  },
+  {
+    "week": 26,
+    "item": "un repollo pequeño",
+    "itemCm": 15.0,
+    "imageSrc": "/assets/comparaciones/repollo-pequeno.webp"
+  },
+  {
+    "week": 27,
+    "item": "una coliflor",
+    "itemCm": 20.0,
+    "imageSrc": "/assets/comparaciones/coliflor.webp"
+  },
+  {
+    "week": 28,
+    "item": "una berenjena grande",
+    "itemCm": 25.0,
+    "imageSrc": "/assets/comparaciones/berenjena-grande.webp"
+  },
+  {
+    "week": 29,
+    "item": "un coco grande",
+    "itemCm": 32.0,
+    "imageSrc": "/assets/comparaciones/coco-grande.webp"
+  },
+  {
+    "week": 30,
+    "item": "un repollo",
+    "itemCm": 22.0,
+    "imageSrc": "/assets/comparaciones/repollo.webp"
+  },
+  {
+    "week": 31,
+    "item": "un coco con su cáscara",
+    "itemCm": 35.0,
+    "imageSrc": "/assets/comparaciones/coco-con-su-cascara.webp"
+  },
+  {
+    "week": 32,
+    "item": "una lechuga",
+    "itemCm": 25.0,
+    "imageSrc": "/assets/comparaciones/lechuga.webp"
+  },
+  {
+    "week": 33,
+    "item": "un ananá",
+    "itemCm": 33.0,
+    "imageSrc": "/assets/comparaciones/anana.webp"
+  },
+  {
+    "week": 34,
+    "item": "un melón pequeño",
+    "itemCm": 18.0,
+    "imageSrc": "/assets/comparaciones/melon-pequeno.webp"
+  },
+  {
+    "week": 35,
+    "item": "un melón",
+    "itemCm": 22.0,
+    "imageSrc": "/assets/comparaciones/melon.webp"
+  },
+  {
+    "week": 36,
+    "item": "una lechuga grande",
+    "itemCm": 30.0,
+    "imageSrc": "/assets/comparaciones/lechuga-grande.webp"
+  },
+  {
+    "week": 37,
+    "item": "una sandía pequeña",
+    "itemCm": 30.0,
+    "imageSrc": "/assets/comparaciones/sandia-pequena.webp"
+  },
+  {
+    "week": 38,
+    "item": "un zapallo pequeño",
+    "itemCm": 30.0,
+    "imageSrc": "/assets/comparaciones/zapallo-pequeno.webp"
+  },
+  {
+    "week": 39,
+    "item": "una sandía mediana",
+    "itemCm": 40.0,
+    "imageSrc": "/assets/comparaciones/sandia-mediana.webp"
+  },
+  {
+    "week": 40,
+    "item": "una sandía",
+    "itemCm": 45.0,
+    "imageSrc": "/assets/comparaciones/sandia.webp"
+  },
+  {
+    "week": 41,
+    "item": "una sandía grande",
+    "itemCm": 50.0,
+    "imageSrc": "/assets/comparaciones/sandia-grande.webp"
+  },
+  {
+    "week": 42,
+    "item": "una sandía grande y madura",
+    "itemCm": 52.0,
+    "imageSrc": "/assets/comparaciones/sandia-grande-y-madura.webp"
+  }
+]

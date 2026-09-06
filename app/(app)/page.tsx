@@ -131,6 +131,8 @@ import { HomeShortcuts } from "@/components/HomeShortcuts";
 import { PrivacyLine } from "@/components/PrivacyLine";
 // D1: one icon set, shared with the herramientas grid so the two cannot drift.
 import { ToolIcon, type ToolIconName } from "@/components/ToolIcon";
+import { HeroSubject } from "@/components/hero/HeroSubject";
+import { ThemeChip } from "@/components/hero/ThemeChip";
 
 // "Hoy" screen — Mi Bebé design 1a (docs/REDESIGN-PLAN.md §2): week strip,
 // photo hero with fallback, tip, mood check-in, herramientas grid, reading
@@ -516,9 +518,6 @@ function WeekHero({
   babies: BabyIdentity[];
   role: Role;
 }) {
-  // Weekly render lives at /assets/semanas/bebe-<week>.webp when the founder
-  // has added it (REDESIGN-PLAN.md §4); until then show the arena fallback.
-  const [imgError, setImgError] = useState(false);
   const dashOffset = RING_CIRCUMFERENCE * (1 - progress);
 
   return (
@@ -556,26 +555,14 @@ function WeekHero({
             strokeDashoffset={dashOffset}
           />
         </svg>
+        {/* U7: the inside of the ring is the themed hero now. The ring, the
+            stats and the link are untouched — this is the one place the theme
+            reaches the home screen. */}
         <div
-          className="absolute overflow-hidden rounded-full bg-pastel-arena"
+          className="absolute overflow-hidden rounded-full"
           style={{ inset: RING_STROKE + 6 }}
         >
-          {imgError ? (
-            <div className="flex h-full items-center justify-center">
-              <span className="text-5xl font-black leading-none text-white">
-                {week}
-              </span>
-            </div>
-          ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={`/assets/semanas/bebe-${week}.webp`}
-              alt={babyAtWeekLabel(babies, role, week)}
-              className="block h-full w-full object-cover"
-              style={{ objectPosition: "center 18%" }}
-              onError={() => setImgError(true)}
-            />
-          )}
+          <HeroSubject week={week} alt={babyAtWeekLabel(babies, role, week)} />
         </div>
       </Link>
 
@@ -595,6 +582,10 @@ function WeekHero({
       <p className="mt-0.5 text-xs font-bold text-muted">
         Del tamaño de {sizeComparison}
       </p>
+      {/* U7: the way into the theme sheet, on the card it changes. */}
+      <div className="mt-2">
+        <ThemeChip />
+      </div>
 
       {/* Three-stat row (feature map #10): semana · días transcurridos · faltan. */}
       <div className="mt-4 grid grid-cols-3 gap-2 border-t border-line pt-3.5">

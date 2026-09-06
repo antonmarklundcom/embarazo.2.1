@@ -4,6 +4,7 @@ import type { WorkSituation } from "./derechos";
 import type { CareSetting } from "./onboarding/personalisation";
 import type { SyncMeta } from "./sync/merge";
 import type { Locale } from "./i18n/dict";
+import type { ThemeId } from "./hero/themes";
 import { notifyLocalChange } from "./sync/signal";
 import {
   SYNCED_STORES,
@@ -117,6 +118,22 @@ export interface Profile extends Partial<SyncMeta> {
    * the choice reaches her second device without a line of server code.
    */
   locale?: Locale;
+  /**
+   * U7 — the background she chose for the weekly hero, and whether the fruit
+   * comparison shows.
+   *
+   * Both live here for the reason `locale` does (HANDOFF §2: "stored as a local
+   * preference the same way other settings are"): the profile row already
+   * syncs, so the choice follows her to a second device with no new field on
+   * the wire and no server column, and `useLiveQuery` repaints the hero the
+   * moment either changes — no provider, no reload.
+   *
+   * Absent is the default in both cases (`halo`, and the comparison shown), so
+   * no migration writes a value and nobody's hero changes because they
+   * updated. Plain non-indexed fields — no Dexie version bump.
+   */
+  heroTheme?: ThemeId;
+  showComparison?: boolean;
   createdAt: number;
 }
 

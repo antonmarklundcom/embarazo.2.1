@@ -8,6 +8,7 @@ import {
   VideoItemSchema,
   FoodEntrySchema,
   WeeklyLineSchema,
+  ComparisonSchema,
   LimbSizeSchema,
   PerspectiveBandSchema,
   ObstetraNoteSchema,
@@ -95,6 +96,24 @@ const checks: Check[] = [];
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     // Not created yet — the card falls back to the single "tamaño" tab.
+  }
+}
+{
+  // U7 comparison sizes. Keyed by week like the limb sizes, and for the same
+  // reason: this file is edited a week at a time.
+  try {
+    const raw = readJson("lib/seed/comparisons.json") as unknown[];
+    checks.push(
+      validateContentArray(
+        "lib/seed/comparisons.json",
+        raw,
+        ComparisonSchema,
+        (entry) => String(entry.week),
+      ),
+    );
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    // Not created yet — the hero falls back to the baby alone.
   }
 }
 {

@@ -253,6 +253,10 @@ bands (reviewer-gated), share card with the themed hero (backlog note in U7).
 
 ## 10. Ideas not in the queue (from the planning review, so they are not lost)
 
+> The unconfirmed ideas, with implementation insights per idea and the
+> review-session prompt, live in **`docs/IDEAS-BACKLOG.md`** (raise them with
+> `prompts/IDEAS-REVIEW.md`). The list below is the short form.
+
 Ordered roughly by value per hour of the founder's time.
 
 1. **Your partner is user #1, at week 28.** Her real weeks 28–40 are the

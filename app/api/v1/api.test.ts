@@ -1,9 +1,15 @@
 import { describe, it, expect } from "vitest";
 import { NextRequest } from "next/server";
+import {
+  CLIENT_FLAG_KEYS,
+  FLAG_DEFINITIONS,
+  FLAG_KEYS,
+} from "@/lib/flags/keys";
 import { GET as placementsGET } from "./placements/route";
 import { GET as directoryGET } from "./directory/route";
 import { GET as goGET } from "./go/[id]/route";
 import { GET as statsGET } from "./stats/route";
+import { GET as flagsGET } from "./flags/route";
 
 function req(path: string): NextRequest {
   return new NextRequest(`http://localhost${path}`);
@@ -118,6 +124,53 @@ describe("/api/v1/stats takes no parameters either (J3, extended by C7)", () => 
     const res = await statsGET(req("/api/v1/stats"));
     expect(res.status).toBe(200);
     expect((await res.json()).popular).toEqual([]);
+  });
+});
+
+// I5/U1's /api/v1/flags is held to the same rule, and to one more that is
+// specific to it: the response must never carry a server-scope key. The route
+// derives that from each key's declared scope in `lib/flags/keys.ts` rather
+// than from a list it keeps, so this asserts the property the derivation is
+// for — `ai_baby_paused` says something about what the founder is spending,
+// and it is not the device's business.
+describe("/api/v1/flags takes no parameters and publishes client flags only", () => {
+  it("rejects every parameter the other routes used to accept", async () => {
+    for (const param of RETIRED_PARAMS) {
+      const res = await flagsGET(req(`/api/v1/flags?${param}`));
+      expect(res.status, `${param} must be rejected`).toBe(400);
+    }
+  });
+
+  it("rejects anything else too, rather than ignoring it", async () => {
+    for (const param of ["x=1", "key=recomendados", "ai_baby_paused=false"]) {
+      const res = await flagsGET(req(`/api/v1/flags?${param}`));
+      expect(res.status, param).toBe(400);
+    }
+  });
+
+  it("answers the defaults when no database is configured", async () => {
+    // Local-only mode is a supported configuration (ARCHITECTURE.md §4.2), and
+    // the safe default of a flag store that cannot be read is "off".
+    const res = await flagsGET(req("/api/v1/flags"));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ recomendados: false });
+  });
+
+  it("never returns a server-scope key", async () => {
+    const res = await flagsGET(req("/api/v1/flags"));
+    const body = (await res.json()) as Record<string, unknown>;
+    for (const key of FLAG_KEYS) {
+      if (FLAG_DEFINITIONS[key].scope === "server") {
+        expect(Object.keys(body), `${key} is server-scope`).not.toContain(key);
+      }
+    }
+    expect(Object.keys(body)).toEqual([...CLIENT_FLAG_KEYS]);
+  });
+
+  it("sets a cacheable, cookie-free response", async () => {
+    const res = await flagsGET(req("/api/v1/flags"));
+    expect(res.headers.get("Cache-Control")).toContain("max-age=60");
+    expect(res.headers.get("Set-Cookie")).toBeNull();
   });
 });
 

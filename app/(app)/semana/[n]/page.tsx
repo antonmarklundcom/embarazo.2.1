@@ -52,6 +52,7 @@ export default async function SemanaPage({
         sizeComparison={info.sizeComparison}
         lengthCm={info.lengthCm}
         weightG={info.weightG}
+        alt={`Tu bebé a las ${week} semanas`}
       />
 
       <section className="rounded-card border border-line bg-white p-5">

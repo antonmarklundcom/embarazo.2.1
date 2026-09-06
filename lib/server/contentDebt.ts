@@ -37,8 +37,16 @@ import weeklyLinesData from "@/lib/seed/weeklyLines.json";
 // what it means is the moment it is added. `contentDebt.test.ts` fails when a
 // `lib/seed/*.json` file exists with no row.
 
-/** Seed files that are not content collections and have no debt to report. */
-export const NOT_A_COLLECTION = new Set(["articles.json"]);
+/**
+ * Seed files that are not content collections and have no debt to report.
+ *
+ * `comparisons.json` (U7) is here rather than as a row because it carries no
+ * debt to report: it is the real-world size of the week's fruit, complete for
+ * every week 3–42 by test (`lib/seed/comparisons.test.ts`), with no placeholder
+ * gate and no surface that can go dark. A debt row for it would read 0% forever
+ * and teach a founder to skim the list.
+ */
+export const NOT_A_COLLECTION = new Set(["articles.json", "comparisons.json"]);
 
 function entries(value: unknown, key?: string): unknown[] {
   if (Array.isArray(value)) return value;

@@ -167,8 +167,13 @@ const serwist = new Serwist({
     // because `bebe-24.webp` is immutable content at a versioned-by-meaning
     // URL — if the render changes, it is a different week.
     {
+      // U7 widened this to the comparison objects, which are the same kind of
+      // asset for the same reason: `mandioca.webp` is immutable content at a
+      // versioned-by-meaning URL, and one file serves every week that names it.
       matcher: ({ url, sameOrigin }) =>
-        sameOrigin && /^\/assets\/semanas\/bebe-\d+\.webp$/.test(url.pathname),
+        sameOrigin &&
+        (/^\/assets\/semanas\/bebe-\d+\.webp$/.test(url.pathname) ||
+          /^\/assets\/comparaciones\/[a-z0-9-]+\.webp$/.test(url.pathname)),
       handler: new CacheFirst({ cacheName: "mibebe-semanas" }),
     },
     ...defaultCache,

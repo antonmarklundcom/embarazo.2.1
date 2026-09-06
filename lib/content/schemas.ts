@@ -211,6 +211,38 @@ export const LimbSizeSchema = z
 export type LimbSize = z.infer<typeof LimbSizeSchema>;
 
 /**
+ * U7 — the real-world size of the week's comparison item.
+ *
+ * The WORDS stay in `lib/weeks.ts`'s `sizeComparison` and are not duplicated
+ * here: one source for "una mandioca", so a copy edit cannot leave the label
+ * and the drawing disagreeing about what is on screen. `item` below is that
+ * same string, carried only so a test can assert the two files still describe
+ * the same object — it is never rendered from here.
+ *
+ * `itemCm` is the item's LONGEST dimension, approximate and market-realistic
+ * for Paraguay, because that is what `heroScale` compares against the baby's
+ * length. Bounded at 60 cm: a comparison item bigger than a newborn is a typo,
+ * and a silently wrong figure would draw a wrong picture rather than fail.
+ */
+export const ComparisonSchema = z
+  .object({
+    week: z.number().int().min(3).max(42),
+    item: z.string().min(1).max(60),
+    itemCm: z
+      .number()
+      .positive()
+      .max(60, "medida en cm fuera de rango para una fruta — ¿faltó la coma decimal?"),
+    imageSrc: z
+      .string()
+      .regex(
+        /^\/assets\/comparaciones\/[a-z0-9-]+\.webp$/,
+        "la imagen tiene que vivir en /assets/comparaciones/ y ser un .webp",
+      ),
+  })
+  .strict();
+export type Comparison = z.infer<typeof ComparisonSchema>;
+
+/**
  * C4 — the perspective switcher (feature map #13): the same week explained
  * three ways.
  *

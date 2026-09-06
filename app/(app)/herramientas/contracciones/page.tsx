@@ -7,6 +7,8 @@ import { db } from "@/lib/db";
 import { useProfile } from "@/lib/useProfile";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { waLink, defaultPrefill, businessWhatsApp } from "@/lib/whatsapp";
+import { MedicalReviewByline } from "@/components/MedicalReviewByline";
+import { assess511, CONTRACTIONS_511_HINT } from "@/lib/tools/contractions";
 
 // C8 — this button said "Contactar a mi sanatorio" and opened a chat with
 // `+595000000000`: Mi Bebé's own (unset) business number, on the screen a woman
@@ -66,6 +68,17 @@ export default function ContraccionesPage() {
 
   const elapsed =
     runningStart !== null ? Math.round((Date.now() - runningStart) / 1000) : 0;
+
+  const pattern511 = entries
+    ? assess511(
+        entries.map((e) => ({ startedAt: e.startedAt, durationSec: e.durationSec })),
+        Date.now(),
+        {
+          weekAtNow: profile.week,
+          inProgressStartedAt: runningStart ?? undefined,
+        },
+      )
+    : null;
 
   const sanatorio = profile.sanatorioPhone?.trim();
   const waHref = sanatorio
@@ -151,6 +164,16 @@ export default function ContraccionesPage() {
         Esta herramienta es informativa. Si las contracciones son regulares y
         cada vez más seguidas, o ante cualquier duda, contactá a tu sanatorio.
       </p>
+      <MedicalReviewByline />
+
+      {pattern511 && (
+        <div
+          role="alert"
+          className="space-y-2 rounded-card border border-terracotta/30 bg-terracotta/10 p-4 text-sm text-ink"
+        >
+          <p className="font-extrabold">{CONTRACTIONS_511_HINT.es}</p>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/db";
+import { db, type KickSession } from "@/lib/db";
+import { MedicalReviewByline } from "@/components/MedicalReviewByline";
+import { kickBaseline, kickNudge, KICKS_NUDGE_HINT } from "@/lib/tools/kicks";
 
 const GOAL = 10;
 const SESSION_MS = 2 * 60 * 60 * 1000; // 2h goal window
@@ -65,6 +67,17 @@ export default function PataditasPage() {
   const count = active?.count ?? 0;
   const elapsed = active ? Date.now() - active.startedAt : 0;
 
+  // D7 — compare today's most recently *completed* session against her own
+  // last 7, never against a universal number. `sessions` is already ordered
+  // newest-first.
+  const completedSessions = (sessions ?? []).filter(
+    (s): s is KickSession & { completedAt: number } =>
+      s.completedAt !== undefined && s.completedAt > s.startedAt,
+  );
+  const [today, ...priorSessions] = completedSessions;
+  const baseline = kickBaseline(priorSessions);
+  const nudge = today ? kickNudge(today, baseline) : null;
+
   return (
     <div className="space-y-5">
       <header>
@@ -113,6 +126,16 @@ export default function PataditasPage() {
       <div className="rounded-card border border-terracotta/20 bg-terracotta/5 p-4 text-sm text-ink">
         Si notás menos movimiento de lo habitual, contactá a tu sanatorio.
       </div>
+      <MedicalReviewByline />
+
+      {nudge && (
+        <div
+          role="alert"
+          className="space-y-2 rounded-card border border-terracotta/30 bg-terracotta/10 p-4 text-sm text-ink"
+        >
+          <p className="font-extrabold">{KICKS_NUDGE_HINT.es}</p>
+        </div>
+      )}
 
       {sessions && sessions.length > 0 && (
         <section>

@@ -3,7 +3,7 @@
 
 # Guaraní — hoja de revisión
 
-**78 frases**, todas escritas a mano por el equipo y **ninguna revisada
+**80 frases**, todas escritas a mano por el equipo y **ninguna revisada
 todavía por una hablante nativa**. Esta hoja es para eso.
 
 ## Antes de empezar
@@ -90,7 +90,16 @@ Frases de cariño que el papá o la familia le mandan a la mamá con un toque. T
 | 2 | ❤️ te-quiero | Te quiero. | Rohayhu. | |
 | 3 | 🙏 gracias | Gracias por todo lo que estás haciendo. | Aguyje. | |
 
-## 6. Palabras de la app (menús y botones) — 45 frases
+## 6. Herramientas — 5-1-1 y pataditas — 2 frases
+
+El aviso del patrón 5-1-1 en Contracciones y el aviso de menos movimiento en Pataditas (D7). Dos frases nada más, pero cada una puede ser la que decide si alguien llama al sanatorio o no — igual de importante que las señales de alarma.
+
+| # | Dónde | Castellano | Guaraní | Corrección |
+|---|---|---|---|---|
+| 1 | Contracciones · patrón 5-1-1 | Tus contracciones llegan cada 5 minutos y duran cerca de 1 minuto, así desde hace una hora: es momento de llamar a tu sanatorio. | Ne contracción ou 5 minuto-gui 5 minuto-pe ha ipuku peteĩ minuto rupi, peteĩ hora guive: ko'ág̃a ehenói ne sanatorio. | |
+| 2 | Pataditas · menos que tu ritmo | Sentiste menos que tu ritmo habitual — si te preocupa, consultá con tu sanatorio o andá a /emergencia. | Nde memby omýi sa'ive jepivégui — oĩramo ndéve preocupación, eñeporandu ne sanatoriope térã tereho /emergencia-pe. | |
+
+## 7. Palabras de la app (menús y botones) — 45 frases
 
 Las etiquetas de navegación y los botones, que cambian cuando alguien pone la app en guaraní desde Ajustes. Acá no hay nada de salud: es 'Hoy', 'Guardar', 'Ajustes'. Palabras prestadas como 'checklist', 'WhatsApp' o 'internet' se dejaron como se dicen — no hace falta reemplazarlas por equivalentes inventados.
 
@@ -153,7 +162,8 @@ Cada sección sale de un archivo distinto:
 | Secciones 1, 2 y 3 | `lib/emergency.ts` |
 | Sección 4 | `lib/derechos.ts` (sólo el campo `title.gn`) |
 | Sección 5 | `lib/sharing/cheers.ts` |
-| Sección 6 | `lib/i18n/dict.ts` (columna `gn`) |
+| Sección 6 | `lib/tools/contractions.ts`, `lib/tools/kicks.ts` |
+| Sección 7 | `lib/i18n/dict.ts` (columna `gn`) |
 
 Esta hoja se genera con `npm run gen:guarani-review` y un test falla si queda
 desactualizada respecto al código. Al aplicar las correcciones, regenerala.

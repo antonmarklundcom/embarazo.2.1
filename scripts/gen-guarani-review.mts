@@ -12,6 +12,8 @@ import {
 import { BENEFITS } from "../lib/derechos.ts";
 import { CHEERS } from "../lib/sharing/cheers.ts";
 import { DICT, type CoreKey } from "../lib/i18n/dict.ts";
+import { CONTRACTIONS_511_HINT } from "../lib/tools/contractions.ts";
+import { KICKS_NUDGE_HINT } from "../lib/tools/kicks.ts";
 
 // K19 — generate the Guaraní review sheet.
 //
@@ -112,7 +114,19 @@ const sections: Section[] = [
     })),
   },
   {
-    title: "6. Palabras de la app (menús y botones)",
+    title: "6. Herramientas — 5-1-1 y pataditas",
+    why:
+      "El aviso del patrón 5-1-1 en Contracciones y el aviso de menos " +
+      "movimiento en Pataditas (D7). Dos frases nada más, pero cada una puede " +
+      "ser la que decide si alguien llama al sanatorio o no — igual de " +
+      "importante que las señales de alarma.",
+    lines: [
+      { where: "Contracciones · patrón 5-1-1", es: CONTRACTIONS_511_HINT.es, gn: CONTRACTIONS_511_HINT.gn ?? "" },
+      { where: "Pataditas · menos que tu ritmo", es: KICKS_NUDGE_HINT.es, gn: KICKS_NUDGE_HINT.gn ?? "" },
+    ],
+  },
+  {
+    title: "7. Palabras de la app (menús y botones)",
     why:
       "Las etiquetas de navegación y los botones, que cambian cuando alguien " +
       "pone la app en guaraní desde Ajustes. Acá no hay nada de salud: es " +
@@ -180,7 +194,8 @@ Cada sección sale de un archivo distinto:
 | Secciones 1, 2 y 3 | \`lib/emergency.ts\` |
 | Sección 4 | \`lib/derechos.ts\` (sólo el campo \`title.gn\`) |
 | Sección 5 | \`lib/sharing/cheers.ts\` |
-| Sección 6 | \`lib/i18n/dict.ts\` (columna \`gn\`) |
+| Sección 6 | \`lib/tools/contractions.ts\`, \`lib/tools/kicks.ts\` |
+| Sección 7 | \`lib/i18n/dict.ts\` (columna \`gn\`) |
 
 Esta hoja se genera con \`npm run gen:guarani-review\` y un test falla si queda
 desactualizada respecto al código. Al aplicar las correcciones, regenerala.

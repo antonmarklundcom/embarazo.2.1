@@ -1,7 +1,7 @@
 # Sonnet run — build every Sonnet unit in this window, one PR each, merged green, then the link pass.
 
 You are the SONNET build window for the September 2026 queue. It starts after the Opus window has merged
-U1, U6 and U7 (check `docs/BUILD-QUEUE-2026-09-06.md` §10; if U1 is not merged, stop and say so — U2 and U3
+U1, U6 and U7 (check `docs/BUILD-QUEUE-2026-09-06.md` §11; if U1 is not merged, stop and say so — U2 and U3
 need it).
 
 Units, in this order:
@@ -21,7 +21,7 @@ prompt names it.
 Loop, for each unit: `git checkout main && git pull` → read the unit prompt and ONLY its listed files → build
 under the autonomy protocol (§4), committing every 30 minutes → run every §4.3 gate in the session → push →
 open the PR (`U<id> — <name>`, body ≤ 25 lines) → apply the `run-ci` label → fix and re-label until green →
-merge (squash; auto-merge is off) → add the line to §10 (inside the PR) → next unit with a lean context.
+merge (squash; auto-merge is off) → add the line to §11 (inside the PR) → next unit with a lean context.
 If a unit's branch already exists on origin, continue it from the first unmet exit criterion.
 
 Rules that override anything you infer:

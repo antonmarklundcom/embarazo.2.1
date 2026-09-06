@@ -251,7 +251,47 @@ Postpartum "Ya nació" (H1), Play Store packaging (Phase J), any paid tier
 (I3), Ask Flo as a user-facing assistant, I5's broadcast half, weight-gain
 bands (reviewer-gated), share card with the themed hero (backlog note in U7).
 
-## 10. Build log index
+## 10. Ideas not in the queue (from the planning review, so they are not lost)
+
+Ordered roughly by value per hour of the founder's time.
+
+1. **Your partner is user #1, at week 28.** Her real weeks 28–40 are the
+   test plan: the hero, the kicks and contractions tools, the checklist and the
+   carné all get used for real before anyone else does. Her gineco-obstetra is
+   also the most likely medical reviewer and the first consultorio for a QR
+   poster. Ask at the next control.
+2. **Plan H1 (postpartum "Ya nació") before the due date.** If she is the face,
+   the app must have an answer on the day the baby arrives. One Fable planning
+   session in October, Opus/Sonnet windows after this queue.
+3. **Sponsor one-pager now, not after launch.** `/admin/patrocinios` already
+   produces the number; the first targets are the sanatorio and ecografía
+   businesses in Asunción/Central you are already calling for directory
+   consent. Every consent call is also a sponsor conversation. Ley 7383/2024
+   (paid hours for prenatal controls) makes **employers** a second B2B
+   audience — an "Empresas" page on embarazo.com.py, not a code change.
+4. **Distribution is WhatsApp, not Play.** E2 share card and E3 invite exist.
+   Give your partner a weekly "semana N" status routine using the share card;
+   her groups are the first cohort. Facebook groups of mamás paraguayas second.
+5. **Deploy the friends-and-family PWA the week the Opus window finishes**
+   (`nextjs-deploy-hostinger` skill): flags, hero themes and the support
+   console are exactly what a test round needs. Do not wait for the Sonnet
+   window or the renders — the hero looks finished on every theme without them.
+6. **Start the free, slow clocks anyway**: D-U-N-S request (free, needed only
+   if you ever want the Play organisation account), a DINAPI trademark check
+   on the name, the Guaraní sheet to a native speaker.
+7. **Own products later = "canastilla" logic.** When products exist, the
+   Recomendados `kind: "producto"` card with `priceGs` + WhatsApp order is the
+   whole storefront you need for v1; no cart, no checkout, no Play issue.
+8. **Two small debts worth a Sonnet hour when convenient:** `scripts/*.mts`
+   outside `tsc` (two real type errors in the Guaraní generator), and the
+   `next-auth` v5 stable bump when it ships (unblocks Next 16 + eslint 10).
+9. **Measure on a real mid-range Android on mobile data** before launch;
+   Lighthouse in a container is a regression signal, not a field number.
+10. **Ask Flo, if ever:** the U9 corpus of human-approved answers is the
+    training and evaluation set. Build nothing user-facing before there are a
+    few hundred of them.
+
+## 11. Build log index
 
 One line per unit as it merges: `U<n> — PR #… — docs/log/u<n>.md`.
 

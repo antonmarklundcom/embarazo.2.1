@@ -16,7 +16,7 @@ Loop, for each unit:
    `run-ci` label. Wait for the CI check to finish; if it fails, fix, push, remove and re-add `run-ci`.
 5. When CI is green, merge the PR (squash). Auto-merge is off, so you merge it yourself. If you lack
    permission to merge, stop and report the PR URL — do not start the next unit on top of an unmerged one.
-6. Add the unit's line to `docs/BUILD-QUEUE-2026-09-06.md` §10 in the PR itself (before merging).
+6. Add the unit's line to `docs/BUILD-QUEUE-2026-09-06.md` §11 in the PR itself (before merging).
 7. Continue with the next unit in a lean context: do not re-read the plan or previous unit logs unless the
    next prompt's Depends on names them.
 

@@ -269,11 +269,19 @@ describe("every table has a documented disposition", () => {
     );
   });
 
-  it("keeps the audit trail and nothing else", () => {
+  it("keeps only tables that hold nothing of the user's", () => {
+    // Two entries now, and the second is why this is an exact list rather
+    // than a count: `appFlags` (I5/U1) is deployment configuration — one row
+    // per feature switch, a boolean, and the opaque id of the admin who
+    // flipped it. Nothing in it belongs to the account being deleted, and
+    // deleting one user must not silently un-pause a feature for everyone
+    // else. Anything else appearing here is a table that survives "borrá
+    // todo", which is a decision somebody has to make on purpose.
     const retained = Object.entries(TABLE_DISPOSITION)
       .filter(([, rule]) => rule.startsWith("retained"))
-      .map(([table]) => table);
-    expect(retained).toEqual(["adminAudit"]);
+      .map(([table]) => table)
+      .sort();
+    expect(retained).toEqual(["adminAudit", "appFlags"]);
   });
 });
 

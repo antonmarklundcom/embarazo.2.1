@@ -21,6 +21,10 @@ const ADMIN_URLS = [
   // D4 — the review-debt page. It names every seed file and how much of the
   // app is dark, which is a map of what is worth probing.
   "/admin/contenido",
+  // I5/U1 — the feature-flag panel. The page that would tell a stranger which
+  // features exist but are switched off, and the only page in the panel with a
+  // button that changes production behaviour for everybody.
+  "/admin/flags",
 ];
 
 test("every /admin URL 404s for someone who is not an administrator", async ({

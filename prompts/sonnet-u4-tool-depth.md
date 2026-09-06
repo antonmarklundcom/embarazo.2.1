@@ -28,4 +28,4 @@ Build:
   asserts the hint, then a thin history and asserts no nudge.
 
 Exit: gates green (§4.3), both hints visible with seeded data and absent without, Guaraní sheet regenerated.
-Open the PR that turn; write `docs/log/u4.md`. Spawn nothing.
+Open the PR that turn; write `docs/log/u4.md`. Then continue per the run file that started you.

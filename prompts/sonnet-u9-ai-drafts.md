@@ -31,4 +31,4 @@ Build:
   in-memory audit store; e2e: button absent when disabled.
 
 Exit: gates green (§4.3); with the feature disabled the queue is byte-identical to today; with it enabled an admin
-gets an editable draft, audited, capped. Open the PR that turn; write `docs/log/u9.md`. Spawn nothing.
+gets an editable draft, audited, capped. Open the PR that turn; write `docs/log/u9.md`. Then continue per the run file that started you.

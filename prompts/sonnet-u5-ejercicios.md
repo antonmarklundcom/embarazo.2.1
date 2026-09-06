@@ -33,4 +33,4 @@ Build:
 
 Exit: gates green (§4.3); `npm run validate:content` covers the collection and the image check; the tile is
 locked in production today and the README tells the founder exactly which files unlock it. Open the PR that turn;
-write `docs/log/u5.md`. Spawn nothing.
+write `docs/log/u5.md`. Then continue per the run file that started you.

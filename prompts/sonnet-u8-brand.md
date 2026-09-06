@@ -24,4 +24,4 @@ Build:
 
 Exit: gates green (§4.3); `git grep "Mi Bebé" -- components app` returns nothing; the installed PWA shows the
 full title on the install prompt and the short name under the icon. Open the PR that turn; write `docs/log/u8.md`.
-Spawn nothing.
+Then continue per the run file that started you.

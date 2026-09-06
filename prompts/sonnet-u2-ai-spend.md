@@ -26,4 +26,4 @@ Build:
   e2e: `/admin/ia` 404s for a non-admin.
 
 Exit: gates green (§4.3); the founder can read "what did AI cost this month" and pause it in one click, and the
-pause is visible in the audit log. Open the PR that turn; write `docs/log/u2.md`. Spawn nothing.
+pause is visible in the audit log. Open the PR that turn; write `docs/log/u2.md`. Then continue per the run file that started you.

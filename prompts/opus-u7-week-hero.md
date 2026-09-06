@@ -43,4 +43,4 @@ Build:
 
 Exit: gates green (§4.3); with **no** renders present the home hero and `/semana/[n]` look finished on every theme
 (that is production today); with one test render dropped in, it composites with alpha at proportional scale.
-Home LCP not worse than before on a local Lighthouse run. Open the PR that turn; write `docs/log/u7.md`. Spawn nothing.
+Home LCP not worse than before on a local Lighthouse run. Open the PR that turn; write `docs/log/u7.md`. Then continue per the run file that started you.

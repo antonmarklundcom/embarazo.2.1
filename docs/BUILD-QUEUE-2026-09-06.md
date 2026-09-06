@@ -6,7 +6,8 @@ the remaining work into independent, PR-sized units, one prompt file each in
 one was written second, after reviewing the code the handoff describes.
 
 Method: `phased-autonomous-build` (one PR per unit, model fixed at planning
-time, each unit owns its files, cross-cutting edits live in one link pass).
+time, each unit owns its files, cross-cutting edits live in one link pass),
+run as two sequential windows — see §6.
 Fable appears nowhere below; it is not a build model (fable-cost-guardrail).
 
 ---
@@ -158,7 +159,8 @@ Every prompt in `prompts/` references these; they are the
    writes why to `docs/decisions-needed.md` and ends.
 9. Unit log format (`docs/log/<unit>.md`): ≤ 12 lines Built, ≤ 8 Decisions,
    ≤ 8 Known issues, one line Verification.
-10. Sessions spawn nothing. The founder starts each unit by pasting one line.
+10. Units spawn nothing. A runner window (`prompts/RUN-OPUS.md`, `prompts/RUN-SONNET.md`) drives its units in
+    sequence; the founder starts each window by pasting one line.
 
 ## 5. The units
 
@@ -184,21 +186,31 @@ other unit fills an existing shape: a page on an existing admin layout, a
 content type on the existing zod + `publishedOnly` pattern, a pure function
 beside an existing tool.
 
-## 6. Running order
+## 6. Running order — two windows, sequential
+
+The founder runs two chat windows, one after the other, each driving its
+units in sequence with one PR per unit merged green before the next starts.
+No Opus unit depends on a Sonnet unit, so the Opus window goes first and the
+Sonnet window inherits a finished foundation.
 
 ```
-now, in parallel (≤ 4 sessions):   U1 (Opus)   U4   U5   U7 (Opus)
-when U1 merges:                    U6 (Opus)   U2   U3   U8   U9
-when the founder's renders exist:  U10
-when everything above is merged:   U11
+Window 1 — OPUS:   paste  Read prompts/RUN-OPUS.md in this repo and execute it.
+                   builds U1 → U6 → U7, merges each, stops with a report
+
+Window 2 — SONNET: paste  Read prompts/RUN-SONNET.md in this repo and execute it.
+                   builds U4 → U5 → U2 → U3 → U8 → U9 → (U10 if renders exist) → U11
 ```
 
-U4, U5, U7, U8 and U9 do not touch the schema, the admin action list or the
-flag store, so they do not wait for U1. U2 and U3 read flags; U6 adds a
-migration. U8 and U9 are optional — skip either without affecting the rest.
+`prompts/RUN-OPUS.md` and `prompts/RUN-SONNET.md` are the runner prompts;
+each unit prompt ends by handing control back to its runner. A runner keeps a
+lean context between units: it re-reads only the next unit's prompt and the
+files that prompt lists. U8 and U9 are optional — the Sonnet runner skips
+them on a note in `docs/decisions-needed.md`. U10 runs only if the founder's
+renders are already in the repo; otherwise it is a later one-unit session.
 
 Rough cost at recent rates: Opus units $15–25 each, Sonnet units $5–10 →
-**≈ $100–130 for the whole queue**, ≈ 6–8 hours wall-clock across two waves.
+**≈ $100–130 for the whole queue**; wall-clock ≈ 3–4 h for the Opus window
+and ≈ 4–5 h for the Sonnet window.
 
 ## 7. File ownership map (conflict prevention)
 

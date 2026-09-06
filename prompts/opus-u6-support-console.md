@@ -37,4 +37,4 @@ The three support cases and their exact semantics (do not invent others):
 
 Exit: gates green (§4.3); each of the three cases is resolvable from `/admin/usuarios/[id]` without touching the
 database by hand; migration generated with `npm run db:generate` (never hand-written) on top of U1's. Open the PR
-that turn; write `docs/log/u6.md`. Spawn nothing.
+that turn; write `docs/log/u6.md`. Then continue per the run file that started you.

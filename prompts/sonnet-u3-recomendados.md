@@ -28,4 +28,4 @@ Build:
   e2e: flag off → nothing renders; flag on (mock `/api/v1/flags`) → cards render and a CTA hits `/api/v1/go/`.
 
 Exit: gates green (§4.3); `npm run validate:content` covers the collection; with the flag on, the rail shows only
-verified resources; with it off, no trace. Open the PR that turn; write `docs/log/u3.md`. Spawn nothing.
+verified resources; with it off, no trace. Open the PR that turn; write `docs/log/u3.md`. Then continue per the run file that started you.

@@ -20,4 +20,4 @@ Build:
 - Do **not** commit anything under `docs/screenshots/`.
 
 Exit: gates green (§4.3); the hero composites real renders for every week that has one; `/admin/contenido`
-reports exactly what is still missing. Open the PR that turn; write `docs/log/u10.md`. Spawn nothing.
+reports exactly what is still missing. Open the PR that turn; write `docs/log/u10.md`. Then continue per the run file that started you.

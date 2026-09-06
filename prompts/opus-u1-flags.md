@@ -34,4 +34,4 @@ Build:
 
 Exit: gates green (§4.3); `/admin/flags` toggles both keys with an audit row each; `GET /api/v1/flags` returns
 `{"recomendados":false}` on a fresh DB and 400s on `?x=1`; production build passes with `DATABASE_URL` unset.
-Open the PR the turn the criteria pass; write `docs/log/u1.md`. Spawn nothing.
+Open the PR the turn the criteria pass; write `docs/log/u1.md`. Then continue per the run file that started you.

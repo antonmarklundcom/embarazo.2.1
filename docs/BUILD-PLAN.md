@@ -857,9 +857,11 @@ listings and stays honest at 500 because the route already returns everything.
 `H3` is where "directory at scale" lives if that ever stops being true.
 Covered by `lib/directoryBanners.test.ts` (7) and
 `e2e/directory-banners.spec.ts` (1).
-### D6 Training classes (map #22)
-Stage-filtered classes with duration + equipment. Short, downloadable,
-`sin equipo`. **Lowest priority in this phase** — needs video assets.
+### D6 Training classes (map #22) — rescoped 2026-09-06, no longer blocked
+2026-09-06: rescoped to **images + text, no video** (multiple step images
+per exercise allowed) — see `docs/HANDOFF-2026-09-06.md` §2. This removes
+the video-asset blocker; the original video-based scope may return later.
+Stage-filtered classes with duration + equipment. Short, `sin equipo`.
 ### D7 Tool depth (was P2.4)
 Contractions 5-1-1 pattern hint; kicks history + "menos que tu ritmo
 habitual" nudge; weight gain band behind a flag until the reviewer signs
@@ -936,9 +938,14 @@ does not render** — an invitation to nowhere is worse than no button — and
 `navigator.share` falls back to copying the link rather than failing silently.
 Covered by `lib/share/invite.test.ts` (7) and `e2e/invite.spec.ts` (1, run on
 **both** sides of the URL gate).
-### E4 Beneficios tab (map #27)
-Browsable deals surface — **no pop-ups, no interstitials**. Hidden behind
-the `PUBLISHED_*` gate until real partners exist.
+### E4 Beneficios tab (map #27) — **superseded, see `docs/HANDOFF-2026-09-06.md` §2**
+Original scope (kept for history): a browsable sponsor-deals surface — no
+pop-ups, no interstitials, hidden behind the `PUBLISHED_*` gate until real
+partners exist. 2026-09-06: with no sponsors signed yet, the founder chose
+to build the **same card + WhatsApp-order UI as a "Recomendados" rail**
+instead — seeded with his own future products / curated free resources
+rather than sponsor deals, so the same shipped infrastructure serves both
+his own-products plan and, later, real sponsor deals without rework.
 ### E5 "Qué necesitás de verdad" (map #25)
 Not a price comparator (no Prisjakt equivalent in PY): a curated needs
 list with realistic ₲ ranges and where to buy in Asunción.
@@ -1132,7 +1139,17 @@ One dashboard, honest numbers:
 **Done when:** every figure is derivable from stored rows (no estimates),
 date-ranged, and exportable as CSV so it can go into a sponsor deck.
 
-### I3 Subscriptions & purchases — **M**, blocked on a payment decision
+### I3 Subscriptions & purchases — **M**, blocked on a payment decision, deprioritized 2026-09-06
+2026-09-06: the founder decided against any in-app payment path that would
+sit alongside or circumvent Google Play Billing — see
+`docs/HANDOFF-2026-09-06.md` §2. Near-term monetisation is sponsorships/
+partnerships (invoiced outside the app — I2 already covers the numbers a
+sponsor deck needs) and, later, his own physical products in Paraguay
+(exempt from Play Billing, same as any goods-shipping app). This phase
+stays parked with no ledger/screens work until a digital, Play-billed
+paid tier is actually decided on. Original scope kept below for when that
+happens:
+
 The app is free today, so this ships as the **ledger and the screens
 first**, wired to a payment provider later:
 - `subscriptions` (user, plan, status, period, source) and `payments`

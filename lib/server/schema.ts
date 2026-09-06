@@ -731,6 +731,29 @@ export const adminAudit = mysqlTable(
   }),
 );
 
+// ---------------------------------------------------------------------------
+// Runtime feature flags (I5 / U1)
+// ---------------------------------------------------------------------------
+//
+// One row per key in `lib/flags/keys.ts`'s `FLAG_KEYS`, written only through
+// `setFlag` so that no flag can change without an `adminAudit` row next to it.
+//
+// The key is the primary key rather than a surrogate id: there is exactly one
+// current value per flag, and an autoincrement id would invite a second row
+// for the same key and a "whichever we read first" bug in production
+// behaviour. `updatedBy` is an admin user id and is deliberately not a foreign
+// key — A5's deletion removes users and must not be blocked by, or cascade
+// into, the record of what was switched on. It resolves to nobody afterwards,
+// exactly like `adminAudit.actorUserId`.
+export const appFlags = mysqlTable("appFlags", {
+  key: varchar("key", { length: 64 }).primaryKey(),
+  value: boolean("value").default(false).notNull(),
+  updatedAt: timestamp("updatedAt", { mode: "date", fsp: 3 })
+    .defaultNow()
+    .notNull(),
+  updatedBy: varchar("updatedBy", { length: 255 }),
+});
+
 export const schema = {
   users,
   accounts,
@@ -751,4 +774,5 @@ export const schema = {
   placementClicks,
   communityQuestions,
   adminAudit,
+  appFlags,
 };

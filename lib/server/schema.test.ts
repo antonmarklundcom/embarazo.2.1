@@ -221,6 +221,8 @@ describe("schema export", () => {
         "accounts",
         "adminAudit",
         "aiGenerations",
+        // I5/U1 — the runtime flag store.
+        "appFlags",
         "companionSnapshots",
         "companionCheers",
         "companionTasks",

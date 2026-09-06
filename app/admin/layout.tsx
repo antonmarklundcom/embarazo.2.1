@@ -64,6 +64,13 @@ export default async function AdminLayout({
             >
               Contenido
             </Link>
+            {/* I5/U1 — the runtime feature flags. */}
+            <Link
+              href="/admin/flags"
+              className="text-[13px] font-extrabold text-petrol"
+            >
+              Funciones
+            </Link>
             {/* K20 — the moderation queue. */}
             <Link
               href="/admin/preguntas"

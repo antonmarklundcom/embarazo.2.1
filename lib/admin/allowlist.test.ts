@@ -61,6 +61,10 @@ describe("audited actions", () => {
         // on somebody else's words, so it is audited like any other.
         "question_approved",
         "question_rejected",
+        // I5/U1: a flag flip changes production behaviour for everyone with
+        // no deploy and no commit behind it, so the audit row is the only
+        // trace it leaves.
+        "flag_changed",
       ].sort(),
     );
   });

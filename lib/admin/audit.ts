@@ -18,6 +18,11 @@ export const ADMIN_ACTIONS = [
   // somebody else's words, so it is audited like any other admin action.
   "question_approved",
   "question_rejected",
+  // I5/U1. Flipping a flag changes what production does for everyone, with no
+  // deploy and no commit to point at afterwards. The audit row is the only
+  // record that it happened, which makes it the reason `setFlag` writes both
+  // or neither.
+  "flag_changed",
 ] as const;
 
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
@@ -58,6 +63,15 @@ export const AUDIT_META_SCHEMAS = {
   // them here would put user-written words in the one table deletion keeps.
   question_approved: z.object({ questionId: z.string().min(1).max(64) }).strict(),
   question_rejected: z.object({ questionId: z.string().min(1).max(64) }).strict(),
+  // I5/U1: which flag, and what it became. Nothing else — the key is one of
+  // `FLAG_KEYS` and the value is a boolean, so this row can never carry a
+  // user's anything. Typed as a plain string rather than an enum of the flag
+  // keys so that this module stays dependency-free (`lib/flags/keys.ts` is
+  // pure, but the audit vocabulary predates it and importing one pure module
+  // into another to narrow a 64-char string buys nothing a test does not).
+  flag_changed: z
+    .object({ key: z.string().min(1).max(64), value: z.boolean() })
+    .strict(),
 } as const satisfies Record<AdminAction, z.ZodType>;
 
 /**

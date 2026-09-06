@@ -122,6 +122,13 @@ export const TABLE_DISPOSITION = {
   // on request would mean a support-requested deletion could erase its own
   // evidence.
   adminAudit: "retained (audit trail, no identity, no content)",
+
+  // I5/U1. RETAINED, for the same reasoning as `adminAudit`: this is
+  // deployment configuration, not anybody's data. There is no health content
+  // in it and no user in it — `updatedBy` is an opaque admin id that resolves
+  // to nobody once that admin's account is gone. Deleting a user must not
+  // silently turn a paused feature back on.
+  appFlags: "retained (deployment config, no user data)",
 } as const satisfies Record<keyof typeof schema, string>;
 
 export interface DeletionCounts {

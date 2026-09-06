@@ -140,7 +140,13 @@ const serwist = new Serwist({
       matcher: ({ url }) =>
         url.pathname === "/api/v1/placements" ||
         url.pathname === "/api/v1/directory" ||
-        url.pathname === "/api/v1/preguntas",
+        url.pathname === "/api/v1/preguntas" ||
+        // I5/U1: the feature flags. Same everywhere, cheap, and the reason it
+        // is here rather than left to `defaultCache` is the hook's promise —
+        // `useFlag` must never blank a render, so an offline device wants its
+        // last known answer rather than a failed fetch falling back to the
+        // default and hiding a rail it had yesterday.
+        url.pathname === "/api/v1/flags",
       handler: new NetworkFirst({
         cacheName: "mibebe-api",
         networkTimeoutSeconds: 5,

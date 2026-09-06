@@ -4288,6 +4288,26 @@ independent of the PR that implements it.
 See `docs/LAUNCH-CHECKLIST.md` and `docs/ANDROID-LAUNCH.md` for the items
 this does and does not remove from the founder's plate.
 
+## 2026-09-06 — product-planning session: image style, monetisation, scope
+
+Full write-up in `docs/HANDOFF-2026-09-06.md` — read that before building
+any of this. One-line pointers, so a `DECISIONS.md` scan finds them:
+
+- Week-hero image style picked (semi-realistic soft-glow 3D render, no
+  genitalia); background-theme selector + fruit-comparison toggle planned
+  once assets land.
+- No in-app payments/subscriptions alongside or around Google Play
+  Billing — monetisation is sponsorships/partnerships now, the founder's
+  own physical products later. I3 (BUILD-PLAN.md) deprioritized
+  accordingly.
+- E4 "Beneficios" tab replaced with a "Recomendados" rail (no sponsors
+  signed yet; same UI, seeded with the founder's own future products
+  instead).
+- D6 training classes rescoped to images + text (no video) — no longer
+  blocked.
+- Queued next: I4 (AI usage/spend panel), I5 flag-toggle half, I1 (admin
+  support console gaps), D7 (tool polish).
+
 ## PR-20 (planned) — email + password sign-in alongside Google
 
 Founder decision, 2026-09-05: add a `Credentials` provider so someone can

@@ -84,6 +84,9 @@ export async function pushRecords(
   userId: string,
   records: SyncRecordInput[],
   now: number,
+  // I1/U6. Threaded through rather than read here so these handlers stay
+  // storage-free and testable against a Map (see the note at the top).
+  epoch?: number,
 ): Promise<PushResponse> {
   const results: PushResult[] = [];
   const writable: SyncRecordInput[] = [];
@@ -101,7 +104,8 @@ export async function pushRecords(
     writable.push(record);
   }
 
-  if (writable.length === 0) return { results, serverTime: now, accountId: userId };
+  if (writable.length === 0)
+    return { results, serverTime: now, accountId: userId, epoch };
 
   // De-duplicate within the batch, newest wins, so one request cannot contain
   // two versions of the same record and leave the outcome up to row order.
@@ -153,7 +157,7 @@ export async function pushRecords(
 
   if (toWrite.length > 0) await backend.upsertMany(toWrite);
 
-  return { results, serverTime: now, accountId: userId };
+  return { results, serverTime: now, accountId: userId, epoch };
 }
 
 // ---------------------------------------------------------------------------
@@ -165,6 +169,7 @@ export async function pullRecords(
   userId: string,
   query: { since: number; limit?: number; cursor?: string },
   now: number,
+  epoch?: number,
 ): Promise<PullResponse> {
   const limit = Math.min(query.limit ?? DEFAULT_PULL_LIMIT, MAX_PULL_LIMIT);
   const cursor = query.cursor ? decodeCursor(query.cursor) : null;
@@ -201,6 +206,7 @@ export async function pullRecords(
     })),
     serverTime: now,
     accountId: userId,
+    epoch,
   };
 
   if (hasMore) {

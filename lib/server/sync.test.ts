@@ -528,3 +528,111 @@ describe("pullRecords", () => {
     expect(second.nextCursor).toBeUndefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// BUILD-PLAN I1 / U6 — the support-forced resync
+// ---------------------------------------------------------------------------
+//
+// Run against the real `pullRecords` handler, like everything else in this
+// file, because the property being asserted is about the protocol and not
+// about one component: a device that sees a new epoch forgets its cursor, and
+// a full re-pull cannot cost anybody a record.
+//
+// The device harness above is deliberately not reused. It has no epoch
+// handling — it is the A3 client — and that is exactly the compatibility case
+// worth pinning: an older device must keep working against a server that has
+// started sending the field.
+
+describe("forcing a resync", () => {
+  /** A device that has fallen behind: it holds a cursor past existing rows. */
+  async function seeded() {
+    const backend = memoryBackend();
+    const a = new Device(backend, "A");
+    a.write("weightEntries", "w1", { date: 100, kg: 61 }, 1_000);
+    a.write("weightEntries", "w2", { date: 200, kg: 62 }, 1_100);
+    await a.sync(1_200);
+    return { backend, a };
+  }
+
+  it("re-delivers everything from a cursor of zero", async () => {
+    const { backend } = await seeded();
+
+    // Where a device that had already caught up would resume: nothing new.
+    const caughtUp = await pullRecords(
+      backend,
+      USER,
+      { since: 99_999 },
+      2_000,
+      1,
+    );
+    expect(caughtUp.records).toEqual([]);
+    expect(caughtUp.epoch).toBe(1);
+
+    // What the same device does after seeing a new epoch: cursor back to 0.
+    const reset = await pullRecords(backend, USER, { since: 0 }, 2_000, 2);
+    expect(reset.records.map((r) => r.recordId).sort()).toEqual(["w1", "w2"]);
+    expect(reset.epoch).toBe(2);
+  });
+
+  it("cannot overwrite a newer local record — a re-pull is not a restore", async () => {
+    // The property the whole feature rests on. Support presses the button for
+    // one woman; every device she owns re-pulls. A device holding an edit the
+    // server has not seen must not lose it, or "arreglar la sincronización"
+    // becomes "borrar lo de ayer".
+    const { backend, a } = await seeded();
+
+    a.write("weightEntries", "w1", { date: 100, kg: 64 }, 9_000);
+
+    const page = await pullRecords(backend, USER, { since: 0 }, 9_500, 2);
+    for (const record of page.records) {
+      const local = a.get("weightEntries", record.recordId);
+      const merged = mergeIncoming(
+        "weightEntries",
+        {
+          store: "weightEntries",
+          recordId: record.recordId,
+          updatedAt: record.updatedAt,
+          deletedAt: record.deletedAt ?? null,
+          payload: record.payload ?? null,
+        },
+        local,
+      );
+      if (merged.apply && merged.row) {
+        a.rows.set(`weightEntries|${record.recordId}`, merged.row);
+      }
+    }
+
+    expect(a.get("weightEntries", "w1")?.kg).toBe(64);
+    expect(a.get("weightEntries", "w1")?.dirty).toBe(1);
+  });
+
+  it("converges two devices after the reset, with no record lost", async () => {
+    const { backend, a } = await seeded();
+    const b = new Device(backend, "B");
+
+    // B has never synced. A full pull from zero is what it does anyway, which
+    // is the point: the epoch makes an existing device behave like a new one.
+    await b.sync(3_000);
+
+    expect(visible(b, "weightEntries").map((r) => r.uid).sort()).toEqual([
+      "w1",
+      "w2",
+    ]);
+    expect(visible(a, "weightEntries").length).toBe(2);
+  });
+
+  it("is omitted, not invented, when the server has no epoch to report", async () => {
+    // An older deployment sends nothing. The client reads `undefined` as
+    // "unchanged" and never resets, so neither half has to deploy first.
+    const { backend } = await seeded();
+    const page = await pullRecords(backend, USER, { since: 0 }, 2_000);
+    expect(page.epoch).toBeUndefined();
+    expect(page.records.length).toBe(2);
+  });
+
+  it("reports the epoch on a push too, so a write-only device also learns", async () => {
+    const { backend } = await seeded();
+    const result = await pushRecords(backend, USER, [], 2_000, 7);
+    expect(result.epoch).toBe(7);
+  });
+});

@@ -6,6 +6,11 @@ import {
   extendInvite,
   revokeInvite,
   supportDeleteAccount,
+  supportForceResync,
+  supportRemoveDevice,
+  supportRestoreRecord,
+  supportRevokeMembership,
+  supportRevokeSessions,
   type AdminActionState,
 } from "@/app/admin/actions";
 
@@ -123,12 +128,128 @@ function DeleteAccount({
   );
 }
 
+// ---------------------------------------------------------------------------
+// I1/U6 — the three support tickets
+// ---------------------------------------------------------------------------
+//
+// One small button per repair rather than one "arreglar cuenta" that does
+// several things. Each of these is performed on somebody else's account
+// because of something they said on WhatsApp, so the administrator should be
+// choosing exactly one of them and reading what it does first.
+//
+// None of them asks for typed confirmation, and that is deliberate: unlike
+// deletion, every one is reversible or repeatable. Cutting the wrong member
+// can be re-invited; a removed device re-subscribes on next open; a forced
+// resync is idempotent; a restore can be re-deleted from her own phone.
+
+function SupportButton({
+  action,
+  label,
+  hidden,
+  tone = "petrol",
+}: {
+  action: (state: AdminActionState, form: FormData) => Promise<AdminActionState>;
+  label: string;
+  /** Hidden inputs naming what is being acted on. */
+  hidden: Record<string, string>;
+  tone?: "petrol" | "terracotta";
+}) {
+  const [state, submit, pending] = useActionState<AdminActionState, FormData>(
+    action,
+    {},
+  );
+
+  return (
+    <form action={submit} className="inline-block">
+      {Object.entries(hidden).map(([name, value]) => (
+        <input key={name} type="hidden" name={name} value={value} />
+      ))}
+      <button
+        type="submit"
+        disabled={pending}
+        className={`min-h-[40px] rounded-tile bg-white px-3 text-xs font-extrabold shadow-soft disabled:opacity-60 ${
+          tone === "terracotta" ? "text-terracotta" : "text-petrol"
+        }`}
+      >
+        {pending ? "…" : label}
+      </button>
+      <Feedback state={state} />
+    </form>
+  );
+}
+
 export function AdminUserActions(
   props:
     | { kind: "invite"; code: string }
-    | { kind: "delete"; userId: string; email: string; recordCount: number },
+    | { kind: "delete"; userId: string; email: string; recordCount: number }
+    | { kind: "membership"; membershipId: string }
+    | { kind: "device"; userId: string; subscriptionId: string }
+    | { kind: "sessions"; userId: string }
+    | { kind: "resync"; userId: string }
+    | { kind: "restore"; userId: string; store: string; recordId: string },
 ) {
   if (props.kind === "invite") return <InviteActions code={props.code} />;
+
+  if (props.kind === "membership") {
+    return (
+      <SupportButton
+        action={supportRevokeMembership}
+        label="Cortar acceso"
+        tone="terracotta"
+        hidden={{ id: props.membershipId }}
+      />
+    );
+  }
+
+  if (props.kind === "device") {
+    return (
+      <SupportButton
+        action={supportRemoveDevice}
+        label="Quitar dispositivo"
+        tone="terracotta"
+        hidden={{
+          userId: props.userId,
+          subscriptionId: props.subscriptionId,
+        }}
+      />
+    );
+  }
+
+  if (props.kind === "sessions") {
+    return (
+      <SupportButton
+        action={supportRevokeSessions}
+        label="Cerrar sesión en todos los dispositivos"
+        tone="terracotta"
+        hidden={{ userId: props.userId }}
+      />
+    );
+  }
+
+  if (props.kind === "resync") {
+    return (
+      <SupportButton
+        action={supportForceResync}
+        label="Forzar resincronización"
+        hidden={{ userId: props.userId }}
+      />
+    );
+  }
+
+  if (props.kind === "restore") {
+    return (
+      <SupportButton
+        action={supportRestoreRecord}
+        label="Restaurar"
+        hidden={{
+          userId: props.userId,
+          store: props.store,
+          recordId: props.recordId,
+        }}
+      />
+    );
+  }
+
   return (
     <DeleteAccount
       userId={props.userId}

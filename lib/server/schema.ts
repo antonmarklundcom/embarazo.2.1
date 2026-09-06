@@ -82,6 +82,25 @@ export const users = mysqlTable(
       length: 64,
     }),
 
+    // I1/U6 — "cerrar sesión en todos los dispositivos", for a lost or stolen
+    // phone. Stamped into the JWT at sign-in and compared on every request
+    // (lib/server/auth.ts): bumping it invalidates every token issued before
+    // the bump, which is the only way to end a session in a JWT strategy
+    // without giving up the cookie-only reads that strategy exists for.
+    //
+    // An INT rather than a timestamp, deliberately: the comparison is
+    // equality, not ordering, so there is no clock skew to reason about and
+    // no "was this token issued in the same millisecond" edge.
+    sessionVersion: int("sessionVersion").default(0).notNull(),
+
+    // I1/U6 — "forzar resincronización", for "perdí mis datos".
+    //
+    // Carried on every sync response. When a device sees a value different
+    // from the one it stored, it resets its pull cursor to 0 and re-pulls
+    // everything. Last-write-wins makes a full re-pull idempotent, so this is
+    // safe to press twice and safe to press on a healthy account.
+    syncEpoch: int("syncEpoch").default(0).notNull(),
+
     createdAt: timestamp("createdAt", { mode: "date", fsp: 3 })
       .defaultNow()
       .notNull(),

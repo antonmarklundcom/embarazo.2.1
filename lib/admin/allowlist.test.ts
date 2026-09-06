@@ -65,6 +65,14 @@ describe("audited actions", () => {
         // no deploy and no commit behind it, so the audit row is the only
         // trace it leaves.
         "flag_changed",
+        // I1/U6: the support console's five repairs. Each acts on somebody
+        // else's account because of something they said on WhatsApp, which is
+        // exactly the access that needs a name attached to it afterwards.
+        "member_revoked",
+        "device_removed",
+        "sessions_revoked",
+        "resync_forced",
+        "record_restored",
       ].sort(),
     );
   });

@@ -113,6 +113,13 @@
       "when": 1788658135027,
       "tag": "0015_dry_serpent_society",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "5",
+      "when": 1788661004287,
+      "tag": "0016_silent_callisto",
+      "breakpoints": true
     }
   ]
 }

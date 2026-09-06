@@ -72,6 +72,7 @@ async function writeSyncState(
     lastSyncAt: patch.lastSyncAt ?? current?.lastSyncAt,
     accountId: patch.accountId ?? current?.accountId,
     linkedAt: patch.linkedAt ?? current?.linkedAt,
+    epoch: patch.epoch ?? current?.epoch,
     // Deliberately NOT carried forward: an error is about the last attempt,
     // and a stale one would keep a fixed problem on screen forever.
     lastError: patch.lastError,
@@ -145,6 +146,7 @@ async function push(): Promise<number> {
     if (!res.ok) throw httpError(res.status);
 
     const body = (await res.json()) as PushResponse;
+    await observeEpoch(body.epoch);
     const sent = new Map(
       batch.map(({ store, row }) => [`${store} ${row.uid}`, row.updatedAt]),
     );
@@ -161,6 +163,43 @@ async function push(): Promise<number> {
     }
   }
   return pushed;
+}
+
+// ---------------------------------------------------------------------------
+// I1/U6 — the support-forced resync
+// ---------------------------------------------------------------------------
+//
+// Every sync response carries the account's `epoch`. When the value differs
+// from the one this device stored, support has pressed "forzar
+// resincronización" for somebody who lost their data, and the device answers by
+// forgetting where it had got to: `lastPulledAt` goes back to 0, so the next
+// pull walks the whole account again.
+//
+// Safe to do at any moment, and that is the property the feature rests on.
+// A full re-pull is not a restore — every record is still merged by
+// last-write-wins on its own `updatedAt`, so nothing newer on this phone can be
+// overwritten by something older on the server. The worst case is bandwidth.
+//
+// A server that sends no epoch (an older deployment) leaves this untouched:
+// `undefined` is "unchanged", never "reset".
+
+/** True when the reset ran, i.e. the caller should pull from zero. */
+async function observeEpoch(epoch: number | undefined): Promise<boolean> {
+  if (typeof epoch !== "number") return false;
+
+  const state = await readSyncState();
+  if (state?.epoch === epoch) return false;
+
+  // A device that has never recorded an epoch adopts the current one without
+  // re-pulling: it has nothing to repair, and treating "first sight" as a
+  // change would make every existing install re-download its whole account
+  // once, for nothing, on the deploy that ships this.
+  const firstSight = state?.epoch === undefined;
+  await writeSyncState({
+    epoch,
+    lastPulledAt: firstSight ? (state?.lastPulledAt ?? 0) : 0,
+  });
+  return !firstSight;
 }
 
 // ---------------------------------------------------------------------------
@@ -204,7 +243,7 @@ async function applyIncoming(
 }
 
 async function pull(): Promise<{ pulled: number; conflicts: number }> {
-  const since = (await readSyncState())?.lastPulledAt ?? 0;
+  let since = (await readSyncState())?.lastPulledAt ?? 0;
   let cursor: string | undefined;
   let pulled = 0;
   let conflicts = 0;
@@ -224,6 +263,16 @@ async function pull(): Promise<{ pulled: number; conflicts: number }> {
     if (!res.ok) throw httpError(res.status);
 
     const body = (await res.json()) as PullResponse;
+
+    // Checked on the first page, before anything is applied: if the epoch
+    // moved, this page was fetched from the wrong place and the walk starts
+    // again from zero.
+    if (page === 0 && (await observeEpoch(body.epoch))) {
+      since = 0;
+      highWater = 0;
+      cursor = undefined;
+      continue;
+    }
 
     for (const record of body.records) {
       highWater = Math.max(highWater, record.serverUpdatedAt);

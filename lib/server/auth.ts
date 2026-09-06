@@ -46,6 +46,34 @@ import {
 // The Drizzle adapter is still present — it owns `users` and `accounts`, so
 // account linking by email and the A5 deletion story work unchanged.
 
+/**
+ * The account's current session version, or null when it cannot be read.
+ *
+ * Null — no database, a missing row, a query that threw — leaves the session
+ * alone rather than signing everybody out. A revocation feature that logs the
+ * whole userbase out during a database hiccup is worse than one that is late.
+ */
+async function currentSessionVersion(userId: string): Promise<number | null> {
+  if (!isDatabaseConfigured()) return null;
+  try {
+    const [row] = await db()
+      .select({ sessionVersion: users.sessionVersion })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    return row?.sessionVersion ?? null;
+  } catch {
+    return null;
+  }
+}
+
+declare module "@auth/core/jwt" {
+  interface JWT {
+    /** I1/U6 — the account's session version at the moment this was issued. */
+    sessionVersion?: number | null;
+  }
+}
+
 declare module "next-auth" {
   interface Session {
     user: {
@@ -192,11 +220,39 @@ function buildConfig(): NextAuthConfig {
         // `user` is only present on the sign-in pass; afterwards the id rides
         // in the token, which is what lets sessions survive a reload with no
         // database read.
-        if (user?.id) token.sub = user.id;
+        if (user?.id) {
+          token.sub = user.id;
+          // I1/U6 — "cerrar sesión en todos los dispositivos".
+          //
+          // The account's session version is stamped into the token HERE, once,
+          // at sign-in. Every later request compares the stamp against the
+          // database, so bumping the column (lib/server/support.ts) makes every
+          // token issued before the bump stop resolving to a user.
+          //
+          // This is the price of the JWT strategy, paid deliberately. Database
+          // sessions would make revocation a DELETE, but they would also make
+          // every page render a round-trip to Hostinger's MySQL, which
+          // ARCHITECTURE.md §6 rules out for Paraguayan mobile data. One read
+          // on a request that already has a session is the smaller cost, and it
+          // is the only thing standing between a stolen phone and a support
+          // ticket nobody can answer.
+          token.sessionVersion = await currentSessionVersion(user.id);
+        }
         return token;
       },
       async session({ session, token }) {
-        if (token.sub) session.user.id = token.sub;
+        if (!token.sub) return session;
+
+        // A token whose stamp no longer matches the account is spent. Returning
+        // a session with no user id is how this strategy says "signed out":
+        // every caller already treats a missing id that way (`getSession()` is
+        // null-checked everywhere), so revocation needs no new branch anywhere.
+        const current = await currentSessionVersion(token.sub);
+        if (current !== null && token.sessionVersion !== current) {
+          return { ...session, user: { ...session.user, id: "" } };
+        }
+
+        session.user.id = token.sub;
         return session;
       },
     },

@@ -104,6 +104,52 @@ export function toPayload(
   return payload;
 }
 
+// ---------------------------------------------------------------------------
+// I1/U6 — the un-delete, and why it needs its own rule
+// ---------------------------------------------------------------------------
+//
+// The support console can clear a tombstone ("restaurar registro borrado",
+// lib/server/support.ts). That row comes down the wire live — `deletedAt: null`
+// — with a **null payload**, because `toPayload` above deliberately drops the
+// body of a deleted record so the server never holds the contents of something
+// the user deleted.
+//
+// Without the two rules below, that restore would be the most destructive
+// operation in the app. It carries a fresh `updatedAt`, so it wins
+// last-write-wins on every device; spreading `incoming.payload ?? {}` would
+// then replace a device's intact record with an empty one. The feature whose
+// entire purpose is recovering a woman's data would delete it instead, on
+// every phone she owns, with no error anywhere.
+//
+// So:
+//
+//   1. A live record arriving with no payload never blanks a body this device
+//      already holds — it un-deletes what is here. This is the same principle
+//      `WITHHELD_NOTE` already applies one field lower down: an absence on the
+//      wire is not an instruction to erase.
+//   2. On a device with nothing to restore, the restore is not applied at all
+//      (`mergeIncoming` below). An empty row for a record this phone never had
+//      is not a recovery, it is litter.
+//
+// A normal record always carries a payload, so neither rule can fire on one.
+
+/** True for a live record with no body — i.e. an un-delete from the panel. */
+function isBodylessRestore(incoming: SyncEnvelope): boolean {
+  return incoming.payload === null && !incoming.deletedAt;
+}
+
+/** A local row's own fields, without the sync engine's bookkeeping. */
+function bodyOf(local: LocalRow | undefined): Record<string, unknown> {
+  if (!local) return {};
+  const body: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(local)) {
+    if ((SYNC_META_FIELDS as readonly string[]).includes(key)) continue;
+    if (value === undefined) continue;
+    body[key] = value;
+  }
+  return body;
+}
+
 /**
  * Build the local row to write from an incoming envelope.
  *
@@ -119,7 +165,10 @@ export function applyPayload(
   local: LocalRow | undefined,
 ): LocalRow {
   const row: LocalRow = {
-    ...(incoming.payload ?? {}),
+    // I1/U6: an un-delete carries no body, so it must not become one.
+    // `restoredBody` is the local row's fields in that one case and the
+    // incoming payload in every other. See the comment on `isBodylessRestore`.
+    ...(isBodylessRestore(incoming) ? bodyOf(local) : (incoming.payload ?? {})),
     uid: incoming.recordId,
     updatedAt: incoming.updatedAt,
     deletedAt: incoming.deletedAt ?? null,
@@ -153,7 +202,9 @@ export type MergeReason =
   | "insert"
   | "remote-newer"
   | "local-newer"
-  | "same-timestamp";
+  | "same-timestamp"
+  /** I1/U6: an un-delete arrived for a record this device never had. */
+  | "nothing-to-restore";
 
 export interface ConflictDraft {
   store: SyncedStore;
@@ -187,6 +238,12 @@ export function mergeIncoming(
   local: LocalRow | undefined,
 ): MergeResult {
   if (!local) {
+    // I1/U6: an un-delete for a record this device has never held has nothing
+    // to restore. Inserting the empty row would put a blank entry in her
+    // history that she never wrote and cannot explain.
+    if (isBodylessRestore(incoming)) {
+      return { apply: false, reason: "nothing-to-restore", row: null, conflict: null };
+    }
     return {
       apply: true,
       reason: "insert",
@@ -242,6 +299,11 @@ function conflictFor(
   // A withheld note carries no text to compare against, and the local note is
   // preserved rather than overwritten (see applyPayload), so nothing is lost.
   if (incoming.payload?.[WITHHELD_NOTE] === true) return null;
+  // I1/U6: same reasoning for an un-delete. It carries no body at all, and
+  // applyPayload keeps this device's, so there is no losing version to
+  // surface — raising a conflict here would ask her to resolve a difference
+  // between her note and nothing.
+  if (isBodylessRestore(incoming)) return null;
   if (localNote === remoteNote) return null;
   if (localNote.length === 0) return null;
 

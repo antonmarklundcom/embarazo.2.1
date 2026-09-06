@@ -186,31 +186,26 @@ other unit fills an existing shape: a page on an existing admin layout, a
 content type on the existing zod + `publishedOnly` pattern, a pure function
 beside an existing tool.
 
-## 6. Running order — two windows, sequential
-
-The founder runs two chat windows, one after the other, each driving its
-units in sequence with one PR per unit merged green before the next starts.
-No Opus unit depends on a Sonnet unit, so the Opus window goes first and the
-Sonnet window inherits a finished foundation.
+## 6. Running order — two windows, one prompt each
 
 ```
-Window 1 — OPUS:   paste  Read prompts/RUN-OPUS.md in this repo and execute it.
-                   builds U1 → U6 → U7, merges each, stops with a report
+Window 1 — SONNET: paste  Read prompts/RUN-SONNET.md in this repo and execute it.
+                   Part A: asks the founder the open decisions in chat, records them, merges.
+                   Part B: builds U4 → U5 → U8 → U9 (nothing here needs Opus work).
 
-Window 2 — SONNET: paste  Read prompts/RUN-SONNET.md in this repo and execute it.
-                   builds U4 → U5 → U2 → U3 → U8 → U9 → (U10 if renders exist) → U11
+Window 2 — OPUS:   paste  Read prompts/RUN-OPUS.md in this repo and execute it.
+                   builds U1 → U6 → U7, then U2 → U3 → (U10 if renders exist) → U11 link pass.
 ```
 
-`prompts/RUN-OPUS.md` and `prompts/RUN-SONNET.md` are the runner prompts;
-each unit prompt ends by handing control back to its runner. A runner keeps a
-lean context between units: it re-reads only the next unit's prompt and the
-files that prompt lists. U8 and U9 are optional — the Sonnet runner skips
-them on a note in `docs/decisions-needed.md`. U10 runs only if the founder's
-renders are already in the repo; otherwise it is a later one-unit session.
+U2, U3, U10 and U11 are Sonnet-sized but run in the Opus window because they
+depend on U1/U7 and the founder asked for two windows total; that costs
+roughly $30 more than a third Sonnet window would. Each unit is still its own
+PR, merged green before the next starts, and each runner keeps a lean context
+between units. Later, any day: `Read prompts/IDEAS-REVIEW.md …` (Sonnet) to
+walk through `docs/IDEAS-BACKLOG.md`.
 
-Rough cost at recent rates: Opus units $15–25 each, Sonnet units $5–10 →
-**≈ $100–130 for the whole queue**; wall-clock ≈ 3–4 h for the Opus window
-and ≈ 4–5 h for the Sonnet window.
+Rough cost: Sonnet window $30–45, Opus window $90–120 → **≈ $120–165**;
+wall-clock ≈ 3 h + 6–7 h.
 
 ## 7. File ownership map (conflict prevention)
 

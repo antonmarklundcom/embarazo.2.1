@@ -1,22 +1,23 @@
-# Sonnet run — build every Sonnet unit in this window, one PR each, merged green, then the link pass.
+# Sonnet run — window 1 of 2. Record the founder's decisions, then build every unit that needs no Opus work.
 
-You are the SONNET build window for the September 2026 queue. It starts after the Opus window has merged
-U1, U6 and U7 (check `docs/BUILD-QUEUE-2026-09-06.md` §11; if U1 is not merged, stop and say so — U2 and U3
-need it).
+You are the SONNET window for the September 2026 queue. The Opus window runs after you and depends on nothing you
+build; you depend on nothing it builds.
 
-Units, in this order:
+## Part A — decisions (10 minutes, in chat, before any code)
+Follow `prompts/DECIDE.md` exactly, except: do it on branch `unit/decisions`, open its PR, apply `run-ci`, merge
+when green, then continue below in this same window. If the founder is not answering within a few minutes,
+say "defaults apply" and continue — no decision here blocks a build.
+
+## Part B — build, in this order, one PR each
 1. U4 `prompts/sonnet-u4-tool-depth.md`
 2. U5 `prompts/sonnet-u5-ejercicios.md`
-3. U2 `prompts/sonnet-u2-ai-spend.md`
-4. U3 `prompts/sonnet-u3-recomendados.md`
-5. U8 `prompts/sonnet-u8-brand.md` — skip if `docs/decisions-needed.md` says the founder wants to postpone the name
-6. U9 `prompts/sonnet-u9-ai-drafts.md`
-7. U10 `prompts/sonnet-u10-hero-assets.md` — only if the founder's renders exist in the repo (a `src/` folder
-   under `public/assets/semanas/` or a branch named in `docs/decisions-needed.md`); otherwise skip and note it
-8. U11 `prompts/sonnet-u11-link-pass.md` — always last
+3. U8 `prompts/sonnet-u8-brand.md` — skip if B3 said no
+4. U9 `prompts/sonnet-u9-ai-drafts.md` — skip if B4 said no
 
-Orientation (once): read `docs/BUILD-QUEUE-2026-09-06.md` §2, §4, §7. Nothing else from `docs/` unless a unit
-prompt names it.
+Do NOT build U2, U3, U10 or U11 — they depend on U1/U7 and belong to the Opus window.
+
+Orientation (once): `docs/BUILD-QUEUE-2026-09-06.md` §2, §4, §7. Nothing else from `docs/` unless a unit prompt
+names it.
 
 Loop, for each unit: `git checkout main && git pull` → read the unit prompt and ONLY its listed files → build
 under the autonomy protocol (§4), committing every 30 minutes → run every §4.3 gate in the session → push →
@@ -26,13 +27,13 @@ If a unit's branch already exists on origin, continue it from the first unmet ex
 
 Rules that override anything you infer:
 - One unit per PR; never bundle; never build on top of an unmerged unit.
-- Only U11 edits `app/(app)/page.tsx`, `app/(app)/ajustes/**`, `app/admin/page.tsx`, `DECISIONS.md`,
-  `docs/BUILD-PLAN.md`. Every other unit that wants a change there writes one line in
-  `docs/decisions-needed.md` under "for the link pass" instead.
+- Do not edit `app/(app)/page.tsx`, `app/(app)/ajustes/**`, `app/admin/page.tsx`, `DECISIONS.md` or
+  `docs/BUILD-PLAN.md` — the link pass owns them. A wish for those goes as one line under "For the link pass"
+  in `docs/decisions-needed.md`.
 - Stop only per §4.5 (question → `docs/decisions-needed.md`, commit, push, end). Otherwise decide, log, go on.
-- Never spawn sessions, Routines or workflows; subagents on Sonnet are allowed only for the fan-out pattern a
-  unit prompt names. Nothing runs on Fable.
+- Never spawn sessions, Routines or workflows; Sonnet subagents only for a fan-out a unit prompt names. Nothing
+  runs on Fable.
 - If you cannot merge for lack of permission, stop with the PR URL rather than continuing on top of it.
 
-After U11 merges: closing report — merged PR numbers, skipped units and why, everything unanswered in
-`docs/decisions-needed.md`, and the founder inputs from §8 that are still outstanding.
+Closing report: merged PR numbers, skipped units and why, unanswered items in `docs/decisions-needed.md`, and
+the line "Opus window can start: paste `Read prompts/RUN-OPUS.md in this repo and execute it.`".

@@ -259,4 +259,5 @@ One line per unit as it merges: `U<n> — PR #… — docs/log/u<n>.md`.
 - U6 — I1 support console gaps — PR #89 — `docs/log/u6.md`
 - U7 — week hero v2: themes, fruit toggle, relative scale — PR #90 — `docs/log/u7.md`
 - U4 — D7 tool depth: 5-1-1 hint + kicks nudge — PR #91 — `docs/log/u4.md`
+- U5 — D6 "Ejercicios": images + text — PR #92 — `docs/log/u5.md`
 

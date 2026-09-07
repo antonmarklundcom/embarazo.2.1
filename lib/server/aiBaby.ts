@@ -21,6 +21,7 @@ import {
   quotaVerdict,
   remainingGenerations,
 } from "@/lib/ai/quota";
+import { getFlag } from "@/lib/server/flags";
 
 // BUILD-PLAN F1 + F2 — the generation pipeline, server-only.
 //
@@ -165,8 +166,17 @@ export async function generateBabyImage(
   photos: ParentPhoto[],
   callModel: ImageModel = geminiModel,
   now: Date = new Date(),
+  // I4/U1 — one-directional: this can only ADD a stop on top of
+  // `AI_BABY_ENABLED`, never substitute for it, which is why it is checked
+  // strictly after `isConfigured()` rather than folded into it. Injected the
+  // same way `callModel` is, so the paused branch is provable in CI with no
+  // MySQL (see aiBaby.test.ts).
+  isPaused: () => Promise<boolean> = () => getFlag("ai_baby_paused"),
 ): Promise<GenerationResult> {
   if (!isConfigured()) return { ok: false, failure: "disabled" };
+  // Same response shape as the kill switch — the client already handles
+  // "disabled" and needs no new case to understand a pause.
+  if (await isPaused()) return { ok: false, failure: "disabled" };
   if (validatePhotos(photos) !== null) return { ok: false, failure: "invalid" };
 
   const apiKey = process.env.GEMINI_API_KEY!.trim();

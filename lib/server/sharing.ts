@@ -1,16 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, isNull, ne } from "drizzle-orm";
-
-import type { Database } from "./db";
-import {
-  companionCheers,
-  companionSnapshots,
-  companionTasks,
-  invites,
-  pregnancies,
-  pregnancyMembers,
-} from "./schema";
+import type { SharingBackend } from "./sharingBackend";
 import {
   INVITE_TTL_DAYS,
   canSeeSharedTasks,
@@ -34,47 +24,44 @@ import {
 // `companionSnapshots` and nothing else. There is no code path in this file
 // from a membership to `syncRecords`, and that is not an oversight to be fixed
 // later — it is the feature (see the table's comment in schema.ts).
+//
+// V2: every function below takes a `SharingBackend` (`lib/server/sharingBackend.ts`)
+// rather than a `Database`. The A3 cut, for the A3 reason — what this file
+// contains is the set of decisions about who may see whose pregnancy, and until
+// the storage moved behind an interface those decisions were the only part of
+// the app that could not be asserted without MySQL. `sharing.test.ts` now runs
+// these functions, unchanged, over a Map.
+//
+// Nothing here knows what a table is. A function in this file that built a
+// query would be a rule that the tests cannot reach.
 
 /** A pregnancy row for the owner, created on demand. */
 export async function ensurePregnancyForOwner(
-  database: Database,
+  backend: SharingBackend,
   ownerUserId: string,
   now: number,
 ): Promise<string> {
-  const existing = await database
-    .select({ id: pregnancies.id })
-    .from(pregnancies)
-    .where(eq(pregnancies.ownerUserId, ownerUserId))
-    .limit(1);
-
-  if (existing[0]) return existing[0].id;
+  const existing = await backend.findPregnancyByOwner(ownerUserId);
+  if (existing) return existing;
 
   const id = crypto.randomUUID();
   try {
-    await database.insert(pregnancies).values({
-      id,
-      ownerUserId,
-      updatedAt: now,
-    });
+    await backend.insertPregnancy({ id, ownerUserId, updatedAt: now });
   } catch (error) {
     // K14 — `pregnancies_owner_idx` is UNIQUE now (see lib/server/schema.ts),
     // so the loser of the read-then-insert race lands here instead of creating
     // a second pregnancy for the same owner. The winner's row is committed by
     // definition, so re-reading is the whole recovery: this call returns the
     // same id the winner returned, which is what the caller wanted either way.
-    const raced = await database
-      .select({ id: pregnancies.id })
-      .from(pregnancies)
-      .where(eq(pregnancies.ownerUserId, ownerUserId))
-      .limit(1);
-    if (raced[0]) return raced[0].id;
+    const raced = await backend.findPregnancyByOwner(ownerUserId);
+    if (raced) return raced;
     // Not the race, then. A real failure the caller must see.
     throw error;
   }
 
   // The owner is a member of their own pregnancy. Without this row, "who can
   // see this" has to special-case the owner in every query that asks.
-  await database.insert(pregnancyMembers).values({
+  await backend.insertMembership({
     id: crypto.randomUUID(),
     pregnancyId: id,
     userId: ownerUserId,
@@ -97,54 +84,33 @@ export interface Membership {
 /**
  * The caller's live membership of a pregnancy, or null.
  *
- * `isNull(revokedAt)` is in the query, not applied afterwards, so a revoked
- * membership cannot be read at all. That is what makes "revoking access is
- * immediate" true rather than eventually true — there is no cache and no
+ * "Live" is enforced inside the backend's query rather than filtered here, so a
+ * revoked membership cannot be read at all. That is what makes "revoking access
+ * is immediate" true rather than eventually true — there is no cache and no
  * session copy of the role to go stale.
  */
 export async function liveMembership(
-  database: Database,
+  backend: SharingBackend,
   userId: string,
   pregnancyId: string,
 ): Promise<Membership | null> {
-  const rows = await database
-    .select({
-      pregnancyId: pregnancyMembers.pregnancyId,
-      role: pregnancyMembers.role,
-    })
-    .from(pregnancyMembers)
-    .where(
-      and(
-        eq(pregnancyMembers.userId, userId),
-        eq(pregnancyMembers.pregnancyId, pregnancyId),
-        isNull(pregnancyMembers.revokedAt),
-      ),
-    )
-    .limit(1);
-
-  return rows[0] ?? null;
+  const membership = await backend.liveMembership(userId, pregnancyId);
+  if (!membership) return null;
+  return { pregnancyId: membership.pregnancyId, role: membership.role };
 }
 
-/** Every pregnancy this user can currently see, owned or shared. */
 export async function membershipsOf(
-  database: Database,
+  backend: SharingBackend,
   userId: string,
 ): Promise<Membership[]> {
-  return database
-    .select({
-      pregnancyId: pregnancyMembers.pregnancyId,
-      role: pregnancyMembers.role,
-      // K8. A companion does not get the guest list (E1), so this is how they
-      // learn their own answer — their row and nobody else's.
-      accompanyingAt: pregnancyMembers.accompanyingAt,
-    })
-    .from(pregnancyMembers)
-    .where(
-      and(
-        eq(pregnancyMembers.userId, userId),
-        isNull(pregnancyMembers.revokedAt),
-      ),
-    );
+  const rows = await backend.liveMembershipsOf(userId);
+  return rows.map((row) => ({
+    pregnancyId: row.pregnancyId,
+    role: row.role,
+    // K8. A companion does not get the guest list (E1), so this is how they
+    // learn their own answer — their row and nobody else's.
+    accompanyingAt: row.accompanyingAt,
+  }));
 }
 
 /**
@@ -161,35 +127,15 @@ export async function membershipsOf(
  * made on the state the revocation produced rather than on the state before it.
  */
 export async function revokeMembership(
-  database: Database,
+  backend: SharingBackend,
   pregnancyId: string,
   userId: string,
 ): Promise<void> {
-  await database
-    .update(pregnancyMembers)
-    .set({ revokedAt: new Date() })
-    .where(
-      and(
-        eq(pregnancyMembers.pregnancyId, pregnancyId),
-        eq(pregnancyMembers.userId, userId),
-      ),
-    );
+  await backend.revokeMembership(pregnancyId, userId, new Date());
 
-  const remaining = await database
-    .select({ userId: pregnancyMembers.userId })
-    .from(pregnancyMembers)
-    .where(
-      and(
-        eq(pregnancyMembers.pregnancyId, pregnancyId),
-        isNull(pregnancyMembers.revokedAt),
-        ne(pregnancyMembers.role, "owner"),
-      ),
-    );
-
-  if (snapshotShouldBeDropped(remaining.length)) {
-    await database
-      .delete(companionSnapshots)
-      .where(eq(companionSnapshots.pregnancyId, pregnancyId));
+  const remaining = await backend.liveNonOwnerCount(pregnancyId);
+  if (snapshotShouldBeDropped(remaining)) {
+    await backend.deleteSnapshot(pregnancyId);
   }
 }
 
@@ -204,7 +150,7 @@ export interface CreatedInvite {
 }
 
 export async function createInvite(
-  database: Database,
+  backend: SharingBackend,
   pregnancyId: string,
   createdByUserId: string,
   role: Exclude<MemberRole, "owner">,
@@ -213,7 +159,7 @@ export async function createInvite(
   const code = generateInviteCode();
   const expiresAt = new Date(now + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000);
 
-  await database.insert(invites).values({
+  await backend.insertInvite({
     code,
     pregnancyId,
     role,
@@ -237,18 +183,12 @@ export type AcceptOutcome =
  * somebody's pregnancy.
  */
 export async function acceptInvite(
-  database: Database,
+  backend: SharingBackend,
   code: string,
   userId: string,
   now: number,
 ): Promise<AcceptOutcome> {
-  const rows = await database
-    .select()
-    .from(invites)
-    .where(eq(invites.code, code))
-    .limit(1);
-
-  const invite = rows[0];
+  const invite = await backend.findInvite(code);
   if (!invite) return { ok: false, reason: "not-found" };
   if (invite.revokedAt) return { ok: false, reason: "revoked" };
   if (invite.acceptedAt && invite.acceptedByUserId !== userId) {
@@ -256,37 +196,26 @@ export async function acceptInvite(
   }
   if (invite.expiresAt.getTime() < now) return { ok: false, reason: "expired" };
 
-  await database
-    .insert(pregnancyMembers)
-    .values({
-      id: crypto.randomUUID(),
-      pregnancyId: invite.pregnancyId,
-      userId,
-      role: invite.role,
-    })
-    // Re-accepting an invite the user already used un-revokes them rather than
-    // failing on the unique index.
-    .onDuplicateKeyUpdate({
-      set: { role: invite.role, revokedAt: null },
-    });
+  // Re-accepting an invite the user already used un-revokes them rather than
+  // failing on the unique index.
+  await backend.upsertMembership({
+    id: crypto.randomUUID(),
+    pregnancyId: invite.pregnancyId,
+    userId,
+    role: invite.role,
+  });
 
-  await database
-    .update(invites)
-    .set({ acceptedAt: new Date(now), acceptedByUserId: userId })
-    .where(eq(invites.code, code));
+  await backend.markInviteAccepted(code, userId, new Date(now));
 
   return { ok: true, pregnancyId: invite.pregnancyId, role: invite.role };
 }
 
 export async function revokeInviteCode(
-  database: Database,
+  backend: SharingBackend,
   pregnancyId: string,
   code: string,
 ): Promise<void> {
-  await database
-    .update(invites)
-    .set({ revokedAt: new Date() })
-    .where(and(eq(invites.code, code), eq(invites.pregnancyId, pregnancyId)));
+  await backend.revokeInvite(pregnancyId, code, new Date());
 }
 
 // ---------------------------------------------------------------------------
@@ -304,7 +233,7 @@ export async function revokeInviteCode(
  * clears the data in the same write that records the flag.
  */
 export async function publishSnapshot(
-  database: Database,
+  backend: SharingBackend,
   pregnancyId: string,
   snapshot: CompanionSnapshot,
   preferences: SharingPreferences,
@@ -312,7 +241,7 @@ export async function publishSnapshot(
 ): Promise<void> {
   const shared = applyLevels(preferences, extras);
 
-  const values = {
+  await backend.upsertSnapshot({
     pregnancyId,
     week: snapshot.week,
     dueDate: snapshot.dueDate,
@@ -323,27 +252,7 @@ export async function publishSnapshot(
     sharePataditas: preferences.pataditas,
     shareFotos: preferences.fotos,
     ...shared,
-  };
-
-  await database
-    .insert(companionSnapshots)
-    .values(values)
-    .onDuplicateKeyUpdate({
-      set: {
-        week: values.week,
-        dueDate: values.dueDate,
-        nextAppointmentAt: values.nextAppointmentAt,
-        babyName: values.babyName,
-        updatedAt: values.updatedAt,
-        sharePeso: values.sharePeso,
-        sharePataditas: values.sharePataditas,
-        shareFotos: values.shareFotos,
-        weightGrams: values.weightGrams,
-        weightAt: values.weightAt,
-        kickCount: values.kickCount,
-        kickAt: values.kickAt,
-      },
-    });
+  });
 }
 
 /**
@@ -353,7 +262,7 @@ export async function publishSnapshot(
  * so there is no way to read a snapshot without it.
  */
 export async function readSnapshotFor(
-  database: Database,
+  backend: SharingBackend,
   userId: string,
   pregnancyId: string,
 ): Promise<{
@@ -361,16 +270,10 @@ export async function readSnapshotFor(
   snapshot: CompanionSnapshot | null;
   extras: SharedExtras | null;
 } | null> {
-  const membership = await liveMembership(database, userId, pregnancyId);
+  const membership = await liveMembership(backend, userId, pregnancyId);
   if (!membership) return null;
 
-  const rows = await database
-    .select()
-    .from(companionSnapshots)
-    .where(eq(companionSnapshots.pregnancyId, pregnancyId))
-    .limit(1);
-
-  const row = rows[0];
+  const row = await backend.findSnapshot(pregnancyId);
   if (!row) return { role: membership.role, snapshot: null, extras: null };
 
   return {
@@ -412,48 +315,46 @@ export async function readSnapshotFor(
  * they will be there. `appointmentAt` is stored as given and compared later
  * against the control itself (`isAccompanying`), so a control that moves
  * invalidates the marker instead of silently reassigning it.
+ *
+ * The write itself is scoped to a live membership inside the backend as well,
+ * so a membership revoked between this check and the update cannot be written
+ * through.
  */
 export async function setAccompanying(
-  database: Database,
+  backend: SharingBackend,
   userId: string,
   pregnancyId: string,
   appointmentAt: number | null,
 ): Promise<boolean> {
-  const membership = await liveMembership(database, userId, pregnancyId);
+  const membership = await liveMembership(backend, userId, pregnancyId);
   if (!membership || membership.role === "owner") return false;
 
-  await database
-    .update(pregnancyMembers)
-    .set({ accompanyingAt: appointmentAt })
-    .where(
-      and(
-        eq(pregnancyMembers.pregnancyId, pregnancyId),
-        eq(pregnancyMembers.userId, userId),
-        isNull(pregnancyMembers.revokedAt),
-      ),
-    );
+  await backend.setAccompanyingIfLive(userId, pregnancyId, appointmentAt);
   return true;
 }
 
 /** Who currently has access, for the owner's "quién ve mi embarazo" screen. */
-export async function membersOf(database: Database, pregnancyId: string) {
-  return database
-    .select({
-      userId: pregnancyMembers.userId,
-      role: pregnancyMembers.role,
-      createdAt: pregnancyMembers.createdAt,
-      // K8. The owner sees WHO is coming by role — "te acompaña tu pareja" —
-      // and never a name: E1 never shared names between members and K8 does
-      // not start.
-      accompanyingAt: pregnancyMembers.accompanyingAt,
-    })
-    .from(pregnancyMembers)
-    .where(
-      and(
-        eq(pregnancyMembers.pregnancyId, pregnancyId),
-        isNull(pregnancyMembers.revokedAt),
-      ),
-    );
+export async function membersOf(
+  backend: SharingBackend,
+  pregnancyId: string,
+): Promise<
+  {
+    userId: string;
+    role: MemberRole;
+    createdAt: Date;
+    accompanyingAt: number | null;
+  }[]
+> {
+  const rows = await backend.liveMembersOf(pregnancyId);
+  return rows.map((row) => ({
+    userId: row.userId,
+    role: row.role,
+    createdAt: row.createdAt,
+    // K8. The owner sees WHO is coming by role — "te acompaña tu pareja" —
+    // and never a name: E1 never shared names between members and K8 does
+    // not start.
+    accompanyingAt: row.accompanyingAt,
+  }));
 }
 
 // ---------------------------------------------------------------------------
@@ -470,41 +371,29 @@ export async function membersOf(database: Database, pregnancyId: string) {
 
 /** Assign a checklist item to the pareja. Owner only; idempotent. */
 export async function assignTask(
-  database: Database,
+  backend: SharingBackend,
   pregnancyId: string,
   itemKey: string,
   now: number,
 ): Promise<void> {
-  await database
-    .insert(companionTasks)
-    .values({
-      id: crypto.randomUUID(),
-      pregnancyId,
-      itemKey,
-      doneAt: null,
-      updatedAt: now,
-    })
-    // Assigning twice is the same assignment. `updatedAt` moves so the
-    // partner's next read is ordered sensibly; `doneAt` is deliberately NOT
-    // reset — re-tapping "para tu pareja" on an item he already did should not
-    // un-do his work.
-    .onDuplicateKeyUpdate({ set: { updatedAt: now } });
+  // Assigning twice is the same assignment. `updatedAt` moves so the partner's
+  // next read is ordered sensibly; `doneAt` is deliberately NOT reset — see
+  // `upsertTask`.
+  await backend.upsertTask({
+    id: crypto.randomUUID(),
+    pregnancyId,
+    itemKey,
+    updatedAt: now,
+  });
 }
 
 /** Take an item back off the pareja's list. Owner only. */
 export async function unassignTask(
-  database: Database,
+  backend: SharingBackend,
   pregnancyId: string,
   itemKey: string,
 ): Promise<void> {
-  await database
-    .delete(companionTasks)
-    .where(
-      and(
-        eq(companionTasks.pregnancyId, pregnancyId),
-        eq(companionTasks.itemKey, itemKey),
-      ),
-    );
+  await backend.deleteTask(pregnancyId, itemKey);
 }
 
 /**
@@ -516,21 +405,13 @@ export async function unassignTask(
  * assignment the owner never made.
  */
 export async function setTaskDone(
-  database: Database,
+  backend: SharingBackend,
   pregnancyId: string,
   itemKey: string,
   done: boolean,
   now: number,
 ): Promise<void> {
-  await database
-    .update(companionTasks)
-    .set({ doneAt: done ? now : null, updatedAt: now })
-    .where(
-      and(
-        eq(companionTasks.pregnancyId, pregnancyId),
-        eq(companionTasks.itemKey, itemKey),
-      ),
-    );
+  await backend.setTaskDone(pregnancyId, itemKey, done ? now : null, now);
 }
 
 /**
@@ -541,23 +422,15 @@ export async function setTaskDone(
  * to somebody who is not entitled to know either way.
  */
 export async function readTasksFor(
-  database: Database,
+  backend: SharingBackend,
   userId: string,
   pregnancyId: string,
 ): Promise<SharedTask[] | null> {
-  const membership = await liveMembership(database, userId, pregnancyId);
+  const membership = await liveMembership(backend, userId, pregnancyId);
   if (!membership) return null;
   if (!canSeeSharedTasks(membership.role)) return null;
 
-  const rows = await database
-    .select({
-      itemKey: companionTasks.itemKey,
-      doneAt: companionTasks.doneAt,
-      updatedAt: companionTasks.updatedAt,
-    })
-    .from(companionTasks)
-    .where(eq(companionTasks.pregnancyId, pregnancyId));
-
+  const rows = await backend.tasksOf(pregnancyId);
   return rows.map((row) => ({
     itemKey: row.itemKey,
     doneAt: row.doneAt,
@@ -584,33 +457,26 @@ export async function readTasksFor(
  * checks it the same way.
  */
 export async function sendCheer(
-  database: Database,
+  backend: SharingBackend,
   userId: string,
   pregnancyId: string,
   cheerId: string,
   now: number,
 ): Promise<string | null> {
-  const membership = await liveMembership(database, userId, pregnancyId);
+  const membership = await liveMembership(backend, userId, pregnancyId);
   if (!membership || membership.role === "owner") return null;
 
-  const owner = (
-    await database
-      .select({ ownerUserId: pregnancies.ownerUserId })
-      .from(pregnancies)
-      .where(eq(pregnancies.id, pregnancyId))
-      .limit(1)
-  )[0];
-  if (!owner) return null;
+  const ownerUserId = await backend.findPregnancyOwner(pregnancyId);
+  if (!ownerUserId) return null;
 
-  await database.insert(companionCheers).values({
+  await backend.insertCheer({
     id: crypto.randomUUID(),
     pregnancyId,
     fromUserId: userId,
     cheerId,
     createdAt: now,
-    seenAt: null,
   });
-  return owner.ownerUserId;
+  return ownerUserId;
 }
 
 export interface ReceivedCheer {
@@ -629,40 +495,21 @@ export interface ReceivedCheer {
 export const CHEER_PAGE_SIZE = 50;
 
 export async function readCheersFor(
-  database: Database,
+  backend: SharingBackend,
   userId: string,
   pregnancyId: string,
 ): Promise<ReceivedCheer[] | null> {
-  const membership = await liveMembership(database, userId, pregnancyId);
+  const membership = await liveMembership(backend, userId, pregnancyId);
   if (!membership || membership.role !== "owner") return null;
 
-  const rows = await database
-    .select({
-      cheerId: companionCheers.cheerId,
-      createdAt: companionCheers.createdAt,
-      seenAt: companionCheers.seenAt,
-    })
-    .from(companionCheers)
-    .where(eq(companionCheers.pregnancyId, pregnancyId))
-    .orderBy(desc(companionCheers.createdAt))
-    .limit(CHEER_PAGE_SIZE);
-
-  return rows;
+  return backend.cheersOf(pregnancyId, CHEER_PAGE_SIZE);
 }
 
 /** Mark everything on the owner's pregnancy as seen. Owner only. */
 export async function markCheersSeen(
-  database: Database,
+  backend: SharingBackend,
   pregnancyId: string,
   now: number,
 ): Promise<void> {
-  await database
-    .update(companionCheers)
-    .set({ seenAt: now })
-    .where(
-      and(
-        eq(companionCheers.pregnancyId, pregnancyId),
-        isNull(companionCheers.seenAt),
-      ),
-    );
+  await backend.markCheersSeen(pregnancyId, now);
 }

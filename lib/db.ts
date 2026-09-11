@@ -356,6 +356,30 @@ function newRecordId(): string {
   return `r-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
 }
 
+/**
+ * The synced stores **as v5 defined them**, frozen.
+ *
+ * See the note in v5's `upgrade`: an upgrade step runs inside a transaction
+ * scoped to its own version's schema, so it cannot be written against a
+ * constant that later versions extend. Adding a store to `SYNCED_STORES` must
+ * never change what this upgrade does on a phone that is still on v4.
+ */
+const V5_SYNCED_STORES = [
+  "profile",
+  "pregnancy",
+  "journalEntries",
+  "kickSessions",
+  "contractionEntries",
+  "weightEntries",
+  "checklistState",
+  "cycles",
+  "cycleSettings",
+  "clinical",
+] as const satisfies readonly SyncedStore[];
+
+/** The photo stores **as v7 defined them**, frozen for the same reason. */
+const V7_PHOTO_STORES = ["photoEntries", "carnePhotos"] as const;
+
 export class MiBebeDB extends Dexie {
   profile!: Table<Profile, number>;
   pregnancy!: Table<Pregnancy, number>;
@@ -430,7 +454,22 @@ export class MiBebeDB extends Dexie {
         // IndexedDB does not index a missing key path, so the `&uid` unique
         // index tolerates the un-backfilled rows that exist for the duration
         // of this transaction.
-        for (const store of SYNCED_STORES) {
+        //
+        // V3 — the store list is PINNED to what v5 had, and must never become
+        // `SYNCED_STORES` again.
+        //
+        // It was `SYNCED_STORES`, and that was a live bug rather than a tidy
+        // one. v6 added `sleepEntries` and `favoriteNames` to that constant,
+        // and this transaction is scoped to v5's schema, where neither table
+        // exists — so `tx.table("sleepEntries")` threw `NotFoundError` and took
+        // the whole upgrade down with it. Anyone still on v1–v4 who opened a
+        // build from v6 onwards got a database that would not open: no data
+        // lost, but no app either, and nothing on the screen to explain it.
+        //
+        // An upgrade step runs against the schema of its own version, so it has
+        // to be frozen in time the same way the schema is. Reading a constant
+        // that later releases are free to extend is reading the future.
+        for (const store of V5_SYNCED_STORES) {
           const table = tx.table(store);
           const rows = await table.toArray();
           let singletonTaken = false;
@@ -476,7 +515,11 @@ export class MiBebeDB extends Dexie {
         // Backfill an id for photos that already exist. `uploadedAt` stays
         // absent, which is exactly right: nothing has been uploaded, and if the
         // user opts in these are the first things to go.
-        for (const store of PHOTO_BACKUP_STORES) {
+        //
+        // Pinned for the same reason as v5's list above: `PHOTO_BACKUP_STORES`
+        // happens to be these two today, and a v8 that adds a third would make
+        // this step reach for a table its own transaction does not have.
+        for (const store of V7_PHOTO_STORES) {
           const table = tx.table(store);
           for (const row of await table.toArray()) {
             if (typeof row.uid !== "string") {

@@ -173,7 +173,18 @@ it off and delete it?"**
 v1 core stores → v2 `photoEntries` → v3 `cycles`, `cycleSettings` →
 v4 `carnePhotos`, `clinical` → **v5 adds sync bookkeeping**
 (`updatedAt`/`deletedAt`/`dirty` on synced stores, plus a `syncState`
-table). **Never renumber or edit past versions.** DB name is `mibebe`.
+table) → v6 `sleepEntries`, `favoriteNames` (D2) → **v7 gives the two photo
+stores a cross-device `uid` and an `uploadedAt` marker** (K4 opt-in backup;
+they still do not sync). **Never renumber or edit past versions.** DB name
+is `mibebe`.
+
+An `.upgrade()` step runs inside a transaction scoped to **its own version's**
+schema, so it must be written against a store list frozen at that version —
+never against a constant a later release can extend. `lib/db.ts` pins
+`V5_SYNCED_STORES` and `V7_PHOTO_STORES` for exactly this reason; V3 found the
+v5 step reaching for `sleepEntries`, which v6 added to `SYNCED_STORES` and which
+does not exist in a v5 transaction. `lib/db.test.ts` opens a fixture at every
+version in the chain and holds this paragraph's highest version to the code's.
 
 ## 5. Data flow (v3)
 

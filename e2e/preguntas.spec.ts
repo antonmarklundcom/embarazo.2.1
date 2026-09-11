@@ -1,6 +1,7 @@
 import { test, expect, type BrowserContext } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
+import { gotoPrecached } from "./helpers/offline";
 
 // K20 — "submit → admin queue → approve → visible in /preguntas; rejected and
 // pending questions never render publicly; the submitter sees her status."
@@ -93,7 +94,7 @@ test("an approved answer is published, and nothing else is", async ({ browser })
   await completeOnboarding(page);
   await serveQuestions(context, { signedIn: true, mine: MINE });
 
-  await page.goto("/preguntas");
+  await gotoPrecached(page, "/preguntas");
 
   // The approved Q&A is on the page, question and answer together.
   await expect(

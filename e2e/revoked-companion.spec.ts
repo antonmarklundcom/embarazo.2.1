@@ -1,7 +1,7 @@
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
-import { waitForPrecache } from "./helpers/offline";
+import { gotoPrecached, waitForPrecache } from "./helpers/offline";
 
 // K14 — the test the task exists for.
 //
@@ -209,7 +209,7 @@ test("the public content a companion is entitled to still works offline", async 
   server.state.offline = true;
   await context.setOffline(true);
 
-  await page.goto("/semana/24");
+  await gotoPrecached(page, "/semana/24");
   await expect(page.getByText("Qué pasa esta semana")).toBeVisible();
 
   await context.close();

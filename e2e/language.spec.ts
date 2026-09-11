@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
-import { waitForPrecache } from "./helpers/offline";
+import { gotoPrecached, waitForPrecache } from "./helpers/offline";
 
 // K19 — "Done when: toggle works offline; `<html lang>` follows the locale;
 // 42-week content untouched."
@@ -49,7 +49,7 @@ test("the language toggle works with the network off", async ({ page, context })
   // screen entirely, over a precached route, with the network still off.
   await page.getByRole("button", { name: "Guaraní" }).click();
   await expect(page.getByRole("link", { name: "Ko ára" })).toBeVisible();
-  await page.goto("/semana/15");
+  await gotoPrecached(page, "/semana/15");
   await expect(page.getByRole("link", { name: "Ko ára" })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("lang", "gn");
 });

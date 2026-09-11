@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import "../zodJitless.ts";
 import { z } from "zod";
 
 // PR-20 — email + password sign-in, alongside Google/Facebook.

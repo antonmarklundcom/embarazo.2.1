@@ -163,11 +163,20 @@ test.describe("the flows that load something other than same-origin HTML", () =>
     const fromConsole = await watchForViolations(page);
 
     await page.goto("/", { waitUntil: "domcontentloaded" });
-    const controlled = await page.evaluate(async () => {
-      const registration = await navigator.serviceWorker.ready;
-      return registration.active?.state ?? null;
-    });
-    expect(controlled).toBe("activated");
+    // `ready` resolves as soon as there is an active worker, which can still be
+    // "activating" — the same race `e2e/helpers/offline.ts` documents. Poll for
+    // the state rather than sampling it once; a worker the policy had blocked
+    // never reaches either state, so this still fails loudly if it is blocked.
+    await expect
+      .poll(
+        () =>
+          page.evaluate(async () => {
+            const registration = await navigator.serviceWorker.ready;
+            return registration.active?.state ?? null;
+          }),
+        { message: "the service worker never activated under the policy" },
+      )
+      .toBe("activated");
 
     const violations = await collect(page, fromConsole);
     expect(violations, describeAll(violations)).toEqual([]);

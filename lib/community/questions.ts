@@ -1,3 +1,4 @@
+import "../zodJitless.ts";
 import { z } from "zod";
 
 // K20 (docs/FABLE-PLAN-2026-08.md §6, under §5 D5) — curated Q&A.

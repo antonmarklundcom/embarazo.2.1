@@ -1,3 +1,4 @@
+import "../zodJitless.ts";
 import { z } from "zod";
 import { DEPARTMENTS } from "../departments.ts";
 

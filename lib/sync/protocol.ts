@@ -5,6 +5,7 @@
 // surface gets a zod whitelist and tests, and `.strict()` here means an
 // unexpected field is a 400 rather than something quietly stored.
 
+import "../zodJitless.ts";
 import { z } from "zod";
 import { SYNCED_STORES } from "./stores";
 

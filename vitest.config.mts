@@ -19,6 +19,13 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["**/*.test.ts"],
+    // V3 — the Dexie tests are a project of their own
+    // (`vitest.db.config.mts`, `npm run test:db`): they need
+    // `fake-indexeddb` and a `window`, and they are slow enough that folding
+    // them in here would make the cheap gate expensive for every unit that
+    // never goes near IndexedDB. Excluded by name rather than by directory so
+    // that adding a second one is a deliberate line in both files.
+    exclude: ["node_modules/**", "lib/db.test.ts", "test/db/**"],
   },
   resolve: {
     alias: {

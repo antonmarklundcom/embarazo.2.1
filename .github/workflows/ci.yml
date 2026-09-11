@@ -44,6 +44,10 @@ jobs:
       - run: npm run lint
       - run: npm run validate:content
       - run: npm test
+      # V3 — the Dexie layer, under fake-indexeddb. A separate project so that
+      # `npm test` stays fast (see vitest.db.config.mts); a separate step so a
+      # failure here names itself instead of hiding inside the unit run.
+      - run: npm run test:db
       # NEXT_PUBLIC_APP_URL is deliberately NOT set here: this is a compile
       # check, not a deployment, so the Z2 launch checks (lib/launchChecks.ts)
       # stay inert. The real deployment build does set it and will fail if the

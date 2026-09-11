@@ -114,4 +114,5 @@ One line per unit as it merges: `<id> — PR #… — docs/log/<id>.md`.
 
 - V1 — PR #95 — `docs/log/v1.md`
 - V2 — PR #97 — `docs/log/v2.md`
+- V3 — PR #98 — `docs/log/v3.md`
 

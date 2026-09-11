@@ -1,3 +1,4 @@
+import "../zodJitless.ts";
 import { z } from "zod";
 
 import { MAX_WEEK, MIN_WEEK } from "@/lib/pregnancy";

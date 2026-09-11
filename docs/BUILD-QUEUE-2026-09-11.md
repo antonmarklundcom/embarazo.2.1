@@ -112,3 +112,5 @@ None blocks a V or W unit.
 
 One line per unit as it merges: `<id> — PR #… — docs/log/<id>.md`.
 
+- V1 — PR #95 — `docs/log/v1.md`
+

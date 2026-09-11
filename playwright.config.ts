@@ -37,5 +37,17 @@ export default defineConfig({
     url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
+    env: {
+      // V1 — the enforced CSP names the object-storage origin in `connect-src`,
+      // read from this variable (next.config.ts). `photo-backup.spec.ts` and
+      // `csp.spec.ts` both stub a presigned PUT to this host, and a browser
+      // enforces the policy before Playwright's router ever sees the request:
+      // without this the stubbed bucket would be blocked rather than routed.
+      //
+      // This is the endpoint ONLY. The access key, secret, region and bucket
+      // stay unset, so `isPhotoStorageConfigured()` is still false and the
+      // unconfigured half of `photo-backup.spec.ts` tests what it always did.
+      PHOTO_STORAGE_ENDPOINT: "https://bucket.example.test",
+    },
   },
 });

@@ -1,3 +1,4 @@
+import "../zodJitless.ts";
 import { z } from "zod";
 
 import type { AppMode, Role } from "@/lib/db";

@@ -56,6 +56,20 @@ jobs:
       - run: npm run build
         env:
           NEXT_PUBLIC_SUPPORT_EMAIL: hola@mibebe.example.py
+          # V1: `headers()` is evaluated at BUILD time and baked into the route
+          # manifest, and the enforced CSP names the object-storage origin in
+          # `connect-src` (next.config.ts). `photo-backup.spec.ts` stubs a
+          # presigned PUT to this host, and a browser enforces the policy before
+          # Playwright's router ever sees the request — so without this the
+          # stub is blocked rather than routed and four specs fail.
+          #
+          # The endpoint ONLY: no access key, secret, region or bucket, so
+          # `isPhotoStorageConfigured()` is still false and the unconfigured
+          # half of that spec tests what it always did. Same shape as the
+          # support address above — a test value, real one set at deploy time.
+          # Local gate runs need it too:
+          #   PHOTO_STORAGE_ENDPOINT=https://bucket.example.test npm run build
+          PHOTO_STORAGE_ENDPOINT: https://bucket.example.test
 
       # K21: the Chromium download is the single most expensive step in this
       # job (~40 s and ~150 MB every run). Cache it against the resolved

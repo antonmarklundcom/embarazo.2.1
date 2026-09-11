@@ -49,6 +49,7 @@ export type AdminAction = (typeof ADMIN_ACTIONS)[number];
 // same shape E1 uses for companion fields: an allowed list, a forbidden list,
 // and a test that asserts both against the source rather than against a comment.
 
+import "../zodJitless.ts";
 import { z } from "zod";
 
 /** How many rows deletion removed, per table — metadata about the deletion. */

@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-import { waitForPrecache } from "./helpers/offline";
+import { gotoPrecached, waitForPrecache } from "./helpers/offline";
 
 // P1.7 (BUILD-PLAN.md): offline navigation to a precached week page. All 42
 // /semana/[n] pages are statically generated and land in the Serwist
@@ -13,7 +13,7 @@ test("navigates to a precached week page while offline", async ({ page, context 
   await waitForPrecache(page, ["/semana/15"]);
 
   await context.setOffline(true);
-  await page.goto("/semana/15");
+  await gotoPrecached(page, "/semana/15");
 
   await expect(page.getByText("Qué pasa esta semana")).toBeVisible();
 });

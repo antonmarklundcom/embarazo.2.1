@@ -1,5 +1,7 @@
 # Opus run — build every Opus unit in this window, one PR each, merged green, then stop.
 
+> **Finished 2026-09-07** (U1, U6, U7 merged). The next Opus window is `prompts/RUN-OPUS-2.md`.
+
 You are the OPUS build window for the September 2026 queue. Units, in this order: **U1 → U6 → U7**
 (`prompts/opus-u1-flags.md`, `prompts/opus-u6-support-console.md`, `prompts/opus-u7-week-hero.md`).
 Nothing here depends on a Sonnet unit; the Sonnet window starts after you finish.

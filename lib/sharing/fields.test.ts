@@ -240,6 +240,9 @@ describe("the snapshot does not outlive the last companion", () => {
     const fn = source.slice(source.indexOf("export async function revokeMembership"));
     const body = fn.slice(0, fn.indexOf("\n}"));
     expect(body).toContain("snapshotShouldBeDropped");
-    expect(body).toContain(".delete(companionSnapshots)");
+    // V2 moved the DELETE behind `SharingBackend`, so the call this looks for
+    // moved with it. The property is unchanged and is what matters: the drop
+    // happens inside this function, in the same call as the revocation.
+    expect(body).toContain("deleteSnapshot(pregnancyId)");
   });
 });

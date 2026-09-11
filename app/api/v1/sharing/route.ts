@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { getSession, isAuthAvailable } from "@/lib/server/auth";
 import { dbOrNull } from "@/lib/server/db";
+import { drizzleSharingBackend } from "@/lib/server/sharingBackend";
 import { scheduleCheerPoke } from "@/lib/server/push";
 import {
   acceptInvite,
@@ -198,7 +199,13 @@ async function context(req: NextRequest) {
   }
   const database = dbOrNull();
   if (!database) return { error: unavailable() } as const;
-  return { userId, database } as const;
+  // V2 — the rules in `lib/server/sharing.ts` take a `SharingBackend`, not a
+  // `Database`. Constructed once per request, here, so this is the only place
+  // in the app that knows family sharing is stored in MySQL at all.
+  //
+  // `database` is still handed out beside it for `scheduleCheerPoke`, which is
+  // B5's table and not one of sharing's.
+  return { userId, database, sharing: drizzleSharingBackend(database) } as const;
 }
 
 /** What this user can currently see: their own pregnancy and any shared ones. */
@@ -206,12 +213,12 @@ export async function GET(req: NextRequest) {
   const ctx = await context(req);
   if ("error" in ctx) return ctx.error;
 
-  const memberships = await membershipsOf(ctx.database, ctx.userId);
+  const memberships = await membershipsOf(ctx.sharing, ctx.userId);
 
   const views = await Promise.all(
     memberships.map(async (membership) => {
       const result = await readSnapshotFor(
-        ctx.database,
+        ctx.sharing,
         ctx.userId,
         membership.pregnancyId,
       );
@@ -232,14 +239,14 @@ export async function GET(req: NextRequest) {
         // theirs to know.
         members:
           membership.role === "owner"
-            ? await membersOf(ctx.database, membership.pregnancyId)
+            ? await membersOf(ctx.sharing, membership.pregnancyId)
             : undefined,
         // K2. `readTasksFor` returns null — not [] — for a `family` member:
         // "there is nothing assigned" is itself an answer, and family is not
         // entitled to it. The owner sees her own list so she can manage it.
         tasks:
           (await readTasksFor(
-            ctx.database,
+            ctx.sharing,
             ctx.userId,
             membership.pregnancyId,
           )) ?? undefined,
@@ -248,7 +255,7 @@ export async function GET(req: NextRequest) {
         cheers:
           membership.role === "owner"
             ? ((await readCheersFor(
-                ctx.database,
+                ctx.sharing,
                 ctx.userId,
                 membership.pregnancyId,
               )) ?? undefined)
@@ -295,7 +302,7 @@ export async function POST(req: NextRequest) {
       );
     }
     const outcome = await acceptInvite(
-      ctx.database,
+      ctx.sharing,
       data.code.toUpperCase(),
       ctx.userId,
       now,
@@ -316,7 +323,7 @@ export async function POST(req: NextRequest) {
   // instantly rather than eventually.
   if (data.action === "complete-task") {
     const membership = await liveMembership(
-      ctx.database,
+      ctx.sharing,
       ctx.userId,
       data.pregnancyId,
     );
@@ -327,7 +334,7 @@ export async function POST(req: NextRequest) {
       );
     }
     await setTaskDone(
-      ctx.database,
+      ctx.sharing,
       data.pregnancyId,
       data.itemKey,
       data.done,
@@ -338,7 +345,7 @@ export async function POST(req: NextRequest) {
 
   if (data.action === "accompany") {
     const marked = await setAccompanying(
-      ctx.database,
+      ctx.sharing,
       ctx.userId,
       data.pregnancyId,
       data.appointmentAt,
@@ -354,7 +361,7 @@ export async function POST(req: NextRequest) {
 
   if (data.action === "cheer") {
     const ownerUserId = await sendCheer(
-      ctx.database,
+      ctx.sharing,
       ctx.userId,
       data.pregnancyId,
       data.cheerId,
@@ -380,14 +387,14 @@ export async function POST(req: NextRequest) {
   // the session rather than taken from the body, so there is no id to tamper
   // with.
   const pregnancyId = await ensurePregnancyForOwner(
-    ctx.database,
+    ctx.sharing,
     ctx.userId,
     now,
   );
 
   if (data.action === "invite") {
     const invite = await createInvite(
-      ctx.database,
+      ctx.sharing,
       pregnancyId,
       ctx.userId,
       data.role,
@@ -398,7 +405,7 @@ export async function POST(req: NextRequest) {
 
   if (data.action === "publish") {
     await publishSnapshot(
-      ctx.database,
+      ctx.sharing,
       pregnancyId,
       {
         week: data.week,
@@ -417,17 +424,17 @@ export async function POST(req: NextRequest) {
   }
 
   if (data.action === "assign-task") {
-    await assignTask(ctx.database, pregnancyId, data.itemKey, now);
+    await assignTask(ctx.sharing, pregnancyId, data.itemKey, now);
     return NextResponse.json({ ok: true }, { headers: HEADERS });
   }
 
   if (data.action === "unassign-task") {
-    await unassignTask(ctx.database, pregnancyId, data.itemKey);
+    await unassignTask(ctx.sharing, pregnancyId, data.itemKey);
     return NextResponse.json({ ok: true }, { headers: HEADERS });
   }
 
   if (data.action === "cheers-seen") {
-    await markCheersSeen(ctx.database, pregnancyId, now);
+    await markCheersSeen(ctx.sharing, pregnancyId, now);
     return NextResponse.json({ ok: true }, { headers: HEADERS });
   }
 
@@ -442,9 +449,9 @@ export async function POST(req: NextRequest) {
   }
 
   if (data.action === "revoke-member") {
-    await revokeMembership(ctx.database, pregnancyId, data.userId);
+    await revokeMembership(ctx.sharing, pregnancyId, data.userId);
   } else {
-    await revokeInviteCode(ctx.database, pregnancyId, data.code.toUpperCase());
+    await revokeInviteCode(ctx.sharing, pregnancyId, data.code.toUpperCase());
   }
 
   return NextResponse.json({ ok: true }, { headers: HEADERS });

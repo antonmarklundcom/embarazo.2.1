@@ -21,6 +21,14 @@ const SERVER = readFileSync(
   "utf8",
 );
 
+// V2 moved the queries out of `sharing.ts` and behind `SharingBackend`, so the
+// two assertions below that are about SQL rather than about a rule follow them
+// here. Everything else in this file still reads the rules where the rules are.
+const BACKEND = readFileSync(
+  join(process.cwd(), "lib", "server", "sharingBackend.ts"),
+  "utf8",
+);
+
 /**
  * The source of one exported function, from its signature to the next export.
  *
@@ -149,8 +157,14 @@ describe("K8 — the accompanying marker", () => {
     expect(body).toContain("liveMembership");
     // She is not accompanying herself.
     expect(body).toContain('membership.role === "owner"');
-    // And a revoked membership cannot be written through.
-    expect(body).toContain("isNull(pregnancyMembers.revokedAt)");
+    // And a revoked membership cannot be written through. The scope lives in
+    // the backend's UPDATE now (V2), which is the point of the method's name:
+    // a caller cannot ask for the unscoped version because there isn't one.
+    expect(body).toContain("setAccompanyingIfLive");
+    const write = BACKEND.slice(BACKEND.indexOf("async setAccompanyingIfLive"));
+    expect(write.slice(0, write.indexOf("\n    },"))).toContain(
+      "isNull(pregnancyMembers.revokedAt)",
+    );
   });
 
   it("is handled before ensurePregnancyForOwner, like the other companion actions", () => {

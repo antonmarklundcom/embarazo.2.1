@@ -253,6 +253,12 @@ bands (reviewer-gated), share card with the themed hero (backlog note in U7).
 
 ## 10. Build log index
 
+> **2026-09-11:** the units still open here (U3, U8, U9, U10, U11) are now
+> driven by `prompts/RUN-SONNET-2.md`, which runs them first and then the
+> improvement units in `docs/BUILD-QUEUE-2026-09-11.md`. `RUN-SONNET.md` is
+> superseded; `RUN-OPUS.md` is finished.
+
+
 One line per unit as it merges: `U<n> — PR #… — docs/log/u<n>.md`.
 
 - U1 — runtime flag store + `/admin/flags` — PR #86 — `docs/log/u1.md`

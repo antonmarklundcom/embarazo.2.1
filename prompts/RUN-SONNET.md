@@ -1,5 +1,7 @@
 # Sonnet run — build every Sonnet unit in this window, one PR each, merged green, then the link pass.
 
+> **Superseded 2026-09-11** — the remaining units run from `prompts/RUN-SONNET-2.md` (see `docs/BUILD-QUEUE-2026-09-11.md`). Kept for history.
+
 You are the SONNET build window for the September 2026 queue. It starts after the Opus window has merged
 U1, U6 and U7 (check `docs/BUILD-QUEUE-2026-09-06.md` §10; if U1 is not merged, stop and say so — U2 and U3
 need it).

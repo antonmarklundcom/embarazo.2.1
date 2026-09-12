@@ -35,6 +35,38 @@ import { expect, type Page } from "@playwright/test";
 // assertion, always "element(s) not found" on a page that is precached on
 // purpose. Waiting for the three conditions the tests actually depend on, rather
 // than for a proxy of them, removes the race instead of retrying it.
+//
+// ---
+//
+// UPDATE (CI run #235, unit/v3). The three waits above are still the right
+// waits, but the story they were written to explain does not survive the
+// evidence, and leaving it here unqualified would send the next reader back to
+// the service worker.
+//
+// Two things came back from that run. First, `gotoPrecached` PASSED on every
+// offline navigation and the assertion after it still failed — so the precached
+// document did arrive, and the `/offline` fallback theory below is ruled out,
+// not merely unconfirmed. Second, the rotating cast that run included
+// `new-tools.spec.ts:26`, which never goes offline, never waits for a worker,
+// and never touches these helpers: it saves a favourite, reloads, and cannot
+// find the button that reflects it.
+//
+// A spec with no service worker in it cannot be failing for a service-worker
+// reason, so whatever this is, it is not (only) a precache race. What the four
+// failures do share is that every missing element is rendered from IndexedDB
+// after a navigation — the favourite in `new-tools`, the Guaraní nav label in
+// `language` (`BottomNav` → `useT` → `useLocale` → Dexie, which falls back to
+// Spanish rather than to nothing while the read is outstanding), and, for the
+// two week-page specs, static server HTML that can only vanish if something
+// threw and `app/(app)/error.tsx` replaced it.
+//
+// Those two shapes — a Dexie read that never resolves, and one that rejects —
+// tell the two halves apart, and the page itself says which: a Spanish nav bar
+// means the read was outstanding, "Algo salió mal" means it threw. That is
+// exactly what Playwright's `error-context.md` snapshot records, so `ci.yml`
+// now prints it into the job log (the traces artifact is not reachable from the
+// agent sessions that debug this, which is how three runs went by without
+// anyone reading one). The next red run should not need a fourth.
 
 /**
  * Block until the service worker is done installing, controls this page, and
@@ -86,11 +118,16 @@ export async function waitForPrecache(
  * no route matches, or the handler rejects, `app/sw.ts`'s `fallbacks` entry
  * serves `/offline` — at the requested URL, with a 200, as a perfectly real
  * page. The test then fails on whatever text it was looking for, with
- * "element(s) not found" and nothing about a service worker in it. Three CI runs
- * have now been spent working out that that is what happened.
+ * "element(s) not found" and nothing about a service worker in it.
  *
  * So this asserts the thing the specs actually mean by "works offline", and says
  * which document it got when it is wrong.
+ *
+ * It has since earned its keep by being green: on CI run #235 this passed and
+ * the assertions after it still failed, which is what ruled the fallback out as
+ * the cause and moved the search to IndexedDB (see the UPDATE at the top). Keep
+ * it — a check that currently passes is what makes the next failure mean
+ * something.
  */
 export async function gotoPrecached(page: Page, url: string): Promise<void> {
   const response = await page.goto(url);

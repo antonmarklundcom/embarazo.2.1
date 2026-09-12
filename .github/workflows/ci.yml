@@ -100,6 +100,33 @@ jobs:
       # E2E runs against the production build above — the service worker is
       # disabled in `next dev`, so offline coverage needs `next start`.
       - run: npm run test:e2e
+
+      # Print Playwright's `error-context.md` — the ARIA snapshot of the page at
+      # the moment the assertion failed — into the job log.
+      #
+      # The traces below are the richer artifact, but they are only reachable by
+      # someone who can download them, and the agent sessions that debug this
+      # suite cannot: the artifact host is off the egress allowlist, so three CI
+      # runs were spent inferring from "element(s) not found" what one snapshot
+      # would have said outright. The snapshot is a few KB of text and the log is
+      # already open in front of whoever is looking at the red run.
+      #
+      # `if: failure()` and read-only, so it costs nothing on a green run.
+      - name: Show what was on the page when e2e failed
+        if: failure()
+        run: |
+          shopt -s nullglob globstar
+          found=0
+          for f in test-results/**/error-context.md; do
+            found=1
+            echo "::group::$f"
+            cat "$f"
+            echo "::endgroup::"
+          done
+          if [ "$found" = 0 ]; then
+            echo "No error-context.md files — the failure was not a Playwright assertion."
+          fi
+
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

@@ -1,0 +1,90 @@
+[
+  {
+    "id": "rec-emergencia-numeros",
+    "kind": "recurso",
+    "title": "Números de emergencia, siempre a mano",
+    "body": "911, 141 (SEME) y 132 ya están cargados en el modo Emergencia de la app, con un toque para llamar.",
+    "ctaLabel": "Abrir modo emergencia",
+    "url": "/emergencia",
+    "stage": 0,
+    "priority": 1,
+    "isSponsored": false
+  },
+  {
+    "id": "rec-ley-7383-derechos",
+    "kind": "recurso",
+    "title": "Permiso pago para tus controles prenatales",
+    "body": "Si trabajás, la Ley 7383/2024 te da hasta 4 horas pagas por control prenatal, en el sector público o privado.",
+    "ctaLabel": "Ver mis derechos",
+    "url": "/derechos",
+    "stage": 0,
+    "priority": 5,
+    "isSponsored": false
+  },
+  {
+    "id": "rec-carne-perinatal-mspbs",
+    "kind": "recurso",
+    "title": "Carné perinatal y control prenatal",
+    "body": "Pedilo en el centro de salud público más cercano: es gratuito y ahí quedan anotados todos tus controles.",
+    "ctaLabel": "Ver en MSPBS",
+    "url": "https://www.mspbs.gov.py/",
+    "stage": 0,
+    "priority": 10,
+    "isSponsored": false
+  },
+  {
+    "id": "rec-linea-155-salud-mental",
+    "kind": "recurso",
+    "title": "Línea 155 · apoyo en salud mental",
+    "body": "Orientación gratuita y confidencial las 24 horas, todo el año, si necesitás hablar con alguien.",
+    "ctaLabel": "Ver más",
+    "url": "https://www.mspbs.gov.py/salud-mental.html",
+    "stage": 0,
+    "priority": 15,
+    "isSponsored": false
+  },
+  {
+    "id": "rec-pai-esquema-vacunacion",
+    "kind": "recurso",
+    "title": "Calendario de vacunación (PAI)",
+    "body": "El esquema oficial y gratuito de vacunas para tu bebé, del Programa Ampliado de Inmunizaciones.",
+    "ctaLabel": "Ver esquema de vacunas",
+    "url": "https://pai.mspbs.gov.py/esquema-regular-de-vacunacion/",
+    "stage": 0,
+    "priority": 20,
+    "isSponsored": false
+  },
+  {
+    "id": "rec-ips-turnos-online",
+    "kind": "recurso",
+    "title": "Sacar turno en el IPS",
+    "body": "Si sos asegurada, pedí turno para tus controles desde el portal, sin ir a hacer cola.",
+    "ctaLabel": "Ir al portal del IPS",
+    "url": "https://www.ips.gov.py/",
+    "stage": 0,
+    "priority": 30,
+    "isSponsored": false
+  },
+  {
+    "id": "rec-liga-de-la-leche-py",
+    "kind": "recurso",
+    "title": "Grupos de apoyo a la lactancia",
+    "body": "La Liga de la Leche Paraguay junta a mamás que amamantan en encuentros mensuales en Asunción y alrededores.",
+    "ctaLabel": "Ver grupos de apoyo",
+    "url": "https://llli.org/la-leche-league-paraguay/",
+    "stage": 3,
+    "priority": 40,
+    "isSponsored": false
+  },
+  {
+    "id": "rec-registro-civil-bebe",
+    "kind": "recurso",
+    "title": "Inscribir a tu bebé en el Registro Civil",
+    "body": "El trámite para anotar el nacimiento y sacar el acta de tu bebé, con los requisitos paso a paso.",
+    "ctaLabel": "Ver trámites",
+    "url": "https://registrocivil.gov.py/tramites",
+    "stage": 3,
+    "priority": 50,
+    "isSponsored": false
+  }
+]

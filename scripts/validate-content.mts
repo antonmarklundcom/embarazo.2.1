@@ -17,6 +17,7 @@ import {
   BabyNameSchema,
   PriceEntrySchema,
   ExerciseSchema,
+  RecommendationSchema,
   validateContentArray,
 } from "../lib/content/schemas.ts";
 
@@ -230,6 +231,14 @@ const checks: Check[] = [];
     });
   }
   checks.push({ errors });
+}
+
+{
+  // U3 "Recomendados" — curated free resources, keyed by id like the rest.
+  const raw = readJson("lib/seed/recomendados.json") as unknown[];
+  checks.push(
+    validateContentArray("lib/seed/recomendados.json", raw, RecommendationSchema),
+  );
 }
 
 // Extra guard for "timestamps computed at module load" (BUILD-PLAN G1): a

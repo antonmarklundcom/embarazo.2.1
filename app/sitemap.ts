@@ -17,6 +17,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${appUrl}/guias`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${appUrl}/derechos`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${appUrl}/directorio`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
+    // U3: the flag is runtime, the build is static — listed unconditionally,
+    // same as /directorio (also flag/content-gated at render time).
+    { url: `${appUrl}/recomendados`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
     { url: `${appUrl}/preguntas`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${appUrl}/privacidad`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
     // Play requires this URL to be publicly reachable; it is also the one page

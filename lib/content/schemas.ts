@@ -543,6 +543,66 @@ export const ExerciseSchema = z.object({
 });
 export type Exercise = z.infer<typeof ExerciseSchema>;
 
+// ---------------------------------------------------------------------------
+// U3 — "Recomendados" rail (feature map #27, replaces E4/"Beneficios"). See
+// `docs/HANDOFF-2026-09-06.md` §2: no sponsors are signed yet, so this ships
+// seeded with curated free public resources rather than invented products —
+// same card, same WhatsApp/click-through plumbing (`isSponsored` exists from
+// day one so a real sponsor deal is a data change later, not a rework).
+// ---------------------------------------------------------------------------
+
+export const RecomendadoKindSchema = z.enum(["recurso", "producto"]);
+export type RecomendadoKind = z.infer<typeof RecomendadoKindSchema>;
+
+/**
+ * A recomendado's link is either an absolute `https://` URL (an external
+ * resource) or an in-app path starting with `/`. The Ley 7383/2024 and
+ * emergency-numbers entries deliberately point at `/derechos` and
+ * `/emergencia` rather than an external page: this app already carries that
+ * information in more depth (the leave-plan calculator, the tap-to-call
+ * numbers), and a second copy of it in a JSON seed file is exactly the kind
+ * of duplicate that drifts. `lib/seed/recomendados.test.ts` asserts every
+ * `url` is one of these two shapes — never a bare domain, never `http://`.
+ */
+const recomendadoUrlSchema = z
+  .string()
+  .refine(
+    (value) => value.startsWith("/") || value.startsWith("https://"),
+    "el link tiene que ser una ruta interna (empieza con /) o una URL externa https://",
+  );
+
+export const RecommendationSchema = z
+  .object({
+    id: idSchema,
+    kind: RecomendadoKindSchema,
+    title: z.string().min(1).max(80),
+    body: z.string().min(1).max(240),
+    ctaLabel: z.string().min(1).max(40),
+    whatsappNumber: paraguayPhoneOptionalSchema,
+    url: recomendadoUrlSchema.optional(),
+    imageSrc: z.string().min(1).optional(),
+    /** Guaraníes, integer, **producto only** — a recurso has no price. */
+    priceGs: z.number().int().positive().optional(),
+    /** 0 = shown at every stage; 1–3 = shown only in that trimester. */
+    stage: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+    priority: z.number().int(),
+    /** Sponsor deals reuse this later — default false, no rework needed. */
+    isSponsored: z.boolean().default(false),
+  })
+  .refine(
+    (r) => (r.whatsappNumber !== undefined) !== (r.url !== undefined),
+    "cada recomendado necesita exactamente uno: whatsappNumber o url, no los dos ni ninguno",
+  )
+  .refine(
+    (r) => r.kind !== "producto" || r.priceGs !== undefined,
+    "un producto necesita priceGs — si todavía no tiene precio, no es un producto, es un recurso",
+  )
+  .refine(
+    (r) => r.kind !== "recurso" || r.priceGs === undefined,
+    "priceGs es solo para productos — un recurso no lleva precio",
+  );
+export type Recommendation = z.infer<typeof RecommendationSchema>;
+
 /**
  * Formats a zod error into one readable line per issue, naming the file, the
  * entry (by index and id when available) and the field.

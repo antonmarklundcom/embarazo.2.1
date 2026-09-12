@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getDirectory, getPlacements } from "@/lib/wordpress";
+import { PUBLISHED_RECOMENDADOS } from "@/lib/seed/recomendados";
 import { waLink, defaultPrefill } from "@/lib/whatsapp";
 import { isRateLimited, clientKeyFromHeaders } from "@/lib/rateLimit";
 import { countClick } from "@/lib/server/placementClicks";
@@ -83,7 +84,12 @@ export async function GET(
 
   const placement = placements.find((p) => p.id === id);
   const listing = directory.find((l) => l.id === id);
-  const target = placement ?? listing;
+  // U3: recomendados join the same lookup, kind "recomendado" in
+  // /admin/patrocinios. Unlike a placement/listing, a recomendado may carry a
+  // `url` instead of a `whatsappNumber` (the Ley 7383 and emergency-numbers
+  // entries point at /derechos and /emergencia, in-app).
+  const recomendado = PUBLISHED_RECOMENDADOS.find((r) => r.id === id);
+  const target = placement ?? listing ?? recomendado;
 
   if (!target) {
     return NextResponse.json({ error: "no encontrado" }, { status: 404 });
@@ -92,6 +98,9 @@ export async function GET(
   fireAttribution(id);
   countClick(id);
 
-  const destination = waLink(target.whatsappNumber, defaultPrefill());
+  const destination =
+    "whatsappNumber" in target && target.whatsappNumber
+      ? waLink(target.whatsappNumber, defaultPrefill())
+      : new URL((target as { url: string }).url, req.url).toString();
   return NextResponse.redirect(destination, 302);
 }

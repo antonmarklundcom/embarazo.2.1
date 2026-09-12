@@ -43,6 +43,10 @@ const pageRoutes: string[] = [
   // D2: the dental screen is pure reading with no state, and the place it is
   // most useful is a waiting room with no signal.
   "/herramientas/dental",
+  // U3: the flag is runtime (useFlag), but the route itself is static and
+  // renders its own honest empty state when the flag is off — precached
+  // unconditionally like the other tool pages above.
+  "/recomendados",
   ...Array.from(
     { length: MAX_WEEK - MIN_WEEK + 1 },
     (_, i) => `/semana/${MIN_WEEK + i}`,

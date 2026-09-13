@@ -53,12 +53,15 @@ Everything in `docs/BUILD-QUEUE-2026-09-06.md` §2 and
 | Role | Who | Does |
 |---|---|---|
 | Manager | Fable 5.1, Anton's window | picks the unit, fills the dispatch file, runs the gates on the result, merges, writes the report line |
-| Worker, normal | Codex `gpt-6-astra`, effort low | every unit not marked otherwise |
-| Worker, hard | Codex `gpt-6-astra`, effort high | W5, W4, and any unit that failed twice at normal |
+| Worker, normal | Codex `gpt-6-astra`, effort low | every unit not marked cheap, and every review pass |
 | Worker, cheap | Codex `gpt-5.6-luna`, effort low | D1 (dependabot), U8 if the name is already decided, any rename/typo follow-up |
 
-Tier rules, escalation, resume-with-the-exact-error and the report shape
-are the `manager-worker-codex` skill's; they are not restated here.
+**Anton's standing rule for this repo: effort is always `low`. There is no
+hard tier.** A unit that fails the audit twice at normal is not escalated
+to high effort; Fable splits it into smaller dispatches with a tighter
+definition of done and resends at normal. Everything else (resume with the
+exact error, cheap → normal escalation, the report shape) follows the
+`manager-worker-codex` skill.
 
 ### 2.2 The units, in running order
 
@@ -68,7 +71,7 @@ before the next dispatch. `Files` = the ownership map in
 
 | # | Unit | Tier | Dispatch file | Why now | Depends on |
 |---|---|---|---|---|---|
-| 0 | **R0** Codex review pass | hard, **read-only** | `prompts/codex/r0-review.txt` | astra reads the code cold and brings Fable a ranked list; Fable triages into units (§2.6) | — |
+| 0 | **R0** Codex review pass | normal, **read-only** | `prompts/codex/r0-review.txt` | astra reads the code cold and brings Fable a ranked list; Fable triages into units (§2.6) | — |
 | 1 | **U3 merge** | none (Fable) | — | PR #101 exists; merge `main` into `unit/u3`, run gates, `run-ci`, merge | — |
 | 2 | **W1** CI fast lane + actions bumps | normal | `prompts/codex/w1.txt` | every later PR gets a signal on push; closes #77 #78 | — |
 | 3 | **D1** dependabot minors | cheap | `prompts/codex/d1.txt` | closes #99 #79 with one gated run | W1 |
@@ -79,9 +82,9 @@ before the next dispatch. `Files` = the ownership map in
 | 8 | **W6** perf budget script | normal | `prompts/codex/w6.txt` | baseline before U10 and W4 | — |
 | 9 | **U10** hero assets | normal | `prompts/codex/u10.txt` | the LCP fix; only when renders exist | founder renders |
 | 10 | **U11** September link pass | normal | `prompts/codex/u11.txt` | closes the U queue; last editor of home/ajustes before W4 | U3 U8 U9 (U10) |
-| 11 | **W5** server backend tests ×4 | hard | `prompts/codex/w5.txt` | copies V2's cut four times | V2 (merged) |
+| 11 | **W5** server backend tests ×4 | normal, split per module if it fails twice | `prompts/codex/w5.txt` | copies V2's cut four times | V2 (merged) |
 | 12 | **W2** docs index + archive | normal | `prompts/codex/w2.txt` | new sessions stop paying to orient | — |
-| 13 | **W4** split home + ajustes | hard | `prompts/codex/w4.txt` | 1887 lines → components; e2e pins before and after | U11, W6 |
+| 13 | **W4** split home + ajustes | normal, two dispatches (home, then ajustes) | `prompts/codex/w4.txt` | 1887 lines → components; e2e pins before and after | U11, W6 |
 | 14 | **W7** improvement link pass | normal | `prompts/codex/w7.txt` | one DECISIONS.md entry, KNOWN-ISSUES, statuses | all above |
 
 New units introduced by this plan:
@@ -149,13 +152,13 @@ Anton's rule for this queue: astra does not only build, it also looks for
 problems and brings the ideas to Fable. Three places where that happens:
 
 1. **R0, before the first build unit.** `codex-run.ps1 -Sandbox read-only
-   -Tier hard -PromptFile prompts\codex\r0-review.txt`. The dispatch asks
+   -Tier normal -PromptFile prompts\codex\r0-review.txt`. The dispatch asks
    for at most 25 ranked findings in a fixed one-line shape, each with how
    it was verified, and a "Verified clean" list so nothing is re-checked.
    It is told what the 09-11 report and this plan already cover, so it
    does not repeat them. Fable's triage of the result:
    - P0 with a reproduction → a new unit `R0-<n>` at the top of §2.2,
-     dispatched at normal (hard if multi-file). Recorded in §5 like any unit.
+     dispatched at normal. Recorded in §5 like any unit.
    - P1 → appended to §2.5 backlog or folded into the closest existing
      unit's dispatch file (one line under Definition of done).
    - P2, unverified, or already decided against → dropped, with one line in
@@ -163,7 +166,7 @@ problems and brings the ideas to Fable. Three places where that happens:
    - Anything that reopens a §1 decision → dropped, no discussion.
    Fable writes `docs/log/r0.md` (findings accepted, rejected, and the
    verified-clean list) and commits it with the first accepted unit.
-2. **Per hard unit, a second pair of eyes.** After W5 and W4 pass Fable's
+2. **Per large unit, a second pair of eyes.** After W5 and W4 pass Fable's
    gates and before the PR opens, a read-only astra-low dispatch reads the
    branch diff (`git diff main...unit/<id>`) with one question: what in this
    diff changes behaviour that the definition of done did not ask for, and
@@ -253,7 +256,7 @@ Run `node scripts/smoke-live.mjs https://<url>` (L1) or do the same by hand:
 - [ ] `/conoce` → "Agregar a la pantalla de inicio" → app opens without
       URL bar.
 
-Anything red here is a P0 unit: dispatch to Codex hard tier with the exact
+Anything red here is a P0 unit: dispatch to Codex at normal with the exact
 observation, merge, redeploy, re-run the list. Do not launch around a red
 item; do launch with an empty directory.
 

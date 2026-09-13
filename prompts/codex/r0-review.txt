@@ -1,4 +1,4 @@
-Tier: hard (gpt-6-astra, effort high)    Sandbox: read-only (-s read-only, NOT workspace-write)    Branch: none
+Tier: normal (gpt-6-astra, effort low)    Sandbox: read-only (-s read-only, NOT workspace-write)    Branch: none
 Read AGENTS.md at the repo root first. This is a review, not a build. You change nothing.
 
 Task:

@@ -1,4 +1,4 @@
-Tier: hard    Branch: unit/w5    Spec: prompts/sonnet-w5-server-backend-tests.md
+Tier: normal    Branch: unit/w5    Spec: prompts/sonnet-w5-server-backend-tests.md
 Read AGENTS.md at the repo root first, then the spec file, then only the files the spec lists.
 
 Task:

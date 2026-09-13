@@ -4,7 +4,7 @@ Read AGENTS.md at the repo root first, then the spec file, then only the files t
 Task:
 Unit W4 in repo embarazo.2.1: split app/(app)/page.tsx (705 lines) and app/(app)/ajustes/AjustesClient.tsx (1182 lines) into components under components/home/** and components/ajustes/**, behaviour-preserving, no new state, no new client boundaries beyond what exists, per the spec file. Run the named e2e specs before touching anything and record they are green; then again after.
 Work on branch unit/w4 created from the current main. Commit there.
-This is dispatch 1 of 2: split ONLY app/(app)/page.tsx into components/home/**. Leave app/(app)/ajustes/** untouched in this dispatch; the manager sends ajustes as a second dispatch on the same branch.
+This is dispatch 2 of 2, on the existing branch unit/w4 where the home split is already committed: split ONLY app/(app)/ajustes/AjustesClient.tsx into components/ajustes/**. Do not touch app/(app)/page.tsx or components/home/** again.
 
 Files to touch:
 app/(app)/page.tsx

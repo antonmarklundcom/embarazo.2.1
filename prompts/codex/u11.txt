@@ -1,0 +1,42 @@
+Tier: normal    Branch: unit/u11    Spec: prompts/sonnet-u11-link-pass.md
+Read AGENTS.md at the repo root first, then the spec file, then only the files the spec lists.
+
+Task:
+Unit U11 in repo embarazo.2.1: the September link pass, per the spec file. Cross-links between the merged U units, nav additions, the consolidated DECISIONS.md entry and the BUILD-PLAN statuses. This unit alone may edit DECISIONS.md, docs/BUILD-PLAN.md and KNOWN-ISSUES.md. Read docs/decisions-needed.md for the lines earlier units left for you.
+Work on branch unit/u11 created from the current main. Commit there.
+
+Files to touch:
+the Owns list in the spec file
+app/(app)/page.tsx
+app/(app)/ajustes/**
+DECISIONS.md (append one entry only)
+docs/BUILD-PLAN.md
+KNOWN-ISSUES.md
+docs/BUILD-QUEUE-2026-09-06.md section 10
+docs/log/u11.md
+
+Do not touch:
+lib/db.ts, lib/auth/**, next.config.ts, .env*, anything not on the list.
+
+Definition of done:
+Every exit criterion in the spec file.
+DECISIONS.md grows by exactly one appended section.
+docs/decisions-needed.md items marked for the link pass are either done or carried into KNOWN-ISSUES.md.
+Stay within the listed files. If something outside them must change to satisfy the definition of done, stop and say so instead of changing it.
+Do not push, open a PR, or merge. Commit on the branch named above and stop.
+
+Commands to run before reporting:
+npx tsc --noEmit   (working directory: repo root)
+npm run lint   (working directory: repo root)
+npm test   (working directory: repo root)
+npm run test:db   (working directory: repo root)
+npm run validate:content   (working directory: repo root)
+npm run build with env PHOTO_STORAGE_ENDPOINT=https://bucket.example.test and NEXT_PUBLIC_SUPPORT_EMAIL=hola@mibebe.example.py   (working directory: repo root)
+npx playwright test e2e/tools-grid.spec.ts e2e/onboarding.spec.ts   (working directory: repo root)
+Run every listed command. Report FAIL with the error text rather than skipping or substituting another check.
+
+Report format:
+Files changed: each path with a one-line summary of the change.
+Commands run: each command with PASS or FAIL and a one-line result.
+Flagged or not done: anything skipped, blocked, ambiguous, or outside scope, or None.
+Keep the report under 30 lines. No diffs, no file dumps. Never print or write secrets, tokens, or API keys.

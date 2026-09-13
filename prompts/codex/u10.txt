@@ -1,0 +1,36 @@
+Tier: normal    Branch: unit/u10    Spec: prompts/sonnet-u10-hero-assets.md
+Read AGENTS.md at the repo root first, then the spec file, then only the files the spec lists.
+
+Task:
+Unit U10 in repo embarazo.2.1: place the founder hero renders and fruit images, per the spec file. Only run when the source images exist where the spec says; otherwise stop immediately and report not started.
+Work on branch unit/u10 created from the current main. Commit there.
+
+Files to touch:
+the Owns list in the spec file
+docs/log/u10.md
+
+Do not touch:
+DECISIONS.md, docs/BUILD-PLAN.md, KNOWN-ISSUES.md, lib/db.ts, lib/auth/**, next.config.ts, .env*, package-lock.json except via npm, anything under public/assets/ not listed above.
+
+Definition of done:
+Every exit criterion in the spec file.
+Every output image is webp, at or under the size the spec names, and the admin content page counts zero missing weeks.
+Stay within the listed files. If something outside them must change to satisfy the definition of done, stop and say so instead of changing it.
+Do not push, open a PR, or merge. Commit on the branch named above and stop.
+
+Commands to run before reporting:
+npx tsc --noEmit   (working directory: repo root)
+npm run lint   (working directory: repo root)
+npm test   (working directory: repo root)
+npm run test:db   (working directory: repo root)
+npm run validate:content   (working directory: repo root)
+npm run build with env PHOTO_STORAGE_ENDPOINT=https://bucket.example.test and NEXT_PUBLIC_SUPPORT_EMAIL=hola@mibebe.example.py   (working directory: repo root)
+npm run optimize:images   (working directory: repo root)
+npx playwright test e2e/week-hero.spec.ts   (working directory: repo root)
+Run every listed command. Report FAIL with the error text rather than skipping or substituting another check.
+
+Report format:
+Files changed: each path with a one-line summary of the change.
+Commands run: each command with PASS or FAIL and a one-line result.
+Flagged or not done: anything skipped, blocked, ambiguous, or outside scope, or None.
+Keep the report under 30 lines. No diffs, no file dumps. Never print or write secrets, tokens, or API keys.

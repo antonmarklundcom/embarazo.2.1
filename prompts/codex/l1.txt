@@ -1,0 +1,41 @@
+Tier: normal    Branch: unit/l1    Spec: docs/PLAN-2026-09-13-GO-LIVE.md section 2.2, item L1
+Read AGENTS.md at the repo root first, then the spec file, then only the files the spec lists.
+
+Task:
+Unit L1 in repo embarazo.2.1: write scripts/smoke-live.mjs, a zero-dependency Node 22 script that checks a deployed instance of this app the way a person would on deploy day. Usage: node scripts/smoke-live.mjs https://host. It prints one table row per check with PASS or FAIL and exits 1 if any check failed. Checks are listed in the spec section. Read lib/brand.ts if it exists for the expected manifest name, otherwise use the name from app/manifest.webmanifest. Read the API whitelist rules in app/api/v1/directory/route.ts to build the good and bad query strings.
+Work on branch unit/l1 created from the current main. Commit there.
+
+Files to touch:
+scripts/smoke-live.mjs
+scripts/smoke-live.test.ts
+package.json (one script line: smoke:live)
+docs/log/l1.md
+
+Do not touch:
+every other path. No new dependencies.
+
+Definition of done:
+node scripts/smoke-live.mjs with no argument prints usage and exits 2.
+Every check in the spec list is implemented using global fetch with a 15 second timeout per request.
+A vitest file stubs globalThis.fetch and covers: all green exits 0, a missing CSP header fails that row, a 500 on a page fails that row, auth providers 404 is reported as local-only and passes.
+npm test picks the new test up (check vitest.config.mts include patterns and say where the test had to live).
+package.json gains smoke:live pointing at the script.
+docs/log/l1.md written: what it checks, how to run, known gaps.
+Stay within the listed files. If something outside them must change to satisfy the definition of done, stop and say so instead of changing it.
+Do not push, open a PR, or merge. Commit on the branch named above and stop.
+
+Commands to run before reporting:
+npx tsc --noEmit   (working directory: repo root)
+npm run lint   (working directory: repo root)
+npm test   (working directory: repo root)
+npm run test:db   (working directory: repo root)
+npm run validate:content   (working directory: repo root)
+npm run build with env PHOTO_STORAGE_ENDPOINT=https://bucket.example.test and NEXT_PUBLIC_SUPPORT_EMAIL=hola@mibebe.example.py   (working directory: repo root)
+node scripts/smoke-live.mjs   (working directory: repo root; expect exit 2 and usage text)
+Run every listed command. Report FAIL with the error text rather than skipping or substituting another check.
+
+Report format:
+Files changed: each path with a one-line summary of the change.
+Commands run: each command with PASS or FAIL and a one-line result.
+Flagged or not done: anything skipped, blocked, ambiguous, or outside scope, or None.
+Keep the report under 30 lines. No diffs, no file dumps. Never print or write secrets, tokens, or API keys.

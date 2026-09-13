@@ -1,0 +1,40 @@
+Tier: hard    Branch: unit/w4    Spec: prompts/sonnet-w4-split-home-ajustes.md
+Read AGENTS.md at the repo root first, then the spec file, then only the files the spec lists.
+
+Task:
+Unit W4 in repo embarazo.2.1: split app/(app)/page.tsx (705 lines) and app/(app)/ajustes/AjustesClient.tsx (1182 lines) into components under components/home/** and components/ajustes/**, behaviour-preserving, no new state, no new client boundaries beyond what exists, per the spec file. Run the named e2e specs before touching anything and record they are green; then again after.
+Work on branch unit/w4 created from the current main. Commit there.
+
+Files to touch:
+app/(app)/page.tsx
+app/(app)/ajustes/**
+components/home/**
+components/ajustes/**
+docs/log/w4.md
+
+Do not touch:
+DECISIONS.md, docs/BUILD-PLAN.md, KNOWN-ISSUES.md, lib/db.ts, lib/auth/**, next.config.ts, .env*, package-lock.json except via npm, anything under public/assets/ not listed above. Any lib/ file. Any string a user sees. Any data-testid.
+
+Definition of done:
+Every exit criterion in the spec file.
+No file under app/(app)/page.tsx or app/(app)/ajustes/ exceeds 300 lines.
+The count of use client directives is unchanged.
+All e2e specs listed below green before and after; the before run is stated in the report.
+Stay within the listed files. If something outside them must change to satisfy the definition of done, stop and say so instead of changing it.
+Do not push, open a PR, or merge. Commit on the branch named above and stop.
+
+Commands to run before reporting:
+npx tsc --noEmit   (working directory: repo root)
+npm run lint   (working directory: repo root)
+npm test   (working directory: repo root)
+npm run test:db   (working directory: repo root)
+npm run validate:content   (working directory: repo root)
+npm run build with env PHOTO_STORAGE_ENDPOINT=https://bucket.example.test and NEXT_PUBLIC_SUPPORT_EMAIL=hola@mibebe.example.py   (working directory: repo root)
+npx playwright test e2e/onboarding.spec.ts e2e/week-hero.spec.ts e2e/tools-grid.spec.ts e2e/account.spec.ts e2e/backup-restore.spec.ts e2e/language.spec.ts e2e/family-surfaces.spec.ts   (working directory: repo root)
+Run every listed command. Report FAIL with the error text rather than skipping or substituting another check.
+
+Report format:
+Files changed: each path with a one-line summary of the change.
+Commands run: each command with PASS or FAIL and a one-line result.
+Flagged or not done: anything skipped, blocked, ambiguous, or outside scope, or None.
+Keep the report under 30 lines. No diffs, no file dumps. Never print or write secrets, tokens, or API keys.

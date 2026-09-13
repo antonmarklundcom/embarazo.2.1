@@ -1,0 +1,32 @@
+Tier: hard (gpt-6-astra, effort high)    Sandbox: read-only (-s read-only, NOT workspace-write)    Branch: none
+Read AGENTS.md at the repo root first. This is a review, not a build. You change nothing.
+
+Task:
+Review repo embarazo.2.1 (a Next.js 15 PWA for pregnancy tracking in Paraguay: offline-first Dexie store, optional accounts with MySQL via Drizzle, next-auth v5 beta, family sharing with per-field opt-in, admin panel, enforced CSP, 1150 unit tests, 40 Playwright specs) and bring the manager a ranked list of concrete problems and improvements. The manager is a Claude session that will triage your list; it wants findings it can turn into small PR-sized units, not essays. Orient with README.md, docs/ARCHITECTURE.md, docs/IMPROVEMENT-REPORT-2026-09-11.md (what was already found and decided; do not repeat it) and docs/PLAN-2026-09-13-GO-LIVE.md section 2 (what is already queued; do not repeat it). Then read code, not docs: lib/server/**, app/api/v1/**, lib/db.ts, lib/sync/**, lib/sharing/**, lib/crypto.ts, app/sw.ts, next.config.ts, lib/auth/**, app/(app)/page.tsx, components/** as needed.
+
+Look for, in this priority order:
+1. Correctness bugs a user would hit: wrong pregnancy or cycle math edge cases (lib/pregnancy.ts, lib/cycle.ts), sync conflicts or data loss paths (lib/sync/**, lib/server/sync.ts), Dexie upgrade hazards, timezone and date handling around Paraguay (UTC-4, DST abolished), soft-delete and restore consistency.
+2. Security and privacy: any API route where the zod whitelist, rate limit or in-handler auth can be bypassed; anything that lets one account read another account's envelope or a revoked family member keep access; secrets or PII in logs; CSP holes beyond the documented unsafe-inline residual; the credentials provider added in PR-20 (password hashing, enumeration, rate limit on sign-in).
+3. Offline and PWA: precache list vs routes actually needed offline; service worker update flow; anything that breaks the first offline load on a mid-range Android.
+4. Performance on slow networks: bundle size hot spots, images without dimensions, client components that could be server components, unbatched Dexie reads on the home screen.
+5. Test gaps: server modules or client hooks whose behaviour is asserted only by reading source text or only by e2e.
+6. Launch readiness: anything in the code that would embarrass a public launch tomorrow (placeholder text that escapes the publication gate, broken links, es-PY copy that reads wrong, a route that 500s without an env var).
+
+Definition of done:
+A report of at most 25 findings, ranked, each in this exact shape on one line plus at most three lines of detail:
+  [P0|P1|P2] <area> <file:line> - <one sentence claim> - <how you verified it: the test you ran, the code path you traced, or Unverified> - <proposed fix in one sentence and a size: S, M or L>.
+P0 means a user-visible bug or a security hole; P1 means a real improvement worth a PR this month; P2 means nice to have.
+Do not report style, naming, or anything the two docs above already list.
+Do not propose rewrites, new frameworks, new dependencies, or a CMS.
+Every P0 must come with a reproduction: a command, a test you wrote in memory and ran with npx vitest run -t, or a traced code path with the exact lines.
+Finish with a section titled Verified clean: the areas you checked and found nothing in, so the manager does not send someone else to re-check them.
+
+Commands you may run (all read-only):
+npx tsc --noEmit   (working directory: repo root)
+npm test   (working directory: repo root)
+npx vitest run <file or -t pattern>   (working directory: repo root)
+git log, git grep, git blame   (working directory: repo root)
+Do not run npm install, npm run build, playwright, or anything that writes to the tree. Do not edit any file.
+
+Report format:
+The ranked findings list, then Verified clean, then Flagged: anything you could not check and why. No diffs, no file dumps, under 120 lines. Never print secrets, tokens, or API keys.

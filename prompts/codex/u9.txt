@@ -1,0 +1,36 @@
+Tier: normal    Branch: unit/u9    Spec: prompts/sonnet-u9-ai-drafts.md
+Read AGENTS.md at the repo root first, then the spec file, then only the files the spec lists.
+
+Task:
+Unit U9 in repo embarazo.2.1: AI-drafted answers in the admin Q and A moderation queue, per the spec file. The draft is a suggestion the admin edits and approves; nothing reaches a user without the existing approval step. Reuse the Gemini client, quota and spend-ceiling pattern already used by the AI baby feature in lib/ai/**; fail closed when the key or flag is absent.
+Work on branch unit/u9 created from the current main. Commit there.
+
+Files to touch:
+the Owns list in the spec file
+docs/log/u9.md
+
+Do not touch:
+DECISIONS.md, docs/BUILD-PLAN.md, KNOWN-ISSUES.md, lib/db.ts, lib/auth/**, next.config.ts, .env*, package-lock.json except via npm, anything under public/assets/ not listed above. The publish path in lib/server/questions.ts beyond adding the draft field the spec names.
+
+Definition of done:
+Every exit criterion in the spec file.
+With GEMINI_API_KEY unset the queue renders exactly as today and the draft button is absent.
+A unit test covers the prompt builder and the fail-closed branch with a stubbed model client.
+Stay within the listed files. If something outside them must change to satisfy the definition of done, stop and say so instead of changing it.
+Do not push, open a PR, or merge. Commit on the branch named above and stop.
+
+Commands to run before reporting:
+npx tsc --noEmit   (working directory: repo root)
+npm run lint   (working directory: repo root)
+npm test   (working directory: repo root)
+npm run test:db   (working directory: repo root)
+npm run validate:content   (working directory: repo root)
+npm run build with env PHOTO_STORAGE_ENDPOINT=https://bucket.example.test and NEXT_PUBLIC_SUPPORT_EMAIL=hola@mibebe.example.py   (working directory: repo root)
+npx playwright test e2e/preguntas.spec.ts e2e/admin.spec.ts   (working directory: repo root)
+Run every listed command. Report FAIL with the error text rather than skipping or substituting another check.
+
+Report format:
+Files changed: each path with a one-line summary of the change.
+Commands run: each command with PASS or FAIL and a one-line result.
+Flagged or not done: anything skipped, blocked, ambiguous, or outside scope, or None.
+Keep the report under 30 lines. No diffs, no file dumps. Never print or write secrets, tokens, or API keys.

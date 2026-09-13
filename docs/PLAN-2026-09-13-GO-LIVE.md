@@ -43,7 +43,7 @@ Everything in `docs/BUILD-QUEUE-2026-09-06.md` §2 and
   week away. The fallback hero is honest; LCP 3.4 s is a regression to fix
   in week 1, not a reason to hold a launch that has no users yet.
 - **Dependabot: take patches and minors in the two grouped PRs (#99, #79)
-  as one Codex cheap unit; actions/checkout and setup-node 4→7 (#77, #78)
+  as one Codex unit; actions/checkout and setup-node 4→7 (#77, #78)
   are taken together in W1** because W1 edits `ci.yml` anyway.
 
 ## 2. Part A — the build queue, Codex edition

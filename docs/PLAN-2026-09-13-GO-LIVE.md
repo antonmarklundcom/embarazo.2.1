@@ -53,14 +53,13 @@ Everything in `docs/BUILD-QUEUE-2026-09-06.md` §2 and
 | Role | Who | Does |
 |---|---|---|
 | Manager | Fable 5.1, Anton's window | picks the unit, fills the dispatch file, runs the gates on the result, merges, writes the report line |
-| Worker, normal | Codex `gpt-6-astra`, effort low | every unit not marked cheap, and every review pass |
-| Worker, cheap | Codex `gpt-5.6-luna`, effort low | D1 (dependabot), U8 if the name is already decided, any rename/typo follow-up |
+| Worker | Codex `gpt-6-astra`, effort low | every unit and every review pass. Anton 2026-09-13: no luna tier on this repo either; astra low for everything |
 
 **Anton's standing rule for this repo: effort is always `low`. There is no
 hard tier.** A unit that fails the audit twice at normal is not escalated
 to high effort; Fable splits it into smaller dispatches with a tighter
 definition of done and resends at normal. Everything else (resume with the
-exact error, cheap → normal escalation, the report shape) follows the
+exact error, the report shape) follows the
 `manager-worker-codex` skill.
 
 ### 2.2 The units, in running order
@@ -74,9 +73,9 @@ before the next dispatch. `Files` = the ownership map in
 | 0 | **R0** Codex review pass | normal, **read-only** | `prompts/codex/r0-review.txt` | astra reads the code cold and brings Fable a ranked list; Fable triages into units (§2.6) | — |
 | 1 | **U3 merge** | none (Fable) | — | PR #101 exists; merge `main` into `unit/u3`, run gates, `run-ci`, merge | — |
 | 2 | **W1** CI fast lane + actions bumps | normal | `prompts/codex/w1.txt` | every later PR gets a signal on push; closes #77 #78 | — |
-| 3 | **D1** dependabot minors | cheap | `prompts/codex/d1.txt` | closes #99 #79 with one gated run | W1 |
+| 3 | **D1** dependabot minors | normal | `prompts/codex/d1.txt` | closes #99 #79 with one gated run | W1 |
 | 4 | **L1** live smoke script | normal | `prompts/codex/l1.txt` | Part B needs it on deploy day (§4.3) | — |
-| 5 | **U8** brand constant | cheap if name decided, else normal | `prompts/codex/u8.txt` | title, manifest, OG before first share | founder name |
+| 5 | **U8** brand constant | normal | `prompts/codex/u8.txt` | title, manifest, OG before first share | founder name |
 | 6 | **U9** AI drafts in Q&A queue | normal | `prompts/codex/u9.txt` | the queue gets users on day 1 | — |
 | 7 | **W3** alt text + hero contrast test | normal | `prompts/codex/w3.txt` | small, user-facing | — |
 | 8 | **W6** perf budget script | normal | `prompts/codex/w6.txt` | baseline before U10 and W4 | — |
@@ -92,7 +91,7 @@ New units introduced by this plan:
 - **D1 — dependabot minors.** Merge `main` into each of #99 and #79 or
   recreate as one branch `deps/2026-09`; `npm ci`, gates, done. Any bump
   that fails a gate is dropped from the batch and listed in the report, not
-  fixed. Cheap tier: the outcome is fully specified.
+  fixed.
 - **L1 — `scripts/smoke-live.mjs`.** `node scripts/smoke-live.mjs https://<domain>`
   runs, against the *deployed* site, the checks a human would otherwise do
   by hand on deploy day: HTTP 200 on `/`, `/semana/20`, `/herramientas`,

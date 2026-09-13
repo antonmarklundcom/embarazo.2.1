@@ -1,4 +1,4 @@
-Tier: cheap    Branch: deps/2026-09    Spec: none; this file is the whole spec
+Tier: normal    Branch: deps/2026-09    Spec: none; this file is the whole spec
 Read AGENTS.md at the repo root first, then the spec file, then only the files the spec lists.
 
 Task:

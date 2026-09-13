@@ -1,4 +1,4 @@
-Tier: cheap    Branch: unit/u8    Spec: prompts/sonnet-u8-brand.md
+Tier: normal    Branch: unit/u8    Spec: prompts/sonnet-u8-brand.md
 Read AGENTS.md at the repo root first, then the spec file, then only the files the spec lists.
 
 Task:

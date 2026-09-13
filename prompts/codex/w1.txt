@@ -1,0 +1,38 @@
+Tier: normal    Branch: unit/w1    Spec: prompts/sonnet-w1-ci-fast-lane.md
+Read AGENTS.md at the repo root first, then the spec file, then only the files the spec lists.
+
+Task:
+Unit W1 in repo embarazo.2.1: add an always-on fast lane to GitHub Actions (tsc, lint, unit tests, test:db; no browser, no build) that runs on every pull_request push, keep the existing label-gated full job unchanged, and while in the file bump actions/checkout and actions/setup-node to v7 (this replaces Dependabot PRs 77 and 78). Follow the spec file exactly. The fast lane must stay under about two minutes of runner time.
+Work on branch unit/w1 created from the current main. Commit there.
+
+Files to touch:
+.github/workflows/ci.yml
+docs/log/w1.md
+
+Do not touch:
+every other path.
+
+Definition of done:
+A second job in ci.yml runs on pull_request types opened, synchronize, reopened with steps checkout, setup-node 22 with npm cache, npm ci, npx tsc --noEmit, npm run lint, npm test, npm run test:db, and nothing else.
+The existing build job is unchanged except the two action major versions.
+actions/checkout@v7 and actions/setup-node@v7 everywhere in the file.
+The yaml parses.
+docs/log/w1.md written per the spec log format.
+Stay within the listed files. If something outside them must change to satisfy the definition of done, stop and say so instead of changing it.
+Do not push, open a PR, or merge. Commit on the branch named above and stop.
+
+Commands to run before reporting:
+npx tsc --noEmit   (working directory: repo root)
+npm run lint   (working directory: repo root)
+npm test   (working directory: repo root)
+npm run test:db   (working directory: repo root)
+npm run validate:content   (working directory: repo root)
+npm run build with env PHOTO_STORAGE_ENDPOINT=https://bucket.example.test and NEXT_PUBLIC_SUPPORT_EMAIL=hola@mibebe.example.py   (working directory: repo root)
+npx --yes js-yaml .github/workflows/ci.yml   (working directory: repo root; must print the parsed document without error)
+Run every listed command. Report FAIL with the error text rather than skipping or substituting another check.
+
+Report format:
+Files changed: each path with a one-line summary of the change.
+Commands run: each command with PASS or FAIL and a one-line result.
+Flagged or not done: anything skipped, blocked, ambiguous, or outside scope, or None.
+Keep the report under 30 lines. No diffs, no file dumps. Never print or write secrets, tokens, or API keys.

@@ -1,0 +1,37 @@
+Tier: cheap    Branch: deps/2026-09    Spec: none; this file is the whole spec
+Read AGENTS.md at the repo root first, then the spec file, then only the files the spec lists.
+
+Task:
+Unit D1 in repo embarazo.2.1: apply the dependency bumps from Dependabot PRs 99 (development-dependencies group, 10 updates) and 79 (production-dependencies group, 4 updates) onto one branch. Take only patch and minor bumps. Read the two PR branches with git show origin/<branch>:package.json to learn the target versions; do not merge those branches, edit package.json to the same versions and run npm install so package-lock.json follows. Any single bump that makes a gate fail is reverted to the version on main and listed in the report; do not fix code to accommodate a bump.
+Work on branch deps/2026-09 created from the current main. Commit there.
+
+Files to touch:
+package.json
+package-lock.json
+
+Do not touch:
+every other path. No code changes at all.
+
+Definition of done:
+package.json carries the same versions as the two Dependabot branches for every bump that is patch or minor; majors are left as on main and listed.
+npm ci succeeds from the new lock file.
+All gate commands pass.
+The report lists every bump taken and every bump dropped with its version pair.
+Stay within the listed files. If something outside them must change to satisfy the definition of done, stop and say so instead of changing it.
+Do not push, open a PR, or merge. Commit on the branch named above and stop.
+
+Commands to run before reporting:
+npx tsc --noEmit   (working directory: repo root)
+npm run lint   (working directory: repo root)
+npm test   (working directory: repo root)
+npm run test:db   (working directory: repo root)
+npm run validate:content   (working directory: repo root)
+npm run build with env PHOTO_STORAGE_ENDPOINT=https://bucket.example.test and NEXT_PUBLIC_SUPPORT_EMAIL=hola@mibebe.example.py   (working directory: repo root)
+npm ci   (working directory: repo root)
+Run every listed command. Report FAIL with the error text rather than skipping or substituting another check.
+
+Report format:
+Files changed: each path with a one-line summary of the change.
+Commands run: each command with PASS or FAIL and a one-line result.
+Flagged or not done: anything skipped, blocked, ambiguous, or outside scope, or None.
+Keep the report under 30 lines. No diffs, no file dumps. Never print or write secrets, tokens, or API keys.

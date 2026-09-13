@@ -1,0 +1,43 @@
+Tier: cheap    Branch: unit/u8    Spec: prompts/sonnet-u8-brand.md
+Read AGENTS.md at the repo root first, then the spec file, then only the files the spec lists.
+
+Task:
+Unit U8 in repo embarazo.2.1: introduce lib/brand.ts with the app name constants and make the manifest, root metadata, OG generator and every user-visible brand string import or match it. Follow the spec file exactly, including what must NOT be renamed (storage keys, DB name, cache names, seed JSON). If docs/decisions-needed.md records a name, use it; otherwise the defaults in the spec.
+Work on branch unit/u8 created from the current main. Commit there.
+
+Files to touch:
+lib/brand.ts
+lib/brand.test.ts
+app/manifest.webmanifest
+app/layout.tsx (metadata strings only)
+scripts/gen-og.mjs (title string only)
+lib/share/card.ts
+lib/share/invite.ts
+components/** and app/** (only the brand string literal on a line, nothing else)
+docs/log/u8.md
+
+Do not touch:
+DECISIONS.md, docs/BUILD-PLAN.md, KNOWN-ISSUES.md, lib/db.ts, lib/auth/**, next.config.ts, .env*, package-lock.json except via npm, anything under public/assets/ not listed above. Also: any storage key, DB name, cache name, id, slug, or file under docs/ or lib/seed/.
+
+Definition of done:
+git grep with the pattern Mi Beb -- components app returns nothing.
+lib/brand.test.ts reads app/manifest.webmanifest and asserts name and short_name equal the constants, and scans components/ and app/ for the literal.
+Existing share and invite tests pass unchanged.
+Stay within the listed files. If something outside them must change to satisfy the definition of done, stop and say so instead of changing it.
+Do not push, open a PR, or merge. Commit on the branch named above and stop.
+
+Commands to run before reporting:
+npx tsc --noEmit   (working directory: repo root)
+npm run lint   (working directory: repo root)
+npm test   (working directory: repo root)
+npm run test:db   (working directory: repo root)
+npm run validate:content   (working directory: repo root)
+npm run build with env PHOTO_STORAGE_ENDPOINT=https://bucket.example.test and NEXT_PUBLIC_SUPPORT_EMAIL=hola@mibebe.example.py   (working directory: repo root)
+npx playwright test e2e/share-card.spec.ts e2e/invite.spec.ts   (working directory: repo root; needs the build above and npx playwright install chromium once)
+Run every listed command. Report FAIL with the error text rather than skipping or substituting another check.
+
+Report format:
+Files changed: each path with a one-line summary of the change.
+Commands run: each command with PASS or FAIL and a one-line result.
+Flagged or not done: anything skipped, blocked, ambiguous, or outside scope, or None.
+Keep the report under 30 lines. No diffs, no file dumps. Never print or write secrets, tokens, or API keys.

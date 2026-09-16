@@ -1,4 +1,4 @@
-// K9-F6 (docs/FABLE-PLAN-2026-08.md §3) — "memory + gentle streak on the
+// K9-F6 (docs/archive/FABLE-PLAN-2026-08.md §3) — "memory + gentle streak on the
 // existing mood check-in; celebrate, never guilt-trip".
 //
 // The whole feature is here as arithmetic over timestamps so that the one part

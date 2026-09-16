@@ -134,7 +134,7 @@ import { ToolIcon, type ToolIconName } from "@/components/ToolIcon";
 import { HeroSubject } from "@/components/hero/HeroSubject";
 import { ThemeChip } from "@/components/hero/ThemeChip";
 
-// "Hoy" screen — Mi Bebé design 1a (docs/REDESIGN-PLAN.md §2): week strip,
+// "Hoy" screen — Mi Bebé design 1a (docs/archive/REDESIGN-PLAN.md §2): week strip,
 // photo hero with fallback, tip, mood check-in, herramientas grid, reading
 // rail. Paraguay-specific cards (derechos, recursos, temporada) stay below.
 export default function InicioPage() {

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-// K13a (docs/FABLE-PLAN-2026-08.md §6) — the app has no middleware, and that
+// K13a (docs/archive/FABLE-PLAN-2026-08.md §6) — the app has no middleware, and that
 // is now an invariant rather than an accident.
 //
 // The reason is specific. Next.js has shipped more than one authentication

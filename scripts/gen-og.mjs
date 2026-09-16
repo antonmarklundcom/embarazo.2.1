@@ -11,7 +11,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT = join(__dirname, "..", "public");
 mkdirSync(OUT, { recursive: true });
 
-// Palette (docs/REDESIGN-PLAN.md §1).
+// Palette (docs/archive/REDESIGN-PLAN.md §1).
 const CREAM = [0xfb, 0xf7, 0xf1];
 const ARENA = [0xf8, 0xe2, 0xcb];
 const PETROL = [0x2f, 0x5d, 0x50];

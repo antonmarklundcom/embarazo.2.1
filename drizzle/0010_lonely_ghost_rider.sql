@@ -1,4 +1,4 @@
--- K14 (docs/FABLE-PLAN-2026-08.md §6): `pregnancies_owner_idx` becomes UNIQUE.
+-- K14 (docs/archive/FABLE-PLAN-2026-08.md §6): `pregnancies_owner_idx` becomes UNIQUE.
 --
 -- `ensurePregnancyForOwner` reads-then-inserts, so two concurrent requests for
 -- the same owner could both create a pregnancy. The database is the only place

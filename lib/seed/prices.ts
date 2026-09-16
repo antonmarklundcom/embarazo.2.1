@@ -2,7 +2,7 @@ import { PriceEntrySchema, validateContentArray, type PriceEntry } from "../cont
 import { publishedOnly, reviewedOnly } from "./gate";
 import rawPrices from "./prices.json";
 
-// K10 / P6 — "¿Cuánto cuesta?" (docs/FABLE-PLAN-2026-08.md §3).
+// K10 / P6 — "¿Cuánto cuesta?" (docs/archive/FABLE-PLAN-2026-08.md §3).
 //
 // Same pipeline as D3's food lookup: validated JSON, two gates, and nothing
 // renders until a reviewer has signed it off. The gates matter more here than

@@ -16,7 +16,7 @@ import {
   sourceMonthLabel,
 } from "@/lib/prices";
 
-// K10 / P6 — "¿Cuánto cuesta?" (docs/FABLE-PLAN-2026-08.md §3).
+// K10 / P6 — "¿Cuánto cuesta?" (docs/archive/FABLE-PLAN-2026-08.md §3).
 //
 // The question nobody in Paraguay can get a straight answer to, and the one
 // that decides where a woman gives birth. Same pipeline as D3's food lookup:

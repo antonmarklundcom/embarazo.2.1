@@ -5,7 +5,7 @@ on:
   # the pull_request trigger below.
   push:
     branches: ["main"]
-  # K21 (docs/FABLE-PLAN-2026-08.md §6, founder-approved as D9): the PR
+  # K21 (docs/archive/FABLE-PLAN-2026-08.md §6, founder-approved as D9): the PR
   # trigger is label-gated. An ordinary push to a PR branch runs nothing —
   # the builder validates lint + validate:content + tests + build + e2e in
   # their own session (0 Actions minutes) and only then applies the `run-ci`

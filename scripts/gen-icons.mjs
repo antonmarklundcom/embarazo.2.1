@@ -9,7 +9,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT = join(__dirname, "..", "public", "icons");
 mkdirSync(OUT, { recursive: true });
 
-// Palette (docs/REDESIGN-PLAN.md §1 — "Mi Bebé" design canvas).
+// Palette (docs/archive/REDESIGN-PLAN.md §1 — "Mi Bebé" design canvas).
 const CREAM = [0xfb, 0xf7, 0xf1];
 const PETROL = [0x2f, 0x5d, 0x50];
 const TERRACOTTA = [0xc9, 0x63, 0x42];

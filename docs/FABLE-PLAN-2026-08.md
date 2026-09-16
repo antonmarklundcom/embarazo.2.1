@@ -6,7 +6,7 @@
 > §8 supersedes §4's sequencing for all remaining work.
 
 > **This document supersedes the launch strategy in
-> `docs/OPUS-REVIEW-2026-08.md` §4.1 and `docs/MVP-AND-MONETISATION.md` §2
+> `docs/archive/OPUS-REVIEW-2026-08.md` §4.1 and `docs/archive/MVP-AND-MONETISATION.md` §2
 > wherever they conflict.** The founder reviewed 14 recommendations from an
 > independent Fable 5 critique on 2026-08-18 and approved all of them.
 > The core decision: **the app launches account-first and family-first.**
@@ -449,7 +449,7 @@ Estimated Actions cost: ~8 runs ≈ 40–70 minutes total.
 > `/admin/contenido` are built. What remains uncoded in this document is
 > K13b (blocked on the `next-auth` v5 stable release) and K17 (blocked on the
 > one-app-vs-two founder decision, D7). Everything else on the critical path
-> is a founder task — see `docs/HANDOFF-2026-08-21.md` §3.
+> is a founder task — see `docs/archive/HANDOFF-2026-08-21.md` §3.
 
 **v1.0 cut line (supersedes §4's):** everything merged today + PR-1…PR-5
 + PR-8, plus K5 within PR-4. K19 (language) and K20 (Q&A) ship in v1.0 if

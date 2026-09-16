@@ -160,3 +160,6 @@ next-env.d.ts
 # Playwright
 /playwright-report/
 /test-results/
+
+# Claude Code agent worktrees (local scratch, not repo content)
+.claude/

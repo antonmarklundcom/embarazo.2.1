@@ -22,6 +22,19 @@ const MAX_REQUESTS_PER_WINDOW = 30;
  */
 export const CHEAP_READ_LIMIT = 300;
 
+/**
+ * R0-3 — the allowance for password sign-in and registration attempts.
+ *
+ * This is IP-keyed like everything else here, so a household or clinic
+ * waiting room behind one NAT still needs room for more than one wrong
+ * password before the shared bucket empties out. 20/minute is not a new
+ * number invented for this: it is what `/api/v1/mis-preguntas` already uses
+ * for its own sensitive write (submitting a question), and matching an
+ * existing convention beats picking a fresh threshold for a surface this
+ * codebase had never rate-limited before.
+ */
+export const AUTH_RATE_LIMIT = 20;
+
 const hits = new Map<string, { count: number; windowStart: number }>();
 
 // Bound memory: forget IPs after a while so this can't grow unbounded.

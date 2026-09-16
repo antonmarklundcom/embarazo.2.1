@@ -1,12 +1,16 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import {
   answerQuestion,
   declineQuestion,
   type AdminActionState,
 } from "@/app/admin/actions";
+import {
+  suggestDraft,
+  type DraftActionState,
+} from "@/app/admin/preguntas/actions";
 import { ANSWER_MAX, ANSWER_MIN } from "@/lib/community/questions";
 
 // K20 — the controls on one queued question.
@@ -15,6 +19,12 @@ import { ANSWER_MAX, ANSWER_MIN } from "@/lib/community/questions";
 // one form with two submit buttons, so declining cannot carry a half-written
 // answer along with it, and a stray Enter in the textarea cannot reject
 // anything.
+//
+// U9 adds a third, optional form: "Sugerir borrador". `draftStatus` is
+// `undefined` unless the caller explicitly computed an answer for a pending
+// question, which is what keeps a deployment with no `GEMINI_API_KEY`
+// rendering this component identically to before the feature existed — no
+// button, no placeholder, no extra DOM at all.
 
 function Feedback({ state }: { state: AdminActionState }) {
   if (state.error) {
@@ -28,12 +38,23 @@ function Feedback({ state }: { state: AdminActionState }) {
 
 export function AdminQuestionActions({
   questionId,
+  question,
   answer,
+  draftStatus,
 }: {
   questionId: string;
+  /** The question text, needed only to offer a draft suggestion for it. */
+  question?: string;
   /** The existing answer, when this is a published question being corrected. */
   answer?: string | null;
+  /**
+   * `"available"` shows the "Sugerir borrador" button; `"capped"` shows why
+   * it is not offered right now. Leaving this `undefined` — the feature
+   * disabled, or this is not a pending question — renders nothing extra.
+   */
+  draftStatus?: "available" | "capped";
 }) {
+  const [answerValue, setAnswerValue] = useState(answer ?? "");
   const [answerState, submitAnswer, answering] = useActionState<
     AdminActionState,
     FormData
@@ -42,6 +63,17 @@ export function AdminQuestionActions({
     AdminActionState,
     FormData
   >(declineQuestion, {});
+  const [draftState, submitDraft, drafting] = useActionState<
+    DraftActionState,
+    FormData
+  >(suggestDraft, {});
+
+  // The draft replaces whatever is in the textarea rather than merging with
+  // it — it is a suggestion for an empty pending question, not a patch onto
+  // something the admin already started writing.
+  useEffect(() => {
+    if (draftState.draft) setAnswerValue(draftState.draft);
+  }, [draftState.draft]);
 
   return (
     <div className="mt-3 space-y-3">
@@ -50,10 +82,16 @@ export function AdminQuestionActions({
         <label className="block text-xs font-extrabold uppercase tracking-[1.2px] text-petrol">
           Respuesta
         </label>
+        {draftState.draft && (
+          <p className="mt-1 text-xs font-semibold text-petrol">
+            Borrador generado por IA — revisá antes de publicar.
+          </p>
+        )}
         <textarea
           name="answer"
           rows={4}
-          defaultValue={answer ?? ""}
+          value={answerValue}
+          onChange={(event) => setAnswerValue(event.target.value)}
           minLength={ANSWER_MIN}
           maxLength={ANSWER_MAX}
           placeholder="Respondé como le hablarías a ella. Si la respuesta correcta es «consultá con tu médico», decilo así."
@@ -73,6 +111,32 @@ export function AdminQuestionActions({
         </div>
         <Feedback state={answerState} />
       </form>
+
+      {draftStatus === "available" && (
+        <form action={submitDraft}>
+          <input type="hidden" name="questionId" value={questionId} />
+          <input type="hidden" name="question" value={question ?? ""} />
+          <button
+            type="submit"
+            disabled={drafting}
+            className="text-xs font-semibold text-petrol underline disabled:opacity-40"
+          >
+            {drafting ? "Generando borrador…" : "Sugerir borrador"}
+          </button>
+          {draftState.error && (
+            <p className="mt-1 text-xs font-semibold text-terracotta">
+              {draftState.error}
+            </p>
+          )}
+        </form>
+      )}
+
+      {draftStatus === "capped" && (
+        <p className="text-xs text-muted">
+          Ya se generaron los borradores disponibles hoy. Podés escribir la
+          respuesta vos misma.
+        </p>
+      )}
 
       <form action={submitDecline}>
         <input type="hidden" name="questionId" value={questionId} />

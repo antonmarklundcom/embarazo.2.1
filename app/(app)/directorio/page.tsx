@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useProfile } from "@/lib/useProfile";
+import { APP_NAME } from "@/lib/brand";
 import { DEPARTMENTS } from "@/lib/departments";
 import {
   DIRECTORY_CATEGORIES,
@@ -112,7 +113,7 @@ export default function CercaTuyoPage() {
       BUSINESS_WA
         ? waLink(
             BUSINESS_WA,
-            "Hola! Estoy usando Mi Bebé y me gustaría recomendar o consultar por un lugar en mi zona.",
+            `Hola! Estoy usando ${APP_NAME} y me gustaría recomendar o consultar por un lugar en mi zona.`,
           )
         : null,
     [],

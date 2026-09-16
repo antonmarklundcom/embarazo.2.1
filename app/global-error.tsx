@@ -1,5 +1,7 @@
 "use client";
 
+import { APP_NAME } from "@/lib/brand";
+
 // Last-resort boundary for errors in the root layout itself (fonts,
 // Providers). Must render its own <html>/<body> per Next.js convention since
 // it replaces the root layout when it fires. Intentionally plain — no
@@ -28,7 +30,7 @@ export default function GlobalError({
         }}
       >
         <h1 style={{ fontSize: "1.125rem", fontWeight: 500 }}>
-          Mi Bebé no pudo cargar
+          {APP_NAME} no pudo cargar
         </h1>
         <p style={{ fontSize: "0.875rem", maxWidth: 320, color: "#7E766C" }}>
           Tus datos están a salvo en tu teléfono. Probá recargar la app.

@@ -11,7 +11,7 @@ import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { assess511, CONTRACTIONS_511_HINT } from "@/lib/tools/contractions";
 
 // C8 — this button said "Contactar a mi sanatorio" and opened a chat with
-// `+595000000000`: Mi Bebé's own (unset) business number, on the screen a woman
+// `+595000000000`: the app's own (unset) business number, on the screen a woman
 // uses while timing contractions. Two things were wrong, and both are fixed
 // below: the number was a placeholder, and *our* number was never the right
 // destination for "mi sanatorio" in the first place. It now uses the sanatorio

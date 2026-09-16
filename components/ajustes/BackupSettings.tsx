@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { clearOnboardingDraft } from "@/lib/onboarding/draftStorage";
+import { APP_NAME } from "@/lib/brand";
 import { exportBackup, backupFileName, importBackup } from "@/lib/backup";
 import { syncNow } from "@/lib/sync/client";
 
@@ -75,7 +76,7 @@ export function BackupSettings() {
       window.location.href = "/";
     } catch {
       setBackupErr(
-        "No pudimos restaurar ese archivo. Verificá que sea una copia de seguridad de Mi Bebé.",
+        `No pudimos restaurar ese archivo. Verificá que sea una copia de seguridad de ${APP_NAME}.`,
       );
       setRestoring(false);
     }

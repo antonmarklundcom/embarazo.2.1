@@ -10,6 +10,7 @@ import {
   type QuestionStatus,
 } from "@/lib/community/questions";
 import { fetchAuthStatus } from "@/lib/auth/status";
+import { APP_NAME } from "@/lib/brand";
 
 // K20 — the public half of curated Q&A (§5 D5).
 //
@@ -146,7 +147,7 @@ export function CommunityQuestions() {
                 </p>
                 {item.answeredAt && (
                   <p className="mt-2 text-xs text-muted">
-                    Respondida por el equipo de Mi Bebé · {item.answeredAt}
+                    Respondida por el equipo de {APP_NAME} · {item.answeredAt}
                   </p>
                 )}
               </li>
@@ -202,7 +203,7 @@ export function CommunityQuestions() {
         ) : (
           <>
             <p className="mt-1 text-sm leading-relaxed text-muted">
-              La lee el equipo de Mi Bebé. Si le sirve a otras mamás, la
+              La lee el equipo de {APP_NAME}. Si le sirve a otras mamás, la
               respondemos y la publicamos acá <strong>sin tu nombre</strong>. No
               se publica nada hasta que la respondamos.
             </p>

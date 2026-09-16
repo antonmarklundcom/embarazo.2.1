@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 
 import { startSignIn, type SignInState } from "@/app/(app)/cuenta/actions";
 import { PROVIDER_LABELS } from "@/lib/auth/config";
+import { APP_NAME } from "@/lib/brand";
 import type { AuthStatus } from "@/lib/auth/status";
 
 import { BackButton, MARKS, PrimaryButton } from "./controls";
@@ -149,7 +150,7 @@ export function AccountStep({
               className="mt-0.5 h-5 w-5 shrink-0 rounded border-ink/20 accent-petrol"
             />
             <span>
-              Acepto que Mi Bebé guarde en su servidor mis datos de salud del
+              Acepto que {APP_NAME} guarde en su servidor mis datos de salud del
               embarazo (semanas, síntomas, ánimo, controles, peso) para
               sincronizarlos entre mis dispositivos.
             </span>

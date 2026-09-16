@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Nunito_Sans } from "next/font/google";
 import "./globals.css";
+import { APP_NAME, APP_TITLE } from "@/lib/brand";
 import { Providers } from "@/components/Providers";
 import { UpdateToast } from "@/components/UpdateToast";
 import { HtmlLang } from "@/components/HtmlLang";
@@ -32,29 +33,29 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mibebe.app";
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: "Mi Bebé — tu embarazo en Paraguay",
-    template: "%s · Mi Bebé",
+    default: APP_TITLE,
+    template: `%s · ${APP_NAME}`,
   },
   description:
     "Guía del embarazo semana a semana, hecha para Paraguay. Seguila con tu pareja y tu familia, y funciona sin internet.",
-  applicationName: "Mi Bebé",
+  applicationName: APP_NAME,
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Mi Bebé",
+    title: APP_NAME,
   },
   openGraph: {
     type: "website",
-    title: "Mi Bebé — tu embarazo en Paraguay",
+    title: APP_TITLE,
     description:
       "Guía del embarazo semana a semana, hecha para Paraguay. Seguila con tu pareja y tu familia, y funciona sin internet.",
-    siteName: "Mi Bebé",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Mi Bebé" }],
+    siteName: APP_NAME,
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: APP_NAME }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Mi Bebé — tu embarazo en Paraguay",
+    title: APP_TITLE,
     description:
       "Guía del embarazo semana a semana, hecha para Paraguay. Seguila con tu pareja y tu familia, y funciona sin internet.",
     images: ["/og.png"],

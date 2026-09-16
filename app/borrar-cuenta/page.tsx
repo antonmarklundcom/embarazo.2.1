@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 
+import { APP_NAME } from "@/lib/brand";
 import { supportChannels } from "@/lib/support";
 import { waLink } from "@/lib/whatsapp";
 
@@ -34,9 +35,8 @@ import { waLink } from "@/lib/whatsapp";
 // with JS disabled, and a woman on a borrowed phone.
 
 export const metadata: Metadata = {
-  title: "Borrar tu cuenta y tus datos — Mi Bebé",
-  description:
-    "Cómo borrar tu cuenta de Mi Bebé y todos tus datos, desde la app o escribiéndonos, sin instalar nada.",
+  title: `Borrar tu cuenta y tus datos — ${APP_NAME}`,
+  description: `Cómo borrar tu cuenta de ${APP_NAME} y todos tus datos, desde la app o escribiéndonos, sin instalar nada.`,
   alternates: { canonical: "/borrar-cuenta" },
 };
 
@@ -68,19 +68,19 @@ export default function BorrarCuentaPage() {
   });
 
   const waMessage =
-    "Hola. Quiero borrar mi cuenta de Mi Bebé y todos mis datos. " +
+    `Hola. Quiero borrar mi cuenta de ${APP_NAME} y todos mis datos. ` +
     "Este es el correo con el que la creé:";
 
   return (
     <main className="mx-auto min-h-dvh max-w-2xl bg-cream px-5 py-10 text-ink">
       <p className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">
-        Mi Bebé
+        {APP_NAME}
       </p>
       <h1 className="mt-2 text-3xl font-black tracking-tight">
         Borrar tu cuenta y tus datos
       </h1>
       <p className="mt-3 text-[15px] leading-relaxed text-ink/90">
-        Podés borrar tu cuenta de Mi Bebé y todo lo que guardamos de vos cuando
+        Podés borrar tu cuenta de {APP_NAME} y todo lo que guardamos de vos cuando
         quieras, sin dar explicaciones. Hay dos formas: desde la app, o
         escribiéndonos — para esto último no hace falta instalar nada ni tener
         la app abierta.
@@ -93,7 +93,7 @@ export default function BorrarCuentaPage() {
           Es inmediato y no pasa por nosotros:
         </p>
         <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm leading-relaxed text-ink/90">
-          <li>Abrí Mi Bebé y entrá en <strong>Ajustes</strong>.</li>
+          <li>Abrí {APP_NAME} y entrá en <strong>Ajustes</strong>.</li>
           <li>Bajá hasta <strong>&ldquo;Borrar mi cuenta&rdquo;</strong>.</li>
           <li>
             Confirmá. En el mismo paso podés borrar también los datos guardados
@@ -129,7 +129,7 @@ export default function BorrarCuentaPage() {
           {channels.email && (
             <a
               href={`mailto:${channels.email}?subject=${encodeURIComponent(
-                "Borrar mi cuenta de Mi Bebé",
+                `Borrar mi cuenta de ${APP_NAME}`,
               )}`}
               className="flex min-h-[48px] items-center justify-center rounded-tile bg-petrol px-4 text-sm font-semibold text-white transition active:scale-[0.98]"
             >
@@ -152,7 +152,7 @@ export default function BorrarCuentaPage() {
         </p>
         <p className="mt-2 text-xs leading-relaxed text-muted">
           No te vamos a pedir tu contraseña ni datos de salud para borrar tu
-          cuenta. Si alguien te los pide diciendo que es de Mi Bebé, no es
+          cuenta. Si alguien te los pide diciendo que es de {APP_NAME}, no es
           nuestro.
         </p>
       </section>
@@ -178,7 +178,7 @@ export default function BorrarCuentaPage() {
         </p>
         <p className="mt-3 rounded-tile bg-sand-bg px-3 py-2 text-sm leading-relaxed text-sand-text">
           <strong>Lo que está solo en tu teléfono se queda en tu teléfono.</strong>{" "}
-          Si usaste Mi Bebé sin cuenta, nunca tuvimos nada tuyo que borrar: para
+          Si usaste {APP_NAME} sin cuenta, nunca tuvimos nada tuyo que borrar: para
           eliminar esos datos, borralos desde Ajustes en la app o desinstalala.
         </p>
       </section>
@@ -194,7 +194,7 @@ export default function BorrarCuentaPage() {
         </Link>
         .{" "}
         <Link href="/conoce" className="font-bold underline">
-          Qué es Mi Bebé
+          Qué es {APP_NAME}
         </Link>
         .
       </p>

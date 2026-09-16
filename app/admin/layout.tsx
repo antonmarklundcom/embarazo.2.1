@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { APP_NAME } from "@/lib/brand";
 import { requireAdmin } from "@/lib/server/admin";
 
 // BUILD-PLAN A7 — the /admin shell.
@@ -20,7 +21,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   // Deliberately NO `title`. Next resolves a segment's static metadata even
   // when the layout below throws notFound(), so a title here would put
-  // "Panel · Mi Bebé" in the <title> of the 404 that a stranger receives —
+  // "Panel · {APP_NAME}" in the <title> of the 404 that a stranger receives —
   // confirming the route exists, which is the one thing §9 says not to do.
   // Without it the 404 is byte-identical in every visible way to any other.
   robots: { index: false, follow: false, nocache: true },
@@ -41,7 +42,7 @@ export default async function AdminLayout({
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-baseline gap-4">
             <Link href="/admin" className="text-[15px] font-black text-ink">
-              Mi Bebé · Panel
+              {APP_NAME} · Panel
             </Link>
             {/* K16 — the panel has a second page now. */}
             <Link

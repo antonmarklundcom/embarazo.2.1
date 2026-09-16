@@ -1,6 +1,7 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
 import { Serwist, CacheFirst, NetworkFirst, NetworkOnly } from "serwist";
+import { APP_NAME } from "@/lib/brand";
 import { MIN_WEEK, MAX_WEEK, getCurrentWeek } from "@/lib/pregnancy";
 // K11: the *index*, not the articles — the service worker needs eight slugs
 // to precache, and importing the loader put every article body and zod into
@@ -416,7 +417,7 @@ async function composeNotification(): Promise<{ title: string; body: string }> {
   // show something (`userVisibleOnly`), so show something true and useless
   // rather than something specific and wrong.
   return {
-    title: "Mi Bebé",
+    title: APP_NAME,
     body: "Tocá para ver cómo va tu semana.",
   };
 }

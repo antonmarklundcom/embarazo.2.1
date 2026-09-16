@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { FaqAccordion } from "@/components/FaqAccordion";
 import Link from "next/link";
+import { APP_NAME } from "@/lib/brand";
 
 // Privacy policy for the account world (v3 pivot — accounts + sync). See
 // DECISIONS.md "v3 pivot" and "A2 — Auth.js". DRAFT — pending lawyer review
 // before public launch (see docs/archive/REVIEW-AND-LAUNCH-PLAN.md §4.5).
 export const metadata: Metadata = {
   title: "Política de privacidad",
-  description: "Cómo Mi Bebé maneja tus datos.",
+  description: `Cómo ${APP_NAME} maneja tus datos.`,
 };
 
 const LAST_UPDATED = "12 de agosto de 2026";
@@ -30,7 +31,7 @@ export default function PrivacidadPage() {
 
       <section className="rounded-card border border-sage/30 bg-sage/5 p-4">
         <p className="text-sm leading-relaxed text-ink">
-          Podés usar Mi Bebé <strong>sin crear una cuenta</strong>: en ese caso
+          Podés usar {APP_NAME} <strong>sin crear una cuenta</strong>: en ese caso
           tus datos de embarazo, síntomas, fotos y calendario menstrual se
           guardan solo en este dispositivo y nunca llegan a un servidor. Si
           creás una cuenta, algunos de esos datos <strong>sí viajan a
@@ -42,7 +43,7 @@ export default function PrivacidadPage() {
       <section className="space-y-2">
         <h2 className="text-base font-extrabold text-ink">Sin cuenta: todo se queda en tu teléfono</h2>
         <p className="text-sm leading-relaxed text-muted">
-          Todo lo que registrás en Mi Bebé — fecha de última regla o fecha
+          Todo lo que registrás en {APP_NAME} — fecha de última regla o fecha
           probable de parto, departamento y ciudad, síntomas y estado de
           ánimo, fotos de la panza, fotos del carné perinatal, tipo de sangre
           y alergias, peso, pataditas, contracciones, calendario menstrual,
@@ -85,7 +86,7 @@ export default function PrivacidadPage() {
           momento das acceso a tu pareja o familia (función de embarazo
           compartido), esa persona ve la semana, la fecha probable de parto y
           el próximo control — nunca tus notas del diario ni tus fotos. El
-          equipo de Mi Bebé no lee el contenido de tus registros de salud para
+          equipo de {APP_NAME} no lee el contenido de tus registros de salud para
           darte soporte: cuando necesitamos ayudarte con tu cuenta vemos datos
           de cuenta (si iniciaste sesión, cuántos registros tenés) pero no lo
           que escribiste en ellos.
@@ -215,7 +216,7 @@ export default function PrivacidadPage() {
         Este texto describe honestamente el funcionamiento actual y planeado
         de la app. No reemplaza asesoría legal formal; está pendiente de
         revisión por un abogado antes del lanzamiento público, y el equipo de
-        Mi Bebé lo actualiza a medida que la app cambia.
+        {APP_NAME} lo actualiza a medida que la app cambia.
       </p>
     </article>
   );

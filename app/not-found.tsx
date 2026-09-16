@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { APP_NAME } from "@/lib/brand";
+
 // Catch-all 404 for routes outside the (app) group. Renders inside the root
 // layout (fonts/Providers already applied), so plain Tailwind classes work.
 export default function RootNotFound() {
@@ -23,7 +25,7 @@ export default function RootNotFound() {
         Ir a Inicio
       </Link>
       <Link href="/conoce" className="text-xs font-extrabold text-terracotta">
-        ¿Qué es Mi Bebé?
+        ¿Qué es {APP_NAME}?
       </Link>
     </div>
   );

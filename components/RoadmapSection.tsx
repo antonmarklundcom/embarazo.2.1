@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { APP_NAME } from "@/lib/brand";
 
 // Roadmap placeholders (build spec §8). These are intentionally NON-functional:
 // tapping shows a calm "Próximamente" message.
@@ -38,7 +39,7 @@ export function RoadmapSection() {
   return (
     <section aria-labelledby="roadmap" className="space-y-3">
       <h2 id="roadmap" className="text-sm font-extrabold text-ink">
-        Lo que viene en Mi Bebé
+        Lo que viene en {APP_NAME}
       </h2>
       <div className="space-y-3">
         {ITEMS.map((item) => {

@@ -11,6 +11,8 @@
 // future "just add the due date, it's cute" is a change to this file, which is
 // where somebody will notice it.
 
+import { APP_NAME } from "@/lib/brand";
+
 /** Instagram-story-ish portrait; also fine as a WhatsApp status. */
 export const CARD_WIDTH = 1080;
 export const CARD_HEIGHT = 1350;
@@ -28,7 +30,7 @@ export interface ShareCardContent {
   tagline: string;
 }
 
-export const SHARE_BRAND = "Mi Bebé";
+export const SHARE_BRAND = APP_NAME;
 
 /** Fields that must never reach a share image. Asserted against the source. */
 export const SHARE_FORBIDDEN_FIELDS = [

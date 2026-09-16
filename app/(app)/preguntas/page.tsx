@@ -3,12 +3,12 @@ import Link from "next/link";
 
 import { CommunityQuestions } from "@/components/CommunityQuestions";
 import { FaqAccordion } from "@/components/FaqAccordion";
+import { APP_NAME } from "@/lib/brand";
 import { FAQ_TOPIC_LABELS } from "@/lib/seed/faq";
 
 export const metadata: Metadata = {
   title: "Preguntas frecuentes",
-  description:
-    "Quién ve tus datos, qué pasa si borrás la app, si hace falta una cuenta y quién revisa la información médica de Mi Bebé.",
+  description: `Quién ve tus datos, qué pasa si borrás la app, si hace falta una cuenta y quién revisa la información médica de ${APP_NAME}.`,
 };
 
 // BUILD-PLAN E6 — the FAQ page (feature map #29).

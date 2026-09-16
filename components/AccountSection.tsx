@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AccountCard } from "@/components/AccountCard";
 import { DeleteAccountCard } from "@/components/DeleteAccountCard";
 import { SyncStatusCard } from "@/components/SyncStatusCard";
+import { APP_NAME } from "@/lib/brand";
 import { getSession, isAuthAvailable } from "@/lib/server/auth";
 
 // BUILD-PLAN A2 — the account block on /ajustes.
@@ -43,7 +44,7 @@ export async function AccountSection() {
           Tu cuenta
         </p>
         <h2 className="mt-1 text-[15px] font-extrabold text-ink">
-          Estás usando Mi Bebé sin cuenta
+          Estás usando {APP_NAME} sin cuenta
         </h2>
         <p className="mt-1 text-sm font-semibold leading-relaxed text-muted">
           En esta versión no hay ingreso con cuenta. Todo funciona igual y tus
@@ -60,7 +61,7 @@ export async function AccountSection() {
         Tu cuenta
       </p>
       <h2 className="mt-1 text-[15px] font-extrabold text-ink">
-        Estás usando Mi Bebé sin cuenta
+        Estás usando {APP_NAME} sin cuenta
       </h2>
       <p className="mt-1 text-sm font-semibold leading-relaxed text-ink">
         Así está perfecto: la app funciona completa. Si querés una copia de

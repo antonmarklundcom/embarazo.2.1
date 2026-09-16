@@ -3,6 +3,7 @@
 import { cookies, headers } from "next/headers";
 import { z } from "zod";
 
+import { APP_NAME } from "@/lib/brand";
 import {
   availableProviders,
   isAuthAvailable,
@@ -91,7 +92,7 @@ export async function startSignIn(
   if (!isAuthAvailable()) {
     return {
       error:
-        "Las cuentas no están disponibles en esta versión. Podés seguir usando Mi Bebé sin cuenta.",
+        `Las cuentas no están disponibles en esta versión. Podés seguir usando ${APP_NAME} sin cuenta.`,
     };
   }
 
@@ -133,7 +134,7 @@ export async function registerWithPassword(
   if (!isAuthAvailable()) {
     return {
       error:
-        "Las cuentas no están disponibles en esta versión. Podés seguir usando Mi Bebé sin cuenta.",
+        `Las cuentas no están disponibles en esta versión. Podés seguir usando ${APP_NAME} sin cuenta.`,
     };
   }
 
@@ -198,7 +199,7 @@ export async function signInWithPasswordAction(
   if (!isAuthAvailable()) {
     return {
       error:
-        "Las cuentas no están disponibles en esta versión. Podés seguir usando Mi Bebé sin cuenta.",
+        `Las cuentas no están disponibles en esta versión. Podés seguir usando ${APP_NAME} sin cuenta.`,
     };
   }
 

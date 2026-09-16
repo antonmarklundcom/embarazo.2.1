@@ -8,8 +8,10 @@
 // a una amiga" is how the round grows, and the same link is what a tester
 // forwards.
 
+import { APP_NAME } from "@/lib/brand";
+
 /** What the invitation says. Fixed copy — nothing here is user content. */
-export const INVITE_TITLE = "Mi Bebé";
+export const INVITE_TITLE = APP_NAME;
 
 export const INVITE_TEXT =
   "Estoy usando Mi Bebé, una app de embarazo hecha para Paraguay: semana a " +

@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { APP_NAME } from "@/lib/brand";
 
 // Terms of use for the account world (v3 pivot — accounts + sync). See
 // DECISIONS.md "v3 pivot". DRAFT — pending lawyer review before public
 // launch (see docs/archive/REVIEW-AND-LAUNCH-PLAN.md §4.5).
 export const metadata: Metadata = {
   title: "Términos de uso",
-  description: "Condiciones de uso de Mi Bebé.",
+  description: `Condiciones de uso de ${APP_NAME}.`,
 };
 
 const LAST_UPDATED = "12 de agosto de 2026";
@@ -26,7 +27,7 @@ export default function TerminosPage() {
 
       <section className="rounded-card border border-terracotta/30 bg-terracotta/5 p-4">
         <p className="text-sm leading-relaxed text-ink">
-          Mi Bebé es una herramienta informativa y de acompañamiento durante el
+          {APP_NAME} es una herramienta informativa y de acompañamiento durante el
           embarazo y la búsqueda de embarazo. <strong>No reemplaza la
           atención de un profesional de la salud, no realiza diagnósticos y
           no da indicaciones médicas personalizadas.</strong> Ante cualquier
@@ -38,7 +39,7 @@ export default function TerminosPage() {
       <section className="space-y-2">
         <h2 className="text-base font-extrabold text-ink">Uso de la app, con o sin cuenta</h2>
         <p className="text-sm leading-relaxed text-muted">
-          Mi Bebé es gratuita. Podés usarla sin crear una cuenta — &ldquo;seguir
+          {APP_NAME} es gratuita. Podés usarla sin crear una cuenta — &ldquo;seguir
           sin cuenta&rdquo; es una forma completa de usar la app, no un modo
           reducido — o crear una cuenta con Google (o Facebook, cuando esté
           disponible) para sincronizar tus datos entre dispositivos. Al usarla,
@@ -93,7 +94,7 @@ export default function TerminosPage() {
         <p className="text-sm leading-relaxed text-muted">
           El directorio y los recursos destacados incluyen listados sponsoreados y
           no sponsoreados. Que un sanatorio, profesional o negocio aparezca en
-          Mi Bebé no constituye una recomendación médica ni una garantía sobre la
+          {APP_NAME} no constituye una recomendación médica ni una garantía sobre la
           calidad de su atención — hacé tu propia verificación antes de
           elegir dónde atenderte.
         </p>
@@ -102,7 +103,7 @@ export default function TerminosPage() {
       <section className="space-y-2">
         <h2 className="text-base font-extrabold text-ink">Límite de responsabilidad</h2>
         <p className="text-sm leading-relaxed text-muted">
-          Mi Bebé se ofrece &ldquo;tal cual&rdquo;, sin garantías de
+          {APP_NAME} se ofrece &ldquo;tal cual&rdquo;, sin garantías de
           disponibilidad continua o ausencia de errores. En la medida
           permitida por la ley, no somos responsables por decisiones tomadas
           únicamente en base al contenido de la app sin consultar a un

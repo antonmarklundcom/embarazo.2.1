@@ -233,7 +233,7 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
     setApptTimeInput(toTimeInput(profile.nextAppointment));
   }, [profile.nextAppointment]);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = appointmentDateInput(Date.now());
 
   async function savePregnancyDate() {
     setDateMsg("");

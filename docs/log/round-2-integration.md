@@ -1,9 +1,14 @@
 # Go-live queue round 2 — integration
 
-Five units merged onto a branch cut from `origin/main` (`1d250d3`, the round-1
+Seven units merged onto a branch cut from `origin/main` (`1d250d3`, the round-1
 squash), in the order the manager set: `unit/w4` → `unit/w5` → `unit/u9` →
-`unit/docs-path-cleanup` → `unit/npm-audit-review`. One merge commit each, no
-rebases, no squashes, so each unit's own history stays readable.
+`unit/docs-path-cleanup` → `unit/npm-audit-review`, then a second pass adding
+`unit/w3` → `unit/r0-3`. One merge commit each, no rebases, no squashes, so each
+unit's own history stays readable.
+
+The five-unit sections below are the first pass; §"Second pass" at the end
+covers w3 and r0-3 and carries the final gate and e2e numbers for the whole
+branch. Where the two passes disagree on a count, the second pass is current.
 
 ## Bases
 
@@ -132,3 +137,95 @@ regression from this integration and were left alone.
 
 One backlog item was recorded in `docs/decisions-needed.md`: finish W4's PIN
 card extraction once `lib/pinPolicy.test.ts` can be repointed.
+
+---
+
+# Second pass — `unit/w3` and `unit/r0-3`
+
+Two finished branches that were not in the original brief. Both were cut from
+`7f001b8`, again pre-round-1, so the same merge-base situation applies.
+
+## `unit/w3` — the one conflict: `docs/decisions-needed.md`
+
+An add/add conflict: this file did not exist on `origin/main`. W3 created it to
+record that five of six hero themes measurably failed WCAG AA for the caption
+over their scrim — a note W3 then struck itself, in the same branch, once the
+fixup raised the scrim opacity. The first pass of this integration
+independently created the same file for W4's PIN-card item.
+
+Resolved by keeping **both** entries in one file, with a short preamble saying
+that a struck entry stays (with its resolution) so the reasoning is not lost.
+Neither note was dropped and neither was rewritten.
+
+## `unit/w3` × `unit/w4` — checked, no overlap
+
+W4 extracted `WeekHero` out of `app/(app)/page.tsx` into
+`components/home/WeekHero.tsx`, which imports `HeroSubject` and `ThemeChip`
+from `components/hero/**`. W3 touches `lib/hero/**` — a different tree — plus
+two photo-viewer pages, and touches no file under `components/` or `app/(app)/`
+that W4 went near. W3's change to `lib/hero/themes.ts` is six scrim-opacity
+**values**, no structure, and its new `lib/hero/themes.test.ts` scans no file
+paths, so W4's file move cannot have invalidated it. Non-issue, as expected,
+but confirmed rather than assumed.
+
+## `unit/r0-3` × `unit/w5` — checked, no overlap, but one real interaction
+
+No file is touched by both: `comm -12` over the two branches' changed-file lists
+is empty. W5's scope was questions/support/push/photos; r0-3's is
+`lib/server/auth.ts`, `app/(app)/cuenta/actions.ts`, `lib/rateLimit.ts`,
+`app/api/v1/go/[id]/route.ts`.
+
+There is, however, a **semantic** interaction the file lists do not show, and it
+is the one worth checking. `lib/invariants/rateLimits.test.ts` scans every
+`app/api/v1/**` route and asserts each one passes a *prefixed* key to
+`isRateLimited`. R0-3 tightens that assertion from "one known exemption
+(`/api/v1/go/x`)" to `expect(shared).toEqual([])` — and W5 had rewritten six of
+the scanned routes (`preguntas`, `mis-preguntas`, `push`, `push/dispatch`,
+`photos`, `sharing`, `sync`) in between. Enumerated every `isRateLimited(` call
+site on the merged tree: all thirteen carry a prefix, `go/[id]` included once
+r0-3's `go:${clientKey}` lands, so the tightened assertion holds on the
+combination rather than only on r0-3's own base. It passes.
+
+## The e2e result for r0-3 needs a caveat, not a victory lap
+
+R0-3 adds an IP-keyed 20/minute limiter to `authorize()`. Playwright runs
+`fullyParallel` with every worker on `127.0.0.1`, so if the suite signed in
+with credentials it would share one bucket and could plausibly exhaust it — the
+obvious way this merge could have broken e2e.
+
+It did not, and the reason is worth stating rather than leaving as "140 green":
+**the e2e suite never performs a credentials sign-in at all.** `playwright.config.ts`
+sets no `DATABASE_URL`, so the suite runs the app local-only; `account.spec.ts`
+and its neighbours assert the *absence* of a session and of auth endpoints
+rather than exercising them, and `authorize()` is never reached.
+
+So an unchanged e2e list is the correct result here, but it is **not** evidence
+that the limiter works. The evidence for that is r0-3's own unit coverage in
+`lib/server/auth.test.ts` — including two tests aimed squarely at this change
+("the limit is exhausted" and "keys the limit per address — a neighbour is
+unaffected") — all of which run and pass in `npm test`.
+
+## Gates, after all seven merges
+
+| gate | result |
+| --- | --- |
+| `npx tsc --noEmit` | PASS |
+| `npm run lint` | PASS |
+| `npm test` | PASS — 1312 tests, 110 files |
+| `npm run test:db` | PASS — 40 tests |
+| `npm run validate:content` | PASS — 16 files |
+| `npm run build` (with both env vars) | PASS — 96 pages |
+| `npx playwright test` (full suite) | PASS — 140/140 |
+
+Unit tests 1293 → 1312 (+19): w3's `contrast` and `themes` suites, r0-3's
+`auth.test.ts`. Nothing removed or skipped.
+
+## e2e, final
+
+- **baseline** (`origin/main`, nothing merged): 140 passed / 0 failed / 0 skipped.
+- **after five units**: 140 / 0 / 0.
+- **after all seven**: 140 / 0 / 0.
+
+All three sorted `file:line › title` lists are byte-identical to each other.
+Neither w3 nor r0-3 adds an e2e spec, and neither changes a string or selector
+any existing spec asserts on, so an identical set is the expected result.

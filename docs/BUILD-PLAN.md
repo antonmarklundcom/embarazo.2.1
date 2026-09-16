@@ -535,7 +535,7 @@ Covered by `lib/push/vapid.test.ts` (10) and `lib/push/categories.test.ts`
 The highest-leverage phase for the friends-and-family test: it is what
 testers judge in ten seconds.
 
-### C1 Week hero + stats (map #9, #10) — ✅ DONE
+### C1 Week hero + stats (map #9, #10) — ✅ DONE — v2 (themes, fruit toggle, relative scale) — ✅ DONE — PR #90
 Circular hero with progress ring; `semana · días transcurridos · faltan`.
 
 Shipped as `WeekHero` (`app/(app)/page.tsx`), replacing the flat rectangular
@@ -857,12 +857,12 @@ listings and stays honest at 500 because the route already returns everything.
 `H3` is where "directory at scale" lives if that ever stops being true.
 Covered by `lib/directoryBanners.test.ts` (7) and
 `e2e/directory-banners.spec.ts` (1).
-### D6 Training classes (map #22) — rescoped 2026-09-06, no longer blocked
+### D6 Training classes (map #22) — rescoped 2026-09-06, no longer blocked — ✅ DONE — PR #92
 2026-09-06: rescoped to **images + text, no video** (multiple step images
 per exercise allowed) — see `docs/HANDOFF-2026-09-06.md` §2. This removes
 the video-asset blocker; the original video-based scope may return later.
 Stage-filtered classes with duration + equipment. Short, `sin equipo`.
-### D7 Tool depth (was P2.4)
+### D7 Tool depth (was P2.4) — ✅ DONE — PR #91
 Contractions 5-1-1 pattern hint; kicks history + "menos que tu ritmo
 habitual" nudge; weight gain band behind a flag until the reviewer signs
 the ranges.
@@ -938,7 +938,7 @@ does not render** — an invitation to nowhere is worse than no button — and
 `navigator.share` falls back to copying the link rather than failing silently.
 Covered by `lib/share/invite.test.ts` (7) and `e2e/invite.spec.ts` (1, run on
 **both** sides of the URL gate).
-### E4 Beneficios tab (map #27) — **superseded, see `docs/HANDOFF-2026-09-06.md` §2**
+### E4 Beneficios tab (map #27) — **superseded, see `docs/HANDOFF-2026-09-06.md` §2** — → Recomendados rail, ✅ DONE — PR #101
 Original scope (kept for history): a browsable sponsor-deals surface — no
 pop-ups, no interstitials, hidden behind the `PUBLISHED_*` gate until real
 partners exist. 2026-09-06: with no sponsors signed yet, the founder chose
@@ -1113,7 +1113,7 @@ Builds on A7. This is the founder's cockpit: support real users, see what
 the business is doing, and control what costs money. It is a product
 surface with its own quality bar, not a debug page.
 
-### I1 User support console — **M**
+### I1 User support console — **M** — ✅ DONE — PR #89
 Search and open a user: account state, providers, sign-in history, sync
 health (last push/pull, pending records, conflicts), devices, family
 members and their roles. Actions: force a resync, revoke a device, revoke
@@ -1164,7 +1164,7 @@ first**, wired to a payment provider later:
 **Done when:** a paid period can be granted, seen by the app, and expire
 correctly, with zero payment provider connected.
 
-### I4 AI usage & spend — **S**
+### I4 AI usage & spend — **S** — ✅ DONE — PR #93
 Per-user generation counts against quota, global monthly spend against the
 ceiling, failures, and the kill switch as a toggle in the panel rather
 than a redeploy. Alert when spend crosses a configurable share of the
@@ -1172,7 +1172,7 @@ ceiling.
 **Done when:** the founder can answer "what did AI cost me this month" and
 stop it in one click.
 
-### I5 Broadcast & ops — **M**
+### I5 Broadcast & ops — **M** — flag-toggle half ✅ DONE (PR #86); broadcast-to-segment half still open
 Send a push to a segment (all / by week range / by department), with a
 preview, a confirmation step and a per-broadcast audit row. Feature flags
 and gates (`PUBLISHED_*`, `AI_BABY_ENABLED`) toggleable from the panel.

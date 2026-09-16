@@ -55,6 +55,7 @@ import { HomeParaguayCards } from "@/components/home/HomeParaguayCards";
 import { HomeSkeleton } from "@/components/home/HomeSkeleton";
 import { HomeToolsGrid } from "@/components/home/HomeToolsGrid";
 import { NoPregnancyYet } from "@/components/home/NoPregnancyYet";
+import { RecomendadosRail } from "@/components/RecomendadosRail";
 import { WeekContentRail } from "@/components/home/WeekContentRail";
 import { WeekHero } from "@/components/home/WeekHero";
 import { WeekStrip } from "@/components/home/WeekStrip";
@@ -254,6 +255,13 @@ export default function InicioPage() {
 
       {/* Tool cards */}
       <HomeToolsGrid />
+
+      {/* U11 — the "Recomendados" rail (replaces E4). Self-gates on
+          useFlag("recomendados") and on having any items for this trimester,
+          so it renders nothing until the flag is on — no condition needed
+          here. Sits below the tools grid and above the article feed, per the
+          U11 brief. */}
+      <RecomendadosRail trimester={trimester} />
 
       {/* C6: guías that are actually about this week, with read time
           (map #15, #17). Replaces the old rail, whose three cards pointed at

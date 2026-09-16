@@ -7,6 +7,7 @@ import {
   recentAudit,
   requireAdmin,
 } from "@/lib/server/admin";
+import { aiBabyAlertShare, aiSpendReport, drizzleAiSpendStore } from "@/lib/server/aiSpend";
 
 // BUILD-PLAN A7 — find a user, and see what has been done lately.
 //
@@ -46,8 +47,55 @@ export default async function AdminHomePage({
       : [];
   const audit = database ? await recentAudit(database, 15) : [];
 
+  // U11 — docs/log/u2.md flagged that this page had no slot for the AI
+  // spend-alert banner. Same "metadata only, fail gracefully with no
+  // DATABASE_URL" shape as everything else here: no database means no
+  // banner, never a crash.
+  const currentMonthSpend = database
+    ? (await aiSpendReport(drizzleAiSpendStore(database)))[0]
+    : null;
+  const alertShare = aiBabyAlertShare(process.env);
+  const spendAlerting =
+    !!currentMonthSpend &&
+    currentMonthSpend.ceilingUsd > 0 &&
+    currentMonthSpend.spendShare >= alertShare;
+
   return (
     <div className="space-y-6">
+      {spendAlerting && (
+        <Link
+          href="/admin/ia"
+          className="block rounded-card border border-terracotta bg-terracotta/10 p-4 shadow-soft"
+        >
+          <p className="text-sm font-extrabold text-terracotta">
+            El gasto de IA de este mes está cerca del límite
+          </p>
+          <p className="mt-1 text-xs text-terracotta">
+            Ya se usó {Math.round((currentMonthSpend?.spendShare ?? 0) * 100)}%
+            del techo mensual. Ver el detalle y pausar si hace falta →
+          </p>
+        </Link>
+      )}
+
+      {/* U11 — a more discoverable entry point into the two operational
+          panels; the nav bar in app/admin/layout.tsx already links both. */}
+      <section className="grid grid-cols-2 gap-3">
+        <Link
+          href="/admin/flags"
+          className="rounded-card border border-line bg-white p-4 shadow-soft"
+        >
+          <p className="text-sm font-extrabold text-ink">Funciones</p>
+          <p className="mt-1 text-xs text-muted">Prender o apagar features</p>
+        </Link>
+        <Link
+          href="/admin/ia"
+          className="rounded-card border border-line bg-white p-4 shadow-soft"
+        >
+          <p className="text-sm font-extrabold text-ink">IA</p>
+          <p className="mt-1 text-xs text-muted">Uso y gasto del mes</p>
+        </Link>
+      </section>
+
       <section className="rounded-card border border-line bg-white p-4 shadow-soft">
         <h1 className="text-lg font-black text-ink">Buscar una cuenta</h1>
         <p className="mt-1 text-sm text-muted">

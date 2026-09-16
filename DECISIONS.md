@@ -4318,3 +4318,41 @@ Implementation notes belong in the PR itself; this entry exists so the
 standing between a first-time visitor and using the app, and Google-only
 excludes anyone who would rather not link a Google account to a pregnancy
 tracker.
+
+## 2026-09 build queue
+
+Ten build-queue units landed (`docs/BUILD-QUEUE-2026-09-06.md`,
+`docs/BUILD-QUEUE-2026-09-11.md`); one-line pointers to each unit's full
+Decisions section, not the reasoning itself:
+
+- U1 — runtime flags + `/admin/flags` — `setFlag` writes its own audit row
+  rather than importing `lib/server/admin.ts`, to keep NextAuth out of the
+  public flags route — `docs/log/u1.md`.
+- U2 — I4 AI spend panel — the Pausar/Reanudar control reuses U1's existing
+  `toggleFlag` action, no second write or audit path — `docs/log/u2.md`.
+- U3 — Recomendados rail (replaces E4) — no `producto` entries seeded (no
+  real product yet); `RecomendadosRail` shipped unmounted on purpose, for
+  U11 to mount — `docs/log/u3.md`.
+- U4 — D7 tool depth (5-1-1, kicks nudge) — weight-gain band stays out,
+  reviewer-gated — `docs/log/u4.md`.
+- U5 — D6 "Ejercicios" — no supine-position exercises at all, sidesteps the
+  week-16 precision the app's trimester-only tagging can't express —
+  `docs/log/u5.md`.
+- U6 — I1 support console gaps — a restored (un-deleted) record must never
+  blank a device's intact local copy; `lib/sync/merge.ts` gained two rules
+  for that — `docs/log/u6.md`.
+- U7 — week hero v2 (themes, fruit toggle, relative scale) — six CSS/SVG
+  themes, zero raster assets; the comparison baby is a proportional blob,
+  not an image asset — `docs/log/u7.md`.
+- U8 — brand constant — `lib/brand.ts` is the single source for "Mi Bebé ·
+  Embarazo Paraguay", swept across ~35 files — `docs/log/u8.md`.
+- U9 — AI-drafted Q&A answers — fail-closed kill switch, daily cap counted
+  from `adminAudit` rows, the audit row is written before the model call,
+  never after — `docs/log/u9.md`.
+- W1–W5 — CI fast lane, docs entrance, photo alt text + measured hero
+  contrast (with a scrim-opacity fix landing as an addendum), the home/
+  ajustes component split, and the remaining server modules behind a
+  testable backend — `docs/log/w1.md` through `docs/log/w5.md`.
+- U11 — link pass: mounted Recomendados on the home screen, added the
+  "Fondo de la semana" row in `/ajustes`, and the AI-spend alert banner +
+  quick links on `/admin` — `docs/log/u11.md`.

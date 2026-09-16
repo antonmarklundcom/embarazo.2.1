@@ -5,6 +5,7 @@ import { clientKeyFromHeaders, isRateLimited } from "@/lib/rateLimit";
 import { dbOrNull } from "@/lib/server/db";
 import { getSession, isAuthAvailable } from "@/lib/server/auth";
 import { questionsOf, submitQuestion } from "@/lib/server/questions";
+import { drizzleQuestionsBackend } from "@/lib/server/questionsBackend";
 import { questionSchema } from "@/lib/community/questions";
 
 // K20 — asking a question, and seeing what happened to it.
@@ -40,7 +41,7 @@ export async function GET() {
   if (!database) return NextResponse.json({ questions: [] }, { headers: HEADERS });
 
   return NextResponse.json(
-    { questions: await questionsOf(database, userId) },
+    { questions: await questionsOf(drizzleQuestionsBackend(database), userId) },
     { headers: HEADERS },
   );
 }
@@ -90,7 +91,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const result = await submitQuestion(database, userId, parsed.data.question);
+  const result = await submitQuestion(
+    drizzleQuestionsBackend(database),
+    userId,
+    parsed.data.question,
+  );
   if (!result.ok) {
     return NextResponse.json(
       {

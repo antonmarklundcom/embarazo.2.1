@@ -13,9 +13,11 @@ import {
   revokeAllSessions,
   revokeMembership,
 } from "@/lib/server/support";
+import { drizzleSupportBackend } from "@/lib/server/supportBackend";
 import { deleteAccountData, drizzleAccountExecutor } from "@/lib/server/account";
 import { invites } from "@/lib/server/schema";
 import { approveQuestion, rejectQuestion } from "@/lib/server/questions";
+import { drizzleQuestionsBackend } from "@/lib/server/questionsBackend";
 import {
   ANSWER_MAX,
   ANSWER_MIN,
@@ -192,7 +194,7 @@ export async function answerQuestion(
   }
 
   const done = await approveQuestion(
-    database,
+    drizzleQuestionsBackend(database),
     parsed.data.questionId,
     actor.id,
     parsed.data.answer,
@@ -229,7 +231,11 @@ export async function declineQuestion(
   });
   if (!parsed.success) return { error: "Pedido inválido." };
 
-  const done = await rejectQuestion(database, parsed.data.questionId, actor.id);
+  const done = await rejectQuestion(
+    drizzleQuestionsBackend(database),
+    parsed.data.questionId,
+    actor.id,
+  );
   if (!done) return { error: "No encontramos esa pregunta." };
 
   await recordAudit(database, {
@@ -283,7 +289,7 @@ export async function supportRevokeMembership(
   const parsed = MembershipSchema.safeParse({ id: formData.get("id") });
   if (!parsed.success) return { error: "Pedido inválido." };
 
-  const revoked = await revokeMembership(database, parsed.data.id);
+  const revoked = await revokeMembership(drizzleSupportBackend(database), parsed.data.id);
   if (!revoked) return { error: "Esa membresía ya no existe." };
 
   await recordAudit(database, {
@@ -316,7 +322,7 @@ export async function supportRemoveDevice(
   if (!parsed.success) return { error: "Pedido inválido." };
 
   const removed = await removeDevice(
-    database,
+    drizzleSupportBackend(database),
     parsed.data.userId,
     parsed.data.subscriptionId,
   );
@@ -345,7 +351,7 @@ export async function supportRevokeSessions(
   const parsed = UserIdSchema.safeParse({ userId: formData.get("userId") });
   if (!parsed.success) return { error: "Pedido inválido." };
 
-  await revokeAllSessions(database, parsed.data.userId);
+  await revokeAllSessions(drizzleSupportBackend(database), parsed.data.userId);
 
   await recordAudit(database, {
     actorUserId: actor.id,
@@ -371,7 +377,7 @@ export async function supportForceResync(
   const parsed = UserIdSchema.safeParse({ userId: formData.get("userId") });
   if (!parsed.success) return { error: "Pedido inválido." };
 
-  await forceResync(database, parsed.data.userId);
+  await forceResync(drizzleSupportBackend(database), parsed.data.userId);
 
   await recordAudit(database, {
     actorUserId: actor.id,
@@ -409,7 +415,7 @@ export async function supportRestoreRecord(
   if (!parsed.success) return { error: "Pedido inválido." };
 
   const restored = await restoreRecord(
-    database,
+    drizzleSupportBackend(database),
     parsed.data.userId,
     parsed.data.store,
     parsed.data.recordId,

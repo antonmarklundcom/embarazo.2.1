@@ -17,6 +17,10 @@ import { join } from "node:path";
 
 const ROOT = process.cwd();
 const QUESTIONS = readFileSync(join(ROOT, "lib", "server", "questions.ts"), "utf8");
+const QUESTIONS_BACKEND = readFileSync(
+  join(ROOT, "lib", "server", "questionsBackend.ts"),
+  "utf8",
+);
 const PUBLIC_ROUTE = readFileSync(
   join(ROOT, "app", "api", "v1", "preguntas", "route.ts"),
   "utf8",
@@ -39,11 +43,18 @@ function functionSource(name: string): string {
 }
 
 describe("only approved, answered questions can be read publicly", () => {
+  // W5: the storage half of this query moved to `questionsBackend.ts`, the
+  // same cut V2 gave `sharing.ts` (a `QuestionsBackend` interface, no Drizzle
+  // in `questions.ts` itself). The SQL text this test watches moved with it —
+  // `approvedQuestions` in `questions.ts` now calls
+  // `backend.approvedNewestFirst`, which is exactly this WHERE clause, in
+  // `questionsBackend.ts`. The property is unchanged: filtered in SQL, not
+  // after the fetch, so a page that forgot to check the status still cannot
+  // get a pending row out.
   it("filters on status in SQL, not after the fetch", () => {
-    // In SQL, because a `.filter()` afterwards is one refactor away from being
-    // dropped for "performance" — and because a page that forgot to check the
-    // status still cannot get a pending row out of this function.
-    const source = functionSource("approvedQuestions");
+    const source = QUESTIONS_BACKEND.slice(
+      QUESTIONS_BACKEND.indexOf("async approvedNewestFirst"),
+    );
     expect(source).toMatch(/where\(\s*eq\(communityQuestions\.status,\s*"approved"\)/);
   });
 

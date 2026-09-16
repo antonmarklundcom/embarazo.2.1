@@ -6,6 +6,7 @@ import {
   isPushConfigured,
   pruneSentReminders,
 } from "@/lib/server/push";
+import { drizzlePushBackend } from "@/lib/server/pushBackend";
 
 // BUILD-PLAN B5 — the thing a scheduler calls.
 //
@@ -54,9 +55,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "no disponible" }, { status: 404 });
   }
 
+  const backend = drizzlePushBackend(database);
   const now = Date.now();
-  const result = await dispatchDueReminders(database, now);
-  await pruneSentReminders(database, now - PRUNE_AFTER_MS);
+  const result = await dispatchDueReminders(backend, now);
+  await pruneSentReminders(backend, now - PRUNE_AFTER_MS);
 
   // Counts only — how many were due, sent, expired, failed. Nothing here
   // identifies a device or says what any notification was about.

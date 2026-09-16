@@ -20,6 +20,7 @@
     "gen:icons": "node scripts/gen-icons.mjs",
     "gen:og": "node scripts/gen-og.mjs",
     "gen:screenshots": "node scripts/gen-screenshots.mjs",
+    "perf": "node scripts/perf.mjs",
     "prebuild": "node --experimental-strip-types scripts/build-article-index.mts",
     "gen:article-index": "node --experimental-strip-types scripts/build-article-index.mts",
     "gen:guarani-review": "node --experimental-strip-types scripts/gen-guarani-review.mts",

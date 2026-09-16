@@ -22,7 +22,7 @@ logging, the Secret Chats community, and the article library.
 
 That is a monetisation map drawn by a company with far better data than we
 have. It says: **people pay for personalised answers and structured guidance;
-they do not pay for tracking or for community.** `docs/MVP-AND-MONETISATION.md`
+they do not pay for tracking or for community.** `docs/archive/MVP-AND-MONETISATION.md`
 §3 builds on that.
 
 One thing worth noticing: the **health report for the doctor** is a Flo Premium
@@ -134,7 +134,7 @@ translated app will never provide.
   reason "your health data never leaves your phone" is a claim worth making
   loudly here. It is currently true of this app, and it is the one competitive
   advantage that disappears the moment accounts and sync ship — see
-  `docs/OPUS-REVIEW-2026-08.md` §4.1. Make the positive claim about ourselves;
+  `docs/archive/OPUS-REVIEW-2026-08.md` §4.1. Make the positive claim about ourselves;
   do not run comparisons against a named competitor.
 - **Paywalling the pregnancy content itself.** Flo can put week-by-week
   development behind Premium because it is a global product with a broad

@@ -1,6 +1,6 @@
 # Build plan — engineering work
 
-> **August 2026 (later) — `docs/FABLE-PLAN-2026-08.md` supersedes the launch
+> **August 2026 (later) — `docs/archive/FABLE-PLAN-2026-08.md` supersedes the launch
 > strategy below and in the Opus review.** The founder approved an
 > **account-first, family-first** launch on 2026-08-18: accounts, sync,
 > family sharing and push are IN v1.0, the "No data collected" badge is
@@ -9,7 +9,7 @@
 > `OPUS-REVIEW-2026-08.md` says accounts are off the launch path, that is
 > no longer true.
 
-> **August 2026 — read `docs/OPUS-REVIEW-2026-08.md` before planning from this
+> **August 2026 — read `docs/archive/OPUS-REVIEW-2026-08.md` before planning from this
 > file.** An independent review found that this plan is sequenced for feature
 > parity with Preggers rather than for reaching real users, and recommends
 > (a) moving accounts/sync (A2–A7) off the launch path, (b) building B5 push
@@ -22,7 +22,7 @@
 > Also new, same review round: **`docs/FLO-BENCHMARK.md`** (the second
 > inspiration app, which the 31-item Preggers map does not cover — community,
 > AI assistant, symptom insight, courses, plus the Paraguay-only items no
-> global app has) and **`docs/MVP-AND-MONETISATION.md`** (the v1.0 cut line,
+> global app has) and **`docs/archive/MVP-AND-MONETISATION.md`** (the v1.0 cut line,
 > and why **§I3's Tigo Money / bank-transfer payment design violates Google
 > Play's billing policy** for in-app digital goods — sponsorship, not
 > subscriptions, is the day-one business).
@@ -39,7 +39,7 @@
 > `docs/ARCHITECTURE.md` §4–§8 before touching anything in Phase A.
 >
 > This file contains **code work only**. Founder-side data/content/legal
-> tasks live in `docs/REVIEW-AND-LAUNCH-PLAN.md` §4.
+> tasks live in `docs/archive/REVIEW-AND-LAUNCH-PLAN.md` §4.
 >
 > Status legend: each task lists **Done when** criteria. A task is complete
 > only when those hold AND `npx tsc --noEmit`, `npm run lint`, `npm test`,

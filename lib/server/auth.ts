@@ -30,6 +30,7 @@ import {
   hashPassword,
   verifyPassword,
 } from "@/lib/auth/password";
+import { AUTH_RATE_LIMIT, clientKeyFromHeaders, isRateLimited } from "@/lib/rateLimit";
 
 // BUILD-PLAN A2 — Auth.js (NextAuth v5) wiring.
 //
@@ -156,7 +157,34 @@ function buildConfig(): NextAuthConfig {
         email: { label: "Correo", type: "email" },
         password: { label: "Contraseña", type: "password" },
       },
-      async authorize(raw) {
+      async authorize(raw, request) {
+        // R0-3 — throttle attempt *count*, not just timing.
+        //
+        // `DUMMY_HASH_FOR_TIMING` below already keeps a wrong password and an
+        // unknown email indistinguishable in *time*; without this, nothing
+        // stopped either one from being retried without limit, which is a
+        // password brute-force / credential-stuffing surface. `authorize()`
+        // is the one place both entry points end up — the server actions in
+        // `app/(app)/cuenta/actions.ts` AND a direct POST to
+        // `/api/auth/callback/credentials` — so this is where the limiter
+        // has to live to actually cover both. next-auth's `signIn()` server
+        // action helper builds its internal request from the real incoming
+        // headers (see `next-auth/lib/actions.js`), so `request.headers`
+        // here carries the caller's real `X-Forwarded-For` either way.
+        //
+        // A rate-limited attempt returns null exactly like a wrong password
+        // does, so this adds no signal an attacker can read that a real
+        // wrong-password response does not already give them.
+        if (
+          isRateLimited(
+            `auth:${clientKeyFromHeaders(request.headers)}`,
+            Date.now(),
+            AUTH_RATE_LIMIT,
+          )
+        ) {
+          return null;
+        }
+
         const email = EmailSchema.safeParse(raw?.email);
         const password = PasswordSchema.safeParse(raw?.password);
         if (!email.success || !password.success) return null;

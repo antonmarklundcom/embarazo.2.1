@@ -1,9 +1,6 @@
 import "server-only";
 
-import { and, eq, isNull, lte, sql } from "drizzle-orm";
-
-import type { Database } from "./db";
-import { pushReminders, pushSubscriptions } from "./schema";
+import type { PushBackend } from "./pushBackend";
 import {
   acceptsCategory,
   normaliseCategories,
@@ -22,6 +19,10 @@ import { vapidFromEnv, vapidHeaders, type VapidKeys } from "@/lib/push/vapid";
 //
 // Push is optional infrastructure: with VAPID_* unset the routes 404 and the
 // app is unchanged, exactly like DATABASE_URL and AUTH_SECRET.
+//
+// W5: every function that touches storage below takes a `PushBackend`
+// (`lib/server/pushBackend.ts`) rather than a `Database`, the same cut V2 gave
+// `sharing.ts`. `push.test.ts` runs these functions, unchanged, over a Map.
 
 export function isPushConfigured(): boolean {
   return vapidFromEnv(process.env) !== null;
@@ -51,48 +52,19 @@ export interface SubscriptionInput {
  * Keyed by endpoint rather than by user because that is what a push
  * subscription *is*: one browser on one device. The same person on two phones
  * has two, and one phone shared by two accounts has one.
+ *
+ * The rule that must survive an anonymous replay — an incoming `null` userId
+ * must never un-own an existing subscription — lives in `backend.
+ * upsertSubscription`'s contract (`pushBackend.ts`), the same place A3 puts
+ * last-write-wins: it is a write-time guarantee, not something this function
+ * could enforce by reading first.
  */
 export async function saveSubscription(
-  database: Database,
+  backend: PushBackend,
   input: SubscriptionInput,
 ): Promise<void> {
   const categories = normaliseCategories(input.categories);
-
-  await database
-    .insert(pushSubscriptions)
-    .values({
-      id: crypto.randomUUID(),
-      userId: input.userId,
-      endpoint: input.endpoint,
-      p256dh: input.p256dh,
-      auth: input.auth,
-      categories,
-      lastSeenAt: new Date(),
-    })
-    .onDuplicateKeyUpdate({
-      set: {
-        // K14 — `coalesce`, not an overwrite.
-        //
-        // `/api/v1/push` accepts an anonymous POST by design (B5, above): a
-        // device that has not signed in must still be able to subscribe. The
-        // consequence was that ANY anonymous POST carrying an existing
-        // endpoint set that row's `userId` back to NULL — and a NULL `userId`
-        // is a subscription A5's account deletion no longer finds, because
-        // there is nothing tying it to an account to delete it by. An
-        // unauthenticated replay of a captured endpoint could therefore
-        // detach every subscription in the table from its owner, permanently.
-        //
-        // Signing in later still links the row: `values(userId)` wins whenever
-        // the incoming value is non-NULL. Only the null case is refused, which
-        // is exactly "an anonymous request may not un-own a subscription".
-        // (Unsubscribing is DELETE's job, and it removes the row outright.)
-        userId: sql`coalesce(values(\`userId\`), \`userId\`)`,
-        p256dh: input.p256dh,
-        auth: input.auth,
-        categories,
-        lastSeenAt: new Date(),
-      },
-    });
+  await backend.upsertSubscription({ ...input, categories });
 }
 
 /**
@@ -103,15 +75,11 @@ export async function saveSubscription(
  * subscription there is no account whose deletion would ever clean them up.
  */
 export async function deleteSubscription(
-  database: Database,
+  backend: PushBackend,
   endpoint: string,
 ): Promise<void> {
-  await database
-    .delete(pushReminders)
-    .where(eq(pushReminders.endpoint, endpoint));
-  await database
-    .delete(pushSubscriptions)
-    .where(eq(pushSubscriptions.endpoint, endpoint));
+  await backend.deleteAllReminders(endpoint);
+  await backend.deleteSubscriptionRow(endpoint);
 }
 
 // ---------------------------------------------------------------------------
@@ -126,24 +94,16 @@ export async function deleteSubscription(
  * poke behind. Already-sent rows are left alone as a record that we sent them.
  */
 export async function scheduleReminders(
-  database: Database,
+  backend: PushBackend,
   endpoint: string,
   category: PushCategory,
   fireAtList: number[],
 ): Promise<void> {
-  await database
-    .delete(pushReminders)
-    .where(
-      and(
-        eq(pushReminders.endpoint, endpoint),
-        eq(pushReminders.category, category),
-        isNull(pushReminders.sentAt),
-      ),
-    );
+  await backend.deletePendingReminders(endpoint, category);
 
   if (fireAtList.length === 0) return;
 
-  await database.insert(pushReminders).values(
+  await backend.insertReminders(
     fireAtList.map((fireAt) => ({
       id: crypto.randomUUID(),
       endpoint,
@@ -172,7 +132,7 @@ export interface DispatchResult {
  * no body — the service worker decides what to say.
  */
 export async function dispatchDueReminders(
-  database: Database,
+  backend: PushBackend,
   now: number,
   send: PushSender = fetchSender,
   limit = 200,
@@ -180,20 +140,7 @@ export async function dispatchDueReminders(
   const keys = vapidFromEnv(process.env);
   if (!keys) return { due: 0, sent: 0, expired: 0, failed: 0 };
 
-  const due = await database
-    .select({
-      id: pushReminders.id,
-      endpoint: pushReminders.endpoint,
-      category: pushReminders.category,
-      categories: pushSubscriptions.categories,
-    })
-    .from(pushReminders)
-    .innerJoin(
-      pushSubscriptions,
-      eq(pushSubscriptions.endpoint, pushReminders.endpoint),
-    )
-    .where(and(lte(pushReminders.fireAt, now), isNull(pushReminders.sentAt)))
-    .limit(limit);
+  const due = await backend.dueReminders(now, limit);
 
   let sent = 0;
   let expired = 0;
@@ -204,7 +151,7 @@ export async function dispatchDueReminders(
     // A toggle that merely hides a notification the phone already received is
     // not an opt-out.
     if (!acceptsCategory(row.categories ?? [], row.category)) {
-      await markSent(database, row.id, now);
+      await backend.markSent(row.id, now);
       continue;
     }
 
@@ -213,13 +160,13 @@ export async function dispatchDueReminders(
     if (outcome === "gone") {
       // 404/410 means the browser threw the subscription away. Keeping it
       // would mean retrying forever against an endpoint that cannot exist.
-      await deleteSubscription(database, row.endpoint);
+      await deleteSubscription(backend, row.endpoint);
       expired += 1;
       continue;
     }
 
     if (outcome === "sent") {
-      await markSent(database, row.id, now);
+      await backend.markSent(row.id, now);
       sent += 1;
     } else {
       failed += 1;
@@ -227,17 +174,6 @@ export async function dispatchDueReminders(
   }
 
   return { due: due.length, sent, expired, failed };
-}
-
-async function markSent(
-  database: Database,
-  id: string,
-  now: number,
-): Promise<void> {
-  await database
-    .update(pushReminders)
-    .set({ sentAt: now })
-    .where(eq(pushReminders.id, id));
 }
 
 export type SendOutcome = "sent" | "gone" | "failed";
@@ -264,12 +200,10 @@ export const fetchSender: PushSender = async (endpoint, keys, now) => {
 
 /** Housekeeping: forget reminders that were sent long ago. */
 export async function pruneSentReminders(
-  database: Database,
+  backend: PushBackend,
   before: number,
 ): Promise<void> {
-  await database
-    .delete(pushReminders)
-    .where(sql`${pushReminders.sentAt} is not null and ${pushReminders.sentAt} < ${before}`);
+  await backend.pruneSentBefore(before);
 }
 
 // ---------------------------------------------------------------------------
@@ -302,22 +236,18 @@ export async function pruneSentReminders(
  * already stored and already visible in her app.
  */
 export async function scheduleCheerPoke(
-  database: Database,
+  backend: PushBackend,
   ownerUserId: string,
   now: number,
 ): Promise<void> {
   try {
-    const subscriptions = await database
-      .select({ endpoint: pushSubscriptions.endpoint })
-      .from(pushSubscriptions)
-      .where(eq(pushSubscriptions.userId, ownerUserId));
+    const endpoints = await backend.subscriptionEndpointsOf(ownerUserId);
+    if (endpoints.length === 0) return;
 
-    if (subscriptions.length === 0) return;
-
-    await database.insert(pushReminders).values(
-      subscriptions.map((row) => ({
+    await backend.insertReminders(
+      endpoints.map((endpoint) => ({
         id: crypto.randomUUID(),
-        endpoint: row.endpoint,
+        endpoint,
         category: "mimos" as const,
         fireAt: now,
       })),

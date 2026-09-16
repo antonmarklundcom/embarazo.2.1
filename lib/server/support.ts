@@ -1,15 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, gte, isNotNull, isNull, sql } from "drizzle-orm";
-
-import type { Database } from "./db";
-import {
-  pregnancies,
-  pregnancyMembers,
-  pushSubscriptions,
-  syncRecords,
-  users,
-} from "./schema";
+import type { SupportBackend } from "./supportBackend";
 
 // BUILD-PLAN I1 / U6 — the three support tickets that actually arrive.
 //
@@ -20,6 +11,10 @@ import {
 //   1. "Sacá a mi ex del embarazo"  → revoke a membership
 //   2. "No puedo entrar" / a stolen phone → drop a device, end every session
 //   3. "Perdí mis datos" → force a resync, restore a deleted record
+//
+// W5: every function below takes a `SupportBackend` (`lib/server/
+// supportBackend.ts`) rather than a `Database`, the same cut V2 gave
+// `sharing.ts`. `support.test.ts` runs these functions, unchanged, over a Map.
 //
 // **The A7 privacy limit is unchanged and this module is held to it.** It is
 // on `admin.test.ts`'s scanned list from the day it was written, alongside
@@ -69,34 +64,11 @@ export interface SupportMembership {
  * work out which side of the relationship they are on.
  */
 export async function membershipsAround(
-  database: Database,
+  backend: SupportBackend,
   userId: string,
 ): Promise<SupportMembership[]> {
-  const owned = await database
-    .select({ id: pregnancies.id })
-    .from(pregnancies)
-    .where(eq(pregnancies.ownerUserId, userId));
-  const ownedIds = owned.map((row) => row.id);
-
-  const rows = await database
-    .select({
-      id: pregnancyMembers.id,
-      pregnancyId: pregnancyMembers.pregnancyId,
-      memberUserId: pregnancyMembers.userId,
-      role: pregnancyMembers.role,
-      createdAt: pregnancyMembers.createdAt,
-      revokedAt: pregnancyMembers.revokedAt,
-      memberEmail: users.email,
-    })
-    .from(pregnancyMembers)
-    .leftJoin(users, eq(users.id, pregnancyMembers.userId))
-    .where(
-      ownedIds.length > 0
-        ? sql`${pregnancyMembers.userId} = ${userId} or ${pregnancyMembers.pregnancyId} in ${ownedIds}`
-        : eq(pregnancyMembers.userId, userId),
-    )
-    .orderBy(desc(pregnancyMembers.createdAt))
-    .limit(50);
+  const ownedIds = await backend.ownedPregnancyIds(userId);
+  const rows = await backend.membershipRows(userId, ownedIds);
 
   const ownedSet = new Set(ownedIds);
   return rows.map((row) => ({
@@ -106,37 +78,21 @@ export async function membershipsAround(
 }
 
 /**
- * Cut a member off. E1 makes this immediate: `isNull(revokedAt)` is inside the
- * membership query rather than applied after it, and no role is cached in a
- * session or a token, so there is nothing to expire.
+ * Cut a member off. E1 makes this immediate: the backend scopes the write to
+ * a live membership rather than filtering afterwards, and no role is cached in
+ * a session or a token, so there is nothing to expire.
  *
  * Idempotent — a second click on an already-revoked membership changes no rows
  * and is not an error. Support double-clicks.
  */
 export async function revokeMembership(
-  database: Database,
+  backend: SupportBackend,
   membershipId: string,
 ): Promise<{ pregnancyId: string; memberUserId: string } | null> {
-  const [row] = await database
-    .select({
-      id: pregnancyMembers.id,
-      pregnancyId: pregnancyMembers.pregnancyId,
-      memberUserId: pregnancyMembers.userId,
-    })
-    .from(pregnancyMembers)
-    .where(eq(pregnancyMembers.id, membershipId))
-    .limit(1);
+  const row = await backend.findMembership(membershipId);
   if (!row) return null;
 
-  await database
-    .update(pregnancyMembers)
-    .set({ revokedAt: new Date() })
-    .where(
-      and(
-        eq(pregnancyMembers.id, membershipId),
-        isNull(pregnancyMembers.revokedAt),
-      ),
-    );
+  await backend.revokeMembershipIfLive(membershipId, new Date());
 
   return { pregnancyId: row.pregnancyId, memberUserId: row.memberUserId };
 }
@@ -168,20 +124,10 @@ export function deviceHost(endpoint: string): string {
 }
 
 export async function devicesOf(
-  database: Database,
+  backend: SupportBackend,
   userId: string,
 ): Promise<SupportDevice[]> {
-  const rows = await database
-    .select({
-      id: pushSubscriptions.id,
-      endpoint: pushSubscriptions.endpoint,
-      createdAt: pushSubscriptions.createdAt,
-      lastSeenAt: pushSubscriptions.lastSeenAt,
-    })
-    .from(pushSubscriptions)
-    .where(eq(pushSubscriptions.userId, userId))
-    .orderBy(desc(pushSubscriptions.createdAt))
-    .limit(25);
+  const rows = await backend.devicesOf(userId);
 
   // The endpoint is dropped here, before the value leaves this function, so a
   // caller cannot render one by accident.
@@ -195,27 +141,14 @@ export async function devicesOf(
 
 /** Forget one device. It stops receiving pokes immediately. */
 export async function removeDevice(
-  database: Database,
+  backend: SupportBackend,
   userId: string,
   subscriptionId: string,
 ): Promise<boolean> {
-  const [row] = await database
-    .select({ id: pushSubscriptions.id })
-    .from(pushSubscriptions)
-    .where(
-      and(
-        eq(pushSubscriptions.id, subscriptionId),
-        // Scoped to the user whose page this is: a subscription id from
-        // another account must not be removable from this screen.
-        eq(pushSubscriptions.userId, userId),
-      ),
-    )
-    .limit(1);
+  const row = await backend.findDevice(userId, subscriptionId);
   if (!row) return false;
 
-  await database
-    .delete(pushSubscriptions)
-    .where(eq(pushSubscriptions.id, subscriptionId));
+  await backend.deleteDevice(subscriptionId);
   return true;
 }
 
@@ -233,13 +166,10 @@ export async function removeDevice(
  * password.
  */
 export async function revokeAllSessions(
-  database: Database,
+  backend: SupportBackend,
   userId: string,
 ): Promise<void> {
-  await database
-    .update(users)
-    .set({ sessionVersion: sql`${users.sessionVersion} + 1` })
-    .where(eq(users.id, userId));
+  await backend.bumpSessionVersion(userId);
 }
 
 // ---------------------------------------------------------------------------
@@ -257,29 +187,18 @@ export async function revokeAllSessions(
  * a worried user.
  */
 export async function forceResync(
-  database: Database,
+  backend: SupportBackend,
   userId: string,
 ): Promise<void> {
-  await database
-    .update(users)
-    .set({ syncEpoch: sql`${users.syncEpoch} + 1` })
-    .where(eq(users.id, userId));
+  await backend.bumpSyncEpoch(userId);
 }
 
 /** The current epoch and session version, read together on sign-in and sync. */
 export async function userSyncState(
-  database: Database,
+  backend: SupportBackend,
   userId: string,
 ): Promise<{ sessionVersion: number; syncEpoch: number } | null> {
-  const [row] = await database
-    .select({
-      sessionVersion: users.sessionVersion,
-      syncEpoch: users.syncEpoch,
-    })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-  return row ?? null;
+  return backend.syncState(userId);
 }
 
 export interface SupportTombstone {
@@ -301,35 +220,12 @@ export interface SupportTombstone {
  * rather than every delete since they installed the app.
  */
 export async function recentTombstones(
-  database: Database,
+  backend: SupportBackend,
   userId: string,
   now: number,
 ): Promise<SupportTombstone[]> {
   const since = now - RESTORE_WINDOW_DAYS * 86_400_000;
-  const rows = await database
-    .select({
-      store: syncRecords.store,
-      recordId: syncRecords.recordId,
-      deletedAt: syncRecords.deletedAt,
-    })
-    .from(syncRecords)
-    .where(
-      and(
-        eq(syncRecords.userId, userId),
-        isNotNull(syncRecords.deletedAt),
-        gte(syncRecords.deletedAt, since),
-      ),
-    )
-    .orderBy(desc(syncRecords.deletedAt))
-    .limit(100);
-
-  return rows
-    .filter((row): row is typeof row & { deletedAt: number } => row.deletedAt !== null)
-    .map((row) => ({
-      store: row.store,
-      recordId: row.recordId,
-      deletedAt: row.deletedAt,
-    }));
+  return backend.tombstonesSince(userId, since);
 }
 
 /**
@@ -353,35 +249,15 @@ export async function recentTombstones(
  * recover — see the unit tests in `lib/sync/merge.test.ts`.
  */
 export async function restoreRecord(
-  database: Database,
+  backend: SupportBackend,
   userId: string,
   store: string,
   recordId: string,
   now: number,
 ): Promise<boolean> {
-  const [row] = await database
-    .select({ recordId: syncRecords.recordId })
-    .from(syncRecords)
-    .where(
-      and(
-        eq(syncRecords.userId, userId),
-        eq(syncRecords.store, store as never),
-        eq(syncRecords.recordId, recordId),
-        isNotNull(syncRecords.deletedAt),
-      ),
-    )
-    .limit(1);
-  if (!row) return false;
+  const exists = await backend.hasTombstone(userId, store, recordId);
+  if (!exists) return false;
 
-  await database
-    .update(syncRecords)
-    .set({ deletedAt: null, updatedAt: now, serverUpdatedAt: now })
-    .where(
-      and(
-        eq(syncRecords.userId, userId),
-        eq(syncRecords.store, store as never),
-        eq(syncRecords.recordId, recordId),
-      ),
-    );
+  await backend.restoreTombstone(userId, store, recordId, now);
   return true;
 }

@@ -10,6 +10,7 @@ import {
   saveSubscription,
   scheduleReminders,
 } from "@/lib/server/push";
+import { drizzlePushBackend } from "@/lib/server/pushBackend";
 import { PUSH_CATEGORIES } from "@/lib/push/categories";
 import { isAllowedPushEndpoint } from "@/lib/push/endpoints";
 import { clientKeyFromHeaders, isRateLimited } from "@/lib/rateLimit";
@@ -114,6 +115,7 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
   const database = dbOrNull();
   if (!database) return unavailable();
+  const backend = drizzlePushBackend(database);
 
   let body: unknown;
   try {
@@ -139,7 +141,7 @@ export async function POST(req: NextRequest) {
   // deletion removes it. Its absence is not an error.
   const session = await getSession();
 
-  await saveSubscription(database, {
+  await saveSubscription(backend, {
     endpoint,
     p256dh: keys.p256dh,
     auth: keys.auth,
@@ -155,10 +157,10 @@ export async function POST(req: NextRequest) {
     times.filter((at) => at > now - 60_000 && at < now + MAX_SCHEDULE_AHEAD_MS);
 
   if (reminders) {
-    await scheduleReminders(database, endpoint, "recordatorios", bounded(reminders));
+    await scheduleReminders(backend, endpoint, "recordatorios", bounded(reminders));
   }
   if (consejos) {
-    await scheduleReminders(database, endpoint, "consejos", bounded(consejos));
+    await scheduleReminders(backend, endpoint, "consejos", bounded(consejos));
   }
 
   return NextResponse.json({ ok: true }, { headers: HEADERS });
@@ -193,7 +195,7 @@ export async function DELETE(req: NextRequest) {
   // it belongs to, and the worst an attacker can do with a stolen endpoint is
   // stop notifications they were never receiving. Requiring a session would
   // strand every anonymous subscription with no way to turn it off.
-  await deleteSubscription(database, parsed.data.endpoint);
+  await deleteSubscription(drizzlePushBackend(database), parsed.data.endpoint);
 
   return NextResponse.json({ ok: true }, { headers: HEADERS });
 }

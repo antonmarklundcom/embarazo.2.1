@@ -9,7 +9,7 @@ on:
   # it runs on every PR push. `labeled` stays too — that is what lets `build`
   # fire exactly once when `run-ci` is applied.
   #
-  # K21 (docs/FABLE-PLAN-2026-08.md §6, founder-approved as D9): `build`
+  # K21 (docs/archive/FABLE-PLAN-2026-08.md §6, founder-approved as D9): `build`
   # itself stays label-gated — an ordinary push only ever ran `fast`
   # (cheap: tsc/lint/unit tests, no build, no browser). The builder still
   # validates the full set (lint + validate:content + tests + build + e2e)

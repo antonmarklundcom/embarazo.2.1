@@ -115,6 +115,7 @@ export default function CarnePage() {
       {viewing && (
         <CarneViewer
           photo={viewing}
+          index={(photos ?? []).findIndex((p) => p.id === viewing.id) + 1}
           onClose={() => setViewing(null)}
           onRemove={remove}
         />
@@ -298,10 +299,12 @@ function CarneThumb({
 
 function CarneViewer({
   photo,
+  index,
   onClose,
   onRemove,
 }: {
   photo: CarnePhoto;
+  index: number;
   onClose: () => void;
   onRemove: (id?: number) => void;
 }) {
@@ -328,7 +331,9 @@ function CarneViewer({
           // eslint-disable-next-line @next/next/no-img-element -- blob: URL from IndexedDB, next/image can't optimize it.
           <img
             src={url}
-            alt="Página del carné perinatal"
+            alt={`Página ${index} de tu carné perinatal, ${new Date(
+              photo.createdAt,
+            ).toLocaleDateString("es-PY", { day: "numeric", month: "long" })}`}
             className="max-h-full max-w-full rounded-card object-contain"
           />
         )}

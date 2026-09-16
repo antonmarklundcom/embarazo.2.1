@@ -7,6 +7,7 @@ import {
 } from "@/lib/rateLimit";
 import { dbOrNull } from "@/lib/server/db";
 import { approvedQuestions } from "@/lib/server/questions";
+import { drizzleQuestionsBackend } from "@/lib/server/questionsBackend";
 
 // K20 — the published Q&A. Public, parameterless, identical for everyone.
 //
@@ -55,7 +56,7 @@ export async function GET(req: NextRequest) {
   // simply has no community section.
   if (!database) return NextResponse.json({ questions: [] });
 
-  const questions = await approvedQuestions(database);
+  const questions = await approvedQuestions(drizzleQuestionsBackend(database));
 
   return NextResponse.json(
     { questions },

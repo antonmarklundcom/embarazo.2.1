@@ -1,7 +1,7 @@
 # Unit U7 — week hero v2: background themes, fruit toggle, relative scale. OPUS session. No dependencies.
 
 Read ONLY: this file, `docs/BUILD-QUEUE-2026-09-06.md` §1(5), §2–§4, §7–§8, `docs/HANDOFF-2026-09-06.md` §2
-("Image style" + "Planned UI"), BUILD-PLAN.md C1 + C3 + B1 + B2 + G3, `docs/REDESIGN-PLAN.md` §4,
+("Image style" + "Planned UI"), BUILD-PLAN.md C1 + C3 + B1 + B2 + G3, `docs/archive/REDESIGN-PLAN.md` §4,
 `components/WeekHeroImage.tsx`, `components/SizeTabs.tsx`, `lib/weeks.ts` (top 80 lines + `sizeComparison` values),
 `lib/seed/limbSizes.*` (seed + schema pattern), `lib/i18n/useLocale.ts` (how a preference lives on `profile`),
 `app/sw.ts` (the `mibebe-semanas` rule), `scripts/optimize-images.mjs`, `app/(app)/page.tsx` and

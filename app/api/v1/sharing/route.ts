@@ -5,6 +5,7 @@ import { getSession, isAuthAvailable } from "@/lib/server/auth";
 import { dbOrNull } from "@/lib/server/db";
 import { drizzleSharingBackend } from "@/lib/server/sharingBackend";
 import { scheduleCheerPoke } from "@/lib/server/push";
+import { drizzlePushBackend } from "@/lib/server/pushBackend";
 import {
   acceptInvite,
   assignTask,
@@ -203,9 +204,13 @@ async function context(req: NextRequest) {
   // `Database`. Constructed once per request, here, so this is the only place
   // in the app that knows family sharing is stored in MySQL at all.
   //
-  // `database` is still handed out beside it for `scheduleCheerPoke`, which is
-  // B5's table and not one of sharing's.
-  return { userId, database, sharing: drizzleSharingBackend(database) } as const;
+  // `push` is constructed beside it for `scheduleCheerPoke`, which is B5's
+  // table and not one of sharing's.
+  return {
+    userId,
+    push: drizzlePushBackend(database),
+    sharing: drizzleSharingBackend(database),
+  } as const;
 }
 
 /** What this user can currently see: their own pregnancy and any shared ones. */
@@ -379,7 +384,7 @@ export async function POST(req: NextRequest) {
     // button; the poke still carries no body and the service worker writes the
     // sentence. Awaited but never able to fail the request: the cheer is
     // already stored and already visible in her app.
-    await scheduleCheerPoke(ctx.database, ownerUserId, now);
+    await scheduleCheerPoke(ctx.push, ownerUserId, now);
     return NextResponse.json({ ok: true }, { headers: HEADERS });
   }
 

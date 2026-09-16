@@ -87,7 +87,7 @@ describe("every screen is reachable from inside the app", () => {
     expect(
       orphans,
       'These pages exist and nothing links to them. "A shipped feature linked ' +
-        'from nowhere is a bug" (docs/FABLE-PLAN-2026-08.md §7). Add a link, ' +
+        'from nowhere is a bug" (docs/archive/FABLE-PLAN-2026-08.md §7). Add a link, ' +
         "or add an entry to UNLINKED above saying why this one is different.",
     ).toEqual([]);
   });

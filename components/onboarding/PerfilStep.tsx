@@ -6,7 +6,7 @@ import type { OnboardingAnswers } from "@/lib/onboarding/progress";
 
 import { BackButton, PrimaryButton } from "./controls";
 
-// K9-F5 (docs/FABLE-PLAN-2026-08.md §3) — onboarding depth.
+// K9-F5 (docs/archive/FABLE-PLAN-2026-08.md §3) — onboarding depth.
 //
 // Three questions, on one screen, all skippable. Each of the three is here
 // because the app already had a place that needed the answer and asked for it

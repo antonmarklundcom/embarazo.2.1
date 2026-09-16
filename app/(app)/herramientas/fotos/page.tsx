@@ -193,7 +193,9 @@ function PhotoViewer({
           // eslint-disable-next-line @next/next/no-img-element -- blob: URL from IndexedDB, next/image can't optimize it.
           <img
             src={url}
-            alt={`Foto de la semana ${photo.week}`}
+            alt={`Foto de tu panza, semana ${photo.week}, ${new Date(
+              photo.createdAt,
+            ).toLocaleDateString("es-PY", { day: "numeric", month: "long" })}`}
             className="max-h-full max-w-full rounded-card object-contain"
           />
         )}

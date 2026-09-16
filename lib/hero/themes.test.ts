@@ -10,6 +10,7 @@ import {
   heroTheme,
   themeInk,
 } from "./themes";
+import { compositeOver, contrastRatio, parseColor, type RGBA } from "./contrast";
 
 // U7. Pinned like `FLAG_KEYS` and `ADMIN_ACTIONS`: a theme is a thing every
 // existing user can switch to and a new contrast pair somebody has to check,
@@ -110,4 +111,43 @@ describe("a stored preference is never trusted", () => {
   it("passes through every real id", () => {
     for (const id of THEME_IDS) expect(asThemeId(id)).toBe(id);
   });
+});
+
+// W3 — `docs/log/u7.md` "Known issues": contrast was checked by eye, not
+// measured. The caption sits at the bottom of the card (`inset-x-5 bottom-5`
+// in `WeekHeroImage`), where each theme's scrim gradient reaches its most
+// opaque stop, so that is the pixel the caption's ink is actually read against.
+describe("the caption meets WCAG AA against every theme's measured scrim", () => {
+  const toRgb = (c: RGBA) => `rgb(${c.r}, ${c.g}, ${c.b})`;
+  const lastStop = (gradient: string, colour: RegExp): string => {
+    const stops = gradient.match(colour);
+    const last = stops?.at(-1);
+    if (!last) throw new Error(`no colour stop in "${gradient}"`);
+    return last;
+  };
+  // The pixel under the caption: the scrim's bottom-most stop, composited
+  // (it always carries alpha) over the background's own bottom-most stop.
+  const scrimmedFloor = (theme: (typeof HERO_THEMES)[keyof typeof HERO_THEMES]) => {
+    const bg = parseColor(lastStop(theme.background, /#[0-9a-fA-F]{3,6}/g));
+    const scrim = parseColor(lastStop(theme.scrim, /rgba?\([^)]+\)/g));
+    return compositeOver(scrim, bg);
+  };
+  // Ink colours can themselves carry alpha (`soft`); flatten against the
+  // floor they are actually painted on before measuring the ratio.
+  const ratio = (ink: string, floor: RGBA) =>
+    contrastRatio(toRgb(compositeOver(parseColor(ink), floor)), toRgb(floor));
+
+  for (const id of THEME_IDS) {
+    it(`${id}: body ink ≥ 4.5:1, large ink ≥ 3:1`, () => {
+      const theme = heroTheme(id);
+      const floor = scrimmedFloor(theme);
+      const ink = themeInk(theme);
+
+      // Body-size text: the eyebrow line and the secondary "soft" lines.
+      expect(ratio(ink.eyebrow, floor), `${id} eyebrow`).toBeGreaterThanOrEqual(4.5);
+      expect(ratio(ink.soft, floor), `${id} soft`).toBeGreaterThanOrEqual(4.5);
+      // Large text: the "Semana N" headline (text-3xl, font-black).
+      expect(ratio(ink.strong, floor), `${id} strong`).toBeGreaterThanOrEqual(3);
+    });
+  }
 });

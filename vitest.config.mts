@@ -25,7 +25,13 @@ export default defineConfig({
     // them in here would make the cheap gate expensive for every unit that
     // never goes near IndexedDB. Excluded by name rather than by directory so
     // that adding a second one is a deliberate line in both files.
-    exclude: ["node_modules/**", "lib/db.test.ts", "test/db/**"],
+    // .claude/** — a session's agent worktrees (git-ignored local scratch,
+    // see .gitignore). Without this, a leftover worktree's own copy of the
+    // repo gets walked too: every *.test.ts under it runs a second time
+    // against its own node_modules and its own (possibly stale) source,
+    // which is at best redundant and at worst a false failure from a
+    // build artifact the worktree happened to have on disk.
+    exclude: ["node_modules/**", "lib/db.test.ts", "test/db/**", ".claude/**"],
   },
   resolve: {
     alias: {

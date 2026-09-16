@@ -13,6 +13,7 @@ import {
   membershipsAround,
   recentTombstones,
 } from "@/lib/server/support";
+import { drizzleSupportBackend } from "@/lib/server/supportBackend";
 import { AdminUserActions } from "@/components/admin/AdminUserActions";
 
 // BUILD-PLAN A7 — account state for one user.
@@ -68,9 +69,10 @@ export default async function AdminUserPage({
 
   const userInvites = await invitesForUser(database, id);
   // I1/U6 — the three support tickets, answered from this screen.
-  const memberships = await membershipsAround(database, id);
-  const devices = await devicesOf(database, id);
-  const tombstones = await recentTombstones(database, id, Date.now());
+  const support = drizzleSupportBackend(database);
+  const memberships = await membershipsAround(support, id);
+  const devices = await devicesOf(support, id);
+  const tombstones = await recentTombstones(support, id, Date.now());
   const totalRecords = overview.recordCounts.reduce(
     (sum, row) => sum + row.total,
     0,

@@ -10,6 +10,7 @@ import {
   markPhotoDeleted,
   recordPhoto,
 } from "@/lib/server/photos";
+import { drizzlePhotosBackend } from "@/lib/server/photosBackend";
 import {
   deleteObject,
   downloadUrl,
@@ -143,7 +144,7 @@ async function context(req: NextRequest) {
   }
   const database = dbOrNull();
   if (!database) return { error: unavailable() } as const;
-  return { userId, database } as const;
+  return { userId, photos: drizzlePhotosBackend(database) } as const;
 }
 
 /**
@@ -175,7 +176,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const rows = await listPhotos(ctx.database, ctx.userId, since);
+  const rows = await listPhotos(ctx.photos, ctx.userId, since);
 
   return NextResponse.json(
     {
@@ -227,12 +228,12 @@ export async function POST(req: NextRequest) {
   if (data.action === "delete-all") {
     // The opt-out. Objects first — an orphaned row is recoverable, an orphaned
     // object is not — and only then the rows.
-    const keys = await allObjectKeys(ctx.database, ctx.userId);
+    const keys = await allObjectKeys(ctx.photos, ctx.userId);
     let deleted = 0;
     for (const row of keys) {
       if (await deleteObject(ctx.userId, row.objectKey)) deleted += 1;
     }
-    await deleteAllPhotoRows(ctx.database, ctx.userId);
+    await deleteAllPhotoRows(ctx.photos, ctx.userId);
     return NextResponse.json({ ok: true, deleted }, { headers: HEADERS });
   }
 
@@ -254,7 +255,7 @@ export async function POST(req: NextRequest) {
 
   if (data.action === "confirm") {
     await recordPhoto(
-      ctx.database,
+      ctx.photos,
       ctx.userId,
       {
         store: data.store,
@@ -279,7 +280,7 @@ export async function POST(req: NextRequest) {
   // this order. The row survives so a second device learns the photo is gone
   // rather than re-uploading it forever; its payload does not.
   const key = await markPhotoDeleted(
-    ctx.database,
+    ctx.photos,
     ctx.userId,
     data.store,
     data.recordId,

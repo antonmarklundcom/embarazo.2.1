@@ -1,5 +1,6 @@
 import { adminDb, requireAdmin } from "@/lib/server/admin";
 import { decidedQuestions, pendingQuestions } from "@/lib/server/questions";
+import { drizzleQuestionsBackend } from "@/lib/server/questionsBackend";
 import { AdminQuestionActions } from "@/components/admin/AdminQuestionActions";
 
 // K20 — the moderation queue (§5 D5).
@@ -37,9 +38,10 @@ function daysWaiting(since: Date): number {
 export default async function AdminQuestionsPage() {
   await requireAdmin();
   const database = adminDb();
+  const backend = database ? drizzleQuestionsBackend(database) : null;
 
-  const pending = database ? await pendingQuestions(database) : [];
-  const published = database ? await decidedQuestions(database) : [];
+  const pending = backend ? await pendingQuestions(backend) : [];
+  const published = backend ? await decidedQuestions(backend) : [];
 
   return (
     <div className="space-y-6">

@@ -1166,6 +1166,12 @@ describe("the rules do not reach around the backend", () => {
       ],
       ["adminMetrics.ts", "aggregate counts only — no row, no id, no name"],
       ["support.ts", "U6's support console: who can see whose pregnancy, as metadata"],
+      [
+        "supportBackend.ts",
+        "W5: the storage half of support.ts's own two membership queries " +
+          "(I1/U6) — still metadata only, moved behind an interface the same " +
+          "way sharingBackend.ts moved sharing's",
+      ],
     ]);
 
     const offenders: string[] = [];

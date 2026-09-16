@@ -1,9 +1,6 @@
 import "server-only";
 
-import { and, eq, gt } from "drizzle-orm";
-
-import type { Database } from "./db";
-import { photoBlobs } from "./schema";
+import type { PhotosBackend } from "./photosBackend";
 import type { PhotoStore } from "@/lib/photos/keys";
 
 // BUILD-PLAN K4 — the index of what a user has backed up.
@@ -12,6 +9,10 @@ import type { PhotoStore } from "@/lib/photos/keys";
 // carries the photo's own metadata as an **opaque payload**, the same envelope
 // `syncRecords` uses (§4.3) — a bump photo's week is health data, and the
 // server has no reason to be able to read it.
+//
+// W5: every function below takes a `PhotosBackend` (`lib/server/
+// photosBackend.ts`) rather than a `Database`, the same cut V2 gave
+// `sharing.ts`. `photos.test.ts` runs these functions, unchanged, over a Map.
 
 export interface PhotoBlobRecord {
   store: PhotoStore;
@@ -28,12 +29,13 @@ export interface PhotoBlobRecord {
 /**
  * Record an uploaded photo, or update the record of one.
  *
- * Last-write-wins on the client `updatedAt`, exactly like A3's sync: a photo
- * deleted on one phone and re-added on another has to resolve the same way
- * whichever order the requests arrive in.
+ * Last-write-wins on the client `updatedAt` is the backend's contract for
+ * `upsert` — exactly like A3's sync — so a photo deleted on one phone and
+ * re-added on another resolves the same way whichever order the requests
+ * arrive in.
  */
 export async function recordPhoto(
-  database: Database,
+  backend: PhotosBackend,
   userId: string,
   input: {
     store: PhotoStore;
@@ -46,7 +48,7 @@ export async function recordPhoto(
   },
   now: number,
 ): Promise<void> {
-  const values = {
+  await backend.upsert({
     userId,
     store: input.store,
     recordId: input.recordId,
@@ -55,24 +57,9 @@ export async function recordPhoto(
     bytes: input.bytes,
     payload: input.payload ?? null,
     updatedAt: input.updatedAt,
-    deletedAt: null as number | null,
+    deletedAt: null,
     serverUpdatedAt: now,
-  };
-
-  await database
-    .insert(photoBlobs)
-    .values(values)
-    .onDuplicateKeyUpdate({
-      set: {
-        objectKey: values.objectKey,
-        contentType: values.contentType,
-        bytes: values.bytes,
-        payload: values.payload,
-        updatedAt: values.updatedAt,
-        deletedAt: null,
-        serverUpdatedAt: now,
-      },
-    });
+  });
 }
 
 /**
@@ -85,58 +72,32 @@ export async function recordPhoto(
  * deleted sync record.
  */
 export async function markPhotoDeleted(
-  database: Database,
+  backend: PhotosBackend,
   userId: string,
   store: PhotoStore,
   recordId: string,
   now: number,
 ): Promise<string | null> {
-  const rows = await database
-    .select({ objectKey: photoBlobs.objectKey })
-    .from(photoBlobs)
-    .where(
-      and(
-        eq(photoBlobs.userId, userId),
-        eq(photoBlobs.store, store),
-        eq(photoBlobs.recordId, recordId),
-      ),
-    )
-    .limit(1);
-
-  const objectKey = rows[0]?.objectKey ?? null;
+  const objectKey = await backend.findObjectKey(userId, store, recordId);
   if (!objectKey) return null;
 
-  await database
-    .update(photoBlobs)
-    .set({
-      deletedAt: now,
-      payload: null,
-      bytes: 0,
-      serverUpdatedAt: now,
-    })
-    .where(
-      and(
-        eq(photoBlobs.userId, userId),
-        eq(photoBlobs.store, store),
-        eq(photoBlobs.recordId, recordId),
-      ),
-    );
+  await backend.markDeleted(userId, store, recordId, {
+    deletedAt: now,
+    payload: null,
+    bytes: 0,
+    serverUpdatedAt: now,
+  });
 
   return objectKey;
 }
 
 /** Everything this user has, changed after `since`. */
 export async function listPhotos(
-  database: Database,
+  backend: PhotosBackend,
   userId: string,
   since = 0,
 ): Promise<PhotoBlobRecord[]> {
-  const rows = await database
-    .select()
-    .from(photoBlobs)
-    .where(
-      and(eq(photoBlobs.userId, userId), gt(photoBlobs.serverUpdatedAt, since)),
-    );
+  const rows = await backend.listSince(userId, since);
 
   return rows.map((row) => ({
     store: row.store as PhotoStore,
@@ -153,17 +114,10 @@ export async function listPhotos(
 
 /** Every live object key for this user — the opt-out and deletion paths. */
 export async function allObjectKeys(
-  database: Database,
+  backend: PhotosBackend,
   userId: string,
 ): Promise<{ store: PhotoStore; recordId: string; objectKey: string }[]> {
-  const rows = await database
-    .select({
-      store: photoBlobs.store,
-      recordId: photoBlobs.recordId,
-      objectKey: photoBlobs.objectKey,
-    })
-    .from(photoBlobs)
-    .where(eq(photoBlobs.userId, userId));
+  const rows = await backend.allKeys(userId);
 
   return rows.map((row) => ({
     store: row.store as PhotoStore,
@@ -174,8 +128,8 @@ export async function allObjectKeys(
 
 /** Drop every row for this user. Used by the opt-out, after the objects go. */
 export async function deleteAllPhotoRows(
-  database: Database,
+  backend: PhotosBackend,
   userId: string,
 ): Promise<void> {
-  await database.delete(photoBlobs).where(eq(photoBlobs.userId, userId));
+  await backend.deleteAllRows(userId);
 }

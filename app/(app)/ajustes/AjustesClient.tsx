@@ -17,7 +17,7 @@ import { PhotoBackupSettings } from "@/components/PhotoBackupSettings";
 import { companionViewOf, useSharedViews } from "@/lib/sharing/useSharedViews";
 import {
   combineDateTime,
-  toDateInput as appointmentDateInput,
+  toDateInput,
   toTimeInput,
 } from "@/lib/appointments";
 import { ROLE_ONBOARDING_COPY, ROLE_ORDER } from "@/lib/roleCopy";
@@ -52,11 +52,6 @@ import { FamiliaSettings } from "@/components/FamiliaSettings";
 import { LanguageSettings } from "@/components/LanguageSettings";
 import { InstallCard } from "@/components/InstallCard";
 import { InviteFriend } from "@/components/InviteFriend";
-
-function toDateInput(ts?: number): string {
-  if (!ts) return "";
-  return new Date(ts).toISOString().slice(0, 10);
-}
 
 // B4: groups the growing settings list into labeled sections (cuenta ·
 // bebé · embarazo · notificaciones · privacidad · datos) instead of one
@@ -229,11 +224,11 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
   }, [profile.plannedDeliveryDate]);
 
   useEffect(() => {
-    setApptInput(appointmentDateInput(profile.nextAppointment));
+    setApptInput(toDateInput(profile.nextAppointment));
     setApptTimeInput(toTimeInput(profile.nextAppointment));
   }, [profile.nextAppointment]);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toDateInput(Date.now());
 
   async function savePregnancyDate() {
     setDateMsg("");

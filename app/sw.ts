@@ -43,6 +43,13 @@ const pageRoutes: string[] = [
   // D2: the dental screen is pure reading with no state, and the place it is
   // most useful is a waiting room with no signal.
   "/herramientas/dental",
+  // R0-2: README documents both of these as precached, but neither was
+  // actually in this list. A phone that installs the app and goes offline
+  // before ever opening them got the generic /offline fallback instead —
+  // for /emergencia (SOS numbers, alarm signs, saved contacts) that is the
+  // worst possible page to fail on.
+  "/emergencia",
+  "/derechos",
   ...Array.from(
     { length: MAX_WEEK - MIN_WEEK + 1 },
     (_, i) => `/semana/${MIN_WEEK + i}`,

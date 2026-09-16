@@ -8,6 +8,10 @@ resolution, so the reasoning is not lost.
 ## answered
 
 - **App name (U8):** `Mi Bebé · Embarazo Paraguay`. Confirmed by Anton 2026-09-16.
+- **App URL / domain (B1):** `app.embarazo.com.py`, a subdomain of the
+  content site (`embarazo.com.py`). Proposed by Anton 2026-09-16; used as
+  the working assumption for Resend's sending domain and the eventual
+  Hostinger deploy. Flag if this changes before deploy.
 
 ## for the link pass
 

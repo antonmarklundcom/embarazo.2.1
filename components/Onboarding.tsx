@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import { db, type AppMode, type Role } from "@/lib/db";
+import { toDateInput } from "@/lib/appointments";
 import {
   getDueDate,
   lmpFromEcografia,
@@ -188,9 +189,9 @@ export function Onboarding({
     setDateError("");
   }, []);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toDateInput(Date.now());
   // LMP can't be more than ~300 days ago or in the future.
-  const minLmp = new Date(Date.now() - 300 * 86400000).toISOString().slice(0, 10);
+  const minLmp = toDateInput(Date.now() - 300 * 86400000);
 
   // --- dates ---------------------------------------------------------------
 

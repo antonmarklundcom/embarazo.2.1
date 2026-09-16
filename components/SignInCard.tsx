@@ -13,7 +13,7 @@ import { PROVIDER_LABELS, type ProviderId } from "@/lib/auth/config";
 
 // BUILD-PLAN A2 — the branded sign-in screen.
 //
-// Design language is docs/REDESIGN-PLAN.md §1 only: cream page, white cards at
+// Design language is docs/archive/REDESIGN-PLAN.md §1 only: cream page, white cards at
 // radius 16 with a `line` border, brand-green overline, 900-weight title,
 // terracotta as the single primary accent. No new hex values.
 //

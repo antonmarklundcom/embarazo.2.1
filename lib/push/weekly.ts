@@ -1,4 +1,4 @@
-// PR-5b — the weekly `consejos` schedule (docs/FABLE-PLAN-2026-08.md §7).
+// PR-5b — the weekly `consejos` schedule (docs/archive/FABLE-PLAN-2026-08.md §7).
 //
 // "Consejos de la semana" has been a toggle in Ajustes since B5 with **nothing
 // behind it**: the category existed, the opt-in was stored, and no code

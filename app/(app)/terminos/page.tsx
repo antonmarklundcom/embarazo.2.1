@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 // Terms of use for the account world (v3 pivot — accounts + sync). See
 // DECISIONS.md "v3 pivot". DRAFT — pending lawyer review before public
-// launch (see docs/REVIEW-AND-LAUNCH-PLAN.md §4.5).
+// launch (see docs/archive/REVIEW-AND-LAUNCH-PLAN.md §4.5).
 export const metadata: Metadata = {
   title: "Términos de uso",
   description: "Condiciones de uso de Mi Bebé.",

@@ -15,7 +15,7 @@ import { formatAppointment, isAccompanying } from "@/lib/appointments";
 import { perspectivesFor } from "@/lib/seed/perspectives";
 import { CHECKLISTS } from "@/lib/checklists";
 
-// BUILD-PLAN K2 — the companion's home screen (docs/FABLE-PLAN-2026-08.md §3).
+// BUILD-PLAN K2 — the companion's home screen (docs/archive/FABLE-PLAN-2026-08.md §3).
 //
 // Before K2 a partner who accepted an invite saw four facts on `/familia` and
 // had no reason to open the app a second time. This is the screen that gives

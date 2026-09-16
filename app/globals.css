@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* "Mi Bebé" design language — docs/REDESIGN-PLAN.md §1 (canvas 1d).
+/* "Mi Bebé" design language — docs/archive/REDESIGN-PLAN.md §1 (canvas 1d).
    Moved here from tailwind.config.ts by the Tailwind 3→4 migration: v4 is
    CSS-first, and `@theme` is where tokens live now. Every token below kept its
    value AND its generated class name, so `bg-petrol`, `text-sand-text`,

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { MAX_WEEK, MIN_WEEK } from "@/lib/pregnancy";
 
 // BUILD-PLAN C7 — "lo más leído" (feature map #16), pure half.
-// **Amended by K5 (docs/FABLE-PLAN-2026-08.md §3, §7).**
+// **Amended by K5 (docs/archive/FABLE-PLAN-2026-08.md §3, §7).**
 //
 // This is the app's only aggregate counter. The wire format is defined here,
 // once, and after K5 it carries **two fields**: which piece of content was

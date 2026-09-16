@@ -8,7 +8,7 @@ import { createSign, createPrivateKey, type KeyObject } from "node:crypto";
 // VAPID JWT, which is an ES256 signature over two base64url segments — a
 // well-specified, boring thing that `node:crypto` does directly.
 //
-// That is not a shortcut, it is the design (docs/OPUS-REVIEW-2026-08.md §4.2):
+// That is not a shortcut, it is the design (docs/archive/OPUS-REVIEW-2026-08.md §4.2):
 // the server pokes the device and the SERVICE WORKER composes the sentence
 // locally from IndexedDB. The server therefore never learns what the
 // notification says, which week the user is in, or when their control actually

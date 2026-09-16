@@ -1,5 +1,5 @@
 // BUILD-PLAN K8 — the prenatal control as a shared object
-// (docs/FABLE-PLAN-2026-08.md §3).
+// (docs/archive/FABLE-PLAN-2026-08.md §3).
 //
 // Two things live here, both pure:
 //

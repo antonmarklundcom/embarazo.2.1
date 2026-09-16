@@ -1,6 +1,6 @@
 import { FORBIDDEN_COMPANION_FIELDS, type MemberRole } from "./fields";
 
-// BUILD-PLAN K3 — sharing levels (docs/FABLE-PLAN-2026-08.md §3).
+// BUILD-PLAN K3 — sharing levels (docs/archive/FABLE-PLAN-2026-08.md §3).
 //
 // E1's snapshot is the same four facts for everybody who is let in. K3 adds a
 // second tier the owner controls per field, for the pareja only: her weight,

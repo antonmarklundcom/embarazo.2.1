@@ -5,7 +5,7 @@ import type { AppMode, Role } from "@/lib/db";
 import type { WorkSituation } from "@/lib/derechos";
 import type { CareSetting } from "./personalisation";
 
-// BUILD-PLAN K1 (docs/FABLE-PLAN-2026-08.md §3) — the account-first onboarding
+// BUILD-PLAN K1 (docs/archive/FABLE-PLAN-2026-08.md §3) — the account-first onboarding
 // flow, as data.
 //
 // This file is pure on purpose. The flow now contains a step that navigates the

@@ -1,7 +1,7 @@
 import "../zodJitless.ts";
 import { z } from "zod";
 
-// K20 (docs/FABLE-PLAN-2026-08.md §6, under §5 D5) — curated Q&A.
+// K20 (docs/archive/FABLE-PLAN-2026-08.md §6, under §5 D5) — curated Q&A.
 //
 // Pure and dependency-free, like `lib/admin/audit.ts`, so the rules can be
 // asserted without dragging `lib/server/*` (and therefore next-auth and MySQL)

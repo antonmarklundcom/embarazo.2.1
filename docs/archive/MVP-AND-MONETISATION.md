@@ -1,6 +1,6 @@
 # MVP cut line & monetisation
 
-> **Superseded in part (2026-08-18):** `docs/FABLE-PLAN-2026-08.md` replaces
+> **Superseded in part (2026-08-18):** `docs/archive/FABLE-PLAN-2026-08.md` replaces
 > §2's cut line — v1.0 now **includes** accounts, sync, family sharing and
 > push (account-first launch, founder decision). §3 monetisation and §4
 > acquisition remain in force unchanged.
@@ -10,7 +10,7 @@
 > on*, and *how does this make money so I can fund content and paid
 > acquisition*.
 >
-> Read with `docs/OPUS-REVIEW-2026-08.md` (why the plan is re-sequenced),
+> Read with `docs/archive/OPUS-REVIEW-2026-08.md` (why the plan is re-sequenced),
 > `docs/ANDROID-LAUNCH.md` (Play mechanics) and `docs/FLO-BENCHMARK.md`
 > (what the paid tier is made of).
 

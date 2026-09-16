@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, notDeleted, softDelete } from "@/lib/db";
+import { toDateInput } from "@/lib/appointments";
 
 function fmtDate(ts: number): string {
   return new Date(ts).toLocaleDateString("es-PY", {
@@ -43,7 +44,8 @@ function TrendChart({ points }: { points: { date: number; kg: number }[] }) {
 
 export default function PesoPage() {
   const [kg, setKg] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(toDateInput(Date.now()));
+  const [dateError, setDateError] = useState("");
 
   const entries = useLiveQuery(
     () => db().weightEntries.orderBy("date").toArray(),
@@ -51,10 +53,16 @@ export default function PesoPage() {
   );
 
   async function add() {
+    setDateError("");
     const value = parseFloat(kg.replace(",", "."));
     if (!value || value <= 0 || value > 300) return;
+    const entryDate = new Date(`${date}T00:00:00`).getTime();
+    if (entryDate > Date.now()) {
+      setDateError("La fecha no puede estar en el futuro.");
+      return;
+    }
     await db().weightEntries.add({
-      date: new Date(`${date}T00:00:00`).getTime(),
+      date: entryDate,
       kg: Math.round(value * 10) / 10,
     });
     setKg("");
@@ -102,8 +110,11 @@ export default function PesoPage() {
               id="date"
               type="date"
               value={date}
-              max={new Date().toISOString().slice(0, 10)}
-              onChange={(e) => setDate(e.target.value)}
+              max={toDateInput(Date.now())}
+              onChange={(e) => {
+                setDate(e.target.value);
+                setDateError("");
+              }}
               className="mt-1 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-2 py-2 focus:border-petrol focus:outline-none"
             />
           </div>
@@ -116,6 +127,7 @@ export default function PesoPage() {
         >
           Guardar
         </button>
+        {dateError && <p className="mt-2 text-sm text-terracotta">{dateError}</p>}
       </div>
 
       {ordered.length >= 2 && (

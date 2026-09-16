@@ -1,5 +1,8 @@
 # Mi Bebé 🪺
 
+> Planning and process docs live under [`docs/`](docs/INDEX.md) — start at
+> `docs/INDEX.md`, the entrance to all of it.
+
 Una PWA de embarazo, gratuita e instalable, hecha para Paraguay. Con cuenta,
 seguí tu embarazo en familia — invitá a tu pareja o a tu familia y compartí
 lo que vos elijas; sin cuenta, la app funciona 100% en tu teléfono.

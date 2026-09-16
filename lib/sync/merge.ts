@@ -63,7 +63,7 @@ export const SYNC_META_FIELDS = [
  * Encrypted notes are NOT synced. The key is derived from a PIN plus a
  * device-local salt, so shipping the ciphertext to a second device produces
  * something that device can never open (this is the hole the August review
- * found in backup, `docs/OPUS-REVIEW-2026-08.md` §3.2, and it would have
+ * found in backup, `docs/archive/OPUS-REVIEW-2026-08.md` §3.2, and it would have
  * followed us into sync). Uploading the salt as well would hand the server
  * both halves of a 4-digit secret, which is worse than not syncing.
  *

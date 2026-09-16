@@ -73,6 +73,9 @@ describe("audited actions", () => {
         "sessions_revoked",
         "resync_forced",
         "record_restored",
+        // U9: every AI draft attempt is audited — the row IS the daily cap's
+        // counter, not just a record after the fact.
+        "draft_generated",
       ].sort(),
     );
   });

@@ -14,9 +14,9 @@
 > part of the thinking still applies to a hand-built site. See §2A for
 > what actually ships.
 >
-> Read with `docs/FABLE-PLAN-2026-08.md` (positioning decisions),
-> `docs/MVP-AND-MONETISATION.md` §3–4 (monetisation + acquisition) and
-> `docs/HANDOFF-2026-08-21.md` §3 (founder critical path — the medical
+> Read with `docs/archive/FABLE-PLAN-2026-08.md` (positioning decisions),
+> `docs/archive/MVP-AND-MONETISATION.md` §3–4 (monetisation + acquisition) and
+> `docs/archive/HANDOFF-2026-08-21.md` §3 (founder critical path — the medical
 > reviewer gate applies to this site too).
 
 ---

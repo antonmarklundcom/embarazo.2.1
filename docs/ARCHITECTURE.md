@@ -236,7 +236,7 @@ Device                                   Server (Hostinger + MySQL)
 ## 7. Visual language (unchanged by this pivot)
 
 The pastel/cream **Mi Bebé** language stays exactly as shipped in
-`docs/REDESIGN-PLAN.md` (§1 tokens: cream `#FBF7F1`, terracotta `#C96342`,
+`docs/archive/REDESIGN-PLAN.md` (§1 tokens: cream `#FBF7F1`, terracotta `#C96342`,
 brand green `#2F5D50`, ink `#322E29`, pastels rosa/celeste/salvia/lavanda/
 arena, 16px cards, Nunito Sans 600–900). Preggers is a benchmark for
 **layout, information architecture and feature set only** — none of its
@@ -288,7 +288,7 @@ subscription/payment ledger, AI spend control, and segmented push broadcasts.
 Two rules the later pages added, both structural:
 
 - **`/admin/contenido` is read-only, and stays that way.** §5 D4 of
-  `docs/FABLE-PLAN-2026-08.md` declined an editor role: content lives in git so
+  `docs/archive/FABLE-PLAN-2026-08.md` declined an editor role: content lives in git so
   it can be validated at build time (G1) and precached by the service worker. A
   publish button on that page would be the editor role arriving through the
   back door, and it would publish content that had neither.

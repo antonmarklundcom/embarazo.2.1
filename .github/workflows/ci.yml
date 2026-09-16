@@ -5,16 +5,19 @@ on:
   # the pull_request trigger below.
   push:
     branches: ["main"]
-  # K21 (docs/FABLE-PLAN-2026-08.md §6, founder-approved as D9): the PR
-  # trigger is label-gated. An ordinary push to a PR branch runs nothing —
-  # the builder validates lint + validate:content + tests + build + e2e in
-  # their own session (0 Actions minutes) and only then applies the `run-ci`
-  # label, which fires exactly one run per PR to gate auto-merge.
+  # W1: `fast` (below) needs the default opened/synchronize/reopened set so
+  # it runs on every PR push. `labeled` stays too — that is what lets `build`
+  # fire exactly once when `run-ci` is applied.
   #
-  # `types: [labeled]` (not the default synchronize/opened/reopened set) is
-  # what makes that true: without it every push re-ran the whole job.
+  # K21 (docs/archive/FABLE-PLAN-2026-08.md §6, founder-approved as D9): `build`
+  # itself stays label-gated — an ordinary push only ever ran `fast`
+  # (cheap: tsc/lint/unit tests, no build, no browser). The builder still
+  # validates the full set (lint + validate:content + tests + build + e2e)
+  # in their own session before applying `run-ci`, which is what actually
+  # gates auto-merge; `fast` is a free, always-on backstop on top of that,
+  # not a replacement for it.
   pull_request:
-    types: [labeled]
+    types: [opened, synchronize, reopened, labeled]
 
 # One run per branch/PR. A new push cancels the run still in flight for the
 # same ref instead of leaving it to compete for a runner.
@@ -23,6 +26,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # W1: always-on fast lane. Runs on every PR push (opened/synchronize/
+  # reopened only — a `labeled` event does not re-run it, so relabelling
+  # doesn't burn a second set of minutes) with just the checks cheap enough
+  # to afford unconditionally: no build, no browser, no `validate:content`.
+  # This is the check to mark required in branch protection — a founder
+  # step, not settable from this repo.
+  fast:
+    if: >-
+      github.event_name == 'pull_request' &&
+      contains(fromJSON('["opened", "synchronize", "reopened"]'), github.event.action)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: npm test
+      - run: npm run test:db
+
   build:
     # Push to `main` always runs. A pull_request event only runs when the
     # label just applied is `run-ci` — any other label (or a re-label) is a
@@ -35,8 +62,8 @@ jobs:
     # than letting it run to the 6-hour default.
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: "npm"

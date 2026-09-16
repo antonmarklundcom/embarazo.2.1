@@ -5,6 +5,7 @@ import Link from "next/link";
 import { db, softDelete } from "@/lib/db";
 import { useCycles } from "@/lib/useCycles";
 import { cycleDay, daysUntil } from "@/lib/cycle";
+import { toDateInput } from "@/lib/appointments";
 import { PrivacyLine } from "@/components/PrivacyLine";
 
 function fmtDate(ts: number): string {
@@ -17,7 +18,7 @@ function fmtDate(ts: number): string {
 
 export default function CalendarioPage() {
   const cycles = useCycles();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toDateInput(Date.now());
   const [startInput, setStartInput] = useState(today);
   const [savedMsg, setSavedMsg] = useState("");
 

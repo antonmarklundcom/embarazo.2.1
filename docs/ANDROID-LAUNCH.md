@@ -10,7 +10,7 @@
 > **Amended by K5 (August 2026).** §3.1 was rewritten for the account-first
 > launch: the app declares account data and health data honestly rather than
 > protecting a "No data collected" badge, per §5 D2 of
-> `docs/FABLE-PLAN-2026-08.md`. §3.3's deletion requirements are now
+> `docs/archive/FABLE-PLAN-2026-08.md`. §3.3's deletion requirements are now
 > unconditional, because accounts ship in v1.0.
 
 ---
@@ -163,7 +163,7 @@ These are forms, not code, and each one blocks publishing.
 > **Rewritten by K5 (August 2026).** This section used to be called "protect the
 > 'No data collected' answer" and told you which two parameters to strip to keep
 > the badge. **That badge is gone, on purpose.** §5 D2 of
-> `docs/FABLE-PLAN-2026-08.md` gave it up: the app has accounts, sync, family
+> `docs/archive/FABLE-PLAN-2026-08.md` gave it up: the app has accounts, sync, family
 > sharing and opt-in photo backup, so the honest answer is "yes, and here is
 > what". Keep the opaque-payload architecture (ARCHITECTURE.md §4.3) — it is
 > engineering, and it is what keeps the *contents* of that declaration small —

@@ -1,6 +1,6 @@
 import { isAnalysableSymptom } from "@/lib/symptoms";
 
-// BUILD-PLAN K9 / F3 — symptom insight (docs/FABLE-PLAN-2026-08.md §3).
+// BUILD-PLAN K9 / F3 — symptom insight (docs/archive/FABLE-PLAN-2026-08.md §3).
 //
 // "Tus dolores de cabeza aparecen los días que dormís mal." One observation,
 // computed **entirely on the device** from data she already logged, and phrased

@@ -13,7 +13,7 @@ import {
   saveSharingPreferences,
 } from "@/lib/sharing/client";
 
-// BUILD-PLAN K3 — "qué ve tu pareja" (docs/FABLE-PLAN-2026-08.md §3).
+// BUILD-PLAN K3 — "qué ve tu pareja" (docs/archive/FABLE-PLAN-2026-08.md §3).
 //
 // Three switches, all off until she turns them on, and each one independent of
 // the others. The copy names the *field*, not a vague category, because the

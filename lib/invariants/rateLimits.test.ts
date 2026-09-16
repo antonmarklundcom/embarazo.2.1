@@ -71,8 +71,8 @@ describe("every API route is throttled", () => {
       return !/isRateLimited\(\s*`[a-z-]+:\$\{/.test(source);
     }).map((route) => route.path);
 
-    // /api/v1/go predates the convention and is the one unprefixed caller;
-    // it is left alone rather than churned in a security PR.
-    expect(shared).toEqual(["/api/v1/go/x"]);
+    // R0-3 prefixed /api/v1/go's key (`go:${clientKey}`), so it no longer
+    // shares a bucket with anything else. Nothing is exempt here anymore.
+    expect(shared).toEqual([]);
   });
 });

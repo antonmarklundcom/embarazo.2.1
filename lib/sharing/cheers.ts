@@ -1,4 +1,4 @@
-// BUILD-PLAN K2 — "mandale ánimo" (docs/FABLE-PLAN-2026-08.md §3).
+// BUILD-PLAN K2 — "mandale ánimo" (docs/archive/FABLE-PLAN-2026-08.md §3).
 //
 // A companion taps one of these and the mamá sees it on her home screen. The
 // entire message is **an id from this list**: the wire carries `"fuerza"`, the

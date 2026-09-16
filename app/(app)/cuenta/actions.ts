@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { z } from "zod";
 
 import {
@@ -18,6 +18,7 @@ import {
   CONSENT_TTL_MS,
   encodeConsent,
 } from "@/lib/auth/consent";
+import { AUTH_RATE_LIMIT, clientKeyFromHeaders, isRateLimited } from "@/lib/rateLimit";
 
 // BUILD-PLAN A2 — the two server actions behind the sign-in screen.
 //
@@ -133,6 +134,26 @@ export async function registerWithPassword(
     return {
       error:
         "Las cuentas no están disponibles en esta versión. Podés seguir usando Mi Bebé sin cuenta.",
+    };
+  }
+
+  // R0-3 — registration never reaches `authorize()` (there is no password to
+  // check yet), so unlike sign-in it has no other choke point throttling it.
+  // Left unguarded this is a way to hammer the database with account-creation
+  // attempts, or to probe which emails are already taken via the
+  // "ese correo ya tiene una cuenta" branch below. Same `auth:` bucket as
+  // sign-in in `lib/server/auth.ts`'s `authorize()`, on purpose: both are the
+  // same password-auth surface, and one IP should not get a combined budget
+  // bigger than either alone.
+  if (
+    isRateLimited(
+      `auth:${clientKeyFromHeaders(await headers())}`,
+      Date.now(),
+      AUTH_RATE_LIMIT,
+    )
+  ) {
+    return {
+      error: "Demasiados intentos. Probá de nuevo en un momento.",
     };
   }
 

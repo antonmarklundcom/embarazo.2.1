@@ -7,7 +7,7 @@
 >
 > **We take structure, information architecture and feature ideas. We take
 > none of their visuals, art or copy.** The pastel/cream Mi Bebé language
-> in `docs/REDESIGN-PLAN.md` §1 is unchanged.
+> in `docs/archive/REDESIGN-PLAN.md` §1 is unchanged.
 
 ## Founder decisions (July 2026)
 

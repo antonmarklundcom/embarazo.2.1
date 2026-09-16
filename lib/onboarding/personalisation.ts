@@ -7,7 +7,7 @@ import {
   type RankableArticle,
 } from "@/lib/articles/forWeek";
 
-// K9-F5 (docs/FABLE-PLAN-2026-08.md §3) — the three onboarding answers, and
+// K9-F5 (docs/archive/FABLE-PLAN-2026-08.md §3) — the three onboarding answers, and
 // everything they are allowed to change.
 //
 // The feature is "onboarding depth", but depth is only worth the friction if

@@ -4,6 +4,7 @@ import { getSession, isAuthAvailable } from "@/lib/server/auth";
 import { dbOrNull } from "@/lib/server/db";
 import { drizzleBackend, pullRecords, pushRecords } from "@/lib/server/sync";
 import { userSyncState } from "@/lib/server/support";
+import { drizzleSupportBackend } from "@/lib/server/supportBackend";
 import { clientKeyFromHeaders, isRateLimited } from "@/lib/rateLimit";
 import {
   PULL_ALLOWED_PARAMS,
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest) {
 
   // I1/U6: read alongside the write so a support-forced resync reaches the
   // device on the very next request it makes, in either direction.
-  const state = await userSyncState(ctx.database, ctx.userId);
+  const state = await userSyncState(drizzleSupportBackend(ctx.database), ctx.userId);
 
   const result = await pushRecords(
     drizzleBackend(ctx.database),
@@ -120,7 +121,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const state = await userSyncState(ctx.database, ctx.userId);
+  const state = await userSyncState(drizzleSupportBackend(ctx.database), ctx.userId);
 
   const result = await pullRecords(
     drizzleBackend(ctx.database),

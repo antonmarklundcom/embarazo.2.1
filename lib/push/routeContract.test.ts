@@ -20,6 +20,11 @@ const PUSH_SERVER = readFileSync(
   "utf8",
 );
 
+const PUSH_BACKEND = readFileSync(
+  join(process.cwd(), "lib", "server", "pushBackend.ts"),
+  "utf8",
+);
+
 describe("the endpoint is whitelisted before it is stored", () => {
   it("refines both schemas, not just the subscribe one", () => {
     // DELETE takes an endpoint too. An unvalidated one there is a different
@@ -54,9 +59,15 @@ describe("the route is throttled on every verb that writes", () => {
 });
 
 describe("an anonymous replay cannot un-own a subscription", () => {
+  // W5: the storage half of `saveSubscription` moved to `pushBackend.ts`, the
+  // same cut V2 gave `sharing.ts` (a `PushBackend` interface, no Drizzle in
+  // `push.ts` itself). The SQL text this test watches moved with it — the
+  // `ON DUPLICATE KEY UPDATE` is now inside `drizzlePushBackend`'s
+  // `upsertSubscription`. The property is unchanged: an incoming `null`
+  // userId never overwrites a stored, non-null owner.
   it("coalesces userId on duplicate key instead of overwriting it", () => {
-    const start = PUSH_SERVER.indexOf("export async function saveSubscription");
-    const body = PUSH_SERVER.slice(start, PUSH_SERVER.indexOf("\n}", start));
+    const start = PUSH_BACKEND.indexOf("async upsertSubscription");
+    const body = PUSH_BACKEND.slice(start, PUSH_BACKEND.indexOf("\n    },", start));
     const update = body.slice(body.indexOf("onDuplicateKeyUpdate"));
     expect(update).toContain("coalesce(");
     // The bug, spelled out: a plain assignment here is what let an anonymous
@@ -68,8 +79,8 @@ describe("an anonymous replay cannot un-own a subscription", () => {
 
   it("still writes the userId on the initial insert", () => {
     // Coalescing on update must not be mistaken for "never store the owner".
-    const start = PUSH_SERVER.indexOf("export async function saveSubscription");
-    const values = PUSH_SERVER.slice(start, PUSH_SERVER.indexOf("onDuplicateKeyUpdate", start));
+    const start = PUSH_BACKEND.indexOf("async upsertSubscription");
+    const values = PUSH_BACKEND.slice(start, PUSH_BACKEND.indexOf("onDuplicateKeyUpdate", start));
     expect(values).toContain("userId: input.userId");
   });
 });
@@ -86,8 +97,12 @@ describe("the route schedules only what the device may schedule", () => {
     // send-time opt-in check would happily let both through.
     const calls = ROUTE.match(/scheduleReminders\([^)]*\)/gs) ?? [];
     expect(calls.length).toBe(2);
-    expect(ROUTE).toContain('scheduleReminders(database, endpoint, "recordatorios"');
-    expect(ROUTE).toContain('scheduleReminders(database, endpoint, "consejos"');
+    // W5: the route constructs a `PushBackend` (`backend`) instead of passing
+    // `database` straight through — the same wiring change V2 made in
+    // `/api/v1/sharing`. The property this pins is unchanged: the category is
+    // always a fixed literal, never something the client's body named.
+    expect(ROUTE).toContain('scheduleReminders(backend, endpoint, "recordatorios"');
+    expect(ROUTE).toContain('scheduleReminders(backend, endpoint, "consejos"');
     expect(ROUTE).not.toMatch(/scheduleReminders\([^)]*(category|parsed\.data\.category)/s);
   });
 

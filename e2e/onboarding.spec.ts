@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
 
-// BUILD-PLAN K1 (docs/FABLE-PLAN-2026-08.md §3) — account-first onboarding.
+// BUILD-PLAN K1 (docs/archive/FABLE-PLAN-2026-08.md §3) — account-first onboarding.
 //
 // The flow is mode → role → fecha → **tu situación** → departamento →
 // **cuenta** → nombre del bebé → invitación, with a second, shorter path for

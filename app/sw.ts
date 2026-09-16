@@ -47,6 +47,13 @@ const pageRoutes: string[] = [
   // renders its own honest empty state when the flag is off — precached
   // unconditionally like the other tool pages above.
   "/recomendados",
+  // R0-2: README documents both of these as precached, but neither was
+  // actually in this list. A phone that installs the app and goes offline
+  // before ever opening them got the generic /offline fallback instead —
+  // for /emergencia (SOS numbers, alarm signs, saved contacts) that is the
+  // worst possible page to fail on.
+  "/emergencia",
+  "/derechos",
   ...Array.from(
     { length: MAX_WEEK - MIN_WEEK + 1 },
     (_, i) => `/semana/${MIN_WEEK + i}`,

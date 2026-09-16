@@ -4,7 +4,7 @@ import Link from "next/link";
 
 // Privacy policy for the account world (v3 pivot — accounts + sync). See
 // DECISIONS.md "v3 pivot" and "A2 — Auth.js". DRAFT — pending lawyer review
-// before public launch (see docs/REVIEW-AND-LAUNCH-PLAN.md §4.5).
+// before public launch (see docs/archive/REVIEW-AND-LAUNCH-PLAN.md §4.5).
 export const metadata: Metadata = {
   title: "Política de privacidad",
   description: "Cómo Mi Bebé maneja tus datos.",

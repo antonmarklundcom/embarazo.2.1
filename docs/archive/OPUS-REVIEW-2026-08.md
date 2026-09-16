@@ -221,7 +221,7 @@ and tool usage before the test round, not after.
 - **The name "Mi Bebé" is crowded on Play.** Check the store and the Paraguayan
   trademark register before printing it on a listing; the app deserves a name
   it can rank for. "Mi Bebé Paraguay" or the original "Nido" may search better.
-- **`docs/REVIEW-AND-LAUNCH-PLAN.md` §4 is still the best document in the
+- **`docs/archive/REVIEW-AND-LAUNCH-PLAN.md` §4 is still the best document in the
   repo** and is still unstarted. It is the critical path. See §6.
 
 ---

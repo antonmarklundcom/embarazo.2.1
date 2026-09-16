@@ -5,7 +5,7 @@
 //
 // Defaults: reads public/assets/_src/**, writes alongside in public/assets
 // preserving subfolder + slug, resized to max 800px, WebP q78, target ≤60 KB.
-// See docs/REDESIGN-PLAN.md §4 for the naming convention:
+// See docs/archive/REDESIGN-PLAN.md §4 for the naming convention:
 //   public/assets/semanas/bebe-<week>.webp
 //   public/assets/articulos/<slug>.webp
 //   public/assets/hero/<name>.webp

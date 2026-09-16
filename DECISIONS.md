@@ -4356,3 +4356,53 @@ Decisions section, not the reasoning itself:
 - U11 — link pass: mounted Recomendados on the home screen, added the
   "Fondo de la semana" row in `/ajustes`, and the AI-spend alert banner +
   quick links on `/admin` — `docs/log/u11.md`.
+
+## 2026-09-11 improvement queue — V/W units, review pass, and integration
+
+Pointers only, per `prompts/sonnet-w7-link-pass.md`. U11's entry above
+already covers U1–U9 and its own unit; this entry covers what merged after
+it — the Opus V units, W6, the R0 review pass, and the two integration
+merges that reconciled everything onto `origin/main`. This is W7, the final
+unit in the 09-11 queue.
+
+- V1 — enforce the CSP — `script-src 'self' 'unsafe-inline'` kept (no
+  `middleware.ts` nonce, the no-middleware invariant wins); zod's JIT
+  `eval` probe was the actual violation source, fixed with a browser-only
+  `jitless: true` rather than widening the policy — `docs/log/v1.md`.
+- V2 — family sharing behind a testable backend — the cut is "no policy in
+  the backend, one exception (`revokedAt IS NULL`) stays in the query, row
+  types are storage shape not wire shape"; W5 copies this cut four times —
+  `docs/log/v2.md`.
+- V3 — Dexie tests under `fake-indexeddb` — found and fixed a real bug: a
+  v5 upgrade step read a version-6 store list and threw `NotFoundError` on
+  any phone still on v1–v4, so the database would not open at all —
+  `docs/log/v3.md`.
+- W6 — perf budget script (`scripts/perf.mjs`, PR #109) — budget is
+  performance ≥ 90 / LCP ≤ 3500 ms / CLS = 0 / TBT ≤ 200 ms; the home route
+  fails on this dev machine and is documented as bimodal (noisy-neighbour
+  CPU contention, not a confirmed regression) — `docs/log/w6.md`.
+- R0 — Codex-queued review pass, read-only, triaged into three P0 units —
+  `docs/log/r0.md`.
+  - R0-1 — `toISOString().slice(0,10)` reports tomorrow's date once local
+    time passes UTC midnight (Asunción UTC-3 ⇒ from 21:00 on); four call
+    sites moved to the existing `toDateInput()` helper —
+    `docs/log/r0-1.md`.
+  - R0-2 — `/emergencia` and `/derechos` were documented as offline-
+    precached but missing from `app/sw.ts`'s `pageRoutes` — added —
+    `docs/log/r0-2.md`.
+  - R0-3 — password sign-in/registration had no rate limiting; one IP-keyed
+    `auth:` bucket now covers both `authorize()` and direct-POST entry
+    points — `docs/log/r0-3.md`.
+- Round-2 integration — merged `unit/w4`, `unit/w5`, `unit/u9`,
+  `unit/docs-path-cleanup`, `unit/npm-audit-review`, `unit/w3`, `unit/r0-3`
+  onto one branch; three real conflicts, none resolved by picking a side
+  (see the file for each) — `docs/log/round-2-integration.md`.
+- `npm-audit-2026-09` — `next`/`sharp`/`js-yaml`/`brace-expansion` bumped
+  in-range, closing the critical Next.js RCE pair; the remaining 8
+  (5 moderate, 3 high) all need a major bump each and are not realistically
+  exploitable in this app's build/runtime shape — `docs/log/npm-audit-2026-09.md`.
+- L1 — live smoke script (`scripts/smoke-live.mjs`) — `docs/log/l1.md`.
+
+W4's PIN-card follow-up and the pre-existing Windows test/e2e flakes are
+tracked in `docs/decisions-needed.md` and `KNOWN-ISSUES.md`, not repeated
+here.

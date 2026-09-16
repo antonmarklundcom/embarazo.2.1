@@ -115,4 +115,25 @@ One line per unit as it merges: `<id> — PR #… — docs/log/<id>.md`.
 - V1 — PR #95 — `docs/log/v1.md`
 - V2 — PR #97 — `docs/log/v2.md`
 - V3 — PR #98 — `docs/log/v3.md`
+- U3 — PR #101 — `docs/log/u3.md`
+- U8 — PR #108 — `docs/log/u8.md`
+- U9 — PR #107 (bundled: "Go-live queue round 2") — `docs/log/u9.md`
+- U10 — skipped — no founder hero renders yet, per the queue's own "skip if
+  no renders" note
+- U11 — PR #110 — `docs/log/u11.md`
+- W1 — PR #104 (bundled: "Go-live queue round 1") — `docs/log/w1.md`
+- W2 — PR #104 (bundled: "Go-live queue round 1") — `docs/log/w2.md`
+- W3 — PR #107 (bundled: "Go-live queue round 2", second pass) — `docs/log/w3.md`
+- W4 — PR #107 (bundled: "Go-live queue round 2") — `docs/log/w4.md`
+- W5 — PR #107 (bundled: "Go-live queue round 2") — `docs/log/w5.md`
+- W6 — PR #109 — `docs/log/w6.md`
+- W7 — not opened; committed locally on `unit/w7` per this unit's own
+  instructions ("do NOT push, open a PR, or merge") — `docs/log/w7.md`
+
+R0's three findings (P0 each) rode inside the two integration PRs above
+rather than shipping as their own PRs: R0-1 and R0-2 are in PR #104
+("2 P0 fixes"), R0-3 is in PR #107 (second pass, per
+`docs/log/round-2-integration.md`). `docs/log/npm-audit-2026-09.md` and
+`docs/log/l1.md` are also inside PR #104/#107 respectively — neither unit
+is in this queue's own table (§3), so neither gets its own line here.
 

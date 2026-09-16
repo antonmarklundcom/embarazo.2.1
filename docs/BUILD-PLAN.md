@@ -1093,13 +1093,23 @@ installs, weekly active, retention, tool usage. No per-user behavioural
 tracking beyond what the account inherently implies; disclosed in
 `/privacidad`.
 
-### G3 Performance & offline budget
+### G3 Performance & offline budget — 🟡 PARTLY DONE — the budget script only, PR #109
 The home screen grew a lot in Phase C. Re-check 3G budget, precache only
 current ±1 week images, lazy-load the rest, verify Lighthouse.
 **Known item from C6:** the home bundle carries the full `articles.json`,
 including ~13 kB of article HTML it never renders, because the week filter runs
 on the device. Build a client-side article index (slug · title · week range ·
 read minutes) and keep the bodies server-side.
+
+Shipped so far (W6, PR #109): `scripts/perf.mjs` + `npm run perf` — a repeatable
+Lighthouse budget (performance ≥ 90, LCP ≤ 3500 ms, CLS = 0, TBT ≤ 200 ms) over
+`/`, `/semana/20`, `/herramientas`, `/guias`, plus `docs/PERF.md`. It is the
+measurement tool, not the fix: the home route (`/`) currently fails the budget
+on the dev machine it was built on, and the failure is bimodal (~2000 ms LCP on
+a quiet run, ~4600–4800 ms on a contended one) rather than a single confirmed
+number — see `docs/log/w6.md`. The client-side article index above, and
+whatever the home-route number turns out to need once measured on a quiet
+machine or in production, are still open.
 
 ### G4 Founder-content integration
 Wire in the real directory, videos, events and articles once they exist,
@@ -1278,7 +1288,11 @@ land), then D2 · D3 · D5 · E1 · E4 · E6 · F1 · F2 · A6 · B4 · D7 · D8
 1. Classify against the data contract (ARCHITECTURE.md §4) first. The
    question is now "does the server learn anything it does not need, and
    can the user turn it off and delete it?"
-2. Gates: `npx tsc --noEmit` && `npm run lint` && `npm test` && `npm run build`.
+2. Gates: `npx tsc --noEmit` && `npm run lint` && `npm test` && `npm run test:db`
+   && `npm run validate:content` && `npm run build`. `npm run perf` (W6, the
+   Lighthouse budget script) runs once before any PR that touches the home
+   screen — it is a session gate, not a CI step, and is informational on a
+   machine sharing CPU with other sessions (see `docs/log/w6.md`).
 3. **The app must keep working offline and without an account.** Any task
    that breaks either is wrong, no matter what it enables.
 4. New pure logic ⇒ unit tests. New API surface ⇒ zod whitelist + tests.

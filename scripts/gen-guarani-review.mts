@@ -45,6 +45,19 @@ interface Section {
   lines: Line[];
 }
 
+/**
+ * Two of the five `CHEERS` ship without a Guaraní line on purpose (see
+ * `lib/sharing/cheers.ts`), so `gn` is absent from those entries' literal
+ * type entirely, not merely falsy. `Array.prototype.filter`'s runtime check
+ * does not narrow the mapped type by itself, so this type guard does the
+ * narrowing explicitly instead of casting past it.
+ */
+function hasGuarani<T extends { text: { es: string; gn?: string } }>(
+  item: T,
+): item is T & { text: { gn: string } } {
+  return typeof item.text.gn === "string" && item.text.gn.length > 0;
+}
+
 const sections: Section[] = [
   {
     title: "1. Señales de alarma",
@@ -107,10 +120,10 @@ const sections: Section[] = [
       "traducir a propósito, porque una frase de cariño mal elegida cae peor " +
       "que ninguna. Si te parece que alguna de esas dos sí se dice en guaraní, " +
       "escribila.",
-    lines: CHEERS.filter((cheer) => cheer.text.gn).map((cheer) => ({
+    lines: CHEERS.filter(hasGuarani).map((cheer) => ({
       where: `${cheer.emoji} ${cheer.id}`,
       es: cheer.text.es,
-      gn: cheer.text.gn ?? "",
+      gn: cheer.text.gn,
     })),
   },
   {

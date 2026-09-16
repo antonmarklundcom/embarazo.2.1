@@ -23,6 +23,7 @@ import obstetraNotesData from "@/lib/seed/obstetraNotes.json";
 import perspectivesData from "@/lib/seed/perspectives.json";
 import weeklyLinesData from "@/lib/seed/weeklyLines.json";
 import ejerciciosData from "@/lib/seed/ejercicios.json";
+import recomendadosData from "@/lib/seed/recomendados.json";
 
 // FABLE-PLAN §5 D4 — which collections the review-debt page reports on.
 //
@@ -162,6 +163,13 @@ export function collectionDebt(): CollectionDebt[] {
       surface: "/herramientas/ejercicios",
       file: "lib/seed/ejercicios.json",
       entries: entries(ejerciciosData),
+      gates: "placeholder",
+    }),
+    summariseCollection({
+      label: "Recomendados",
+      surface: "/recomendados",
+      file: "lib/seed/recomendados.json",
+      entries: entries(recomendadosData),
       gates: "placeholder",
     }),
   ];

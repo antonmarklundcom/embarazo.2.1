@@ -43,6 +43,10 @@ const pageRoutes: string[] = [
   // D2: the dental screen is pure reading with no state, and the place it is
   // most useful is a waiting room with no signal.
   "/herramientas/dental",
+  // U3: the flag is runtime (useFlag), but the route itself is static and
+  // renders its own honest empty state when the flag is off — precached
+  // unconditionally like the other tool pages above.
+  "/recomendados",
   // R0-2: README documents both of these as precached, but neither was
   // actually in this list. A phone that installs the app and goes offline
   // before ever opening them got the generic /offline fallback instead —

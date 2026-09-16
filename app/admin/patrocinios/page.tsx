@@ -2,6 +2,7 @@ import { adminDb, requireAdmin } from "@/lib/server/admin";
 import { clicksByMonth } from "@/lib/server/placementClicks";
 import { monthLabel, type PlacementMonth } from "@/lib/stats/placementReport";
 import { getDirectory, getPlacements } from "@/lib/wordpress";
+import { PUBLISHED_RECOMENDADOS } from "@/lib/seed/recomendados";
 
 // FABLE-PLAN K15 — `/admin/patrocinios`.
 //
@@ -39,7 +40,7 @@ export const dynamic = "force-dynamic";
 interface Named {
   id: string;
   label: string;
-  kind: "patrocinio" | "directorio" | "desconocido";
+  kind: "patrocinio" | "directorio" | "recomendado" | "desconocido";
 }
 
 function Empty({ children }: { children: React.ReactNode }) {
@@ -83,7 +84,9 @@ function MonthBlock({
                     ? "Directorio"
                     : named?.kind === "patrocinio"
                       ? "Patrocinio"
-                      : "Ya no está en el contenido"}{" "}
+                      : named?.kind === "recomendado"
+                        ? "Recomendado"
+                        : "Ya no está en el contenido"}{" "}
                   · {item.placementId}
                 </p>
               </div>
@@ -105,6 +108,10 @@ export default async function AdminSponsorsPage() {
     getPlacements(),
     getDirectory(),
   ]);
+  // U3: recomendados count in the same report, named "Recomendado" rather
+  // than resolved against a sponsor/listing table — there isn't one, same as
+  // the other two kinds (§5 D4).
+  const recomendados = PUBLISHED_RECOMENDADOS;
 
   // Ids are resolved against the content in git (§5 D4), not against a table:
   // there is no sponsors table to join, and there should not be one. An id that
@@ -123,6 +130,13 @@ export default async function AdminSponsorsPage() {
       id: listing.id,
       label: listing.name,
       kind: "directorio",
+    });
+  }
+  for (const recomendado of recomendados) {
+    names.set(recomendado.id, {
+      id: recomendado.id,
+      label: recomendado.title,
+      kind: "recomendado",
     });
   }
 

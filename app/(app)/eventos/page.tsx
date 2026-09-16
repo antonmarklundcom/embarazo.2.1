@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useProfile } from "@/lib/useProfile";
+import { APP_NAME } from "@/lib/brand";
 import { DEPARTMENTS, departmentName } from "@/lib/departments";
 import { PUBLISHED_EVENTS } from "@/lib/seed/events";
 import type { EventItem, EventType } from "@/lib/types";
@@ -58,7 +59,7 @@ export default function EventosPage() {
       BUSINESS_WA
         ? waLink(
             BUSINESS_WA,
-            "Hola! Estoy usando Mi Bebé y quiero contarles de un evento para embarazadas o mamás.",
+            `Hola! Estoy usando ${APP_NAME} y quiero contarles de un evento para embarazadas o mamás.`,
           )
         : null,
     [],
@@ -136,7 +137,7 @@ export default function EventosPage() {
 
       {!catalogueEmpty && (
         <p className="text-[11px] leading-relaxed text-muted">
-          Los eventos son seleccionados por el equipo de Mi Bebé y pueden
+          Los eventos son seleccionados por el equipo de {APP_NAME} y pueden
           incluir propuestas patrocinadas, siempre señaladas como
           “Patrocinado”. La información es referencial.
         </p>
@@ -149,7 +150,7 @@ function EventCard({ event, past = false }: { event: EventItem; past?: boolean }
   const wa = event.whatsappNumber
     ? waLink(
         event.whatsappNumber,
-        `Hola! Vi el evento "${event.title}" en Mi Bebé y quisiera más información.`,
+        `Hola! Vi el evento "${event.title}" en ${APP_NAME} y quisiera más información.`,
       )
     : null;
 

@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { AccountCard } from "@/components/AccountCard";
 import { SignInCard } from "@/components/SignInCard";
+import { APP_NAME } from "@/lib/brand";
 import { availableProviders, getSession, isAuthAvailable } from "@/lib/server/auth";
 
 // BUILD-PLAN A2 — the branded sign-in screen (ARCHITECTURE.md §6).
@@ -12,8 +13,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Tu cuenta",
-  description:
-    "Creá una cuenta para guardar tu embarazo, o seguí usando Mi Bebé sin cuenta.",
+  description: `Creá una cuenta para guardar tu embarazo, o seguí usando ${APP_NAME} sin cuenta.`,
 };
 
 /**
@@ -33,7 +33,7 @@ function errorMessage(code: string | undefined): string | undefined {
     case "CredentialsSignin":
       return "Correo o contraseña incorrectos.";
     case "Configuration":
-      return "El ingreso con cuenta no está bien configurado en este servidor. Podés seguir usando Mi Bebé sin cuenta.";
+      return `El ingreso con cuenta no está bien configurado en este servidor. Podés seguir usando ${APP_NAME} sin cuenta.`;
     default:
       return "No pudimos completar el ingreso. Probá de nuevo o seguí sin cuenta.";
   }

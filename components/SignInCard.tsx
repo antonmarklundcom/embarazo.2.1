@@ -10,6 +10,7 @@ import {
   type SignInState,
 } from "@/app/(app)/cuenta/actions";
 import { PROVIDER_LABELS, type ProviderId } from "@/lib/auth/config";
+import { APP_NAME } from "@/lib/brand";
 
 // BUILD-PLAN A2 — the branded sign-in screen.
 //
@@ -243,7 +244,7 @@ export function SignInCard({
             Las cuentas todavía no están activas
           </h2>
           <p className="mt-1 text-sm font-semibold leading-relaxed text-sand-text">
-            En esta versión de Mi Bebé no hay ingreso con cuenta. La app funciona
+            En esta versión de {APP_NAME} no hay ingreso con cuenta. La app funciona
             completa igual: seguí sin cuenta y tus datos quedan en tu teléfono.
           </p>
         </section>
@@ -266,7 +267,7 @@ export function SignInCard({
                 className="mt-0.5 h-5 w-5 shrink-0 rounded border-ink/20 accent-petrol"
               />
               <span>
-                Acepto que Mi Bebé guarde en su servidor mis datos de salud del
+                Acepto que {APP_NAME} guarde en su servidor mis datos de salud del
                 embarazo (semanas, síntomas, ánimo, controles, peso) para
                 sincronizarlos entre mis dispositivos.
               </span>

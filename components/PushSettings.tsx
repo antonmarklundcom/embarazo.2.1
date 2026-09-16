@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { APP_NAME } from "@/lib/brand";
 import {
   PUSH_CATEGORY_INFO,
   toggleCategory,
@@ -96,14 +97,14 @@ export function PushSettings({
 
       {state.status === "unsupported" ? (
         <p className="mt-1 text-sm leading-relaxed text-muted">
-          Este navegador no puede mostrar avisos. Todo lo demás de Mi Bebé
+          Este navegador no puede mostrar avisos. Todo lo demás de {APP_NAME}
           funciona igual.
         </p>
       ) : state.needsInstall ? (
         // Honest copy about iOS, as the task asks: on iPhone, Web Push only
         // works from an installed app. Saying so beats a toggle that fails.
         <p className="mt-1 text-sm leading-relaxed text-muted">
-          En iPhone, los avisos funcionan solo si instalás Mi Bebé en la
+          En iPhone, los avisos funcionan solo si instalás {APP_NAME} en la
           pantalla de inicio. Tocá <strong>Compartir</strong> y después{" "}
           <strong>Agregar a inicio</strong>; después volvé acá.
         </p>

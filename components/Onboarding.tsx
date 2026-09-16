@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import { db, type AppMode, type Role } from "@/lib/db";
+import { APP_NAME } from "@/lib/brand";
 import { toDateInput } from "@/lib/appointments";
 import {
   getDueDate,
@@ -59,8 +60,8 @@ import { RoleStep } from "./onboarding/RoleStep";
 //  2. **The step and every answer are persisted to localStorage** on each
 //     change (`lib/onboarding/progress.ts`), so the OAuth round trip — which is
 //     a full page load initiated by somebody else's server — resumes exactly
-//     where it left off rather than dumping the user back at "¿Cómo querés usar
-//     Mi Bebé?" with everything retyped.
+//     where it left off rather than dumping the user back at "¿Cómo querés
+//     usar la app?" with everything retyped.
 //  3. **Nobody is asked a question about a body they do not have** (K9-F5).
 //     The invited path exists because a papá following his pareja's WhatsApp
 //     link was being asked for the first day of his last menstruation, and
@@ -85,7 +86,7 @@ export function Onboarding({
   /**
    * A code from `/?codigo=…`. Its presence also *starts* the invited flow:
    * somebody who opened the app from an invitation link has already answered
-   * "¿cómo querés usar Mi Bebé?" by tapping it.
+   * "¿cómo querés usar la app?" by tapping it.
    */
   initialCode?: string;
   /**
@@ -420,7 +421,7 @@ export function Onboarding({
   return (
     <div className="mx-auto flex min-h-[80dvh] max-w-md flex-col justify-center py-6">
       <div className="mb-6 text-center">
-        <h1 className="text-2xl font-black tracking-tight text-ink">Bienvenida a Mi Bebé</h1>
+        <h1 className="text-2xl font-black tracking-tight text-ink">Bienvenida a {APP_NAME}</h1>
         <p className="mt-2 text-sm text-muted">
           Tu embarazo y tu familia, en una sola app — hecha para Paraguay.
         </p>
@@ -521,7 +522,7 @@ export function Onboarding({
       </div>
 
       <p className="mt-4 px-2 text-center text-[11px] leading-relaxed text-muted">
-        Mi Bebé es informativo y no reemplaza la atención de un profesional de la
+        {APP_NAME} es informativo y no reemplaza la atención de un profesional de la
         salud. No realiza diagnósticos. Al continuar, aceptás nuestra{" "}
         <Link href="/privacidad" className="underline">
           política de privacidad

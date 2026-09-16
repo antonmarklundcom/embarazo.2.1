@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { APP_NAME } from "@/lib/brand";
 import { useT } from "@/lib/i18n/useLocale";
 
-// App header — "Mi Bebé" design 1a: brand circle mark + 900 wordmark,
+// App header — brand design 1a: brand circle mark + 900 wordmark,
 // terracotta SOS pill, bordered round Ajustes button.
 export function AppHeader() {
   const t = useT();
@@ -16,7 +17,7 @@ export function AppHeader() {
         <Link href="/" className="flex items-center gap-2.5">
           <BrandMark />
           <span className="text-[19px] font-black tracking-tight text-ink">
-            Mi Bebé
+            {APP_NAME}
           </span>
         </Link>
         <div className="flex items-center gap-2.5">

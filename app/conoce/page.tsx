@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { InstallCard } from "@/components/InstallCard";
+import { APP_NAME } from "@/lib/brand";
 
 // P1.6 (BUILD-PLAN.md): public landing page for non-users. "/" is the app
 // itself (first-run gate), so organic search / shared links need a page
@@ -9,7 +10,7 @@ import { InstallCard } from "@/components/InstallCard";
 // (app) route group): no header/bottom-nav, no client data reads besides
 // InstallCard's own hook.
 export const metadata: Metadata = {
-  title: "Mi Bebé — tu embarazo semana a semana en Paraguay",
+  title: `${APP_NAME} — tu embarazo semana a semana en Paraguay`,
   description:
     "La app gratuita del embarazo hecha para Paraguay: semana a semana, tus derechos, herramientas, familia y recursos cercanos. Con cuenta o sin ella.",
   alternates: { canonical: "/conoce" },
@@ -73,7 +74,7 @@ export default function ConocePage() {
             </svg>
           </span>
           <h1 className="mt-4 text-3xl font-black tracking-tight text-ink">
-            Mi Bebé
+            {APP_NAME}
           </h1>
           <p className="mt-2 text-base font-semibold text-muted">
             Tu embarazo, semana a semana, hecho para Paraguay.

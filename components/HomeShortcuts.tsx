@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { APP_NAME } from "@/lib/brand";
 import { businessWhatsApp, waLink } from "@/lib/whatsapp";
 
 // BUILD-PLAN C8 — shortcuts + feedback (feature map #18, #19).
@@ -84,7 +85,7 @@ export function HomeShortcuts({ week }: { week: number }) {
               BUSINESS_WA,
               // The week goes in the message the user reads before pressing
               // send, not in a request to us — see DECISIONS.md "C8".
-              `Hola! Estoy usando Mi Bebé (semana ${week}) y quiero contarles cómo me está yendo: `,
+              `Hola! Estoy usando ${APP_NAME} (semana ${week}) y quiero contarles cómo me está yendo: `,
             )}
             label="Escribirnos por WhatsApp"
             className="mt-3 w-full"

@@ -1,11 +1,12 @@
 "use client";
 
 import type { AppMode } from "@/lib/db";
+import { APP_NAME } from "@/lib/brand";
 
 import { ChoiceCard } from "./controls";
 
 /**
- * "¿Cómo querés usar Mi Bebé?" — and, since K9-F5, "¿te invitaron?".
+ * "¿Cómo querés usar la app?" — and, since K9-F5, "¿te invitaron?".
  *
  * The invite entry is deliberately *not* a third card. It is not a third way
  * to use the app — a companion still uses the pregnancy mode, just somebody
@@ -24,7 +25,7 @@ export function ModeStep({
   return (
     <div className="space-y-3">
       <p className="px-1 text-sm font-extrabold text-ink">
-        ¿Cómo querés usar Mi Bebé?
+        ¿Cómo querés usar {APP_NAME}?
       </p>
       <ChoiceCard
         title="Estoy embarazada"

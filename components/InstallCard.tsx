@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { APP_NAME } from "@/lib/brand";
 import { useInstallPrompt } from "@/lib/useInstallPrompt";
 
 // P1.1 (BUILD-PLAN.md): "Instalar la app" — shown on Home + Ajustes only
@@ -20,7 +21,7 @@ export function InstallCard() {
         Instalá la app
       </p>
       <h3 className="mt-1 text-base font-extrabold text-ink">
-        Agregá Mi Bebé a tu pantalla de inicio
+        Agregá {APP_NAME} a tu pantalla de inicio
       </h3>
       <p className="mt-1 text-sm font-semibold text-muted">
         Accedé más rápido y usala sin conexión.

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useProfile } from "@/lib/useProfile";
 import { useT } from "@/lib/i18n/useLocale";
 
-// Fixed bottom tab bar — "Mi Bebé" design: terracotta active state,
+// Fixed bottom tab bar — brand design: terracotta active state,
 // white bar over line border.
 //
 // D4 nav IA: Hoy · Guías · Checklist · Herramientas · Cerca tuyo. Checklist

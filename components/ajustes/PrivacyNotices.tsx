@@ -4,6 +4,8 @@
 
 import Link from "next/link";
 
+import { APP_NAME } from "@/lib/brand";
+
 /** E6: the trust questions, one tap from where somebody is already thinking
     about their data. */
 export function FaqLinkCard() {
@@ -33,7 +35,7 @@ export function PrivacyNotices() {
         <h2 className="text-base font-extrabold text-ink">Tu privacidad</h2>
         <ul className="mt-2 space-y-1.5 text-sm text-ink">
           <li>
-            • Podés usar Mi Bebé sin cuenta. Si no creás una, no tenemos tu
+            • Podés usar {APP_NAME} sin cuenta. Si no creás una, no tenemos tu
             correo ni tu nombre.
           </li>
           <li>
@@ -66,7 +68,7 @@ export function PrivacyNotices() {
       <section className="rounded-card bg-white p-4 shadow-soft">
         <h2 className="text-base font-extrabold text-ink">Aviso médico</h2>
         <p className="mt-1 text-sm leading-relaxed text-muted">
-          Mi Bebé es una herramienta informativa y de acompañamiento. No reemplaza
+          {APP_NAME} es una herramienta informativa y de acompañamiento. No reemplaza
           la atención de un profesional de la salud y no realiza diagnósticos.
           Ante cualquier duda o síntoma, contactá a tu sanatorio.
         </p>

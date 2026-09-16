@@ -72,9 +72,33 @@ AUTH_FACEBOOK_SECRET=
 
 # --- OPCIONALES (la app funciona sin esto) ---
 SHEETS_WEBHOOK_URL=                  # atribución de clics opcional; sin valor = redirección directa
+RESEND_API_KEY=                      # correo de recuperación de contraseña; sin valor = no se envía
+RESEND_FROM_EMAIL=no-reply@embarazo.com.py  # remitente; sin valor = ese mismo default
 ```
 
 `SHEETS_WEBHOOK_URL` es **opcional**: la app corre por completo sin ella.
+
+`RESEND_API_KEY` y `RESEND_FROM_EMAIL` también son **opcionales y degradan a
+ausente por diseño**. Son lo que hace funcionar «¿Olvidaste tu contraseña?»
+(`/cuenta/olvide`): con `RESEND_API_KEY` sin valor no hay transporte de correo,
+la app compila y corre igual, las dos pantallas siguen renderizando y la acción
+avisa que la recuperación no está disponible en lugar de fingir que envió un
+correo. No hay chequeo de build que lo exija (`lib/launchChecks.ts` solo bloquea
+por el canal de contacto de `/borrar-cuenta`, que Play exige).
+
+El **enlace** del correo se arma con `NEXT_PUBLIC_APP_URL` (o `AUTH_URL`), nunca
+con el `Host` del pedido: leer el header sería la inyección de host clásica
+contra este flujo, donde alguien pide un reset para otra persona y el enlace
+legítimo que ella recibe entrega el token al servidor del atacante. Sin
+`NEXT_PUBLIC_APP_URL` no hay enlace posible y la recuperación se reporta como no
+disponible.
+
+`RESEND_FROM_EMAIL` apunta al **dominio raíz** (`embarazo.com.py`), separado del
+subdominio de la app (`app.embarazo.com.py`): los registros SPF/DKIM/DMARC viven
+en la raíz. El token del enlace vence en 30 minutos, se usa una sola vez, y en la
+base de datos se guarda solo su hash SHA-256 (tabla `verificationTokens`) — nunca
+el token en claro, igual que `passwordHash`. Un reset exitoso además incrementa
+`sessionVersion`, o sea cierra la sesión en todos los dispositivos.
 
 Las variables de cuentas también son opcionales. Con `AUTH_SECRET`,
 `AUTH_GOOGLE_*` o `DATABASE_URL` sin valor, la app corre completa en modo

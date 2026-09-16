@@ -71,7 +71,7 @@ export const HERO_THEMES: Record<ThemeId, HeroTheme> = {
     background:
       "radial-gradient(120% 100% at 50% 38%, #FDF1DF 0%, #F8E2CB 45%, #EBCDAE 100%)",
     ink: "dark",
-    scrim: "linear-gradient(180deg, rgba(50,46,41,0) 40%, rgba(50,46,41,0.42) 100%)",
+    scrim: "linear-gradient(180deg, rgba(50,46,41,0) 40%, rgba(50,46,41,0.65) 100%)",
     motif: null,
   },
   // Ñandutí — Paraguay's lace, drawn as a radial medallion. The single most
@@ -82,7 +82,7 @@ export const HERO_THEMES: Record<ThemeId, HeroTheme> = {
     background:
       "radial-gradient(120% 100% at 50% 40%, #FFFFFF 0%, #F3DAD4 55%, #E6C9C2 100%)",
     ink: "dark",
-    scrim: "linear-gradient(180deg, rgba(50,46,41,0) 40%, rgba(50,46,41,0.40) 100%)",
+    scrim: "linear-gradient(180deg, rgba(50,46,41,0) 40%, rgba(50,46,41,0.65) 100%)",
     motif: "nanduti",
   },
   cielo: {
@@ -91,7 +91,7 @@ export const HERO_THEMES: Record<ThemeId, HeroTheme> = {
     background:
       "linear-gradient(180deg, #D9E5EC 0%, #EAF0F4 55%, #F8E2CB 100%)",
     ink: "dark",
-    scrim: "linear-gradient(180deg, rgba(50,46,41,0) 40%, rgba(50,46,41,0.38) 100%)",
+    scrim: "linear-gradient(180deg, rgba(50,46,41,0) 40%, rgba(50,46,41,0.68) 100%)",
     motif: "cielo",
   },
   estevia: {
@@ -100,7 +100,7 @@ export const HERO_THEMES: Record<ThemeId, HeroTheme> = {
     background:
       "radial-gradient(120% 100% at 50% 42%, #F2F7EE 0%, #DFE8D8 55%, #CBD9C1 100%)",
     ink: "dark",
-    scrim: "linear-gradient(180deg, rgba(50,46,41,0) 40%, rgba(50,46,41,0.40) 100%)",
+    scrim: "linear-gradient(180deg, rgba(50,46,41,0) 40%, rgba(50,46,41,0.66) 100%)",
     motif: "estevia",
   },
   // Wings as two abstract arcs. Not an angel, not a person — §2's rule is that
@@ -112,7 +112,7 @@ export const HERO_THEMES: Record<ThemeId, HeroTheme> = {
     background:
       "radial-gradient(120% 100% at 50% 40%, #F6F2FB 0%, #E6E0F0 55%, #D5CDE6 100%)",
     ink: "dark",
-    scrim: "linear-gradient(180deg, rgba(50,46,41,0) 40%, rgba(50,46,41,0.40) 100%)",
+    scrim: "linear-gradient(180deg, rgba(50,46,41,0) 40%, rgba(50,46,41,0.65) 100%)",
     motif: "alas",
   },
   // The one dark theme, so the one where the caption goes light.

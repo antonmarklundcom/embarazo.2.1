@@ -266,4 +266,9 @@ One line per unit as it merges: `U<n> — PR #… — docs/log/u<n>.md`.
 - U7 — week hero v2: themes, fruit toggle, relative scale — PR #90 — `docs/log/u7.md`
 - U4 — D7 tool depth: 5-1-1 hint + kicks nudge — PR #91 — `docs/log/u4.md`
 - U5 — D6 "Ejercicios": images + text — PR #92 — `docs/log/u5.md`
+- U2 — I4 AI usage & spend panel — PR #93 — `docs/log/u2.md`
+- U3 — Recomendados rail (replaces E4) — PR #101 — `docs/log/u3.md`
+- U8 — brand constant + manifest title — PR #108 — `docs/log/u8.md`
+- U9 — AI-drafted Q&A answers — bundled into PR #107 (round-2 go-live queue) — `docs/log/u9.md`
+- U11 — link pass — no PR opened (committed locally on `unit/u11`, not pushed) — `docs/log/u11.md`
 

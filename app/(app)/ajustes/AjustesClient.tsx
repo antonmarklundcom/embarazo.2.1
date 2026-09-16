@@ -6,6 +6,9 @@ import { wipeAllData } from "@/lib/db";
 import { clearOnboardingDraft } from "@/lib/onboarding/draftStorage";
 import { CompanionReminderSettings } from "@/components/CompanionReminderSettings";
 import { PhotoBackupSettings } from "@/components/PhotoBackupSettings";
+import { ThemeSheet } from "@/components/hero/ThemeSheet";
+import { heroTheme } from "@/lib/hero/themes";
+import { useHeroTheme } from "@/lib/hero/preferences";
 import { companionViewOf, useSharedViews } from "@/lib/sharing/useSharedViews";
 import { toDateInput } from "@/lib/appointments";
 import { useProfile } from "@/lib/useProfile";
@@ -63,6 +66,14 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
   const companionAppointmentAt = companionView?.snapshot?.nextAppointmentAt ?? null;
 
   const today = toDateInput(Date.now());
+
+  // U11 — the way into U7's theme sheet from /ajustes, next to the language
+  // toggle. Opens the same ThemeSheet the hero's ThemeChip already opens
+  // (components/hero/ThemeChip.tsx); the sheet itself is the only place that
+  // reads/writes lib/hero/preferences.ts, so no second storage mechanism is
+  // added here — this row is just a second door into it.
+  const [themeSheetOpen, setThemeSheetOpen] = useState(false);
+  const currentTheme = useHeroTheme();
 
   // W4 — the PIN card is the one settings card that did NOT move into
   // `components/ajustes/**`. `lib/pinPolicy.test.ts` (K18) reads THIS file by
@@ -140,6 +151,34 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
           its own language. */}
       <SettingsGroup title="Idioma · Ñe'ẽ">
         <LanguageSettings />
+      </SettingsGroup>
+
+      {/* U11 — a second door into U7's theme sheet (the first is the ThemeChip
+          on the hero card itself). Shows the currently chosen theme's label;
+          tapping it opens the same sheet, which also holds the fruit-size
+          toggle. */}
+      <SettingsGroup title="Fondo de la semana">
+        <section className="rounded-card bg-white p-4 shadow-soft">
+          <button
+            type="button"
+            onClick={() => setThemeSheetOpen(true)}
+            className="flex min-h-[44px] w-full items-center justify-between gap-3 text-left"
+          >
+            <span>
+              <span className="block text-sm font-extrabold text-ink">
+                Fondo de la semana
+              </span>
+              <span className="mt-0.5 block text-xs text-muted">
+                Elegí el fondo del bebé y si querés ver la comparación de
+                tamaño con una fruta.
+              </span>
+            </span>
+            <span className="shrink-0 text-xs font-bold text-petrol">
+              {heroTheme(currentTheme).label} →
+            </span>
+          </button>
+        </section>
+        <ThemeSheet open={themeSheetOpen} onClose={() => setThemeSheetOpen(false)} />
       </SettingsGroup>
 
       {/* K7 — the Familia group. `/familia` shipped with E1 and was reachable

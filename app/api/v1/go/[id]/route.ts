@@ -72,7 +72,7 @@ export async function GET(
   }
 
   const clientKey = clientKeyFromHeaders(req.headers);
-  if (isRateLimited(clientKey)) {
+  if (isRateLimited(`go:${clientKey}`)) {
     return NextResponse.json({ error: "demasiadas solicitudes" }, { status: 429 });
   }
 

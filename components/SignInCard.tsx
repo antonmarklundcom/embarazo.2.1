@@ -179,6 +179,17 @@ function CredentialsForms({
           {state.error}
         </p>
       )}
+
+      {/* The recovery path. Only on the login tab: offering it while somebody
+          is creating an account is noise, and this is the screen a locked-out
+          user lands on, so the link has to be here rather than buried. */}
+      {mode === "login" && (
+        <p className="px-1 text-xs text-muted">
+          <Link href="/cuenta/olvide" className="font-bold underline">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </p>
+      )}
     </div>
   );
 }

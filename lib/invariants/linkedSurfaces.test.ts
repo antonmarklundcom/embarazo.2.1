@@ -63,6 +63,13 @@ const UNLINKED: Record<string, string> = {
   // (app/(app)/page.tsx), so nobody in that mode ever needs a link to it. The
   // route exists as a direct URL and its own comment says so.
   "/planeando": "rendered inline at / when mode === planeando; direct URL only",
+  // Password reset, step 2. Reached only from the link in the email, which is
+  // built in `lib/server/passwordReset.ts` (outside the app/ + components/ scan
+  // this test walks) and carries a one-time token in its query string. An
+  // in-app `<Link>` to it would be a link to a page that can only say
+  // "enlace inválido" — worse than no link. Step 1, `/cuenta/olvide`, IS linked
+  // from the sign-in form, and that is the reachable entry point.
+  "/cuenta/restablecer": "reached only from the emailed reset link, which carries the token",
 };
 
 describe("every screen is reachable from inside the app", () => {

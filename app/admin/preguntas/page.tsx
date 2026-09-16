@@ -1,5 +1,6 @@
 import { adminDb, requireAdmin } from "@/lib/server/admin";
 import { decidedQuestions, pendingQuestions } from "@/lib/server/questions";
+import { draftAvailability, drizzleDraftAuditStore } from "@/lib/server/aiDraft";
 import { AdminQuestionActions } from "@/components/admin/AdminQuestionActions";
 
 // K20 — the moderation queue (§5 D5).
@@ -40,6 +41,19 @@ export default async function AdminQuestionsPage() {
 
   const pending = database ? await pendingQuestions(database) : [];
   const published = database ? await decidedQuestions(database) : [];
+
+  // U9. Computed once for the whole queue rather than per row: the cap is
+  // global, not per question, and checking it here means a fully disabled
+  // deployment (no `GEMINI_API_KEY`) never queries `adminAudit` at all — the
+  // page below renders exactly as it did before this feature existed.
+  const draft = database
+    ? await draftAvailability(drizzleDraftAuditStore(database))
+    : { available: false as const, reason: "disabled" as const };
+  const draftStatus: "available" | "capped" | undefined = draft.available
+    ? "available"
+    : draft.reason === "cap-reached"
+      ? "capped"
+      : undefined;
 
   return (
     <div className="space-y-6">
@@ -88,7 +102,11 @@ export default async function AdminQuestionsPage() {
               <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-ink">
                 {row.question}
               </p>
-              <AdminQuestionActions questionId={row.id} />
+              <AdminQuestionActions
+                questionId={row.id}
+                question={row.question}
+                draftStatus={draftStatus}
+              />
             </article>
           );
         })}

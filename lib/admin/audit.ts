@@ -31,6 +31,10 @@ export const ADMIN_ACTIONS = [
   "sessions_revoked",
   "resync_forced",
   "record_restored",
+  // U9. Every AI draft attempt is audited, successful or not, because the
+  // audit row IS the cost-control counter (`AI_DRAFT_DAILY_CAP`), not just a
+  // record after the fact — see `lib/server/aiDraft.ts`.
+  "draft_generated",
 ] as const;
 
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
@@ -102,6 +106,10 @@ export const AUDIT_META_SCHEMAS = {
       recordId: z.string().min(1).max(128),
     })
     .strict(),
+  // U9: the question id and nothing else — never the question text, never the
+  // generated draft. Same rule as `question_approved`/`question_rejected`
+  // above: this is the table deletion retains.
+  draft_generated: z.object({ questionId: z.string().min(1).max(64) }).strict(),
 } as const satisfies Record<AdminAction, z.ZodType>;
 
 /**

@@ -33,7 +33,10 @@ const HOME_HEADERS_GOOD = {
 const BORRAR_CUENTA_HTML_GOOD =
   '<a href="mailto:hola@mibebe.example.py">Escribir</a>';
 
-const MANIFEST_NAME = "Mi Bebé — tu embarazo en Paraguay";
+// U8: matches app/manifest.webmanifest's `name`, which is APP_TITLE
+// (lib/brand.ts) — expectedManifestName() falls back to reading that file
+// from disk since lib/brand.ts's regex doesn't match a template literal.
+const MANIFEST_NAME = "Mi Bebé · Embarazo Paraguay";
 
 /** A fetch stub keyed by pathname, with sane defaults for every check this
  * script runs. Individual tests override just the path they care about. */

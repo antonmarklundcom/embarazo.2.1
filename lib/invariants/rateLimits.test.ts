@@ -119,10 +119,11 @@ const NON_ROUTE_CALLERS = [
 
 describe("every non-route caller of the limiter namespaces its key too", () => {
   it("found the known ones", () => {
-    // `lib/server/auth.ts` (`auth:`), `app/(app)/cuenta/actions.ts` (`auth:`)
-    // and `lib/server/passwordReset.ts` (`reset:`). A number lower than this
+    // `lib/server/auth.ts` (`auth:`), `app/(app)/cuenta/actions.ts` (`auth:`),
+    // `lib/server/passwordReset.ts` (`reset:`) and
+    // `lib/server/emailVerification.ts` (`verify:`). A number lower than this
     // means the sweep stopped seeing files, not that the call sites went away.
-    expect(NON_ROUTE_CALLERS.length).toBeGreaterThanOrEqual(3);
+    expect(NON_ROUTE_CALLERS.length).toBeGreaterThanOrEqual(4);
   });
 
   it("uses a prefixed key everywhere", () => {
@@ -148,5 +149,20 @@ describe("every non-route caller of the limiter namespaces its key too", () => {
     );
     expect(reset).toMatch(/isRateLimited\(\s*`reset:\$\{/);
     expect(reset).not.toMatch(/isRateLimited\(\s*`auth:\$\{/);
+  });
+
+  it("keeps resend-verification on a third budget, not sign-in's or reset's", () => {
+    // Same argument one surface over. "Mandame el enlace de nuevo" sends mail
+    // to somebody's inbox on demand, so it needs a limit of its own — and it
+    // must not be the bucket that password recovery draws from, because a user
+    // pressing the resend button a few times too many must not thereby lose the
+    // ability to recover a forgotten password.
+    const verify = readFileSync(
+      join(process.cwd(), "lib", "server", "emailVerification.ts"),
+      "utf8",
+    );
+    expect(verify).toMatch(/isRateLimited\(\s*`verify:\$\{/);
+    expect(verify).not.toMatch(/isRateLimited\(\s*`auth:\$\{/);
+    expect(verify).not.toMatch(/isRateLimited\(\s*`reset:\$\{/);
   });
 });

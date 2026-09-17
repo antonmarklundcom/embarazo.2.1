@@ -88,6 +88,22 @@ vi.mock("./db", () => ({
   }),
 }));
 
+// Email verification, mocked so this file can prove the one thing that matters
+// about the wiring: `registerCredentialsUser()` creates the account whether or
+// not the confirmation mail works. The real module is exercised against a real
+// fake database in `./emailVerification.test.ts`.
+const verification = vi.hoisted(() => ({
+  calls: [] as string[],
+  fail: false,
+}));
+
+vi.mock("./emailVerification", () => ({
+  sendVerificationFor: async (email: string) => {
+    verification.calls.push(email);
+    if (verification.fail) throw new Error("mail is on fire");
+  },
+}));
+
 // `env` needs only AUTH_SECRET (lib/auth/config.ts's `isAuthConfigured`) —
 // PR-20 deliberately made email+password need no OAuth provider configured.
 process.env.AUTH_SECRET = "test-secret";
@@ -128,6 +144,8 @@ afterEach(() => {
   dbState.selectResults.length = 0;
   dbState.insertedRows.length = 0;
   dbState.isDatabaseConfigured.mockReturnValue(true);
+  verification.calls.length = 0;
+  verification.fail = false;
 });
 
 /** A `Request` with a unique `X-Forwarded-For`, so each test owns its own rate-limit bucket. */
@@ -218,6 +236,101 @@ describe("registerCredentialsUser() — a free email", () => {
     expect(result).toEqual({ ok: true });
     expect(dbState.insertedRows).toHaveLength(1);
     expect(dbState.insertedRows[0]).toMatchObject({ email: "nueva@example.com" });
+  });
+});
+
+describe("registerCredentialsUser() — the confirmation mail", () => {
+  it("asks for one, for the address that was just registered", async () => {
+    dbState.selectResults.push([]);
+
+    await registerCredentialsUser("nueva@example.com", "a-new-password1");
+
+    expect(verification.calls).toEqual(["nueva@example.com"]);
+  });
+
+  it("still creates the account when the send throws", async () => {
+    // The account is what the user asked for and the INSERT already happened.
+    // Losing it because Resend had a bad minute would be the worst possible
+    // trade — so a throwing `sendVerificationFor` must not surface at all.
+    verification.fail = true;
+    dbState.selectResults.push([]);
+
+    const result = await registerCredentialsUser("nueva@example.com", "a-new-password1");
+
+    expect(result).toEqual({ ok: true });
+    expect(dbState.insertedRows).toHaveLength(1);
+    expect(dbState.insertedRows[0]).toMatchObject({ email: "nueva@example.com" });
+  });
+
+  it("does not ask for one when the email was already taken", async () => {
+    dbState.selectResults.push([{ id: "existing-user" }]);
+
+    await registerCredentialsUser("taken@example.com", "a-new-password1");
+
+    // No account was created, so there is nothing to confirm — and mailing a
+    // confirmation to an address that already belongs to somebody else's
+    // account would be a way to spam an inbox on demand.
+    expect(verification.calls).toEqual([]);
+  });
+});
+
+describe("authorize() — verification is NOT a sign-in gate", () => {
+  // The regression test for the one mistake that would quietly break every
+  // existing user. `users.emailVerified` was written by nothing before this
+  // feature, so every credentials account created earlier has a null there
+  // forever and there is no honest way to backfill it. If `authorize()` ever
+  // starts consulting the column, this test fails — and it should, because the
+  // change it would be catching is "the whole userbase is locked out".
+  it("signs in an account whose address was never confirmed", async () => {
+    dbState.selectResults.push([
+      {
+        id: "u6",
+        email: "vieja@example.com",
+        passwordHash: realHash,
+        name: "Vieja",
+        image: null,
+        emailVerified: null,
+      },
+    ]);
+
+    const result = await authorize(
+      { email: "vieja@example.com", password: REAL_PASSWORD },
+      requestFrom("10.0.0.201"),
+    );
+
+    expect(result).toEqual({
+      id: "u6",
+      name: "Vieja",
+      email: "vieja@example.com",
+      image: null,
+    });
+  });
+
+  it("treats a confirmed account exactly the same", async () => {
+    dbState.selectResults.push([
+      {
+        id: "u7",
+        email: "nueva@example.com",
+        passwordHash: realHash,
+        name: "Nueva",
+        image: null,
+        emailVerified: new Date(),
+      },
+    ]);
+
+    const result = await authorize(
+      { email: "nueva@example.com", password: REAL_PASSWORD },
+      requestFrom("10.0.0.202"),
+    );
+
+    // Same shape, and notably no `emailVerified` in the session user: the column
+    // is informational and nothing in the token depends on it.
+    expect(result).toEqual({
+      id: "u7",
+      name: "Nueva",
+      email: "nueva@example.com",
+      image: null,
+    });
   });
 });
 

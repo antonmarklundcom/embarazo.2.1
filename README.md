@@ -72,19 +72,30 @@ AUTH_FACEBOOK_SECRET=
 
 # --- OPCIONALES (la app funciona sin esto) ---
 SHEETS_WEBHOOK_URL=                  # atribución de clics opcional; sin valor = redirección directa
-RESEND_API_KEY=                      # correo de recuperación de contraseña; sin valor = no se envía
+RESEND_API_KEY=                      # correos de la cuenta (recuperación + confirmación); sin valor = no se envía
 RESEND_FROM_EMAIL=no-reply@embarazo.com.py  # remitente; sin valor = ese mismo default
 ```
 
 `SHEETS_WEBHOOK_URL` es **opcional**: la app corre por completo sin ella.
 
 `RESEND_API_KEY` y `RESEND_FROM_EMAIL` también son **opcionales y degradan a
-ausente por diseño**. Son lo que hace funcionar «¿Olvidaste tu contraseña?»
-(`/cuenta/olvide`): con `RESEND_API_KEY` sin valor no hay transporte de correo,
-la app compila y corre igual, las dos pantallas siguen renderizando y la acción
-avisa que la recuperación no está disponible en lugar de fingir que envió un
-correo. No hay chequeo de build que lo exija (`lib/launchChecks.ts` solo bloquea
-por el canal de contacto de `/borrar-cuenta`, que Play exige).
+ausente por diseño**, y hoy las comparten **dos** funciones:
+
+1. «¿Olvidaste tu contraseña?» (`/cuenta/olvide` → `/cuenta/restablecer`).
+2. La confirmación del correo al crear una cuenta con correo + contraseña
+   (`/cuenta/verificar`).
+
+Con `RESEND_API_KEY` sin valor no hay transporte de correo, la app compila y
+corre igual, las pantallas siguen renderizando y cada acción avisa que no está
+disponible en lugar de fingir que envió un correo. No hay chequeo de build que lo
+exija (`lib/launchChecks.ts` solo bloquea por el canal de contacto de
+`/borrar-cuenta`, que Play exige).
+
+**Confirmar el correo no es requisito para entrar.** `authorize()` en
+`lib/server/auth.ts` no mira `users.emailVerified`, a propósito: toda cuenta
+creada antes de esta función tiene `null` ahí para siempre y no existe forma
+honesta de rellenarlo, así que exigirlo dejaría afuera a todos los usuarios
+existentes. Si el envío falla, la cuenta se crea igual.
 
 El **enlace** del correo se arma con `NEXT_PUBLIC_APP_URL` (o `AUTH_URL`), nunca
 con el `Host` del pedido: leer el header sería la inyección de host clásica
@@ -95,10 +106,20 @@ disponible.
 
 `RESEND_FROM_EMAIL` apunta al **dominio raíz** (`embarazo.com.py`), separado del
 subdominio de la app (`app.embarazo.com.py`): los registros SPF/DKIM/DMARC viven
-en la raíz. El token del enlace vence en 30 minutos, se usa una sola vez, y en la
-base de datos se guarda solo su hash SHA-256 (tabla `verificationTokens`) — nunca
-el token en claro, igual que `passwordHash`. Un reset exitoso además incrementa
-`sessionVersion`, o sea cierra la sesión en todos los dispositivos.
+en la raíz. El token del enlace de reset vence en 30 minutos, el de confirmación
+en 24 horas, los dos se usan una sola vez, y en la base de datos se guarda solo
+su hash SHA-256 (tabla `verificationTokens`) — nunca el token en claro, igual que
+`passwordHash`. Un reset exitoso además incrementa `sessionVersion`, o sea cierra
+la sesión en todos los dispositivos; una confirmación no toca nada más que
+`users.emailVerified`.
+
+Las dos funciones comparten la tabla `verificationTokens` pero **no el
+`identifier`**: el reset usa el correo tal cual y la confirmación usa
+`verify:<correo>`. Sin ese prefijo, pedir un enlace de confirmación borraría el
+token de reset vivo del mismo correo (cada flujo limpia sus filas por
+`identifier` antes de escribir la nueva), que es exactamente lo que le pasaría a
+alguien que olvida la contraseña que eligió dos minutos antes. Lo cubre
+`lib/server/emailVerification.test.ts`.
 
 Las variables de cuentas también son opcionales. Con `AUTH_SECRET`,
 `AUTH_GOOGLE_*` o `DATABASE_URL` sin valor, la app corre completa en modo

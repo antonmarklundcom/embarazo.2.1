@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { AccountCard } from "@/components/AccountCard";
 import { DeleteAccountCard } from "@/components/DeleteAccountCard";
+import { EmailVerificationNotice } from "@/components/ajustes/EmailVerificationNotice";
 import { SyncStatusCard } from "@/components/SyncStatusCard";
 import { APP_NAME } from "@/lib/brand";
 import { getSession, isAuthAvailable } from "@/lib/server/auth";
@@ -24,6 +25,13 @@ export async function AccountSection() {
     return (
       <>
         <AccountCard session={session} />
+        {/* The unconfirmed-address nudge, under the identity it is about.
+            Renders nothing unless this is an email + password account whose
+            address is genuinely unconfirmed — and it is a nudge, never a gate:
+            sign-in does not check `emailVerified`. */}
+        {session.user.id && (
+          <EmailVerificationNotice userId={session.user.id} />
+        )}
         {/* A6: what happened to the data on this phone when you signed in.
             Renders nothing until there is something to report. */}
         <SyncStatusCard />

@@ -18,6 +18,7 @@ import {
   type ProviderId,
 } from "@/lib/auth/config";
 import { syncAdminRoleFromAllowlist } from "./admin";
+import { sendVerificationFor } from "./emailVerification";
 import {
   CONSENT_COOKIE,
   CONSENT_VERSION,
@@ -418,6 +419,22 @@ export async function registerCredentialsUser(
       email,
       passwordHash: await hashPassword(password),
     });
+
+  // Confirm the address, best-effort. Nothing downstream depends on it:
+  // `authorize()` above does not check `emailVerified` (see the long note in
+  // `./emailVerification.ts` — every account predating this feature has a null
+  // there forever, so gating sign-in would lock out the entire existing
+  // userbase), and this function's contract is "the account exists now".
+  //
+  // `sendVerificationFor` already swallows its own failures; the try/catch is
+  // the second belt, so that no future change in there can turn a bad minute at
+  // Resend into an account the user was told she did not get. Nothing is logged
+  // — the only thing there would be to log is her address.
+  try {
+    await sendVerificationFor(email);
+  } catch {
+    // Intentionally empty: see above.
+  }
 
   return { ok: true };
 }

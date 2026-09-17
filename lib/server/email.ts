@@ -153,3 +153,57 @@ export async function sendPasswordResetEmail(
     ].join(""),
   });
 }
+
+/**
+ * The email-confirmation email, sent once right after an email + password
+ * account is created. Same voice and same two-part body as the reset mail
+ * above.
+ *
+ * The copy is careful about one thing: confirming is **not** a condition for
+ * using the app. `authorize()` in `lib/server/auth.ts` does not check
+ * `emailVerified`, on purpose (every account created before this feature
+ * shipped has a null there forever), so a mail that said "confirmá para poder
+ * entrar" would be a lie that also scares people. It says what is true: the
+ * account already works, and confirming is what lets us reach her if she ever
+ * forgets her password.
+ *
+ * @throws when the message could not be handed to Resend. Silent (no-op) when
+ *   no API key is configured.
+ */
+export async function sendVerificationEmail(
+  to: string,
+  verifyUrl: string,
+): Promise<void> {
+  const safeUrl = escapeHtml(verifyUrl);
+  await send({
+    to,
+    subject: `Confirmá tu correo de ${APP_NAME}`,
+    text: [
+      `Hola,`,
+      ``,
+      `Creaste tu cuenta de ${APP_NAME} con este correo. Abrí este enlace para confirmarlo:`,
+      ``,
+      verifyUrl,
+      ``,
+      `El enlace vence en 24 horas y se puede usar una sola vez.`,
+      ``,
+      `Tu cuenta ya funciona igual: confirmar el correo es lo que nos deja ayudarte a entrar si algún día olvidás tu contraseña.`,
+      ``,
+      `Si no creaste ninguna cuenta, ignorá este correo.`,
+      ``,
+      `— ${APP_NAME}`,
+    ].join("\n"),
+    html: [
+      `<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:16px;line-height:1.6;color:#22303c">`,
+      `<p>Hola,</p>`,
+      `<p>Creaste tu cuenta de ${escapeHtml(APP_NAME)} con este correo. Tocá el botón para confirmarlo:</p>`,
+      `<p><a href="${safeUrl}" style="display:inline-block;padding:12px 20px;border-radius:999px;background:#1f6f78;color:#ffffff;font-weight:700;text-decoration:none">Confirmar mi correo</a></p>`,
+      `<p style="font-size:14px;color:#6b7b8a">O copiá este enlace: ${safeUrl}</p>`,
+      `<p><strong>El enlace vence en 24 horas</strong> y se puede usar una sola vez.</p>`,
+      `<p>Tu cuenta ya funciona igual: confirmar el correo es lo que nos deja ayudarte a entrar si algún día olvidás tu contraseña.</p>`,
+      `<p>Si no creaste ninguna cuenta, ignorá este correo.</p>`,
+      `<p>— ${escapeHtml(APP_NAME)}</p>`,
+      `</div>`,
+    ].join(""),
+  });
+}

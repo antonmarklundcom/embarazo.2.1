@@ -10,6 +10,7 @@ import { useProfile } from "@/lib/useProfile";
 // reasoning for each group.
 import {
   CompanionHome,
+  CreateAccountNudge,
   InstallCard,
   InviteFriend,
   MoodCheckIn,
@@ -274,6 +275,13 @@ export default function InicioPage() {
 
       {/* Derechos · recursos · temporada. */}
       <HomeParaguayCards trimester={trimester} />
+
+      {/* A real, visible nudge to create an account, once there is local
+          data actually worth protecting (lib/accountNudge.ts). Self-gates on
+          no session + auth available + profile old enough — renders nothing
+          otherwise. Sits with the other "you haven't done this yet" cards
+          below. */}
+      <CreateAccountNudge />
 
       {/* Install prompt (P1.1) — hides itself once installed/unavailable */}
       <InviteFriend />

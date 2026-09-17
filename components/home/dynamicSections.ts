@@ -86,6 +86,9 @@ export const RoadmapSection = dynamic(() =>
 export const InstallCard = dynamic(() =>
   import("@/components/InstallCard").then((m) => m.InstallCard),
 );
+export const CreateAccountNudge = dynamic(() =>
+  import("@/components/CreateAccountNudge").then((m) => m.CreateAccountNudge),
+);
 export const InviteFriend = dynamic(() =>
   import("@/components/InviteFriend").then((m) => m.InviteFriend),
 );

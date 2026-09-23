@@ -31,6 +31,7 @@ import {
 } from "@/lib/pregnancy";
 import { getWeek } from "@/lib/weeks";
 import { getDailyTip } from "@/lib/dailyTips";
+import { isSelfCentered } from "@/lib/roleCopy";
 
 import { hasOnboardingDraft } from "@/lib/onboarding/draftStorage";
 import { siteParamsToAnswers } from "@/lib/onboarding/siteParams";
@@ -248,8 +249,15 @@ export default function InicioPage() {
       <MoodCheckIn role={profile.role} week={week} />
 
       {/* E2: share the week card (map #30). Drawn on the device; the image
-          carries the week number and nothing else. */}
-      <ShareCard week={week} label="Compartir mi semana" offerInvite />
+          carries the week number and nothing else. "Contale a tu pareja" (the
+          partner's paragraph for the week, text only) is offered to the mamá
+          only — anyone else on this screen is the person it would go to. */}
+      <ShareCard
+        week={week}
+        label="Compartir mi semana"
+        offerInvite
+        offerPartner={isSelfCentered(profile.role)}
+      />
 
       {/* C8: one-tap access to emergencia · carné · preguntas, and the
           feedback path (map #18, #19). */}

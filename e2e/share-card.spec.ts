@@ -35,6 +35,27 @@ test("sharing the week card produces a PNG without touching the network", async 
   expect(uploads, uploads.join("\n")).toEqual([]);
 });
 
+// Share card v2 — "Contale a tu pareja": the week's partner paragraph as a
+// wa.me link. Checked by its href rather than by clicking, which would leave
+// the test for WhatsApp.
+test("the mamá can send this week's partner paragraph to WhatsApp", async ({ page }) => {
+  await completeOnboarding(page, { daysAgo: 140 });
+
+  const link = page.getByRole("link", { name: "Contale a tu pareja" });
+  await expect(link).toBeVisible();
+  const href = await link.getAttribute("href");
+  expect(href).toMatch(/^https:\/\/wa\.me\/\?text=/);
+  const text = decodeURIComponent(href!.slice("https://wa.me/?text=".length));
+  expect(text).toMatch(/^Semana \d+ — /);
+});
+
+test("a papá is not offered the partner message", async ({ page }) => {
+  await completeOnboarding(page, { daysAgo: 140, role: "Papá" });
+
+  await expect(page.getByRole("button", { name: "Compartir mi semana" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Contale a tu pareja" })).toHaveCount(0);
+});
+
 test("the copy tells the truth about where the image is made", async ({ page }) => {
   await completeOnboarding(page, { daysAgo: 140 });
 

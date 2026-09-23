@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { weeklyLine } from "@/lib/seed/weeklyLines";
 import { hasSizeComparison } from "@/lib/weeks";
 import {
   inNewWeekWindow,
@@ -18,7 +17,8 @@ import { enableWeekStartNotice, readPushState } from "@/lib/push/client";
 //
 // The weekly habit loop the benchmark apps live on: the day her week turns
 // over (her own weekday, from her FUM), Hoy opens with it — the new number,
-// the week's one-liner, the size, and one tap to that week's page. The share
+// the size, and one tap to that week's page. (The week's one-liner is the
+// "Esta semana" card just below; repeating it here said it twice.) The share
 // card directly under the hero is the "tell the family" half, so it is not
 // repeated here.
 //
@@ -69,7 +69,6 @@ export function NewWeekCard({
   if (!visible || week < 2) return null;
 
   const weekday = turnoverWeekday(lmpDate);
-  const line = weeklyLine(week);
 
   function dismiss() {
     markWeekSeen(week);
@@ -108,7 +107,6 @@ export function NewWeekCard({
           ? ` y tu bebé ya es del tamaño de ${sizeComparison}.`
           : "."}
       </p>
-      {line && <p className="mt-2 text-[15px] leading-relaxed text-ink">{line}</p>}
 
       <Link
         href={`/semana/${week}`}

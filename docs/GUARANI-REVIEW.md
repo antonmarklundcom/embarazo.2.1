@@ -96,9 +96,9 @@ Los avisos de Contracciones (patrón 5-1-1 y contracciones regulares antes de la
 
 | # | Dónde | Castellano | Guaraní | Corrección |
 |---|---|---|---|---|
-| 1 | Contracciones · patrón 5-1-1 | Tus contracciones llegan cada 5 minutos y duran cerca de 1 minuto, así desde hace una hora: es momento de llamar a tu sanatorio. | Ne contracción ou 5 minuto-gui 5 minuto-pe ha ipuku peteĩ minuto rupi, peteĩ hora guive: ko'ág̃a ehenói ne sanatorio. | |
+| 1 | Contracciones · patrón 5-1-1 | Tus contracciones llegan cada 5 minutos y duran cerca de 1 minuto, así desde hace una hora: es momento de llamar a tu hospital o sanatorio. | Ne contracción ou 5 minuto-gui 5 minuto-pe ha ipuku peteĩ minuto rupi, peteĩ hora guive: ko'ág̃a ehenói ne hospital térã sanatorio. | |
 | 2 | Contracciones · antes de las 37 semanas | Contracciones regulares antes de las 37 semanas: llamá a tu médico/a o andá a la guardia ahora. | Contracción ou jepive 37 semana mboyve: ehenói ne médico/a-pe térã tereho ko'ág̃a pe guardia-pe. | |
-| 3 | Pataditas · menos que tu ritmo | Sentiste menos que tu ritmo habitual — si te preocupa, consultá con tu sanatorio o andá a la guardia. | Nde memby omýi sa'ive jepivégui — oĩramo ndéve preocupación, eñeporandu ne sanatoriope térã tereho pe guardia-pe. | |
+| 3 | Pataditas · menos que tu ritmo | Sentiste menos que tu ritmo habitual — si te preocupa, consultá con tu médico/a, hospital o sanatorio, o andá a la guardia. | Nde memby omýi sa'ive jepivégui — oĩramo ndéve preocupación, eñeporandu ne médico/a, hospital térã sanatorio-pe, térã tereho pe guardia-pe. | |
 | 4 | Pataditas · 2 horas sin llegar a 10 | Si sentís menos movimientos de lo normal, no esperes: consultá hoy con tu médico/a o andá a la guardia. | Nde memby omýi sa'ive jepivégui, ani reha'arõ: eñeporandu ko árape ne médico/a-pe térã tereho pe guardia-pe. | |
 
 ## 7. Palabras de la app (menús y botones) — 45 frases
@@ -118,8 +118,8 @@ Las etiquetas de navegación y los botones, que cambian cuando alguien pone la a
 | 9 | emergency.callNow | Llamar | Ehenói | |
 | 10 | emergency.whatsapp | WhatsApp | WhatsApp | |
 | 11 | emergency.whenYouCall | Cuando llames, decí: | Rehenóivo, ere: | |
-| 12 | emergency.yourHospital | Tu sanatorio o guardia | Ne sanatorio térã guardia | |
-| 13 | emergency.yourHospitalHint | Guardá el número de tu sanatorio para llamar con un toque. | Eñongatu ne sanatorio numero rehenói haguã peteĩ poko reheve. | |
+| 12 | emergency.yourHospital | Mi hospital o sanatorio | Che hospital térã sanatorio | |
+| 13 | emergency.yourHospitalHint | Guardá el número de tu hospital o sanatorio para llamar con un toque. | Eñongatu ne hospital térã sanatorio numero rehenói haguã peteĩ poko reheve. | |
 | 14 | emergency.yourContact | Tu contacto de emergencia | Ne contacto emergencia peguarã | |
 | 15 | emergency.yourContactHint | Alguien de confianza que pueda acompañarte o buscarte. | Peteĩ nde jeroviaha ikatúva ne moirũ térã ne ru. | |
 | 16 | emergency.readFullGuide | Leer la guía completa | Emoñe'ẽ guía tuichakue | |

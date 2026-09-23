@@ -40,7 +40,7 @@ const SHORTCUTS = [
     // almost nowhere.
     href: "/preguntas",
     title: "Preguntas",
-    subtitle: "Dudas frecuentes",
+    subtitle: "Sobre la app y tus datos",
     tone: "bg-pastel-arena",
   },
 ] as const;

@@ -19,7 +19,7 @@ export function WeekStrip() {
           <div key={i} className="text-center">
             <div
               className={`text-[10px] font-bold tracking-[1px] ${
-                isToday ? "font-black text-terracotta" : "text-muted/70"
+                isToday ? "font-black text-terracotta" : "text-muted"
               }`}
             >
               {isToday ? "HOY" : letter}

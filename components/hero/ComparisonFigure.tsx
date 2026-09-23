@@ -110,7 +110,7 @@ export function ComparisonFigure({
         className={
           illustrated
             ? "w-full text-center text-xs font-bold leading-tight"
-            : "pb-1 text-[10px] font-bold leading-tight"
+            : "pb-1 text-[11px] font-bold leading-tight"
         }
         style={{ color: text }}
       >

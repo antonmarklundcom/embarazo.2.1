@@ -31,7 +31,7 @@
     "fromWeek": 25,
     "toWeek": 30,
     "vos": "El cuerpo empieza a pesar: acidez, piernas hinchadas, sueño cortado. Dormí de costado con una almohada entre las piernas, y aprendé de memoria las señales de alarma.",
-    "pareja": "El bebé ya reconoce tu voz. Del lado práctico: aprendete el camino al sanatorio, guardá los teléfonos y enterate de qué pasa si te toca decidir algo sin ella.",
+    "pareja": "El bebé ya reconoce tu voz. Del lado práctico: aprendete el camino al hospital o sanatorio, guardá los teléfonos y enterate de qué pasa si te toca decidir algo sin ella.",
     "familia": "Preguntar «¿ya tenés todo listo?» agrega presión y no ayuda. Ofrecer llevar a un control, cocinar para el freezer o cuidar a los otros chicos, sí."
   },
   {
@@ -39,12 +39,12 @@
     "toWeek": 36,
     "vos": "Los controles se hacen más seguidos y el bolso ya puede estar armado. Las contracciones de práctica son normales: irregulares, sin ritmo y sin dolor que aumente.",
     "pareja": "Tu trabajo del último mes es logística: bolso en la puerta, documentos y carné perinatal a mano, nafta cargada y un plan B para llegar. Preguntale cómo quiere que la acompañes en el parto, antes y no ese día.",
-    "familia": "Este es el momento de organizarse para después, no para el día del parto: turnos para cocinar, para el mercado y para escuchar. Las visitas al sanatorio pueden esperar."
+    "familia": "Este es el momento de organizarse para después, no para el día del parto: turnos para cocinar, para el mercado y para escuchar. Las visitas al hospital o sanatorio pueden esperar."
   },
   {
     "fromWeek": 37,
     "toWeek": 42,
-    "vos": "Desde ahora el bebé puede nacer cualquier día y eso es normal. Ante contracciones regulares y cada vez más seguidas, pérdida de líquido o sangrado, contactá a tu sanatorio: confiá en lo que sentís.",
+    "vos": "Desde ahora el bebé puede nacer cualquier día y eso es normal. Ante contracciones regulares y cada vez más seguidas, pérdida de líquido o sangrado, contactá a tu hospital o sanatorio: confiá en lo que sentís.",
     "pareja": "Tené el teléfono con sonido las 24 horas y avisá en tu trabajo. El día del parto tu tarea es simple y agotadora: estar, sostener y hablar con el equipo cuando ella no pueda.",
     "familia": "La fecha probable es una estimación, no una cita: preguntar «¿todavía nada?» todos los días cansa. Esperá el aviso, y cuando llegue, mandá comida antes que visitas."
   }

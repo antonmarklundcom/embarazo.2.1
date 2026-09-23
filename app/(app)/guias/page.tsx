@@ -42,9 +42,9 @@ export default async function GuiasPage() {
         // instead of never seeing it at all — see herramientas/page.tsx.
         <div
           aria-disabled="true"
-          className="relative block rounded-card bg-pastel-celeste/50 p-4 opacity-70"
+          className="relative block rounded-card bg-pastel-celeste/50 p-4"
         >
-          <span className="absolute right-3 top-3 rounded-full bg-white px-2 py-0.5 text-[10px] font-extrabold text-muted">
+          <span className="absolute right-3 top-3 rounded-full bg-sand-bg px-2 py-0.5 text-[10px] font-extrabold text-sand-text">
             Pronto
           </span>
           <span className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">

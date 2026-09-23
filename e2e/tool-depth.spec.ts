@@ -76,7 +76,7 @@ test("the 5-1-1 hint appears with a matching hour and stays absent with a thin o
   await seedContractions(page, sevenContractions);
   await page.reload();
 
-  await expect(page.getByText("es momento de llamar a tu sanatorio")).toBeVisible();
+  await expect(page.getByText("es momento de llamar a tu hospital o sanatorio")).toBeVisible();
 
   // A thin history (well under the threshold) must say nothing.
   await page.evaluate(async () => {
@@ -97,7 +97,7 @@ test("the 5-1-1 hint appears with a matching hour and stays absent with a thin o
     { startedAt: now2 - 10 * 60 * 1000, durationSec: 40, intervalSec: 600 },
   ]);
   await page.goto("/herramientas/contracciones");
-  await expect(page.getByText("es momento de llamar a tu sanatorio")).toHaveCount(0);
+  await expect(page.getByText("es momento de llamar a tu hospital o sanatorio")).toHaveCount(0);
 });
 
 test("the kicks nudge appears when today is well under her own baseline, and stays absent otherwise", async ({
@@ -163,7 +163,7 @@ test("a regular pattern before 37 weeks is a preterm alert, above the log, not s
     "tel:141",
   );
   // The term hint is a different answer and must not appear alongside it.
-  await expect(page.getByText("es momento de llamar a tu sanatorio")).toHaveCount(0);
+  await expect(page.getByText("es momento de llamar a tu hospital o sanatorio")).toHaveCount(0);
   // Above the log, not under it: the alert's box starts before the heading's.
   const alertBox = await alert.boundingBox();
   const logBox = await page.getByRole("heading", { name: "Registro" }).boundingBox();

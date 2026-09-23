@@ -86,7 +86,7 @@ export default async function GuiaDetailPage({
         <p className="text-[11px] leading-relaxed text-muted">
           Esta guía es solo informativa y no reemplaza la atención de un
           profesional de la salud. No realiza diagnósticos. Ante cualquier duda o
-          síntoma, contactá a tu sanatorio.
+          síntoma, contactá a tu médico/a, hospital o sanatorio.
         </p>
       </div>
     </article>

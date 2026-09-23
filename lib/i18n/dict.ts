@@ -80,9 +80,9 @@ const es = {
   "emergency.callNow": "Llamar",
   "emergency.whatsapp": "WhatsApp",
   "emergency.whenYouCall": "Cuando llames, decí:",
-  "emergency.yourHospital": "Tu sanatorio o guardia",
+  "emergency.yourHospital": "Mi hospital o sanatorio",
   "emergency.yourHospitalHint":
-    "Guardá el número de tu sanatorio para llamar con un toque.",
+    "Guardá el número de tu hospital o sanatorio para llamar con un toque.",
   "emergency.yourContact": "Tu contacto de emergencia",
   "emergency.yourContactHint":
     "Alguien de confianza que pueda acompañarte o buscarte.",
@@ -161,9 +161,9 @@ const gn: Record<CoreKey, string> = {
   "emergency.callNow": "Ehenói",
   "emergency.whatsapp": "WhatsApp",
   "emergency.whenYouCall": "Rehenóivo, ere:",
-  "emergency.yourHospital": "Ne sanatorio térã guardia",
+  "emergency.yourHospital": "Che hospital térã sanatorio",
   "emergency.yourHospitalHint":
-    "Eñongatu ne sanatorio numero rehenói haguã peteĩ poko reheve.",
+    "Eñongatu ne hospital térã sanatorio numero rehenói haguã peteĩ poko reheve.",
   "emergency.yourContact": "Ne contacto emergencia peguarã",
   "emergency.yourContactHint":
     "Peteĩ nde jeroviaha ikatúva ne moirũ térã ne ru.",

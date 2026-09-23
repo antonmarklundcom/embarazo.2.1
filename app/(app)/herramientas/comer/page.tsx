@@ -55,14 +55,16 @@ export default function ComerPage() {
         </p>
       </header>
 
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Buscá por ejemplo: tereré, sushi, chipa..."
-        aria-label="Buscar un alimento o bebida"
-        className="min-h-[44px] w-full rounded-tile border border-black/10 bg-white px-3 text-sm focus:border-petrol focus:outline-none"
-      />
+      {PUBLISHED_FOOD.length > 0 && (
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscá por ejemplo: tereré, sushi, chipa..."
+          aria-label="Buscar un alimento o bebida"
+          className="min-h-[44px] w-full rounded-tile border border-black/10 bg-white px-3 text-sm focus:border-petrol focus:outline-none"
+        />
+      )}
 
       {PUBLISHED_FOOD.length === 0 && (
         <div className="rounded-card bg-white p-5 text-center shadow-soft">

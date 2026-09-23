@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, or } from "drizzle-orm";
 
 import type { Database } from "./db";
 import {
@@ -166,7 +166,22 @@ export interface SharingBackend {
     expiresAt: Date;
   }): Promise<void>;
   findInvite(code: string): Promise<StoredInvite | null>;
-  markInviteAccepted(code: string, userId: string, at: Date): Promise<void>;
+  /**
+   * Claim the invite for this user, atomically. True when the claim holds —
+   * the code was unused, or already this user's — and false when somebody
+   * else got there first.
+   *
+   * The condition lives in the UPDATE's WHERE clause, not in a read before it:
+   * two people tapping one forwarded link at the same moment both *read* an
+   * unused code, and only a conditional write can tell them apart.
+   */
+  markInviteAccepted(code: string, userId: string, at: Date): Promise<boolean>;
+  /**
+   * Undo a claim that this user made and whose membership write then failed,
+   * so the code is not left spent on a membership that does not exist.
+   * Scoped to this user's claim; anybody else's is left alone.
+   */
+  releaseInviteClaim(code: string, userId: string): Promise<void>;
   revokeInvite(pregnancyId: string, code: string, at: Date): Promise<void>;
 
   // -- the snapshot ---------------------------------------------------------
@@ -235,6 +250,13 @@ function toSnapshot(
     kickCount: row.kickCount,
     kickAt: row.kickAt,
   };
+}
+
+/** mysql2 reports an UPDATE's row count here — same reading as `lib/server/account.ts`. */
+function affectedRows(result: unknown): number {
+  const header = Array.isArray(result) ? result[0] : result;
+  const rows = (header as { affectedRows?: number } | undefined)?.affectedRows;
+  return typeof rows === "number" ? rows : 0;
 }
 
 /** The real thing. Constructed once per request in `app/api/v1/sharing/route.ts`. */
@@ -382,10 +404,28 @@ export function drizzleSharingBackend(database: Database): SharingBackend {
     },
 
     async markInviteAccepted(code, userId, at) {
-      await database
+      // Single-use, enforced by the row itself: InnoDB re-evaluates this WHERE
+      // against the committed row once the lock is released, so of two racing
+      // acceptances by different people exactly one matches. `affectedRows` is
+      // rows *matched* here (mysql2 connects with CLIENT_FOUND_ROWS), so a
+      // same-person re-tap that changes nothing still counts as held.
+      const result = await database
         .update(invites)
         .set({ acceptedAt: at, acceptedByUserId: userId })
-        .where(eq(invites.code, code));
+        .where(
+          and(
+            eq(invites.code, code),
+            or(isNull(invites.acceptedAt), eq(invites.acceptedByUserId, userId)),
+          ),
+        );
+      return affectedRows(result) > 0;
+    },
+
+    async releaseInviteClaim(code, userId) {
+      await database
+        .update(invites)
+        .set({ acceptedAt: null, acceptedByUserId: null })
+        .where(and(eq(invites.code, code), eq(invites.acceptedByUserId, userId)));
     },
 
     async revokeInvite(pregnancyId, code, at) {

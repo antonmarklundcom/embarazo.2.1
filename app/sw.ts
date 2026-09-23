@@ -150,6 +150,21 @@ const serwist = new Serwist({
         sameOrigin && PRIVATE_NAVIGATION.test(url.pathname),
       handler: new NetworkOnly(),
     },
+    // K4 photo restore downloads a bump or carné photo straight from the
+    // bucket, through a presigned GET (`lib/photos/client.ts`). That request is
+    // cross-origin, and `defaultCache` ends in a catch-all `!sameOrigin`
+    // NetworkFirst rule writing to a cache called `cross-origin` — so without
+    // this rule every restored photo was also parked in the Cache API, where
+    // sign-out and account deletion never looked. A presigned URL is by
+    // definition one private object behind a short-lived capability; there is
+    // nothing about it a cache should keep. Matched on the signature parameter
+    // rather than on the bucket's origin because the origin is server-only
+    // configuration (PHOTO_STORAGE_ENDPOINT) this worker is never built with.
+    {
+      matcher: ({ url, sameOrigin }) =>
+        !sameOrigin && url.searchParams.has("X-Amz-Signature"),
+      handler: new NetworkOnly(),
+    },
     // Network-first with cached fallback for the public read APIs (spec §9).
     //
     // K20 put `/api/v1/preguntas` here rather than leaving it to

@@ -16,6 +16,7 @@ import {
 } from "./merge";
 import {
   MAX_PUSH_RECORDS,
+  pullSince,
   type PullResponse,
   type PushResponse,
   type SyncRecordInput,
@@ -243,7 +244,12 @@ async function applyIncoming(
 }
 
 async function pull(): Promise<{ pulled: number; conflicts: number }> {
-  let since = (await readSyncState())?.lastPulledAt ?? 0;
+  const stored = (await readSyncState())?.lastPulledAt ?? 0;
+  // Starts PULL_OVERLAP_MS behind what we have seen, not at it: a push stamped
+  // earlier can commit after one stamped later, and a pull that landed in
+  // between must still pick it up next time. See PULL_OVERLAP_MS in
+  // ./protocol.ts for why the re-delivered rows are harmless.
+  let since = pullSince(stored);
   let cursor: string | undefined;
   let pulled = 0;
   let conflicts = 0;
@@ -251,7 +257,10 @@ async function pull(): Promise<{ pulled: number; conflicts: number }> {
   // `serverTime`: a record written by a phone that was offline carries an old
   // client `updatedAt` but a fresh server one, and a cursor set from the wall
   // clock would step over records that arrive out of client-clock order.
-  let highWater = since;
+  //
+  // Seeded from the stored mark, not from the overlapped `since`, so the saved
+  // value never moves backwards and the overlap never compounds.
+  let highWater = stored;
 
   // Bounded so a server that keeps handing back a cursor cannot spin forever.
   for (let page = 0; page < 50; page += 1) {

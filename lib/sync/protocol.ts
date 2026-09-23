@@ -181,6 +181,37 @@ export function decodeCursor(raw: string): PullCursor | null {
   return { updatedAt, store, recordId };
 }
 
+/**
+ * How far behind its high-water mark a device starts each pull.
+ *
+ * `serverUpdatedAt` is stamped from `Date.now()` when a push *arrives*, before
+ * the handler awaits its reads and its upsert. So two pushes can commit out of
+ * stamp order: a push stamped 10:00:00.000 that is still waiting on MySQL
+ * commits after one stamped 10:00:00.040, and a device pulling in between
+ * receives only the later one, advances its high-water mark to .040, and then
+ * asks for `since=.040` forever — the earlier record is never delivered to it.
+ *
+ * Re-reading a trailing window closes that gap without a server change. It is
+ * safe because applying a pulled record is idempotent last-write-wins
+ * (`mergeIncoming` in ./merge.ts): a re-delivered record carries the same
+ * `updatedAt` the device already holds and is ignored as `same-timestamp`, and
+ * an older one is ignored as `local-newer`. The price is re-downloading
+ * whatever was written in the last thirty seconds, which for one family's
+ * health log is a handful of rows. Thirty seconds is far longer than any push
+ * spends between being stamped and committing — one round trip to the
+ * database — so it is not a figure anyone should need to tune.
+ */
+export const PULL_OVERLAP_MS = 30_000;
+
+/**
+ * The `since` a device should send, given the highest `serverUpdatedAt` it has
+ * actually received. Never below zero, because the route rejects a negative
+ * `since` with a 400.
+ */
+export function pullSince(highWater: number): number {
+  return Math.max(0, highWater - PULL_OVERLAP_MS);
+}
+
 export const PullQuerySchema = z
   .object({
     since: z.coerce.number().int().min(0).max(Number.MAX_SAFE_INTEGER),

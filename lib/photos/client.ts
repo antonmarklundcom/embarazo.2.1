@@ -165,6 +165,9 @@ async function uploadOne(store: PhotoStore, row: LocalPhoto): Promise<boolean> {
   if (!signed.ok) return false;
   const { url } = (await signed.json()) as { url: string };
 
+  // The URL signs Content-Length as the `bytes` declared above. There is no
+  // header to add for it: `fetch` derives Content-Length from the Blob body and
+  // does not let a script set it, so the two agree by construction.
   const put = await fetch(url, {
     method: "PUT",
     headers: { "Content-Type": contentType },

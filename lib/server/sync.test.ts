@@ -1,18 +1,21 @@
+import { drizzle } from "drizzle-orm/mysql2";
 import { describe, expect, it } from "vitest";
 
 import {
+  pageQuery,
   pullRecords,
   pushRecords,
   type StoredRecord,
   type SyncBackend,
 } from "./sync";
+import { schema } from "./schema";
 import {
   mergeIncoming,
   toPayload,
   type LocalRow,
   type SyncEnvelope,
 } from "@/lib/sync/merge";
-import { MAX_CLOCK_SKEW_MS } from "@/lib/sync/protocol";
+import { MAX_CLOCK_SKEW_MS, pullSince } from "@/lib/sync/protocol";
 import type { SyncedStore } from "@/lib/sync/stores";
 
 // BUILD-PLAN A3. These run two devices against one server and assert they
@@ -27,6 +30,14 @@ import type { SyncedStore } from "@/lib/sync/stores";
 // ---------------------------------------------------------------------------
 // In-memory server
 // ---------------------------------------------------------------------------
+
+/** Case-insensitive first, then by code point — a `_ci` collation, roughly. */
+function textOrder(a: string, b: string): number {
+  const la = a.toLowerCase();
+  const lb = b.toLowerCase();
+  if (la !== lb) return la < lb ? -1 : 1;
+  return a < b ? -1 : a > b ? 1 : 0;
+}
 
 function memoryBackend(): SyncBackend & { rows: Map<string, StoredRecord> } {
   const rows = new Map<string, StoredRecord>();
@@ -56,6 +67,13 @@ function memoryBackend(): SyncBackend & { rows: Map<string, StoredRecord> } {
       }
     },
     async page(userId, from, limit) {
+      // ONE text order for both the keyset filter and the sort, as in
+      // `pageQuery`, where the ORDER BY and the cursor comparison both read
+      // `CAST(store AS CHAR)` under the connection's collation. This harness
+      // used to sort with `localeCompare` and filter with `>`, which disagree
+      // on `cycles` / `cycleSettings` — the same class of drift as the MySQL
+      // ENUM bug, just smaller. Case-insensitive first, like MySQL's default
+      // `_ci` collations, so the order here is the order production sees.
       return [...rows.values()]
         .filter((r) => r.userId === userId)
         .filter((r) => {
@@ -65,14 +83,15 @@ function memoryBackend(): SyncBackend & { rows: Map<string, StoredRecord> } {
           if (r.serverUpdatedAt !== from.serverUpdatedAt) {
             return r.serverUpdatedAt > from.serverUpdatedAt;
           }
-          if (r.store !== from.store) return r.store > from.store;
-          return r.recordId > from.recordId;
+          const byStore = textOrder(r.store, from.store);
+          if (byStore !== 0) return byStore > 0;
+          return textOrder(r.recordId, from.recordId) > 0;
         })
         .sort(
           (a, b) =>
             a.serverUpdatedAt - b.serverUpdatedAt ||
-            a.store.localeCompare(b.store) ||
-            a.recordId.localeCompare(b.recordId),
+            textOrder(a.store, b.store) ||
+            textOrder(a.recordId, b.recordId),
         )
         .slice(0, limit);
     },
@@ -173,7 +192,11 @@ class Device {
       const page = await pullRecords(
         this.backend,
         USER,
-        { since: this.lastPulledAt, cursor, limit: 2 },
+        // The same trailing overlap the browser client applies. With these
+        // tests' small clock values it means every sync re-reads from zero,
+        // which is itself the point: convergence must not depend on a record
+        // arriving only once.
+        { since: pullSince(this.lastPulledAt), cursor, limit: 2 },
         now,
       );
       for (const record of page.records) {
@@ -377,6 +400,120 @@ describe("two devices on one account converge", () => {
     await b.sync(2_100);
 
     expect(visible(b, "weightEntries")).toHaveLength(7);
+  });
+
+  it("delivers a push that committed after a later-stamped one", async () => {
+    // serverUpdatedAt is stamped when a push arrives, not when it commits. Push
+    // X (stamped T) is still waiting on MySQL while push Y (stamped T+50)
+    // commits, and device C pulls in that gap: it sees only Y and its high
+    // water mark moves to T+50. Then X lands, stamped T, behind the mark.
+    const T = 1_790_000_000_000; // a real epoch, so the overlap is not "from 0"
+    const backend = memoryBackend();
+    const c = new Device(backend, "C");
+    const row = (recordId: string, at: number): StoredRecord => ({
+      userId: USER,
+      store: "weightEntries",
+      recordId,
+      pregnancyId: null,
+      updatedAt: at,
+      deletedAt: null,
+      serverUpdatedAt: at,
+      payload: { date: 1, kg: 60 },
+    });
+
+    await backend.upsertMany([row("y", T + 50)]);
+    await c.sync(T + 60);
+    expect(c.lastPulledAt).toBe(T + 50);
+
+    await backend.upsertMany([row("x", T)]);
+
+    // Without the overlap the next pull asks for `since=T+50` and X is behind
+    // it for good.
+    const naive = await pullRecords(backend, USER, { since: c.lastPulledAt }, T + 100);
+    expect(naive.records.map((r) => r.recordId)).not.toContain("x");
+
+    await c.sync(T + 100);
+    expect(c.get("weightEntries", "x")).toBeDefined();
+    // And the mark never goes backwards because of the re-read.
+    expect(c.lastPulledAt).toBe(T + 50);
+  });
+});
+
+describe("paging inside one serverUpdatedAt batch", () => {
+  // Every store in one millisecond, so every page boundary falls inside the
+  // batch and only the (store, recordId) tiebreak decides what comes next.
+  // `cycles` / `cycleSettings` are in on purpose: they sort differently by
+  // code point than case-insensitively, and the ENUM declaration order
+  // (profile, pregnancy, journalEntries, …) is different again.
+  const STORES = [
+    "profile",
+    "journalEntries",
+    "weightEntries",
+    "cycles",
+    "cycleSettings",
+    "clinical",
+    "favoriteNames",
+  ] as const;
+
+  function seeded() {
+    const backend = memoryBackend();
+    for (const store of STORES) {
+      for (const recordId of ["a", "B", "c"]) {
+        backend.rows.set(`${USER}|${store}|${recordId}`, {
+          userId: USER,
+          store,
+          recordId,
+          pregnancyId: null,
+          updatedAt: 5_000,
+          deletedAt: null,
+          serverUpdatedAt: 5_000,
+          payload: {},
+        });
+      }
+    }
+    return backend;
+  }
+
+  for (const limit of [1, 2, 3, 4, 5]) {
+    it(`delivers every row exactly once with a page size of ${limit}`, async () => {
+      const backend = seeded();
+      const seen: string[] = [];
+      let cursor: string | undefined;
+      for (let guard = 0; guard < 100; guard += 1) {
+        const page = await pullRecords(
+          backend,
+          USER,
+          { since: 5_000, cursor, limit },
+          6_000,
+        );
+        seen.push(...page.records.map((r) => `${r.store}|${r.recordId}`));
+        if (!page.nextCursor) break;
+        cursor = page.nextCursor;
+      }
+      expect(seen).toHaveLength(STORES.length * 3);
+      expect(new Set(seen).size).toBe(STORES.length * 3);
+    });
+  }
+
+  it("orders and compares `store` as text in the SQL, never as the ENUM", () => {
+    // The Map above cannot see this bug; it lived in the SQL. MySQL sorts an
+    // ENUM column by declaration index but compares it to a string literal as
+    // a string, so `ORDER BY store` and `store > ?` must not both appear —
+    // each has to read the same `cast(store as char)`.
+    const database = drizzle.mock({ schema, mode: "default" });
+    const { sql: text } = pageQuery(
+      database,
+      USER,
+      { serverUpdatedAt: 5_000, store: "profile", recordId: "a" },
+      10,
+    ).toSQL();
+    const cast = "cast(`syncRecords`.`store` as char)";
+
+    expect(text).toContain(`${cast} > ?`);
+    expect(text).toContain(`${cast} = ?`);
+    expect(text).toMatch(/order by .*cast\(`syncRecords`\.`store` as char\) asc/);
+    expect(text).not.toMatch(/`syncRecords`\.`store` [<>=]/);
+    expect(text).not.toMatch(/order by .*`syncRecords`\.`store` asc/);
   });
 });
 

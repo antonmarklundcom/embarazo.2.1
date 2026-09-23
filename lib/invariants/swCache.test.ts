@@ -146,4 +146,16 @@ describe("the service worker cannot cache a session-scoped response", () => {
     expect(first).toBeLessThan(fallback);
     expect(second).toBeLessThan(fallback);
   });
+
+  it("never caches a presigned bucket URL, and says so before defaultCache", () => {
+    // K4 photo restore GETs a presigned URL on the bucket's origin, and
+    // defaultCache's last rule caches every cross-origin GET under
+    // `cross-origin`. The NetworkOnly rule has to win that race.
+    const rule = SW.indexOf('!sameOrigin && url.searchParams.has("X-Amz-Signature")');
+    const fallback = SW.lastIndexOf("...defaultCache");
+    expect(rule).toBeGreaterThan(-1);
+    expect(rule).toBeLessThan(fallback);
+    const handler = SW.slice(rule, SW.indexOf("}", rule));
+    expect(handler).toContain("new NetworkOnly()");
+  });
 });

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { presign, type S3Credentials } from "@/lib/photos/sigv4";
-import { keyBelongsTo } from "@/lib/photos/keys";
+import { isAllowedSize, keyBelongsTo } from "@/lib/photos/keys";
 
 // BUILD-PLAN K4 — the object store, server side.
 //
@@ -51,16 +51,28 @@ export function isPhotoStorageConfigured(
  * stored as something else than what the route validated. `keyBelongsTo` is
  * asserted here as well as at the call site — this function is the last place
  * a mistake is still cheap, and after it the URL is a capability.
+ *
+ * So is the **size**. The route has always capped the declared `bytes` at
+ * MAX_PHOTO_BYTES, but until this signed `Content-Length` the declaration was
+ * only a promise: the URL accepted a PUT of any length, so "photo backup" was
+ * a 15-minute pass to park as many bytes as the bucket would take. With the
+ * length in the signature, a body of any other size fails S3's signature check
+ * and nothing is stored. The browser needs no change for this — `fetch` sets
+ * Content-Length itself from a Blob body (scripts are not allowed to set it),
+ * and the client already declares exactly `blob.size`. The bound is re-checked
+ * here for the same reason `keyBelongsTo` is.
  */
 export function uploadUrl(
   userId: string,
   key: string,
   contentType: string,
+  bytes: number,
   now: Date = new Date(),
 ): string | null {
   const credentials = readCredentials();
   if (!credentials) return null;
   if (!keyBelongsTo(key, userId)) return null;
+  if (!isAllowedSize(bytes)) return null;
 
   return presign({
     credentials,
@@ -68,7 +80,10 @@ export function uploadUrl(
     key,
     expiresIn: UPLOAD_URL_TTL_SECONDS,
     now,
-    signedHeaders: { "Content-Type": contentType },
+    signedHeaders: {
+      "Content-Type": contentType,
+      "Content-Length": String(bytes),
+    },
   });
 }
 

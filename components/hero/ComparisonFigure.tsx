@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useImageFailed } from "@/lib/hooks/useImageFailed";
 
 import { comparisonFor } from "@/lib/seed/comparisons";
 import { heroScale, notToScaleCaption } from "@/lib/hero/scale";
@@ -31,7 +31,7 @@ export function ComparisonFigure({
   ink: "dark" | "light";
 }) {
   const comparison = comparisonFor(week);
-  const [imgError, setImgError] = useState(false);
+  const { ref, failed: imgError, onError } = useImageFailed();
 
   const { babyPx, itemPx, clamped } = heroScale({
     babyCm: lengthCm,
@@ -71,10 +71,11 @@ export function ComparisonFigure({
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
             <img
+              ref={ref}
               src={comparison.imageSrc}
               alt=""
               className="block h-full w-full object-contain"
-              onError={() => setImgError(true)}
+              onError={onError}
             />
           )}
         </span>

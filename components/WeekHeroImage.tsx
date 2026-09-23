@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useImageFailed } from "@/lib/hooks/useImageFailed";
 
 import { ThemeBackdrop } from "./hero/ThemeBackdrop";
 import { ThemeChip } from "./hero/ThemeChip";
 import { ComparisonFigure } from "./hero/ComparisonFigure";
 import { useHeroTheme, useShowComparison } from "@/lib/hero/preferences";
-import { heroTheme, themeInk } from "@/lib/hero/themes";
+import { bareInk, captionScrim, fallbackInk, heroTheme, themeInk } from "@/lib/hero/themes";
 import { measurementNote, switchesMeasurementAt } from "@/lib/hero/scale";
 
 // Weekly "bebé a las N semanas" hero, v2 (U7).
@@ -41,16 +41,20 @@ export function WeekHeroImage({
   /** B1/B2 `babyAtWeekLabel`. Falls back to the generic sentence. */
   alt?: string;
 }) {
-  const [imgError, setImgError] = useState(false);
+  const { ref, failed: imgError, onError } = useImageFailed();
   const themeId = useHeroTheme();
   const theme = heroTheme(themeId);
-  const ink = themeInk(theme);
   const showComparison = useShowComparison();
 
   // Weeks 1–2 have no embryo, so there is no subject to composite — the theme
   // and the text are the whole card, which is the honest version of "todavía
   // no hay embrión".
   const hasSubject = week >= 3;
+  // Only a render needs a scrim under the caption. On the bare pastel theme
+  // (no render yet, or weeks 1–2) the caption takes the theme's own dark ink
+  // instead, rather than painting a brown band over a pale card.
+  const onRender = hasSubject && !imgError;
+  const ink = onRender ? themeInk(theme) : bareInk(theme);
 
   const measures = [
     lengthCm ? `≈ ${lengthCm} cm` : null,
@@ -67,34 +71,37 @@ export function WeekHeroImage({
         {hasSubject && !imgError ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
+            ref={ref}
             src={`/assets/semanas/bebe-${week}.webp`}
             alt={alt ?? `Tu bebé a las ${week} semanas`}
             // `object-contain`, not `cover`: the render has alpha and a theme
             // behind it now, so cropping it to fill would cut the subject the
             // background exists to frame.
             className="block h-full w-full object-contain"
-            onError={() => setImgError(true)}
+            onError={onError}
           />
         ) : (
           <span
             className="text-[120px] font-black leading-none"
-            style={{ color: ink.strong, opacity: 0.55 }}
+            style={{ color: fallbackInk(theme), opacity: 0.14 }}
           >
             {week}
           </span>
         )}
       </div>
 
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{ background: theme.scrim }}
-      />
-
       <div className="absolute right-4 top-4">
         <ThemeChip ink={theme.ink} />
       </div>
 
-      <div className="absolute inset-x-5 bottom-5">
+      {/* The scrim travels with the caption rather than sitting at a fixed
+          40% of the card: with the size comparison shown, the caption is
+          taller than the old scrim and its top lines (the eyebrow, "Del
+          tamaño de…") landed on bare pastel as white-on-cream. */}
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 px-5 pb-5 pt-12"
+        style={onRender ? { background: captionScrim(theme) } : undefined}
+      >
         <p
           className="text-[11px] font-extrabold tracking-[1.6px]"
           style={{ color: ink.eyebrow }}
@@ -130,7 +137,11 @@ export function WeekHeroImage({
 
         {showComparison && (
           <div className="mt-3">
-            <ComparisonFigure week={week} lengthCm={lengthCm} ink={theme.ink} />
+            <ComparisonFigure
+              week={week}
+              lengthCm={lengthCm}
+              ink={onRender ? "light" : theme.ink}
+            />
           </div>
         )}
       </div>

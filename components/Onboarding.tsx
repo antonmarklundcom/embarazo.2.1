@@ -116,6 +116,14 @@ export function Onboarding({
     [answers.mode, answers.invited, answers.role, auth?.signedIn],
   );
 
+  // Each step is swapped in place, not routed, so the browser keeps the
+  // scroll offset of the step before — "Continuar" sits at the bottom, and
+  // the next step (and, after "Empezar", Hoy itself) opened part-scrolled
+  // with its heading under the sticky header.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [step]);
+
   // --- draft: restore once, then persist every change ----------------------
 
   useEffect(() => {
@@ -239,6 +247,7 @@ export function Onboarding({
     (target: Step | null) => {
       if (target === null) {
         clearOnboardingDraft();
+        window.scrollTo(0, 0);
         onDone();
         return;
       }
@@ -421,7 +430,13 @@ export function Onboarding({
   return (
     <div className="mx-auto flex min-h-[80dvh] max-w-md flex-col justify-center py-6">
       <div className="mb-6 text-center">
-        <h1 className="text-2xl font-black tracking-tight text-ink">Bienvenida a {APP_NAME}</h1>
+        <h1 className="text-2xl font-black tracking-tight text-ink">
+          {/* Before a role is picked the reader is almost always the mamá;
+              after "Papá" or "Familiar", "Bienvenida" is the wrong person. */}
+          {answers.role && answers.role !== "mama"
+            ? `Te damos la bienvenida a ${APP_NAME}`
+            : `Bienvenida a ${APP_NAME}`}
+        </h1>
         <p className="mt-2 text-sm text-muted">
           Tu embarazo y tu familia, en una sola app — hecha para Paraguay.
         </p>
@@ -446,6 +461,7 @@ export function Onboarding({
           today={today}
           minLmp={minLmp}
           canContinue={canContinueFromLmp()}
+          resolvedLmp={resolveLmpDate()}
           onChange={update}
           onContinue={continueFromLmp}
           onBack={goBack}

@@ -196,7 +196,20 @@ export async function acceptInvite(
   }
   if (invite.expiresAt.getTime() < now) return { ok: false, reason: "expired" };
 
-  // Re-accepting an invite the user already used un-revokes them rather than
+  const current = await backend.liveMembership(userId, invite.pregnancyId);
+
+  // The owner tapping her own link (to see what her partner will see) must not
+  // overwrite her `owner` row with the invite's role.
+  if (current?.role === "owner") {
+    return { ok: true, pregnancyId: invite.pregnancyId, role: "owner" };
+  }
+
+  // A re-tap of a code this same person already accepted is fine while they
+  // are still a member. Once the owner has removed them, the old link in
+  // their WhatsApp must not let them back in: only a NEW invite can.
+  if (invite.acceptedAt && !current) return { ok: false, reason: "revoked" };
+
+  // A new invite for someone removed earlier un-revokes their row rather than
   // failing on the unique index.
   await backend.upsertMembership({
     id: crypto.randomUUID(),

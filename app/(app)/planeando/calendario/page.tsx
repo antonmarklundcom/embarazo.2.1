@@ -32,6 +32,12 @@ export default function CalendarioPage() {
     if (!startInput) return;
     const startDate = new Date(`${startInput}T00:00:00`).getTime();
     if (startDate > Date.now()) return;
+    // A double tap, or the same start logged again, is not a second period.
+    if (cycles.cycles.some((c) => c.startDate === startDate)) {
+      setSavedMsg("Esa regla ya está registrada.");
+      setTimeout(() => setSavedMsg(""), 2500);
+      return;
+    }
     await db().cycles.add({ startDate, createdAt: Date.now() });
     setSavedMsg("Regla registrada.");
     setTimeout(() => setSavedMsg(""), 2500);

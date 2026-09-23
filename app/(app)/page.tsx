@@ -26,6 +26,7 @@ import {
   formatCompletedGestation,
   formatWeekPlusDay,
   getDaysRemaining,
+  getDueDate,
   getDaysSinceLMP,
   getProgressFraction,
 } from "@/lib/pregnancy";
@@ -201,6 +202,10 @@ export default function InicioPage() {
   const daysElapsed = getDaysSinceLMP(lmpDate);
   const daysLeft = getDaysRemaining(lmpDate, Date.now(), gestationDays);
   const progress = getProgressFraction(lmpDate, Date.now(), gestationDays);
+  const dueDateLabel = new Date(getDueDate(lmpDate, gestationDays)).toLocaleDateString(
+    "es-PY",
+    { day: "numeric", month: "short" },
+  );
 
   return (
     <div className="space-y-4">
@@ -221,6 +226,7 @@ export default function InicioPage() {
         progress={progress}
         daysElapsed={daysElapsed}
         daysLeft={daysLeft}
+        dueDateLabel={dueDateLabel}
         babies={profile.babies}
         role={profile.role}
       />

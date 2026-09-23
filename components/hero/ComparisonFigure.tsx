@@ -81,7 +81,7 @@ export function ComparisonFigure({
         </span>
       )}
 
-      <figcaption className="pb-1 text-[10px] font-bold leading-tight" style={{ color: text }}>
+      <figcaption className="pb-1 text-[11px] font-bold leading-tight" style={{ color: text }}>
         {comparison.item}
         {clamped && (
           // The drawing is NOT to scale here, and saying so is the difference

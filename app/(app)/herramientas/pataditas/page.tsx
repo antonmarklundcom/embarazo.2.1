@@ -157,7 +157,8 @@ export default function PataditasPage() {
       )}
 
       <div className="rounded-card border border-terracotta/20 bg-terracotta/5 p-4 text-sm text-ink">
-        Si notás menos movimiento de lo habitual, contactá a tu sanatorio.
+        Si notás menos movimiento de lo habitual, contactá a tu médico/a,
+        hospital o sanatorio.
       </div>
       <MedicalReviewByline />
 

@@ -194,7 +194,7 @@ test("familia sees the week and the content, but never the checklist", async ({
   await serve(context, server);
   const page = await context.newPage();
 
-  await completeOnboarding(page, { role: "Familiar o amiga", landsOnHome: false });
+  await completeOnboarding(page, { role: "Familia o amistades", landsOnHome: false });
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "Semana 24" })).toBeVisible();
@@ -359,7 +359,7 @@ test("familia is never handed the extras, whatever the owner turned on", async (
   await serve(context, server);
   const page = await context.newPage();
 
-  await completeOnboarding(page, { role: "Familiar o amiga", landsOnHome: false });
+  await completeOnboarding(page, { role: "Familia o amistades", landsOnHome: false });
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "Semana 24" })).toBeVisible();

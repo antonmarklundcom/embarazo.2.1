@@ -31,8 +31,8 @@ export default function TerminosPage() {
           embarazo y la búsqueda de embarazo. <strong>No reemplaza la
           atención de un profesional de la salud, no realiza diagnósticos y
           no da indicaciones médicas personalizadas.</strong> Ante cualquier
-          duda o síntoma, contactá a tu sanatorio, tu médico/a o un servicio
-          de emergencia.
+          duda o síntoma, contactá a tu médico/a, hospital o sanatorio, o a
+          un servicio de emergencia.
         </p>
       </section>
 

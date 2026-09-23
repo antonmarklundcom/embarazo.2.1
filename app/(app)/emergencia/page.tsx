@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
 import { useProfile } from "@/lib/useProfile";
@@ -61,12 +61,14 @@ export default function EmergenciaPage() {
         hint={t("emergency.yourHospitalHint")}
         nameKey="sanatorioName"
         phoneKey="sanatorioPhone"
+        namePlaceholder="Ej. Hospital Regional"
       />
       <ContactCard
         title={t("emergency.yourContact")}
         hint={t("emergency.yourContactHint")}
         nameKey="emergencyContactName"
         phoneKey="emergencyContactPhone"
+        namePlaceholder="Ej. Mi hermana Ana"
       />
 
       {/* What to say */}
@@ -122,6 +124,36 @@ export default function EmergenciaPage() {
         </Link>
       </section>
 
+      {/* Salud mental. Línea 155 is the MSPBS national mental-health line
+          (free, 24 h), the same number already curated in
+          lib/seed/recomendados.json and offered by MoodCheckIn — no number
+          here that the repo does not already carry. Calm on purpose: this is
+          not the alarm list above, it is a door left open. */}
+      <section
+        aria-labelledby="salud-mental"
+        className="rounded-card bg-pastel-lavanda/60 p-4"
+      >
+        <h2 id="salud-mental" className="text-base font-extrabold text-ink">
+          Salud mental
+        </h2>
+        <p className="mt-1 text-sm leading-relaxed text-ink/90">
+          Si sentís angustia, una tristeza que no se va o pensás en hacerte
+          daño, no estás sola. Hablar con alguien ayuda.
+        </p>
+        <a
+          href="tel:155"
+          className="mt-3 flex min-h-[44px] items-center justify-between gap-3 rounded-tile bg-white px-4 py-3 text-ink shadow-soft transition active:scale-[0.99]"
+        >
+          <span>
+            <span className="block text-base font-extrabold">Línea 155</span>
+            <span className="block text-sm text-ink/80">
+              Gratuita y confidencial, las 24 horas
+            </span>
+          </span>
+          <span className="text-sm font-extrabold text-petrol">Llamar</span>
+        </a>
+      </section>
+
       <p className="text-xs leading-relaxed text-muted">
         {t("emergency.disclaimer")}
       </p>
@@ -140,16 +172,20 @@ function ContactCard({
   hint,
   nameKey,
   phoneKey,
+  namePlaceholder,
 }: {
   title: string;
   hint: string;
   nameKey: ContactField;
   phoneKey: ContactField;
+  namePlaceholder: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const t = useT();
+  const nameId = useId();
+  const phoneId = useId();
 
   // Live-read the saved contact straight from the local profile row.
   const row = useLiveQuery(async () => {
@@ -215,18 +251,26 @@ function ContactCard({
       <h2 className="text-base font-extrabold text-ink">{title}</h2>
       <p className="mt-0.5 text-sm text-muted">{hint}</p>
       <div className="mt-3 space-y-2">
+        <label htmlFor={nameId} className="block text-sm font-bold text-ink">
+          Nombre
+        </label>
         <input
+          id={nameId}
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Nombre (ej. Sanatorio San Roque)"
+          placeholder={namePlaceholder}
           className="w-full rounded-tile border border-black/10 bg-cream/50 px-3 py-2.5 text-sm text-ink placeholder:text-muted focus:border-petrol focus:outline-none"
         />
+        <label htmlFor={phoneId} className="block text-sm font-bold text-ink">
+          Teléfono
+        </label>
         <input
+          id={phoneId}
           type="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          placeholder="Teléfono (ej. +595 981 000 000)"
+          placeholder="Ej. +595 981 000 000"
           className="w-full rounded-tile border border-black/10 bg-cream/50 px-3 py-2.5 text-sm text-ink placeholder:text-muted focus:border-petrol focus:outline-none"
         />
         <div className="flex gap-2">

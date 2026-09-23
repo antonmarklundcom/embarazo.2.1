@@ -56,7 +56,7 @@ export function MoodCheckIn({ role, week }: { role: Role; week: number }) {
         </h3>
         <Link
           href="/herramientas/sintomas"
-          className="text-[13px] font-extrabold text-terracotta"
+          className="-my-2 -mr-2 inline-flex min-h-[44px] items-center px-2 text-[13px] font-extrabold text-terracotta"
         >
           Registrar
         </Link>
@@ -96,7 +96,16 @@ export function MoodCheckIn({ role, week }: { role: Role; week: number }) {
         })}
       </div>
 
-      {message && <p className="mt-2.5 text-[13px] font-semibold text-sage">{message}</p>}
+      {/* Always mounted, so screen readers announce the confirmation when the
+          text arrives (a live region added together with its text is often
+          not read). Petrol, not sage: sage on white is 3.8:1. */}
+      <p
+        role="status"
+        aria-live="polite"
+        className={message ? "mt-2.5 text-[13px] font-semibold text-petrol" : "sr-only"}
+      >
+        {message}
+      </p>
       {/* "Mal" / "Muy mal" used to get only the thank-you above, which fades
           after 2.5 s. This line is derived from today's saved mood instead, so
           it stays for the day rather than vanishing with the toast. Línea 155
@@ -112,10 +121,16 @@ export function MoodCheckIn({ role, week }: { role: Role; week: number }) {
               : "Si se siente así seguido, no está sola. Que lo hable con su médico/a."}
           </p>
           <p className="flex flex-wrap gap-x-3">
-            <Link href="/emergencia" className="font-extrabold text-terracotta underline">
+            <Link
+              href="/emergencia"
+              className="inline-flex min-h-[44px] items-center font-extrabold text-terracotta underline"
+            >
               Ayuda y emergencia
             </Link>
-            <a href="tel:155" className="font-extrabold text-terracotta underline">
+            <a
+              href="tel:155"
+              className="inline-flex min-h-[44px] items-center font-extrabold text-terracotta underline"
+            >
               Línea 155 · salud mental
             </a>
           </p>

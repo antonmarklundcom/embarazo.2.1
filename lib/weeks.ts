@@ -72,7 +72,7 @@ const RAW_WEEKS: RawWeek[] = [
     weightG: 1,
     milestone:
       "El cerebro crece rápido y se forman manos y pies en pequeños brotes. El embrión se mueve, aunque todavía no lo sentís.",
-    tip: "Si las náuseas no te dejan comer ni tomar líquido, contactá a tu sanatorio: hay formas de ayudarte.",
+    tip: "Si las náuseas no te dejan comer ni tomar líquido, contactá a tu médico/a, hospital o sanatorio: hay formas de ayudarte.",
   },
   {
     week: 8,
@@ -225,7 +225,7 @@ const RAW_WEEKS: RawWeek[] = [
     weightG: 600,
     milestone:
       "Los pulmones desarrollan las ramitas por donde después entrará el aire. La carita está casi completa.",
-    tip: "Conocé las señales de alarma del embarazo. Ante sangrado, dolor fuerte o pérdida de líquido, contactá a tu sanatorio enseguida.",
+    tip: "Conocé las señales de alarma del embarazo. Ante sangrado, dolor fuerte o pérdida de líquido, contactá enseguida a tu médico/a, hospital o sanatorio.",
   },
   {
     week: 25,
@@ -243,7 +243,7 @@ const RAW_WEEKS: RawWeek[] = [
     weightG: 760,
     milestone:
       "Abre los ojos por primera vez y responde a la luz fuerte sobre la panza. Los pulmones siguen madurando.",
-    tip: "Estás por entrar al tercer trimestre. Empezá a armar tu lista para el bolso del sanatorio sin apuro.",
+    tip: "Estás por entrar al tercer trimestre. Empezá a armar tu lista para el bolso del parto sin apuro.",
   },
   {
     week: 27,
@@ -270,7 +270,7 @@ const RAW_WEEKS: RawWeek[] = [
     weightG: 1153,
     milestone:
       "Los músculos y los pulmones siguen madurando. Sus pataditas son cada vez más firmes.",
-    tip: "Si notás menos movimiento de lo habitual, recostate de costado, tomá algo fresco y contá las pataditas. Si siguen pocas, contactá a tu sanatorio.",
+    tip: "Si notás menos movimiento de lo habitual, recostate de costado, tomá algo fresco y contá las pataditas. Si siguen pocas, contactá a tu médico/a, hospital o sanatorio.",
   },
   {
     week: 30,
@@ -297,7 +297,7 @@ const RAW_WEEKS: RawWeek[] = [
     weightG: 1702,
     milestone:
       "Practica respirar moviendo el diafragma y ya tiene uñas en los deditos. Muchos bebés se acomodan cabeza abajo.",
-    tip: "Dejá listo el bolso del sanatorio para vos y para el bebé. Tené a mano tu documento y tu carné perinatal.",
+    tip: "Dejá listo el bolso del parto para vos y para el bebé. Tené a mano tu documento y tu carné perinatal.",
   },
   {
     week: 33,
@@ -306,7 +306,7 @@ const RAW_WEEKS: RawWeek[] = [
     weightG: 1918,
     milestone:
       "Los huesos del cráneo todavía están blandos y separados para poder pasar por el parto. El sistema inmune se fortalece.",
-    tip: "Repasá las señales de trabajo de parto para saber cuándo ir al sanatorio. Tené el contacto guardado en el teléfono.",
+    tip: "Repasá las señales de trabajo de parto para saber cuándo ir al hospital o sanatorio. Tené el contacto guardado en el teléfono.",
   },
   {
     week: 34,
@@ -333,7 +333,7 @@ const RAW_WEEKS: RawWeek[] = [
     weightG: 2622,
     milestone:
       "Se considera casi a término. La mayoría ya está cabeza abajo, lista para nacer.",
-    tip: "Confirmá con tu sanatorio el camino y el contacto para el día del parto. Tené un plan B de cómo llegar.",
+    tip: "Confirmá con tu hospital o sanatorio el camino y el contacto para el día del parto. Tené un plan B de cómo llegar.",
   },
   {
     week: 37,
@@ -360,7 +360,7 @@ const RAW_WEEKS: RawWeek[] = [
     weightG: 3288,
     milestone:
       "Bebé a término completo. Los pulmones y el cerebro siguen afinándose hasta el último día.",
-    tip: "Ante contracciones regulares, pérdida de líquido o sangrado, contactá a tu sanatorio. Confiá en lo que sentís.",
+    tip: "Ante contracciones regulares, pérdida de líquido o sangrado, contactá a tu hospital o sanatorio. Confiá en lo que sentís.",
   },
   {
     week: 40,
@@ -369,7 +369,7 @@ const RAW_WEEKS: RawWeek[] = [
     weightG: 3462,
     milestone:
       "Llegó tu fecha probable de parto. Recordá que es una estimación: muchos bebés nacen unos días antes o después.",
-    tip: "Si pasás la fecha sin señales de parto, tu sanatorio va a controlarte más seguido. Es algo común y esperable.",
+    tip: "Si pasás la fecha sin señales de parto, tu médico/a va a controlarte más seguido. Es algo común y esperable.",
   },
   {
     week: 41,
@@ -387,7 +387,7 @@ const RAW_WEEKS: RawWeek[] = [
     weightG: 3685,
     milestone:
       "Pocos embarazos llegan hasta acá. El nacimiento está muy cerca y el seguimiento médico es más estricto.",
-    tip: "Seguí al pie las indicaciones de tu sanatorio. Pronto vas a tener a tu bebé en brazos.",
+    tip: "Seguí al pie las indicaciones de tu médico/a. Pronto vas a tener a tu bebé en brazos.",
   },
 ];
 

@@ -31,7 +31,7 @@ export const DAILY_TIPS: DailyTip[] = [
   { id: "t-15", trimester: 0, text: "Cuidá tu piel del sol fuerte: usá protector y ropa fresca de colores claros." },
   { id: "t-16", trimester: 0, text: "Hablar de cómo te sentís ayuda. Apoyate en tu pareja, familia o amigas de confianza." },
   { id: "t-17", trimester: 0, text: "Si trabajás muchas horas de pie, buscá momentos para sentarte y elevar las piernas." },
-  { id: "t-18", trimester: 0, text: "Guardá a mano el contacto de tu sanatorio y la dirección, por si necesitás ir rápido." },
+  { id: "t-18", trimester: 0, text: "Guardá a mano el contacto de tu hospital o sanatorio y la dirección, por si necesitás ir rápido." },
 
   // --- First trimester ---
   { id: "t-19", trimester: 1, text: "Seguí tomando el ácido fólico todos los días: es clave en estas primeras semanas." },
@@ -47,9 +47,9 @@ export const DAILY_TIPS: DailyTip[] = [
 
   // --- Third trimester ---
   { id: "t-27", trimester: 3, text: "Prestá atención a los movimientos del bebé. Si notás menos pataditas que de costumbre, consultá." },
-  { id: "t-28", trimester: 3, text: "Empezá a preparar el bolso para el sanatorio así no corrés a último momento." },
+  { id: "t-28", trimester: 3, text: "Empezá a preparar el bolso para el parto así no corrés a último momento." },
   { id: "t-29", trimester: 3, text: "Para la hinchazón de piernas, elevá los pies un rato y evitá estar mucho tiempo parada." },
-  { id: "t-30", trimester: 3, text: "Conocé las señales de trabajo de parto y tené claro a qué teléfono llamar y cómo llegar al sanatorio." },
+  { id: "t-30", trimester: 3, text: "Conocé las señales de trabajo de parto y tené claro a qué teléfono llamar y cómo llegar al hospital o sanatorio." },
   { id: "t-31", trimester: 3, text: "Descansá cuando puedas: dormir de a ratos ahora es normal y te prepara para lo que viene." },
 ];
 

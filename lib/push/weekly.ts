@@ -67,3 +67,56 @@ export function weeklyTipTimes(
   }
   return times;
 }
+
+/** Past this many completed weeks the pregnancy is over; stop scheduling. */
+const LAST_WEEK_START = 42;
+
+/** Whole calendar days between two instants' local dates (DST-proof). */
+function calendarDaysBetween(from: number, to: number): number {
+  const a = new Date(from);
+  const b = new Date(to);
+  const utcA = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+  const utcB = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+  return Math.round((utcB - utcA) / MS_PER_DAY);
+}
+
+/**
+ * "Semana nueva" — the next `count` days on which HER week turns over, at
+ * 10:00 local, as epoch milliseconds.
+ *
+ * Her weeks are counted from her own date (FUM, or the one derived from the
+ * ecografía / FIV), so they turn on that date's weekday: an FUM on a Wednesday
+ * means every Wednesday she is one week further along. `weeklyTipTimes` used
+ * the weekday of *whenever the app was last opened* instead — and the queue is
+ * re-published on every open, so the tip wandered to a different day each
+ * time and never landed on the day the week actually changed.
+ *
+ * Counted in calendar days, not 7 × 24 h, for the same DST reason as above.
+ * Nothing past week 42 is scheduled.
+ */
+export function weekStartTimes(
+  lmpDate: number,
+  now: number = Date.now(),
+  count: number = WEEKLY_TIP_COUNT,
+): number[] {
+  const daysSince = calendarDaysBetween(lmpDate, now);
+  const offset = ((7 - (daysSince % 7)) % 7 + 7) % 7;
+
+  const first = new Date(now);
+  first.setDate(first.getDate() + offset);
+  first.setHours(WEEKLY_TIP_HOUR, 0, 0, 0);
+  // Today is her turnover day but 10:00 has passed: the next one is a week on.
+  const skip = first.getTime() <= now ? 1 : 0;
+
+  const times: number[] = [];
+  for (let i = skip; times.length < count; i += 1) {
+    const slot = new Date(first);
+    slot.setDate(slot.getDate() + i * 7);
+    slot.setHours(WEEKLY_TIP_HOUR, 0, 0, 0);
+    const completedWeeks = Math.round(calendarDaysBetween(lmpDate, slot.getTime()) / 7);
+    if (completedWeeks > LAST_WEEK_START) break;
+    // Week 0 is the FUM itself — nothing has turned over yet.
+    if (completedWeeks >= 1) times.push(slot.getTime());
+  }
+  return times;
+}

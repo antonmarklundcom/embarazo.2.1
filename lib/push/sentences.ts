@@ -36,8 +36,10 @@ export function weeklyTipSentence(week: number | null): NotificationText | null 
   if (week === null) return null;
   const line = weeklyLine(week);
   if (!line) return null;
+  // Since "semana nueva" the poke lands on the morning her week turns over
+  // (`weekStartTimes`), so the title can say so rather than just name it.
   return {
-    title: `Semana ${week}`,
+    title: `¡Empieza tu semana ${week}!`,
     body: line,
   };
 }

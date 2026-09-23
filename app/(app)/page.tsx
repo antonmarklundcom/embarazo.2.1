@@ -60,6 +60,7 @@ import { NoPregnancyYet } from "@/components/home/NoPregnancyYet";
 import { RecomendadosRail } from "@/components/RecomendadosRail";
 import { WeekContentRail } from "@/components/home/WeekContentRail";
 import { WeekHero } from "@/components/home/WeekHero";
+import { NewWeekCard } from "@/components/home/NewWeekCard";
 import { WeekStrip } from "@/components/home/WeekStrip";
 
 // "Hoy" screen — brand design 1a (docs/archive/REDESIGN-PLAN.md §2): week strip,
@@ -210,6 +211,15 @@ export default function InicioPage() {
   return (
     <div className="space-y-4">
       <WeekStrip />
+
+      {/* Semana nueva: on the day her week turns over (her own weekday,
+          from her FUM) and the two after, until she closes it. */}
+      <NewWeekCard
+        week={week}
+        daysIntoWeek={profile.completed?.days ?? 3}
+        lmpDate={lmpDate}
+        sizeComparison={info.sizeComparison}
+      />
 
       {/* C1: circular week hero + progress ring + stats row (map #9, #10).
           Everything below this comment, down to the tool/reading rails, is

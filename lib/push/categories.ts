@@ -43,8 +43,9 @@ export const PUSH_CATEGORY_INFO: readonly PushCategoryInfo[] = [
   },
   {
     key: "consejos",
-    label: "Consejos de la semana",
-    description: "Un mensaje por semana con lo que está pasando en tu embarazo.",
+    label: "Tu semana nueva",
+    description:
+      "Un aviso el día que empieza cada semana de tu embarazo, con lo que está pasando.",
     defaultOn: false,
   },
   {

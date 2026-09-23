@@ -244,6 +244,54 @@ export default function CercaTuyoPage() {
         </div>
       )}
 
+      {/* While the directory fills up, the tab still has to be useful: an
+          empty list was the whole screen. These are all things the app
+          already has, and none of them depends on a listing existing. */}
+      {!isLoading && listings.length === 0 && (
+        <section aria-labelledby="mientras-tanto" className="space-y-2.5">
+          <h2
+            id="mientras-tanto"
+            className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol"
+          >
+            Mientras tanto
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            <a
+              href="tel:141"
+              className="flex min-h-[88px] flex-col justify-center rounded-card bg-terracotta p-4 text-white"
+            >
+              <span className="text-2xl font-black">141</span>
+              <span className="text-xs font-bold">SEME · ambulancia, 24 h</span>
+            </a>
+            <a
+              href="tel:911"
+              className="flex min-h-[88px] flex-col justify-center rounded-card bg-terracotta p-4 text-white"
+            >
+              <span className="text-2xl font-black">911</span>
+              <span className="text-xs font-bold">Emergencias</span>
+            </a>
+          </div>
+          <NearbyLink
+            href="/emergencia"
+            title="Guardá tu hospital o sanatorio"
+            text="Su número queda a un toque, incluso sin internet."
+            tone="bg-pastel-rosa"
+          />
+          <NearbyLink
+            href="/derechos"
+            title="IPS, Salud Pública y tus derechos"
+            text="Gratuidad, licencia y subsidio: qué te corresponde."
+            tone="bg-pastel-celeste"
+          />
+          <NearbyLink
+            href="/herramientas/resumen"
+            title="Preparar mi control"
+            text="Preguntas para tu semana y tus datos en una hoja."
+            tone="bg-pastel-salvia"
+          />
+        </section>
+      )}
+
       {/* Grouped list (build spec §6 — clean list grouped by category). */}
       <div className="space-y-5">
         {grouped.map(([cat, items]) => (
@@ -339,5 +387,24 @@ function ListingCard({ listing: l }: { listing: DirectoryListing }) {
         )}
       </div>
     </article>
+  );
+}
+
+function NearbyLink({
+  href,
+  title,
+  text,
+  tone,
+}: {
+  href: string;
+  title: string;
+  text: string;
+  tone: string;
+}) {
+  return (
+    <Link href={href} className={`block rounded-card p-4 transition active:scale-[0.99] ${tone}`}>
+      <p className="text-[15px] font-extrabold text-ink">{title}</p>
+      <p className="mt-0.5 text-sm text-ink/75">{text}</p>
+    </Link>
   );
 }

@@ -17,6 +17,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "optimize:images": "node scripts/optimize-images.mjs",
+    "localize:images": "node scripts/localize-week-renders.mjs",
     "gen:icons": "node scripts/gen-icons.mjs",
     "gen:og": "node scripts/gen-og.mjs",
     "gen:screenshots": "node scripts/gen-screenshots.mjs",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useImageFailed } from "@/lib/hooks/useImageFailed";
+import { BabyIllustration } from "./BabyIllustration";
 
 import { comparisonFor } from "@/lib/seed/comparisons";
 import { heroScale, notToScaleCaption } from "@/lib/hero/scale";
@@ -24,11 +25,17 @@ export function ComparisonFigure({
   week,
   lengthCm,
   ink,
+  boxPx = BOX_PX,
+  illustrated = false,
 }: {
   week: number;
   lengthCm: number | undefined;
   /** Follows the theme: `light` on `estrellas`, dark everywhere else. */
   ink: "dark" | "light";
+  /** The box the larger of the two subjects fills. */
+  boxPx?: number;
+  /** Draw the baby (`BabyIllustration`) instead of the plain disc. */
+  illustrated?: boolean;
 }) {
   const comparison = comparisonFor(week);
   const { ref, failed: imgError, onError } = useImageFailed();
@@ -36,7 +43,7 @@ export function ComparisonFigure({
   const { babyPx, itemPx, clamped } = heroScale({
     babyCm: lengthCm,
     itemCm: comparison?.itemCm,
-    boxPx: BOX_PX,
+    boxPx,
   });
 
   // Nothing measurable this week (1–2) — the hero shows the baby alone.
@@ -46,17 +53,35 @@ export function ComparisonFigure({
   const text = ink === "light" ? "rgba(255,255,255,0.88)" : "rgba(50,46,41,0.72)";
   const shape = ink === "light" ? "rgba(255,255,255,0.34)" : "rgba(50,46,41,0.22)";
 
+  // Illustrated (the bare week card): the fruit waits for its image as a soft
+  // dashed outline rather than a grey disc, and the caption sits under the
+  // pair instead of squeezing into a column beside it.
+  const itemFallbackStyle = illustrated
+    ? {
+        background: "rgba(255,255,255,0.5)",
+        border: "2px dashed rgba(47,93,80,0.45)",
+      }
+    : { background: shape };
+
   return (
-    <figure className="m-0 flex items-end gap-3" aria-hidden>
+    <figure
+      className={`m-0 flex gap-3 ${illustrated ? "flex-wrap items-end justify-center" : "items-end"}`}
+      aria-hidden
+    >
       {/* The baby, as a proportional blob. The real silhouette arrives with
           the renders; until then the SHAPE is the information — it is the
           right size next to the fruit, which is the whole claim. */}
-      {babyPx !== null && (
-        <span
-          className="block shrink-0 rounded-full"
-          style={{ width: babyPx, height: babyPx, background: shape }}
-        />
-      )}
+      {babyPx !== null &&
+        (illustrated ? (
+          <span className="block shrink-0" style={{ width: babyPx, height: babyPx }}>
+            <BabyIllustration week={week} size={babyPx} />
+          </span>
+        ) : (
+          <span
+            className="block shrink-0 rounded-full"
+            style={{ width: babyPx, height: babyPx, background: shape }}
+          />
+        ))}
 
       {itemPx !== null && (
         <span
@@ -65,8 +90,8 @@ export function ComparisonFigure({
         >
           {imgError || !comparison.imageSrc ? (
             <span
-              className="block h-full w-full rounded-full"
-              style={{ background: shape }}
+              className="block h-full w-full rounded-full box-border"
+              style={itemFallbackStyle}
             />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
@@ -81,7 +106,15 @@ export function ComparisonFigure({
         </span>
       )}
 
-      <figcaption className="pb-1 text-[10px] font-bold leading-tight" style={{ color: text }}>
+      <figcaption
+        className={
+          illustrated
+            ? "w-full text-center text-xs font-bold leading-tight"
+            : "pb-1 text-[10px] font-bold leading-tight"
+        }
+        style={{ color: text }}
+      >
+        {illustrated && "Tu bebé y "}
         {comparison.item}
         {clamped && (
           // The drawing is NOT to scale here, and saying so is the difference

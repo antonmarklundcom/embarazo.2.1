@@ -1,14 +1,15 @@
 "use client";
 
-import { useImageFailed } from "@/lib/hooks/useImageFailed";
+import { useImageLoaded } from "@/lib/hooks/useImageFailed";
 
 import { ThemeBackdrop } from "./hero/ThemeBackdrop";
 import { ThemeChip } from "./hero/ThemeChip";
 import { ComparisonFigure } from "./hero/ComparisonFigure";
+import { BabyIllustration } from "./hero/BabyIllustration";
 import { useHeroTheme, useShowComparison } from "@/lib/hero/preferences";
-import { bareInk, captionScrim, fallbackInk, heroTheme, themeInk } from "@/lib/hero/themes";
+import { bareInk, captionScrim, heroTheme, themeInk } from "@/lib/hero/themes";
 import { measurementNote, switchesMeasurementAt } from "@/lib/hero/scale";
-import { sizeLine } from "@/lib/weeks";
+import { formatLength, formatWeight, sizeLine } from "@/lib/weeks";
 
 // Weekly "bebé a las N semanas" hero, v2 (U7).
 //
@@ -42,7 +43,7 @@ export function WeekHeroImage({
   /** B1/B2 `babyAtWeekLabel`. Falls back to the generic sentence. */
   alt?: string;
 }) {
-  const { ref, failed: imgError, onError } = useImageFailed();
+  const { ref, loaded, onLoad } = useImageLoaded();
   const themeId = useHeroTheme();
   const theme = heroTheme(themeId);
   const showComparison = useShowComparison();
@@ -51,45 +52,104 @@ export function WeekHeroImage({
   // and the text are the whole card, which is the honest version of "todavía
   // no hay embrión".
   const hasSubject = week >= 3;
-  // Only a render needs a scrim under the caption. On the bare pastel theme
-  // (no render yet, or weeks 1–2) the caption takes the theme's own dark ink
-  // instead, rather than painting a brown band over a pale card.
-  const onRender = hasSubject && !imgError;
+  // The render layout only once the render has actually loaded. Until then
+  // (which is today: `public/assets/semanas/` is empty) the card is the bare
+  // layout — caption on the theme in its own dark ink, and the drawn baby
+  // beside the size comparison — so it never flashes a scrimmed caption over
+  // an empty frame and then swaps after hydration.
+  const onRender = hasSubject && loaded;
   const ink = onRender ? themeInk(theme) : bareInk(theme);
 
   const measures = [
-    lengthCm ? `≈ ${lengthCm} cm` : null,
-    weightG ? `≈ ${weightG} g` : null,
+    lengthCm ? `≈ ${formatLength(lengthCm)}` : null,
+    weightG ? `≈ ${formatWeight(weightG)}` : null,
   ]
     .filter(Boolean)
     .join(" · ");
+
+  const caption = (
+    <>
+      <p className="text-[11px] font-extrabold tracking-[1.6px]" style={{ color: ink.eyebrow }}>
+        SEMANA {week} · {trimester}.º TRIMESTRE
+      </p>
+      <p className="mt-1 text-3xl font-black" style={{ color: ink.strong }}>
+        Semana {week}
+      </p>
+      <p className="mt-1 text-sm font-bold" style={{ color: ink.soft }}>
+        {sizeLine(sizeComparison)}
+      </p>
+      {measures && (
+        <p className="mt-0.5 text-xs font-bold" style={{ color: ink.soft }}>
+          {measures}
+          {lengthCm && (
+            <span className="font-semibold opacity-80"> · {measurementNote(week)}</span>
+          )}
+        </p>
+      )}
+      {switchesMeasurementAt(week) && (
+        // The crown-rump → crown-heel switch. The number jumps because the
+        // ruler changed, not because the baby doubled in a week, and
+        // smoothing it would make every later figure wrong to hide one
+        // honest step.
+        <p className="mt-1 text-[11px] font-semibold" style={{ color: ink.soft }}>
+          Desde esta semana se mide de la cabeza a los pies, por eso el salto.
+        </p>
+      )}
+    </>
+  );
+
+  // The probe: always in the DOM for weeks with a subject, so the day a render
+  // lands it is picked up with no code change. Hidden until it has loaded.
+  const probe = hasSubject ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      ref={ref}
+      src={`/assets/semanas/bebe-${week}.webp`}
+      alt={onRender ? (alt ?? `Tu bebé a las ${week} semanas`) : ""}
+      aria-hidden={onRender ? undefined : true}
+      // `object-contain`, not `cover`: the render has alpha and a theme
+      // behind it, so cropping it to fill would cut the subject the
+      // background exists to frame.
+      className={onRender ? "block h-full w-full object-contain" : "hidden"}
+      onLoad={onLoad}
+    />
+  ) : null;
+
+  if (!onRender) {
+    return (
+      <div className="relative overflow-hidden rounded-card shadow-soft">
+        <ThemeBackdrop theme={themeId} />
+        <div className="absolute right-4 top-4 z-10">
+          <ThemeChip ink={theme.ink} />
+        </div>
+        {probe}
+        <div className="relative px-5 pb-5 pt-6">
+          {caption}
+          {hasSubject && (
+            <div className="mt-4 flex justify-center">
+              {showComparison ? (
+                <ComparisonFigure
+                  week={week}
+                  lengthCm={lengthCm}
+                  ink={theme.ink}
+                  boxPx={150}
+                  illustrated
+                />
+              ) : (
+                <BabyIllustration week={week} size={150} />
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative overflow-hidden rounded-card shadow-soft">
       <ThemeBackdrop theme={themeId} />
 
-      <div className="relative flex h-[280px] items-center justify-center">
-        {hasSubject && !imgError ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            ref={ref}
-            src={`/assets/semanas/bebe-${week}.webp`}
-            alt={alt ?? `Tu bebé a las ${week} semanas`}
-            // `object-contain`, not `cover`: the render has alpha and a theme
-            // behind it now, so cropping it to fill would cut the subject the
-            // background exists to frame.
-            className="block h-full w-full object-contain"
-            onError={onError}
-          />
-        ) : (
-          <span
-            className="text-[120px] font-black leading-none"
-            style={{ color: fallbackInk(theme), opacity: 0.14 }}
-          >
-            {week}
-          </span>
-        )}
-      </div>
+      <div className="relative flex h-[280px] items-center justify-center">{probe}</div>
 
       <div className="absolute right-4 top-4">
         <ThemeChip ink={theme.ink} />
@@ -97,52 +157,16 @@ export function WeekHeroImage({
 
       {/* The scrim travels with the caption rather than sitting at a fixed
           40% of the card: with the size comparison shown, the caption is
-          taller than the old scrim and its top lines (the eyebrow, "Del
-          tamaño de…") landed on bare pastel as white-on-cream. */}
+          taller than a fixed scrim and its top lines would land on bare
+          pastel as white-on-cream. */}
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 px-5 pb-5 pt-12"
-        style={onRender ? { background: captionScrim(theme) } : undefined}
+        style={{ background: captionScrim(theme) }}
       >
-        <p
-          className="text-[11px] font-extrabold tracking-[1.6px]"
-          style={{ color: ink.eyebrow }}
-        >
-          SEMANA {week} · {trimester}.º TRIMESTRE
-        </p>
-        <p className="mt-1 text-3xl font-black" style={{ color: ink.strong }}>
-          Semana {week}
-        </p>
-        <p className="mt-1 text-sm font-bold" style={{ color: ink.soft }}>
-          {sizeLine(sizeComparison)}
-        </p>
-        {measures && (
-          <p className="mt-0.5 text-xs font-bold" style={{ color: ink.soft }}>
-            {measures}
-            {lengthCm && (
-              <span className="font-semibold opacity-80">
-                {" "}
-                · {measurementNote(week)}
-              </span>
-            )}
-          </p>
-        )}
-        {switchesMeasurementAt(week) && (
-          // The crown-rump → crown-heel switch. The number jumps because the
-          // ruler changed, not because the baby doubled in a week, and
-          // smoothing it would make every later figure wrong to hide one
-          // honest step.
-          <p className="mt-1 text-[11px] font-semibold" style={{ color: ink.soft }}>
-            Desde esta semana se mide de la cabeza a los pies, por eso el salto.
-          </p>
-        )}
-
+        {caption}
         {showComparison && (
           <div className="mt-3">
-            <ComparisonFigure
-              week={week}
-              lengthCm={lengthCm}
-              ink={onRender ? "light" : theme.ink}
-            />
+            <ComparisonFigure week={week} lengthCm={lengthCm} ink="light" />
           </div>
         )}
       </div>

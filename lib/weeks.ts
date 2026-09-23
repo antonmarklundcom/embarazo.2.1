@@ -419,3 +419,22 @@ export function sizeLine(sizeComparison: string): string {
   }
   return `Del tamaño de ${sizeComparison}`;
 }
+
+/**
+ * "26,7 cm", "0,01 cm" — Paraguayan decimal comma, and no trailing zeros a
+ * ruler would not show. The hero printed the raw float ("26.7").
+ */
+export function formatLength(cm: number): string {
+  const digits = cm < 1 ? 2 : 1;
+  const text = cm
+    .toFixed(digits)
+    .replace(/\.?0+$/, "")
+    .replace(".", ",");
+  return `${text} cm`;
+}
+
+/** "360 g", and from a kilo on "2,6 kg" — nobody reads 2622 g. */
+export function formatWeight(grams: number): string {
+  if (grams < 1000) return `${grams} g`;
+  return `${(grams / 1000).toFixed(1).replace(/\.0$/, "").replace(".", ",")} kg`;
+}

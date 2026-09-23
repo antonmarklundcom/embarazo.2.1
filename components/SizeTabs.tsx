@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 
-import { getWeek, hasSizeComparison } from "@/lib/weeks";
+import { formatWeight, getWeek, hasSizeComparison } from "@/lib/weeks";
 import { formatCm, limbSize } from "@/lib/seed/limbSizes";
 
 // BUILD-PLAN C3 — size comparison tabs (feature map #12).
@@ -32,7 +32,7 @@ export function SizeTabs({ week }: { week: number }) {
 
   const measures = [
     info.lengthCm ? `≈ ${formatCm(info.lengthCm)}` : null,
-    info.weightG ? `≈ ${info.weightG} g` : null,
+    info.weightG ? `≈ ${formatWeight(info.weightG)}` : null,
   ]
     .filter(Boolean)
     .join(" · ");

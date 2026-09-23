@@ -37,3 +37,20 @@ describe("hasSizeComparison", () => {
     expect(without).toEqual([1, 2]);
   });
 });
+
+describe("formatLength / formatWeight", () => {
+  it("uses the decimal comma and drops zeros a ruler would not show", async () => {
+    const { formatLength } = await import("./weeks");
+    expect(formatLength(26.7)).toBe("26,7 cm");
+    expect(formatLength(0.01)).toBe("0,01 cm");
+    expect(formatLength(0.1)).toBe("0,1 cm");
+    expect(formatLength(30)).toBe("30 cm");
+  });
+
+  it("switches to kilos from 1000 g", async () => {
+    const { formatWeight } = await import("./weeks");
+    expect(formatWeight(360)).toBe("360 g");
+    expect(formatWeight(2622)).toBe("2,6 kg");
+    expect(formatWeight(3000)).toBe("3 kg");
+  });
+});

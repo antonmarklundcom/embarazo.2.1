@@ -84,7 +84,7 @@ export function WeekHero({
             cy={RING_SIZE / 2}
             r={RING_RADIUS}
             fill="none"
-            stroke="#C96342"
+            stroke="#B5553A"
             strokeWidth={RING_STROKE}
             strokeLinecap="round"
             strokeDasharray={RING_CIRCUMFERENCE}

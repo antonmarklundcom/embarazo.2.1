@@ -13,14 +13,18 @@
   --color-cream: #FBF7F1;
   --color-petrol: #2F5D50;
   --color-petrol-dark: #24463D;
-  --color-terracotta: #C96342;
+  /* Darkened from #C96342 (3.9:1 under white text) to pass WCAG AA 4.5:1
+     for the 14px bold labels on every primary button and the SOS pill. */
+  --color-terracotta: #B5553A;
   /* rose/sage stay mid-tone: used as text color in ~20 places. */
   --color-rose: #E0A4A0;
   --color-sage: #6F8A66;
   --color-ink: #322E29;
   --color-muted: #7A7369;
   --color-line: #EDE5DA;
-  --color-whatsapp: #25D366;
+  /* WhatsApp's own #25D366 carries white text at ~2:1. The icon is what
+     people recognise; the fill is darkened to 5:1. */
+  --color-whatsapp: #0F7F43;
 
   --color-sand-bg: #F8E2CB;
   --color-sand-text: #8A5A2E;

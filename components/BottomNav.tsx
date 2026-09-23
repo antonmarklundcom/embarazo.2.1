@@ -73,7 +73,7 @@ export function BottomNav() {
 }
 
 type IconProps = { active?: boolean };
-const stroke = (active?: boolean) => (active ? "#C96342" : "#7A7369");
+const stroke = (active?: boolean) => (active ? "#B5553A" : "#7A7369");
 
 function HomeIcon({ active }: IconProps) {
   return (

@@ -5,6 +5,7 @@ import Link from "next/link";
 
 // D1: one icon set, shared with the herramientas grid so the two cannot drift.
 import { ToolIcon, type ToolIconName } from "@/components/ToolIcon";
+import { PUBLISHED_FOOD } from "@/lib/seed/food";
 
 export function HomeToolsGrid() {
   return (
@@ -20,7 +21,14 @@ export function HomeToolsGrid() {
         <ToolCard href="/herramientas/contracciones" title="Contracciones" subtitle="Cronometrá" icon="timer" />
         <ToolCard href="/herramientas/peso" title="Peso" subtitle="Seguí tu progreso" icon="scale" />
         <ToolCard href="/herramientas/fotos" title="Fotos" subtitle="Diario de tu panza" icon="camera" />
-        <ToolCard href="/herramientas/comer" title="¿Puedo comer...?" subtitle="Buscá un alimento" icon="food" />
+        {/* The food list is gated on a medical reviewer and ships empty until
+            one signs it. Featuring it on Hoy sent her from the first screen
+            to "todavía no fue revisada"; the toolbox still lists it. */}
+        {PUBLISHED_FOOD.length > 0 ? (
+          <ToolCard href="/herramientas/comer" title="¿Puedo comer...?" subtitle="Buscá un alimento" icon="food" />
+        ) : (
+          <ToolCard href="/herramientas/sintomas" title="Síntomas" subtitle="Anotá cómo te sentís" icon="symptoms" />
+        )}
       </div>
     </section>
   );

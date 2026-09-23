@@ -44,6 +44,16 @@ describe("averageCycleLength", () => {
   it("sorts unordered input first", () => {
     expect(averageCycleLength([28 * DAY, 0])).toBe(28);
   });
+  it("ignores a duplicate start and daily bleed entries", () => {
+    // Day 0 logged twice, then days 1 and 2 of the same bleed, then day 29.
+    expect(averageCycleLength([0, 0, 1 * DAY, 2 * DAY, 29 * DAY])).toBe(27);
+  });
+  it("ignores a gap longer than 60 days (a month that was not logged)", () => {
+    expect(averageCycleLength([0, 28 * DAY, 28 * DAY + 90 * DAY])).toBe(28);
+  });
+  it("is undefined when no gap is plausible", () => {
+    expect(averageCycleLength([0, 1 * DAY, 2 * DAY])).toBeUndefined();
+  });
 });
 
 describe("cycleDay", () => {

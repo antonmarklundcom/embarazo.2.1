@@ -47,18 +47,31 @@ export function estimateFertileWindow(
   };
 }
 
+/** The range the settings screen accepts for a cycle, in days. */
+export const MIN_CYCLE_LENGTH = 20;
+export const MAX_CYCLE_LENGTH = 60;
+
 /**
  * Average cycle length (in days) computed from consecutive period starts.
- * Returns undefined when there aren't at least two recorded periods.
+ * Returns undefined when there aren't at least two usable gaps.
+ *
+ * Only gaps inside the same 20–60 day range the settings screen enforces
+ * count. The observed average *overrides* that setting, so without this a
+ * double tap on "Registrar" (a 0-day gap) or logging every bleeding day
+ * (1-day gaps) produced a "cycle" of a day or two, and a month she forgot to
+ * log produced a 56-day one — each pulling the predicted period and the
+ * fertile window into nonsense.
  */
 export function averageCycleLength(starts: number[]): number | undefined {
   if (starts.length < 2) return undefined;
   const sorted = [...starts].sort((a, b) => a - b);
-  let total = 0;
+  const gaps: number[] = [];
   for (let i = 1; i < sorted.length; i++) {
-    total += Math.round((sorted[i]! - sorted[i - 1]!) / MS_PER_DAY);
+    const gap = Math.round((sorted[i]! - sorted[i - 1]!) / MS_PER_DAY);
+    if (gap >= MIN_CYCLE_LENGTH && gap <= MAX_CYCLE_LENGTH) gaps.push(gap);
   }
-  return Math.round(total / (sorted.length - 1));
+  if (gaps.length === 0) return undefined;
+  return Math.round(gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length);
 }
 
 /** Day number within the current cycle (day 1 = the start date). */

@@ -23,14 +23,14 @@ export function AppHeader() {
         <div className="flex items-center gap-2.5">
           <Link
             href="/emergencia"
-            className="flex h-9 items-center rounded-full bg-terracotta px-3.5 text-xs font-black tracking-wide text-white transition active:scale-95"
+            className="flex h-11 items-center rounded-full bg-terracotta px-4 text-sm font-black tracking-wide text-white transition active:scale-95"
           >
             {t("header.emergency")}
           </Link>
           <Link
             href="/ajustes"
             aria-label={t("header.settings")}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white text-muted transition hover:bg-black/5"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-line bg-white text-muted transition hover:bg-black/5"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
               <circle cx="12" cy="12" r="3" stroke="#322E29" strokeWidth="1.7" />

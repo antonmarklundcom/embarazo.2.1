@@ -8,7 +8,7 @@ import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { cookies } from "next/headers";
 import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 
 import { db, isDatabaseConfigured } from "./db";
 import { accounts, sessions, users, verificationTokens } from "./schema";
@@ -241,9 +241,16 @@ function buildConfig(): NextAuthConfig {
        * rather than cosmetic: without a valid ticket the sign-in is refused
        * here, on the server, no matter how the user reached the provider.
        */
-      async signIn() {
-        if (await consentGiven()) return true;
-        return CONSENT_REQUIRED_URL;
+      async signIn({ user, account }) {
+        if (!(await consentGiven())) return CONSENT_REQUIRED_URL;
+        // Runs before the adapter links a Google/Facebook sign-in to an
+        // existing row by email (`allowDangerousEmailAccountLinking`), so a
+        // password somebody else set on this address is gone before the
+        // owner's data can land in that row. See `revokeUnverifiedPassword`.
+        if (account && account.provider !== "credentials" && user?.email) {
+          await revokeUnverifiedPassword(user.email);
+        }
+        return true;
       },
       async jwt({ token, user }) {
         // `user` is only present on the sign-in pass; afterwards the id rides
@@ -292,7 +299,7 @@ function buildConfig(): NextAuthConfig {
        * sign-in (not just the first) means the row always reflects the most
        * recent acceptance of the current text.
        */
-      async signIn({ user }) {
+      async signIn({ user, account }) {
         if (user?.id && isDatabaseConfigured()) {
           await db()
             .update(users)
@@ -306,13 +313,77 @@ function buildConfig(): NextAuthConfig {
           // answer to the chicken-and-egg problem — nobody can grant the first
           // admin role through a panel that is itself admin-gated. It only
           // ever promotes; removing an address never silently strips access.
-          await syncAdminRoleFromAllowlist(user.id, user.email);
+          //
+          // A password sign-in proves only that someone knows the password
+          // they chose, not that they own the address — anyone could register
+          // an allowlisted email that has no account yet. So that path
+          // promotes only once the address is confirmed.
+          const provider = account?.provider;
+          const emailVerified =
+            provider === "credentials" ? await emailVerifiedAt(user.id) : null;
+          if (canPromoteFromAllowlist(provider, emailVerified)) {
+            await syncAdminRoleFromAllowlist(user.id, user.email);
+          }
         }
         // One ticket, one sign-in.
         await clearConsentCookie();
       },
     },
   };
+}
+
+/**
+ * Whether a sign-in may pick up the `ADMIN_EMAILS` role. OAuth providers
+ * vouch for the address; the Credentials provider does not, so it needs a
+ * confirmed `emailVerified`.
+ */
+export function canPromoteFromAllowlist(
+  provider: string | undefined,
+  emailVerified: Date | null,
+): boolean {
+  if (!provider) return false;
+  if (provider !== "credentials") return true;
+  return emailVerified !== null;
+}
+
+async function emailVerifiedAt(userId: string): Promise<Date | null> {
+  const [row] = await db()
+    .select({ emailVerified: users.emailVerified })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  return row?.emailVerified ?? null;
+}
+
+/**
+ * Close the pre-hijack hole between password sign-up and OAuth linking.
+ *
+ * Password sign-up (PR-20) does not prove the address is yours, and Google/
+ * Facebook sign-in links to any existing row with the same email. Together,
+ * someone could register `her@gmail.com` with a password before she ever
+ * signs up, wait for her to sign in with Google (landing in *his* row and
+ * syncing her health data into it), then sign in with his password and read
+ * it all.
+ *
+ * When a provider that vouches for the address signs in, an unconfirmed
+ * password on that row is dropped and every token issued for it stops
+ * resolving (`sessionVersion` bump). A confirmed password is left alone — the
+ * owner set it. A real owner who registered with a password and never
+ * confirmed simply keeps Google, and can set a new password with the reset
+ * flow.
+ */
+export async function revokeUnverifiedPassword(email: string): Promise<void> {
+  if (!isDatabaseConfigured()) return;
+  await db()
+    .update(users)
+    .set({ passwordHash: null, sessionVersion: sql`${users.sessionVersion} + 1` })
+    .where(
+      and(
+        eq(users.email, email),
+        isNotNull(users.passwordHash),
+        isNull(users.emailVerified),
+      ),
+    );
 }
 
 type NextAuthInstance = ReturnType<typeof NextAuth>;

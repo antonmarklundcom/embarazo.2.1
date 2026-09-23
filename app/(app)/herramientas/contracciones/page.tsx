@@ -6,7 +6,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
 import { useProfile } from "@/lib/useProfile";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
-import { waLink, defaultPrefill, businessWhatsApp } from "@/lib/whatsapp";
+import { waLink } from "@/lib/whatsapp";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import {
   assess511,
@@ -21,7 +21,13 @@ import {
 // destination for "mi sanatorio" in the first place. It now uses the sanatorio
 // number the user saved herself (/emergencia), and falls back to the emergency
 // screen — which carries the national numbers — when she has not saved one.
-const BUSINESS_WA = businessWhatsApp(process.env.NEXT_PUBLIC_BUSINESS_WHATSAPP);
+// Never the business number: that fallback came back once the
+// NEXT_PUBLIC_BUSINESS_WHATSAPP env var was set, which CI never sets.
+function laborPrefill(week?: number): string {
+  return week && week > 0
+    ? `Hola, estoy de ${week} semanas y estoy teniendo contracciones. ¿Qué me recomiendan hacer?`
+    : "Hola, estoy embarazada y estoy teniendo contracciones. ¿Qué me recomiendan hacer?";
+}
 
 function fmtClock(ts: number): string {
   return new Date(ts).toLocaleTimeString("es-PY", {
@@ -85,11 +91,7 @@ export default function ContraccionesPage() {
     : null;
 
   const sanatorio = profile.sanatorioPhone?.trim();
-  const waHref = sanatorio
-    ? waLink(sanatorio, defaultPrefill(profile.week))
-    : BUSINESS_WA
-      ? waLink(BUSINESS_WA, defaultPrefill(profile.week))
-      : null;
+  const waHref = sanatorio ? waLink(sanatorio, laborPrefill(profile.week)) : null;
 
   return (
     <div className="space-y-5">
@@ -165,7 +167,7 @@ export default function ContraccionesPage() {
       {waHref ? (
         <WhatsAppButton
           href={waHref}
-          label={sanatorio ? "Contactar a mi sanatorio" : "Escribinos por WhatsApp"}
+          label="Contactar a mi sanatorio"
           className="w-full"
         />
       ) : (

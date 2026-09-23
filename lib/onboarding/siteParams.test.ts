@@ -17,6 +17,19 @@ describe("siteParamsToAnswers", () => {
     expect(patch?.lmp).toBe("2026-04-22");
   });
 
+  it("counts back from HER calendar day, not UTC's, late at night", () => {
+    const saved = process.env.TZ;
+    process.env.TZ = "America/Asuncion";
+    try {
+      // 22:00 on 1 September in Asunción is already 2 September in UTC.
+      const lateEvening = new Date("2026-09-02T01:00:00Z").getTime();
+      expect(siteParamsToAnswers("?w=20", lateEvening)?.lmp).toBe("2026-04-21");
+    } finally {
+      if (saved === undefined) delete process.env.TZ;
+      else process.env.TZ = saved;
+    }
+  });
+
   it("ignores an out-of-range or non-numeric week", () => {
     expect(siteParamsToAnswers("?w=99", NOW)).toBeNull();
     expect(siteParamsToAnswers("?w=0", NOW)).toBeNull();

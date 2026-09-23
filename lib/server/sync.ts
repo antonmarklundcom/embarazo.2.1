@@ -286,37 +286,68 @@ export function drizzleBackend(database: Database): SyncBackend {
     },
 
     async page(userId, from, limit) {
-      const after =
-        from.store !== undefined && from.recordId !== undefined
-          ? or(
-              sql`${syncRecords.serverUpdatedAt} > ${from.serverUpdatedAt}`,
-              and(
-                eq(syncRecords.serverUpdatedAt, from.serverUpdatedAt),
-                or(
-                  sql`${syncRecords.store} > ${from.store}`,
-                  and(
-                    sql`${syncRecords.store} = ${from.store}`,
-                    sql`${syncRecords.recordId} > ${from.recordId}`,
-                  ),
-                ),
-              ),
-            )
-          : gte(syncRecords.serverUpdatedAt, from.serverUpdatedAt);
-
-      const rows = await database
-        .select()
-        .from(syncRecords)
-        .where(and(eq(syncRecords.userId, userId), after))
-        .orderBy(
-          asc(syncRecords.serverUpdatedAt),
-          asc(syncRecords.store),
-          asc(syncRecords.recordId),
-        )
-        .limit(limit);
-
+      const rows = await pageQuery(database, userId, from, limit);
       return rows.map(toStored);
     },
   };
+}
+
+/**
+ * The pull page as a query builder, split out of `page()` only so a test can
+ * read the SQL it generates (`.toSQL()` on a `drizzle.mock()` handle) — the
+ * ENUM ordering bug described below lived in exactly that SQL, where the Map-backed
+ * convergence tests cannot see it.
+ */
+export function pageQuery(
+  database: Database,
+  userId: string,
+  from: { serverUpdatedAt: number; store?: string; recordId?: string },
+  limit: number,
+) {
+  // `store` is a MySQL ENUM, and an ENUM has two orders. `ORDER BY store`
+  // sorts by the *declaration index* (profile, pregnancy, journalEntries,
+  // …), but `store > 'profile'` compares the value as a *string*. With the
+  // two disagreeing, a page that ended on `profile` inside one
+  // serverUpdatedAt batch resumed at "string-greater than profile" and
+  // skipped every row the index order had still queued after it —
+  // `journalEntries`, `cycles`, `clinical`… — for good, because the next
+  // pull starts past that batch. Confirmed against a MySQL 8.4 container
+  // with the raw query (September 2026): a page ending on `profile` resumed
+  // at `weightEntries` and never returned the four stores in between.
+  //
+  // Both sides now use the string: the ORDER BY and the keyset comparison
+  // read the same `CAST(store AS CHAR)`, so they sort by one collation
+  // (the connection's) and cannot drift. No migration, and the declaration
+  // order of SYNCED_STORES stays free to change. `recordId` is a VARCHAR and
+  // was never affected — ORDER BY and `>` already share its collation.
+  const storeText = sql`cast(${syncRecords.store} as char)`;
+  const after =
+    from.store !== undefined && from.recordId !== undefined
+      ? or(
+          sql`${syncRecords.serverUpdatedAt} > ${from.serverUpdatedAt}`,
+          and(
+            eq(syncRecords.serverUpdatedAt, from.serverUpdatedAt),
+            or(
+              sql`${storeText} > ${from.store}`,
+              and(
+                sql`${storeText} = ${from.store}`,
+                sql`${syncRecords.recordId} > ${from.recordId}`,
+              ),
+            ),
+          ),
+        )
+      : gte(syncRecords.serverUpdatedAt, from.serverUpdatedAt);
+
+  return database
+    .select()
+    .from(syncRecords)
+    .where(and(eq(syncRecords.userId, userId), after))
+    .orderBy(
+      asc(syncRecords.serverUpdatedAt),
+      asc(storeText),
+      asc(syncRecords.recordId),
+    )
+    .limit(limit);
 }
 
 function toStored(row: typeof syncRecords.$inferSelect): StoredRecord {

@@ -20,6 +20,13 @@
  * because in an App Router app they are where a navigation actually lands
  * (see `PRIVATE_NAVIGATION` in `app/sw.ts`), and `next-data` because a data
  * response is no less private for being JSON.
+ *
+ * `cross-origin` is `defaultCache`'s catch-all for every other origin, and it
+ * is where a K4 photo restore — a presigned GET straight from the bucket —
+ * landed before `app/sw.ts` made presigned URLs NetworkOnly. Same reasoning as
+ * the K14 names: the rule stops new entries, this drops the ones already on
+ * the phone. Nothing public depends on it surviving; what else it holds is a
+ * runtime copy the next online visit refills.
  */
 export const PRIVATE_CACHE_NAMES = [
   "apis",
@@ -27,6 +34,7 @@ export const PRIVATE_CACHE_NAMES = [
   "pages-rsc",
   "pages-rsc-prefetch",
   "next-data",
+  "cross-origin",
 ] as const;
 
 /**

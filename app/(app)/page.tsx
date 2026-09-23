@@ -17,7 +17,6 @@ import {
   Onboarding,
   PlaneandoHome,
   PopularThisWeek,
-  RoadmapSection,
   ShareCard,
   WeekArticleFeed,
 } from "@/components/home/dynamicSections";
@@ -241,9 +240,15 @@ export default function InicioPage() {
         role={profile.role}
       />
 
+      {/* The daily habit, right under the week: today's tip and the one-tap
+          check-in. They used to be the 8th and 9th cards, below everything
+          about the week — the two things that change every day were the
+          two nobody scrolled to. */}
+      <DailyTipCard text={tip.text} />
+      <MoodCheckIn role={profile.role} week={week} />
+
       {/* E2: share the week card (map #30). Drawn on the device; the image
-          carries the week number and nothing else. Sits directly under the
-          hero, which is the card it shares. */}
+          carries the week number and nothing else. */}
       <ShareCard week={week} label="Compartir mi semana" offerInvite />
 
       {/* C8: one-tap access to emergencia · carné · preguntas, and the
@@ -263,12 +268,6 @@ export default function InicioPage() {
           companionViewOf(shared.views)?.snapshot?.nextAppointmentAt ?? null
         }
       />
-
-      {/* Daily tip */}
-      <DailyTipCard text={tip.text} />
-
-      {/* K9-F6: the check-in records on tap now, and carries the streak. */}
-      <MoodCheckIn role={profile.role} week={week} />
 
       {/* Tool cards */}
       <HomeToolsGrid />
@@ -304,9 +303,10 @@ export default function InicioPage() {
 
       <InstallCard />
 
-      {/* Roadmap placeholders (build spec §8) */}
-      <RoadmapSection />
-
+      {/* The "Lo que viene" roadmap card is gone from Hoy: a lone
+          "Próximamente" tile read as unfinished on the screen she opens
+          every day. The component stays for when there is something real
+          to announce. */}
       <HomeFooter department={department} />
     </div>
   );

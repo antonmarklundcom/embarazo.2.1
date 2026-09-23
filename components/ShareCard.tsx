@@ -13,6 +13,10 @@ import {
   weekCardContent,
 } from "@/lib/share/card";
 import { drawBumpFrame, drawWeekCard } from "@/lib/share/draw";
+import { partnerShareText, partnerWhatsAppUrl } from "@/lib/share/partner";
+
+/** Read at build time, like `InviteFriend`'s; absent in dev and previews. */
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL;
 
 // BUILD-PLAN E2 — the share button (feature map #30).
 //
@@ -61,6 +65,16 @@ export function ShareCard({
    * grow one too. Hoy's card is where the family story lives.
    */
   offerInvite = false,
+  /**
+   * Share card v2 — "Contale a tu pareja": this week's partner perspective as
+   * a WhatsApp message (`lib/share/partner.ts`). Text only, fixed content
+   * keyed on the week, so it carries nothing personal.
+   *
+   * Off by default and turned on by Hoy for the mamá only: a papá or a
+   * companion reading the home screen *is* the pareja, and a button telling
+   * them to message themselves is noise. The bump-frame instance leaves it off.
+   */
+  offerPartner = false,
   label = "Compartir",
   className = "",
 }: {
@@ -68,12 +82,15 @@ export function ShareCard({
   /** A bump photo to composite. Without one, the plain week card is shared. */
   photo?: Blob;
   offerInvite?: boolean;
+  offerPartner?: boolean;
   label?: string;
   className?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [shared, setShared] = useState(false);
+
+  const partnerText = offerPartner ? partnerShareText(week, APP_URL) : null;
 
   async function share() {
     setBusy(true);
@@ -133,6 +150,20 @@ export function ShareCard({
         {busy ? "Preparando…" : label}
       </button>
       {error && <p className="mt-1 text-sm text-terracotta">{error}</p>}
+
+      {/* v2 — the partner's paragraph for this week, straight to WhatsApp.
+          A plain link rather than a script: `wa.me/?text=` opens WhatsApp's
+          contact picker, and nothing is sent from this page. */}
+      {partnerText && (
+        <a
+          href={partnerWhatsAppUrl(partnerText)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 flex min-h-[44px] w-full items-center justify-center rounded-tile border border-line bg-white px-4 text-sm font-extrabold text-petrol transition active:scale-[0.99]"
+        >
+          Contale a tu pareja
+        </a>
+      )}
 
       {/* K7 — the invite, after the share and only after it. */}
       {offerInvite && shared && (

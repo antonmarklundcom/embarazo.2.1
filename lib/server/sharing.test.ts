@@ -187,10 +187,23 @@ function memoryBackend(): SharingBackend & {
     },
 
     async markInviteAccepted(code, userId, at) {
+      // Mirrors the conditional UPDATE: only an unused code, or one this same
+      // user already holds, can be claimed.
       const row = invites.get(code);
-      if (row) {
-        row.acceptedAt = at;
-        row.acceptedByUserId = userId;
+      if (!row) return false;
+      if (row.acceptedAt !== null && row.acceptedByUserId !== userId) {
+        return false;
+      }
+      row.acceptedAt = at;
+      row.acceptedByUserId = userId;
+      return true;
+    },
+
+    async releaseInviteClaim(code, userId) {
+      const row = invites.get(code);
+      if (row && row.acceptedByUserId === userId) {
+        row.acceptedAt = null;
+        row.acceptedByUserId = null;
       }
     },
 
@@ -419,6 +432,47 @@ describe("an invite is single-use", () => {
 
     expect(second).toEqual({ ok: false, reason: "used" });
     expect(await liveMembership(backend, STRANGER, pregnancyId)).toBeNull();
+  });
+
+  it("lets exactly one of two people in when they tap the same link at once", async () => {
+    // Both acceptances read the code as unused before either writes. Granting
+    // the membership first and stamping the code second let both in; claiming
+    // the code first, conditionally, lets one.
+    const { backend, pregnancyId } = await setUp();
+    const invite = await createInvite(backend, pregnancyId, OWNER, "partner", NOW);
+
+    const [first, second] = await Promise.all([
+      acceptInvite(backend, invite.code, PARTNER, NOW + 10),
+      acceptInvite(backend, invite.code, STRANGER, NOW + 10),
+    ]);
+
+    expect(first).toEqual({ ok: true, pregnancyId, role: "partner" });
+    expect(second).toEqual({ ok: false, reason: "used" });
+    expect(await liveMembership(backend, STRANGER, pregnancyId)).toBeNull();
+    expect(backend.invites.get(invite.code)?.acceptedByUserId).toBe(PARTNER);
+  });
+
+  it("hands the code back if the membership write fails after the claim", async () => {
+    // Otherwise the code is spent on nobody, and her retry reads as "revoked".
+    const { backend, pregnancyId } = await setUp();
+    const invite = await createInvite(backend, pregnancyId, OWNER, "partner", NOW);
+    const upsert = backend.upsertMembership.bind(backend);
+    let failNext = true;
+    backend.upsertMembership = async (row) => {
+      if (failNext) {
+        failNext = false;
+        throw new Error("ER_LOCK_DEADLOCK");
+      }
+      return upsert(row);
+    };
+
+    await expect(
+      acceptInvite(backend, invite.code, PARTNER, NOW + 10),
+    ).rejects.toThrow();
+    expect(backend.invites.get(invite.code)?.acceptedAt).toBeNull();
+
+    const retry = await acceptInvite(backend, invite.code, PARTNER, NOW + 20);
+    expect(retry).toEqual({ ok: true, pregnancyId, role: "partner" });
   });
 
   it("lets the SAME person accept twice, which is a re-tap and not a breach", async () => {

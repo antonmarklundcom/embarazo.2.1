@@ -430,7 +430,13 @@ export function Onboarding({
   return (
     <div className="mx-auto flex min-h-[80dvh] max-w-md flex-col justify-center py-6">
       <div className="mb-6 text-center">
-        <h1 className="text-2xl font-black tracking-tight text-ink">Bienvenida a {APP_NAME}</h1>
+        <h1 className="text-2xl font-black tracking-tight text-ink">
+          {/* Before a role is picked the reader is almost always the mamá;
+              after "Papá" or "Familiar", "Bienvenida" is the wrong person. */}
+          {answers.role && answers.role !== "mama"
+            ? `Te damos la bienvenida a ${APP_NAME}`
+            : `Bienvenida a ${APP_NAME}`}
+        </h1>
         <p className="mt-2 text-sm text-muted">
           Tu embarazo y tu familia, en una sola app — hecha para Paraguay.
         </p>
@@ -455,6 +461,7 @@ export function Onboarding({
           today={today}
           minLmp={minLmp}
           canContinue={canContinueFromLmp()}
+          resolvedLmp={resolveLmpDate()}
           onChange={update}
           onContinue={continueFromLmp}
           onBack={goBack}

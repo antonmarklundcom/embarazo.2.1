@@ -16,12 +16,21 @@ import {
   WeeklyLineCard,
 } from "./dynamicSections";
 
-export function WeekContentRail({ week, role }: { week: number; role: Role }) {
+export function WeekContentRail({
+  week,
+  role,
+  withLine = true,
+}: {
+  week: number;
+  role: Role;
+  /** Hoy renders the one-liner itself, above the daily tip. */
+  withLine?: boolean;
+}) {
   return (
     <>
       {/* C2: the weekly one-liner (map #11). Renders nothing for a week with
           no line yet. */}
-      <WeeklyLineCard week={week} />
+      {withLine && <WeeklyLineCard week={week} />}
 
       {/* C3: size comparison tabs (map #12) — tamaño / pie / mano. */}
       <SizeTabs week={week} />

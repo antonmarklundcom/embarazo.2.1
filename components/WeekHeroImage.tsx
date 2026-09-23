@@ -119,9 +119,6 @@ export function WeekHeroImage({
     return (
       <div className="relative overflow-hidden rounded-card shadow-soft">
         <ThemeBackdrop theme={themeId} />
-        <div className="absolute right-4 top-4 z-10">
-          <ThemeChip ink={theme.ink} />
-        </div>
         {probe}
         <div className="relative px-5 pb-5 pt-6">
           {caption}
@@ -140,6 +137,13 @@ export function WeekHeroImage({
               )}
             </div>
           )}
+        </div>
+        {/* After the content in source order, so it paints on top without a
+            z-index: a z-index here makes a stacking context, and the theme
+            sheet this chip opens (position: fixed) would be trapped under
+            the bottom nav with it. */}
+        <div className="absolute right-4 top-4">
+          <ThemeChip ink={theme.ink} />
         </div>
       </div>
     );

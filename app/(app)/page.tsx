@@ -16,6 +16,7 @@ import {
   MoodCheckIn,
   Onboarding,
   PlaneandoHome,
+  WeeklyLineCard,
   PopularThisWeek,
   ShareCard,
   WeekArticleFeed,
@@ -245,6 +246,9 @@ export default function InicioPage() {
           check-in. They used to be the 8th and 9th cards, below everything
           about the week — the two things that change every day were the
           two nobody scrolled to. */}
+      {/* C2: the week's one-liner is the two-second answer, so it leads;
+          the daily tip and check-in follow it. */}
+      <WeeklyLineCard week={week} />
       <DailyTipCard text={tip.text} />
       <MoodCheckIn role={profile.role} week={week} />
 
@@ -265,7 +269,7 @@ export default function InicioPage() {
 
       {/* C2–C5: the cards that are about this week — one-liner, tamaños,
           perspectivas, la nota de la obstetra. */}
-      <WeekContentRail week={week} role={profile.role} />
+      <WeekContentRail week={week} role={profile.role} withLine={false} />
 
       {/* K2/K7: ánimos, "Tu familia" and the next control — the three cards
           `ownerView` gates. */}

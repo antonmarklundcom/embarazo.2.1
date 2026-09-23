@@ -7,8 +7,9 @@ security-relevant branch), then medium is fine for the P1 fixes.
 
 ```
 Repo: antonmarklundcom/embarazo.2.1 ("Mi Bebé · Embarazo Paraguay", Next.js 15
-pregnancy PWA). Work on branch claude/gallant-sagan-sup7si (already pushed; it
-carries last night's overnight review and fixes, not yet in a PR).
+pregnancy PWA). Work on branch claude/gallant-sagan-sup7si — PR #117
+(https://github.com/antonmarklundcom/embarazo.2.1/pull/117); it carries
+last night's overnight review and fixes.
 
 Read, in this order, and nothing else up front:
 1. docs/REVIEW-2026-09-23.md — what was done overnight, the verified findings
@@ -34,9 +35,9 @@ B. Re-review the security-relevant diffs on this branch with fresh eyes
    fix missed (e.g. does next-auth's adapter link BEFORE or AFTER the signIn
    callback? confirm in node_modules/@auth/core/lib/actions/callback).
 
-C. Open a PR from claude/gallant-sagan-sup7si to main (use
-   .github/pull_request_template.md if it exists), then watch it and get CI
-   green.
+C. PR #117 already exists for this branch. Check its CI and review
+   comments, fix anything red, and get it green and mergeable (subscribe to
+   its activity so CI/review events wake you).
 
 D. Then work down docs/REVIEW-2026-09-23.md §2 P1 items that are code (not
    founder tasks), one commit each, in order: "tu sanatorio" copy sweep,

@@ -139,8 +139,8 @@ const TOOLS: Tool[] = [
   },
   {
     href: "/herramientas/resumen",
-    title: "Resumen del control",
-    desc: "Organizá tus datos en una hoja para mostrarle a tu médico/a.",
+    title: "Preparar mi control",
+    desc: "Preguntas para tu semana y tus datos en una hoja para mostrarle a tu médico/a.",
     icon: "summary",
     tone: "bg-pastel-arena",
   },
@@ -216,17 +216,20 @@ export default function HerramientasPage() {
             <div
               key={tool.href}
               aria-disabled="true"
-              className="relative flex min-h-[112px] flex-col items-center justify-start gap-2 rounded-card border border-line bg-white p-3 text-center opacity-60"
+              className="relative flex min-h-[112px] flex-col items-center justify-start gap-2 rounded-card border border-line bg-white p-3 text-center"
             >
-              <span className="absolute right-2 top-2 rounded-full bg-cream px-2 py-0.5 text-[10px] font-extrabold text-muted">
+              {/* Only the icon is faded. Fading the whole tile took the badge
+                  and title below 3:1; the badge is the one word that explains
+                  why the tile does nothing, so it keeps full contrast (4.7:1). */}
+              <span className="absolute right-2 top-2 rounded-full bg-sand-bg px-2 py-0.5 text-[10px] font-extrabold text-sand-text">
                 Pronto
               </span>
               <span
-                className={`flex h-11 w-11 items-center justify-center rounded-full ${tool.tone}`}
+                className={`flex h-11 w-11 items-center justify-center rounded-full opacity-60 ${tool.tone}`}
               >
                 <ToolIcon name={tool.icon} />
               </span>
-              <span className="text-[12px] font-extrabold leading-tight text-ink">
+              <span className="text-[12px] font-extrabold leading-tight text-ink/75">
                 {tool.title}
               </span>
               <span className="sr-only">{tool.desc} (disponible pronto)</span>

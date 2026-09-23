@@ -4,6 +4,7 @@ import {
   WEEKLY_TIP_COUNT,
   WEEKLY_TIP_HOUR,
   weeklyTipTimes,
+  weekStartTimes,
 } from "./weekly";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -69,5 +70,55 @@ describe("weeklyTipTimes", () => {
       expect(gap).toBeGreaterThanOrEqual(6 * MS_PER_DAY + 23 * 3_600_000);
       expect(gap).toBeLessThanOrEqual(7 * MS_PER_DAY + 3_600_000);
     }
+  });
+});
+
+describe("weekStartTimes — her week turns on her own weekday", () => {
+  // FUM on Wednesday 1 July 2026, local midnight (how onboarding stores it).
+  const lmp = new Date(2026, 6, 1).getTime();
+
+  it("fires on the FUM's weekday, never on the day the app was opened", () => {
+    // Opened on a Friday and on a Monday: both schedules are Wednesdays.
+    for (const opened of [new Date(2026, 7, 21, 9).getTime(), new Date(2026, 7, 24, 18).getTime()]) {
+      const times = weekStartTimes(lmp, opened);
+      expect(times.length).toBe(WEEKLY_TIP_COUNT);
+      for (const at of times) {
+        const date = new Date(at);
+        expect(date.getDay()).toBe(3); // Wednesday
+        expect(date.getHours()).toBe(WEEKLY_TIP_HOUR);
+      }
+    }
+  });
+
+  it("is the same list whatever day in between it is computed on", () => {
+    const fromFriday = weekStartTimes(lmp, new Date(2026, 7, 21, 9).getTime());
+    const fromMonday = weekStartTimes(lmp, new Date(2026, 7, 24, 9).getTime());
+    expect(fromMonday[0]).toBe(fromFriday[0]);
+  });
+
+  it("takes today at 10:00 when today is her turnover day and it is still early", () => {
+    const wednesdayMorning = new Date(2026, 7, 26, 8).getTime();
+    expect(weekStartTimes(lmp, wednesdayMorning)[0]).toBe(new Date(2026, 7, 26, 10).getTime());
+  });
+
+  it("waits a week when today's 10:00 has passed", () => {
+    const wednesdayEvening = new Date(2026, 7, 26, 20).getTime();
+    expect(weekStartTimes(lmp, wednesdayEvening)[0]).toBe(new Date(2026, 8, 2, 10).getTime());
+  });
+
+  it("never returns a time in the past, and steps exactly one calendar week", () => {
+    const now = new Date(2026, 7, 21, 9).getTime();
+    const times = weekStartTimes(lmp, now);
+    expect(times[0]!).toBeGreaterThan(now);
+    for (let i = 1; i < times.length; i += 1) {
+      const gap = Math.round((times[i]! - times[i - 1]!) / MS_PER_DAY);
+      expect(gap).toBe(7);
+    }
+  });
+
+  it("stops after week 42", () => {
+    // 41 weeks + 3 days in: only week 42's turnover is left.
+    const late = lmp + (41 * 7 + 3) * MS_PER_DAY;
+    expect(weekStartTimes(lmp, late)).toHaveLength(1);
   });
 });

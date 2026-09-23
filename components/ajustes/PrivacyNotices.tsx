@@ -70,7 +70,8 @@ export function PrivacyNotices() {
         <p className="mt-1 text-sm leading-relaxed text-muted">
           {APP_NAME} es una herramienta informativa y de acompañamiento. No reemplaza
           la atención de un profesional de la salud y no realiza diagnósticos.
-          Ante cualquier duda o síntoma, contactá a tu sanatorio.
+          Ante cualquier duda o síntoma, contactá a tu médico/a, hospital o
+          sanatorio.
         </p>
       </section>
     </>

@@ -13,7 +13,7 @@
   },
   {
     "slug": "que-llevar-al-sanatorio",
-    "title": "Qué llevar al sanatorio: el bolso para vos y para el bebé",
+    "title": "Qué llevar al hospital o sanatorio: el bolso para vos y para el bebé",
     "fromWeek": 30,
     "toWeek": 42,
     "cluster": "logistica",
@@ -37,7 +37,7 @@
   },
   {
     "slug": "senales-de-alarma-embarazo",
-    "title": "Señales de alarma en el embarazo: cuándo contactar a tu sanatorio",
+    "title": "Señales de alarma en el embarazo: cuándo consultar enseguida",
     "cluster": "salud",
     "minutes": 1
   },

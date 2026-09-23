@@ -20,7 +20,7 @@ describe("weeklyTipSentence", () => {
         expect(sentence, `week ${week}`).toBeNull();
       } else {
         expect(sentence, `week ${week}`).toEqual({
-          title: `Semana ${week}`,
+          title: `¡Empieza tu semana ${week}!`,
           body: line,
         });
       }

@@ -93,8 +93,8 @@ export function kickWindowMissed(count: number, elapsedMs: number): boolean {
  * a real link to /emergencia beside it.
  */
 export const KICKS_NUDGE_HINT: BilingualText = {
-  es: "Sentiste menos que tu ritmo habitual — si te preocupa, consultá con tu sanatorio o andá a la guardia.",
-  gn: "Nde memby omýi sa'ive jepivégui — oĩramo ndéve preocupación, eñeporandu ne sanatoriope térã tereho pe guardia-pe.",
+  es: "Sentiste menos que tu ritmo habitual — si te preocupa, consultá con tu médico/a, hospital o sanatorio, o andá a la guardia.",
+  gn: "Nde memby omýi sa'ive jepivégui — oĩramo ndéve preocupación, eñeporandu ne médico/a, hospital térã sanatorio-pe, térã tereho pe guardia-pe.",
 };
 
 /**

@@ -167,7 +167,7 @@ export default function ContraccionesPage() {
       {waHref ? (
         <WhatsAppButton
           href={waHref}
-          label="Contactar a mi sanatorio"
+          label="Contactar a mi hospital o sanatorio"
           className="w-full"
         />
       ) : (
@@ -208,7 +208,8 @@ export default function ContraccionesPage() {
 
       <p className="text-[11px] leading-relaxed text-muted">
         Esta herramienta es informativa. Si las contracciones son regulares y
-        cada vez más seguidas, o ante cualquier duda, contactá a tu sanatorio.
+        cada vez más seguidas, o ante cualquier duda, contactá a tu hospital o
+        sanatorio.
       </p>
       <MedicalReviewByline />
     </div>

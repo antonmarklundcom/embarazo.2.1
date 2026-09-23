@@ -22,3 +22,26 @@ export function useImageFailed<T extends HTMLImageElement = HTMLImageElement>() 
 
   return { ref, failed, onError };
 }
+
+/**
+ * The other direction: `true` only once the image has actually decoded.
+ *
+ * For a slot that should show its fallback *until* the asset proves it
+ * exists — the week renders, which are still missing — so the page never
+ * paints the "render" layout first and then flips to the fallback after
+ * hydration. Same pre-hydration catch as above: an image that finished
+ * before React attached `onLoad` is found on mount.
+ */
+export function useImageLoaded<T extends HTMLImageElement = HTMLImageElement>() {
+  const ref = useRef<T>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const img = ref.current;
+    if (img && img.complete && img.naturalWidth > 0) setLoaded(true);
+  }, []);
+
+  const onLoad = useCallback(() => setLoaded(true), []);
+
+  return { ref, loaded, onLoad };
+}

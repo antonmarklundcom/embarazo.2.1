@@ -11,7 +11,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   mama: "Mamá",
   papa: "Papá",
   acompanante: "Acompañante",
-  familiar: "Familiar o amiga",
+  familiar: "Familia o amistades",
 };
 
 export const ROLE_ONBOARDING_COPY: Record<Role, { title: string; desc: string }> = {
@@ -28,7 +28,7 @@ export const ROLE_ONBOARDING_COPY: Record<Role, { title: string; desc: string }>
     desc: "Acompaño a alguien en su embarazo o búsqueda.",
   },
   familiar: {
-    title: "Familiar o amiga",
+    title: "Familia o amistades",
     desc: "Quiero seguir de cerca el embarazo de alguien querido.",
   },
 };

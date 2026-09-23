@@ -14,7 +14,7 @@ export interface ChecklistGroup {
 export const CHECKLISTS: ChecklistGroup[] = [
   {
     id: "bolso",
-    title: "Bolso al sanatorio",
+    title: "Bolso para el parto",
     items: [
       { key: "bolso-cedula", label: "Cédula de identidad" },
       { key: "bolso-carne", label: "Carné perinatal con tus controles" },
@@ -36,7 +36,7 @@ export const CHECKLISTS: ChecklistGroup[] = [
     id: "tramites",
     title: "Trámites después del nacimiento",
     items: [
-      { key: "tramite-certificado", label: "Retirar el certificado de nacido vivo del sanatorio" },
+      { key: "tramite-certificado", label: "Retirar el certificado de nacido vivo del hospital o sanatorio" },
       { key: "tramite-registro", label: "Inscribir el nacimiento en el Registro Civil" },
       { key: "tramite-nacimiento", label: "Retirar el certificado de nacimiento" },
       { key: "tramite-cedula", label: "Tramitar la primera cédula del bebé" },

@@ -115,8 +115,8 @@ export function assess511(
  * to call, not a diagnosis.
  */
 export const CONTRACTIONS_511_HINT: BilingualText = {
-  es: "Tus contracciones llegan cada 5 minutos y duran cerca de 1 minuto, así desde hace una hora: es momento de llamar a tu sanatorio.",
-  gn: "Ne contracción ou 5 minuto-gui 5 minuto-pe ha ipuku peteĩ minuto rupi, peteĩ hora guive: ko'ág̃a ehenói ne sanatorio.",
+  es: "Tus contracciones llegan cada 5 minutos y duran cerca de 1 minuto, así desde hace una hora: es momento de llamar a tu hospital o sanatorio.",
+  gn: "Ne contracción ou 5 minuto-gui 5 minuto-pe ha ipuku peteĩ minuto rupi, peteĩ hora guive: ko'ág̃a ehenói ne hospital térã sanatorio.",
 };
 
 /**

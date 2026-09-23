@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import {
@@ -177,6 +178,17 @@ export function NextAppointmentCard({
           </button>
         )}
       </div>
+
+      {/* "Preparar mi control": the questions for her week and the last four
+          weeks of her logs, on one page to show at the consultation. */}
+      {!editing && (tone === "calm" || tone === "soon") && (
+        <Link
+          href="/herramientas/resumen"
+          className="mt-3 flex min-h-[44px] items-center justify-center rounded-tile bg-white/80 px-4 text-sm font-extrabold text-petrol transition active:scale-[0.99]"
+        >
+          Preparar mi control →
+        </Link>
+      )}
 
       {editing && (
         <div className="mt-3 space-y-2">

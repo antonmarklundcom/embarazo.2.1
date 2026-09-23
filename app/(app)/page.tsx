@@ -16,8 +16,8 @@ import {
   MoodCheckIn,
   Onboarding,
   PlaneandoHome,
+  WeeklyLineCard,
   PopularThisWeek,
-  RoadmapSection,
   ShareCard,
   WeekArticleFeed,
 } from "@/components/home/dynamicSections";
@@ -32,6 +32,7 @@ import {
 } from "@/lib/pregnancy";
 import { getWeek } from "@/lib/weeks";
 import { getDailyTip } from "@/lib/dailyTips";
+import { isSelfCentered } from "@/lib/roleCopy";
 
 import { hasOnboardingDraft } from "@/lib/onboarding/draftStorage";
 import { siteParamsToAnswers } from "@/lib/onboarding/siteParams";
@@ -60,6 +61,7 @@ import { NoPregnancyYet } from "@/components/home/NoPregnancyYet";
 import { RecomendadosRail } from "@/components/RecomendadosRail";
 import { WeekContentRail } from "@/components/home/WeekContentRail";
 import { WeekHero } from "@/components/home/WeekHero";
+import { NewWeekCard } from "@/components/home/NewWeekCard";
 import { WeekStrip } from "@/components/home/WeekStrip";
 
 // "Hoy" screen — brand design 1a (docs/archive/REDESIGN-PLAN.md §2): week strip,
@@ -211,6 +213,15 @@ export default function InicioPage() {
     <div className="space-y-4">
       <WeekStrip />
 
+      {/* Semana nueva: on the day her week turns over (her own weekday,
+          from her FUM) and the two after, until she closes it. */}
+      <NewWeekCard
+        week={week}
+        daysIntoWeek={profile.completed?.days ?? 3}
+        lmpDate={lmpDate}
+        sizeComparison={info.sizeComparison}
+      />
+
       {/* C1: circular week hero + progress ring + stats row (map #9, #10).
           Everything below this comment, down to the tool/reading rails, is
           the C2–C8 slot area — each of those tasks fills in one block here
@@ -231,10 +242,26 @@ export default function InicioPage() {
         role={profile.role}
       />
 
+      {/* The daily habit, right under the week: today's tip and the one-tap
+          check-in. They used to be the 8th and 9th cards, below everything
+          about the week — the two things that change every day were the
+          two nobody scrolled to. */}
+      {/* C2: the week's one-liner is the two-second answer, so it leads;
+          the daily tip and check-in follow it. */}
+      <WeeklyLineCard week={week} />
+      <DailyTipCard text={tip.text} />
+      <MoodCheckIn role={profile.role} week={week} />
+
       {/* E2: share the week card (map #30). Drawn on the device; the image
-          carries the week number and nothing else. Sits directly under the
-          hero, which is the card it shares. */}
-      <ShareCard week={week} label="Compartir mi semana" offerInvite />
+          carries the week number and nothing else. "Contale a tu pareja" (the
+          partner's paragraph for the week, text only) is offered to the mamá
+          only — anyone else on this screen is the person it would go to. */}
+      <ShareCard
+        week={week}
+        label="Compartir mi semana"
+        offerInvite
+        offerPartner={isSelfCentered(profile.role)}
+      />
 
       {/* C8: one-tap access to emergencia · carné · preguntas, and the
           feedback path (map #18, #19). */}
@@ -242,7 +269,7 @@ export default function InicioPage() {
 
       {/* C2–C5: the cards that are about this week — one-liner, tamaños,
           perspectivas, la nota de la obstetra. */}
-      <WeekContentRail week={week} role={profile.role} />
+      <WeekContentRail week={week} role={profile.role} withLine={false} />
 
       {/* K2/K7: ánimos, "Tu familia" and the next control — the three cards
           `ownerView` gates. */}
@@ -253,12 +280,6 @@ export default function InicioPage() {
           companionViewOf(shared.views)?.snapshot?.nextAppointmentAt ?? null
         }
       />
-
-      {/* Daily tip */}
-      <DailyTipCard text={tip.text} />
-
-      {/* K9-F6: the check-in records on tap now, and carries the streak. */}
-      <MoodCheckIn role={profile.role} week={week} />
 
       {/* Tool cards */}
       <HomeToolsGrid />
@@ -294,9 +315,10 @@ export default function InicioPage() {
 
       <InstallCard />
 
-      {/* Roadmap placeholders (build spec §8) */}
-      <RoadmapSection />
-
+      {/* The "Lo que viene" roadmap card is gone from Hoy: a lone
+          "Próximamente" tile read as unfinished on the screen she opens
+          every day. The component stays for when there is something real
+          to announce. */}
       <HomeFooter department={department} />
     </div>
   );

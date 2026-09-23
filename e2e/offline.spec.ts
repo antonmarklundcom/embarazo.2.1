@@ -15,5 +15,5 @@ test("navigates to a precached week page while offline", async ({ page, context 
   await context.setOffline(true);
   await gotoPrecached(page, "/semana/15");
 
-  await expect(page.getByText("Qué pasa esta semana")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Para hacer esta semana" })).toBeVisible();
 });

@@ -71,7 +71,7 @@ export default function PreconcepcionPage() {
                     <span className="mt-0.5 block text-xs leading-relaxed text-muted">
                       {item.detail}
                     </span>
-                    <span className="mt-1 inline-block rounded-full bg-cream px-2 py-0.5 text-[10px] text-muted">
+                    <span className="mt-1 inline-block rounded-full bg-cream px-2 py-0.5 text-[11px] text-ink/80">
                       Fuente: {item.source}
                     </span>
                   </span>

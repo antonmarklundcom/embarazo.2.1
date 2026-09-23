@@ -6,7 +6,7 @@ import {
   normaliseCategories,
   type PushCategory,
 } from "./categories";
-import { weeklyTipTimes } from "./weekly";
+import { weekStartTimes, weeklyTipTimes } from "./weekly";
 
 // BUILD-PLAN B5 — the device half.
 //
@@ -243,7 +243,7 @@ async function syncSubscription(
   // opt-in that no longer exists — the send-time check in `dispatchDueReminders`
   // would swallow them, but a queue full of pokes nobody will ever receive is
   // a queue that lies about what the server is going to do.
-  const consejos = categories.includes("consejos") ? weeklyTipTimes(now) : [];
+  const consejos = categories.includes("consejos") ? await consejosTimes(now) : [];
 
   try {
     await fetch("/api/v1/push", {
@@ -261,6 +261,44 @@ async function syncSubscription(
     // Offline. The next settings visit or the next appointment change
     // re-sends; nothing about the app breaks in the meantime.
   }
+}
+
+/**
+ * "Semana nueva": the days HER week turns over, from her own FUM
+ * (`weekStartTimes`). A device with no pregnancy of its own — a companion,
+ * or planning mode — keeps the plain weekly slot.
+ */
+async function consejosTimes(now: number = Date.now()): Promise<number[]> {
+  try {
+    const pregnancy = notDeleted(await db().pregnancy.toArray())[0];
+    if (typeof pregnancy?.lmpDate === "number") {
+      return weekStartTimes(pregnancy.lmpDate, now);
+    }
+  } catch {
+    // Storage refused: fall through to the plain weekly slot.
+  }
+  return weeklyTipTimes(now);
+}
+
+/**
+ * Turn on the "semana nueva" notice from the Hoy card, in one tap.
+ *
+ * With push already on, only the `consejos` schedule is re-sent (the narrow
+ * write `refreshWeeklyTips` makes) so the companion control reminder is not
+ * republished without its time. With push off, this is the same permission
+ * request the Ajustes toggle makes.
+ */
+export async function enableWeekStartNotice(): Promise<PushStatus> {
+  const categories = readLocalCategories();
+  const next = categories.includes("consejos")
+    ? categories
+    : normaliseCategories([...categories, "consejos"]);
+  if (await existingSubscription()) {
+    writeLocalCategories(next);
+    await refreshWeeklyTips();
+    return "on";
+  }
+  return enablePush(next);
 }
 
 /** How long before an appointment to poke. */
@@ -365,7 +403,7 @@ export async function refreshWeeklyTips(): Promise<void> {
         endpoint: subscription.endpoint,
         keys: { p256dh: json.keys?.p256dh, auth: json.keys?.auth },
         categories,
-        consejos: categories.includes("consejos") ? weeklyTipTimes() : [],
+        consejos: categories.includes("consejos") ? await consejosTimes() : [],
       }),
     });
   } catch {

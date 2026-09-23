@@ -84,5 +84,5 @@ test("the weekly content stays in Spanish in Guaraní mode", async ({ page }) =>
   await expect(page.getByRole("link", { name: "Ko ára" })).toBeVisible();
 
   await page.goto("/semana/15");
-  await expect(page.getByText("Qué pasa esta semana")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Para hacer esta semana" })).toBeVisible();
 });

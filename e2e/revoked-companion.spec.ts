@@ -210,7 +210,7 @@ test("the public content a companion is entitled to still works offline", async 
   await context.setOffline(true);
 
   await gotoPrecached(page, "/semana/24");
-  await expect(page.getByText("Qué pasa esta semana")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Para hacer esta semana" })).toBeVisible();
 
   await context.close();
 });

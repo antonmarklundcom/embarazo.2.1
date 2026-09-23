@@ -116,6 +116,14 @@ export function Onboarding({
     [answers.mode, answers.invited, answers.role, auth?.signedIn],
   );
 
+  // Each step is swapped in place, not routed, so the browser keeps the
+  // scroll offset of the step before — "Continuar" sits at the bottom, and
+  // the next step (and, after "Empezar", Hoy itself) opened part-scrolled
+  // with its heading under the sticky header.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [step]);
+
   // --- draft: restore once, then persist every change ----------------------
 
   useEffect(() => {
@@ -239,6 +247,7 @@ export function Onboarding({
     (target: Step | null) => {
       if (target === null) {
         clearOnboardingDraft();
+        window.scrollTo(0, 0);
         onDone();
         return;
       }

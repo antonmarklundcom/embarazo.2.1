@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useImageFailed } from "@/lib/hooks/useImageFailed";
 
 import { placesLabel, type CategoryBanner } from "@/lib/directoryBanners";
 import type { DirectoryCategory } from "@/lib/types";
@@ -47,7 +47,7 @@ function Banner({
   banner: CategoryBanner;
   onPick: (category: DirectoryCategory) => void;
 }) {
-  const [noImage, setNoImage] = useState(false);
+  const { ref: imgRef, failed: noImage, onError: onImgError } = useImageFailed();
 
   return (
     <button
@@ -61,11 +61,12 @@ function Banner({
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
+            ref={imgRef}
             src={banner.image}
             alt=""
             aria-hidden
             className="absolute inset-0 h-full w-full object-cover"
-            onError={() => setNoImage(true)}
+            onError={onImgError}
           />
           <span
             aria-hidden

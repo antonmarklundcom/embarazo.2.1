@@ -437,7 +437,7 @@ describe("an invite is single-use", () => {
     expect(again).toEqual({ ok: true, pregnancyId, role: "partner" });
   });
 
-  it("un-revokes a member who re-accepts, rather than failing on the index", async () => {
+  it("does not let a removed member back in with their old link", async () => {
     const { backend, pregnancyId } = await setUp();
     const invite = await createInvite(
       backend,
@@ -449,12 +449,41 @@ describe("an invite is single-use", () => {
     await acceptInvite(backend, invite.code, PARTNER, NOW);
     await revokeMembership(backend, pregnancyId, PARTNER);
 
-    await acceptInvite(backend, invite.code, PARTNER, NOW + 60);
+    const again = await acceptInvite(backend, invite.code, PARTNER, NOW + 60);
+
+    expect(again).toEqual({ ok: false, reason: "revoked" });
+    expect(await liveMembership(backend, PARTNER, pregnancyId)).toBeNull();
+  });
+
+  it("un-revokes a removed member on a NEW invite, rather than failing on the index", async () => {
+    const { backend, pregnancyId } = await setUp();
+    const first = await createInvite(backend, pregnancyId, OWNER, "partner", NOW);
+    await acceptInvite(backend, first.code, PARTNER, NOW);
+    await revokeMembership(backend, pregnancyId, PARTNER);
+
+    const second = await createInvite(backend, pregnancyId, OWNER, "partner", NOW + 30);
+    await acceptInvite(backend, second.code, PARTNER, NOW + 60);
 
     expect(await liveMembership(backend, PARTNER, pregnancyId)).toEqual({
       pregnancyId,
       role: "partner",
     });
+  });
+
+  it("keeps the owner an owner when she taps her own link", async () => {
+    const { backend, pregnancyId } = await setUp();
+    const invite = await createInvite(backend, pregnancyId, OWNER, "partner", NOW);
+
+    const outcome = await acceptInvite(backend, invite.code, OWNER, NOW + 60);
+
+    expect(outcome).toEqual({ ok: true, pregnancyId, role: "owner" });
+    expect(await liveMembership(backend, OWNER, pregnancyId)).toEqual({
+      pregnancyId,
+      role: "owner",
+    });
+    // The code is still unused, so her partner can still accept it.
+    const partner = await acceptInvite(backend, invite.code, PARTNER, NOW + 90);
+    expect(partner).toEqual({ ok: true, pregnancyId, role: "partner" });
   });
 
   it("expires, because a link in a WhatsApp thread should not work forever", async () => {

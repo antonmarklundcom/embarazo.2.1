@@ -55,6 +55,17 @@ const pageRoutes: string[] = [
   // worst possible page to fail on.
   "/emergencia",
   "/derechos",
+  // The same gap, one level down (docs/log/r0-2.md flagged it and left it for
+  // a maintainer call): the two timers a woman reaches for when something may
+  // be wrong, and the carné she hands over at the guardia. All three are
+  // "use client" pages whose data is already on the phone (Dexie), so the only
+  // thing standing between them and a cold, signal-less first open was this
+  // list. Contracciones and Pataditas now carry their own alarm (preterm
+  // contractions, 2 hours without 10 movements) — an alarm that only exists
+  // with signal is not one.
+  "/herramientas/contracciones",
+  "/herramientas/pataditas",
+  "/herramientas/carne",
   ...Array.from(
     { length: MAX_WEEK - MIN_WEEK + 1 },
     (_, i) => `/semana/${MIN_WEEK + i}`,
@@ -137,6 +148,21 @@ const serwist = new Serwist({
     {
       matcher: ({ url, sameOrigin }) =>
         sameOrigin && PRIVATE_NAVIGATION.test(url.pathname),
+      handler: new NetworkOnly(),
+    },
+    // K4 photo restore downloads a bump or carné photo straight from the
+    // bucket, through a presigned GET (`lib/photos/client.ts`). That request is
+    // cross-origin, and `defaultCache` ends in a catch-all `!sameOrigin`
+    // NetworkFirst rule writing to a cache called `cross-origin` — so without
+    // this rule every restored photo was also parked in the Cache API, where
+    // sign-out and account deletion never looked. A presigned URL is by
+    // definition one private object behind a short-lived capability; there is
+    // nothing about it a cache should keep. Matched on the signature parameter
+    // rather than on the bucket's origin because the origin is server-only
+    // configuration (PHOTO_STORAGE_ENDPOINT) this worker is never built with.
+    {
+      matcher: ({ url, sameOrigin }) =>
+        !sameOrigin && url.searchParams.has("X-Amz-Signature"),
       handler: new NetworkOnly(),
     },
     // Network-first with cached fallback for the public read APIs (spec §9).

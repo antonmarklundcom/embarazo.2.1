@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 
 import { db, notDeleted, type Mood, type Role } from "@/lib/db";
-import { MOODS } from "@/lib/mood";
+import { MOODS, moodNeedsSupport } from "@/lib/mood";
 import { recordMoodToday } from "@/lib/journal/mood.client";
 import { localDay, moodStreak, streakSentence } from "@/lib/journal/streak";
-import { moodCheckInLabel } from "@/lib/roleCopy";
+import { isSelfCentered, moodCheckInLabel } from "@/lib/roleCopy";
 
 // K9-F6 — the home check-in, which now records.
 //
@@ -97,6 +97,30 @@ export function MoodCheckIn({ role, week }: { role: Role; week: number }) {
       </div>
 
       {message && <p className="mt-2.5 text-[13px] font-semibold text-sage">{message}</p>}
+      {/* "Mal" / "Muy mal" used to get only the thank-you above, which fades
+          after 2.5 s. This line is derived from today's saved mood instead, so
+          it stays for the day rather than vanishing with the toast. Línea 155
+          is the MSPBS mental-health line already curated (and verified, see
+          docs/log/u3.md) in lib/seed/recomendados.json — no number here that
+          the repo does not already carry. Worded for whoever is answering:
+          "te sentís" for her, "se siente" for someone asking about her. */}
+      {moodNeedsSupport(today?.mood) && (
+        <div className="mt-2.5 space-y-1 text-[13px] leading-relaxed text-ink">
+          <p>
+            {isSelfCentered(role)
+              ? "Si te sentís así seguido, no estás sola. Hablalo con tu médico/a."
+              : "Si se siente así seguido, no está sola. Que lo hable con su médico/a."}
+          </p>
+          <p className="flex flex-wrap gap-x-3">
+            <Link href="/emergencia" className="font-extrabold text-terracotta underline">
+              Ayuda y emergencia
+            </Link>
+            <a href="tel:155" className="font-extrabold text-terracotta underline">
+              Línea 155 · salud mental
+            </a>
+          </p>
+        </div>
+      )}
       {sentence && (
         <p className="mt-2.5 text-[13px] font-semibold text-petrol">{sentence}</p>
       )}

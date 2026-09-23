@@ -7,6 +7,7 @@ import Link from "next/link";
 import { primaryBabyName } from "@/lib/babies";
 import { babyAtWeekLabel as roleBabyAtWeekLabel } from "@/lib/roleCopy";
 import type { BabyIdentity, Role } from "@/lib/db";
+import { sizeLine } from "@/lib/weeks";
 
 import { HeroSubject } from "@/components/hero/HeroSubject";
 import { ThemeChip } from "@/components/hero/ThemeChip";
@@ -39,6 +40,7 @@ export function WeekHero({
   progress,
   daysElapsed,
   daysLeft,
+  dueDateLabel,
   babies,
   role,
 }: {
@@ -51,6 +53,8 @@ export function WeekHero({
   progress: number;
   daysElapsed: number;
   daysLeft: number;
+  /** "12 mar." — the FPP, short. */
+  dueDateLabel: string;
   babies: BabyIdentity[];
   role: Role;
 }) {
@@ -84,7 +88,7 @@ export function WeekHero({
             cy={RING_SIZE / 2}
             r={RING_RADIUS}
             fill="none"
-            stroke="#C96342"
+            stroke="#B5553A"
             strokeWidth={RING_STROKE}
             strokeLinecap="round"
             strokeDasharray={RING_CIRCUMFERENCE}
@@ -116,16 +120,18 @@ export function WeekHero({
         {completedLabel ?? `Semana ${week}`}
       </p>
       <p className="mt-0.5 text-xs font-bold text-muted">
-        Del tamaño de {sizeComparison}
+        {sizeLine(sizeComparison)}
       </p>
       {/* U7: the way into the theme sheet, on the card it changes. */}
       <div className="mt-2">
         <ThemeChip />
       </div>
 
-      {/* Three-stat row (feature map #10): semana · días transcurridos · faltan. */}
+      {/* Three-stat row (feature map #10). It used to open with "Semana",
+          the same number the ring already shows in 120px — the card read the
+          week four ways. The FPP is the number she is asked for most. */}
       <div className="mt-4 grid grid-cols-3 gap-2 border-t border-line pt-3.5">
-        <HeroStat value={String(week)} label="Semana" />
+        <HeroStat value={dueDateLabel} label="Fecha probable" />
         <HeroStat value={String(daysElapsed)} label="Días pasados" />
         <HeroStat value={String(daysLeft)} label="Faltan" />
       </div>

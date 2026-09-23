@@ -138,6 +138,45 @@ export function heroTheme(id: ThemeId): HeroTheme {
   return HERO_THEMES[id];
 }
 
+/**
+ * The caption's backdrop: transparent at the top edge, reaching the theme's
+ * own most-opaque scrim stop 40px down — before the first line of text, which
+ * the caption block pads 48px from its top. So every caption line sits on the
+ * colour the contrast test in `themes.test.ts` measures against, however tall
+ * the caption grows.
+ */
+export function captionScrim(theme: HeroTheme): string {
+  const stops = theme.scrim.match(/rgba?\([^)]+\)/g);
+  const solid = stops?.at(-1) ?? "rgba(50,46,41,0.65)";
+  const clear = solid.replace(/,\s*[\d.]+\)$/, ",0)");
+  return `linear-gradient(180deg, ${clear} 0px, ${solid} 40px, ${solid} 100%)`;
+}
+
+/**
+ * The big week number drawn when there is no render. It sits on the bare
+ * theme (no scrim), so it needs the theme's *own* ink: dark on the five light
+ * themes. The caption's `themeInk` is white everywhere because the caption
+ * always has a scrim; on the home ring the white number was near-invisible.
+ */
+export function fallbackInk(theme: HeroTheme): string {
+  return theme.ink === "light" ? "#FFFFFF" : "#322E29";
+}
+
+/**
+ * Caption colours for when there is no render and so no scrim: the text sits
+ * on the bare theme gradient and takes the theme's own ink — dark on the five
+ * pastel themes, white on `estrellas`.
+ */
+export function bareInk(theme: HeroTheme): {
+  strong: string;
+  soft: string;
+  eyebrow: string;
+} {
+  return theme.ink === "light"
+    ? { strong: "#FFFFFF", soft: "rgba(255,255,255,0.86)", eyebrow: "#FBE9D8" }
+    : { strong: "#322E29", soft: "rgba(50,46,41,0.84)", eyebrow: "rgba(50,46,41,0.8)" };
+}
+
 /** Text colours for a theme, as concrete values rather than class names. */
 export function themeInk(theme: HeroTheme): {
   strong: string;

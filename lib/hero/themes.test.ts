@@ -9,6 +9,8 @@ import {
   asThemeId,
   heroTheme,
   themeInk,
+  bareInk,
+  fallbackInk,
 } from "./themes";
 import { compositeOver, contrastRatio, parseColor, type RGBA } from "./contrast";
 
@@ -148,6 +150,28 @@ describe("the caption meets WCAG AA against every theme's measured scrim", () =>
       expect(ratio(ink.soft, floor), `${id} soft`).toBeGreaterThanOrEqual(4.5);
       // Large text: the "Semana N" headline (text-3xl, font-black).
       expect(ratio(ink.strong, floor), `${id} strong`).toBeGreaterThanOrEqual(3);
+    });
+  }
+});
+
+// With no render there is no scrim: the caption sits on the bare gradient, so
+// it is measured against every colour stop the gradient passes through.
+describe("the bare caption (no render) meets WCAG AA on its own theme", () => {
+  const toRgb = (c: RGBA) => `rgb(${c.r}, ${c.g}, ${c.b})`;
+  const ratio = (ink: string, floor: RGBA) =>
+    contrastRatio(toRgb(compositeOver(parseColor(ink), floor)), toRgb(floor));
+
+  for (const id of THEME_IDS) {
+    it(`${id}: body ink ≥ 4.5:1 on every stop`, () => {
+      const theme = heroTheme(id);
+      const ink = bareInk(theme);
+      for (const stop of theme.background.match(/#[0-9a-fA-F]{3,6}/g) ?? []) {
+        const floor = parseColor(stop);
+        expect(ratio(ink.eyebrow, floor), `${id} eyebrow on ${stop}`).toBeGreaterThanOrEqual(4.5);
+        expect(ratio(ink.soft, floor), `${id} soft on ${stop}`).toBeGreaterThanOrEqual(4.5);
+        expect(ratio(ink.strong, floor), `${id} strong on ${stop}`).toBeGreaterThanOrEqual(4.5);
+        expect(ratio(fallbackInk(theme), floor), `${id} number on ${stop}`).toBeGreaterThanOrEqual(3);
+      }
     });
   }
 });

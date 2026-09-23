@@ -196,16 +196,48 @@ export async function acceptInvite(
   }
   if (invite.expiresAt.getTime() < now) return { ok: false, reason: "expired" };
 
-  // Re-accepting an invite the user already used un-revokes them rather than
-  // failing on the unique index.
-  await backend.upsertMembership({
-    id: crypto.randomUUID(),
-    pregnancyId: invite.pregnancyId,
-    userId,
-    role: invite.role,
-  });
+  const current = await backend.liveMembership(userId, invite.pregnancyId);
 
-  await backend.markInviteAccepted(code, userId, new Date(now));
+  // The owner tapping her own link (to see what her partner will see) must not
+  // overwrite her `owner` row with the invite's role.
+  if (current?.role === "owner") {
+    return { ok: true, pregnancyId: invite.pregnancyId, role: "owner" };
+  }
+
+  // A re-tap of a code this same person already accepted is fine while they
+  // are still a member. Once the owner has removed them, the old link in
+  // their WhatsApp must not let them back in: only a NEW invite can.
+  if (invite.acceptedAt && !current) return { ok: false, reason: "revoked" };
+
+  // Claim the code BEFORE granting anything. The `acceptedAt` check above is a
+  // read, and two people tapping one forwarded link at the same moment both
+  // read it unused; with the membership written first and the stamp second,
+  // both got in. The claim is a conditional write (see `markInviteAccepted`),
+  // so exactly one of them holds it, and the other is told the link is used —
+  // which, by the time she hears it, is true.
+  const claimed = await backend.markInviteAccepted(code, userId, new Date(now));
+  if (!claimed) return { ok: false, reason: "used" };
+
+  // A new invite for someone removed earlier un-revokes their row rather than
+  // failing on the unique index.
+  try {
+    await backend.upsertMembership({
+      id: crypto.randomUUID(),
+      pregnancyId: invite.pregnancyId,
+      userId,
+      role: invite.role,
+    });
+  } catch (error) {
+    // The price of claiming first: a failed membership write would leave the
+    // code spent on nobody, and her retry would then read as "revoked" (the
+    // rule above) for a link she never got to use. Hand a fresh claim back.
+    // Only a fresh one — a re-tap's claim stamps an acceptance that already
+    // has a live membership behind it, and must stay.
+    if (!invite.acceptedAt) {
+      await backend.releaseInviteClaim(code, userId).catch(() => undefined);
+    }
+    throw error;
+  }
 
   return { ok: true, pregnancyId: invite.pregnancyId, role: invite.role };
 }

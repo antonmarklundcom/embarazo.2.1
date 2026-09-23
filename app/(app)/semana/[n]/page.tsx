@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { WEEKS, getWeek } from "@/lib/weeks";
+import { WEEKS, getWeek, hasSizeComparison } from "@/lib/weeks";
 import { clampWeek, MIN_WEEK, MAX_WEEK } from "@/lib/pregnancy";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { WeekHeroImage } from "@/components/WeekHeroImage";
@@ -18,9 +18,14 @@ export async function generateMetadata({
   const { n } = await params;
   const week = clampWeek(Number(n));
   const info = getWeek(week);
+  // Weeks 1–2 have no size to compare — see `sizeLine` in lib/weeks.ts. Here
+  // the sentence is mid-description, so the text goes in lowercase as stored.
+  const size = hasSizeComparison(info.sizeComparison)
+    ? `tu bebé es del tamaño de ${info.sizeComparison}`
+    : info.sizeComparison;
   return {
     title: `Semana ${week}`,
-    description: `Semana ${week}: tu bebé es del tamaño de ${info.sizeComparison}. ${info.milestone}`,
+    description: `Semana ${week}: ${size}. ${info.milestone}`,
   };
 }
 

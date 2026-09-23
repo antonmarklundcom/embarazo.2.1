@@ -60,6 +60,15 @@ describe("what may be signed is whitelisted before anything is signed", () => {
     const objects = union.match(/\.object\(/g)?.length ?? 0;
     expect(union.match(/\.strict\(\)/g)?.length).toBe(objects);
   });
+
+  it("hands the bounded size to the signer, which signs it as Content-Length", () => {
+    // A bound on a number the upload URL does not carry bounds nothing: the
+    // PUT would accept any length. `photoStorage.test.ts` drives the signer.
+    expect(ROUTE).toContain(
+      "uploadUrl(ctx.userId, objectKey, data.contentType, data.bytes)",
+    );
+    expect(STORAGE).toContain('"Content-Length": String(bytes)');
+  });
 });
 
 describe("no URL this app issues lasts long", () => {

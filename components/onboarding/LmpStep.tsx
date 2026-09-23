@@ -1,6 +1,13 @@
 "use client";
 
-import { type DueDateMethod } from "@/lib/pregnancy";
+import {
+  MAX_WEEK,
+  formatCompletedGestation,
+  getCompletedGestation,
+  getDueDate,
+  getRawWeek,
+  type DueDateMethod,
+} from "@/lib/pregnancy";
 import type { OnboardingAnswers } from "@/lib/onboarding/progress";
 
 import { BackButton, FIELD_CLASS, PrimaryButton } from "./controls";
@@ -25,6 +32,7 @@ export function LmpStep({
   today,
   minLmp,
   canContinue,
+  resolvedLmp,
   onChange,
   onContinue,
   onBack,
@@ -34,6 +42,8 @@ export function LmpStep({
   today: string;
   minLmp: string;
   canContinue: boolean;
+  /** The LMP the current answers resolve to, for the live preview. */
+  resolvedLmp: number | null;
   onChange: (patch: Partial<OnboardingAnswers>) => void;
   onContinue: () => void;
   onBack: () => void;
@@ -148,10 +158,42 @@ export function LmpStep({
         </>
       )}
 
+      <GestationPreview lmp={resolvedLmp} />
+
       {error && <p className="mt-2 text-sm text-terracotta">{error}</p>}
 
       <PrimaryButton disabled={!canContinue} onClick={onContinue} label="Continuar" />
       <BackButton onClick={onBack} />
     </div>
+  );
+}
+
+/**
+ * The first moment the app gives something back: her week and due date,
+ * live, as soon as the date resolves — instead of five steps later on Hoy.
+ * It also lets her catch a mistyped year before it becomes "semana 3".
+ * Silent for a date the Continuar check would reject anyway.
+ */
+function GestationPreview({ lmp }: { lmp: number | null }) {
+  if (lmp === null || Number.isNaN(lmp)) return null;
+  const now = Date.now();
+  if (lmp > now || getRawWeek(lmp, now) > MAX_WEEK) return null;
+
+  const gestation = getCompletedGestation(lmp, now);
+  const due = new Date(getDueDate(lmp)).toLocaleDateString("es-PY", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  return (
+    <p
+      className="mt-4 rounded-tile bg-pastel-salvia px-3 py-2.5 text-sm text-ink"
+      aria-live="polite"
+    >
+      Estás de <strong>{formatCompletedGestation(gestation)}</strong>
+      {" "}(semana {gestation.weeks + 1}). Fecha probable de parto:{" "}
+      <strong>{due}</strong>.
+    </p>
   );
 }

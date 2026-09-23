@@ -6,9 +6,13 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
 import { useProfile } from "@/lib/useProfile";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
-import { waLink, defaultPrefill, businessWhatsApp } from "@/lib/whatsapp";
+import { waLink } from "@/lib/whatsapp";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
-import { assess511, CONTRACTIONS_511_HINT } from "@/lib/tools/contractions";
+import {
+  assess511,
+  CONTRACTIONS_511_HINT,
+  CONTRACTIONS_PRETERM_ALERT,
+} from "@/lib/tools/contractions";
 
 // C8 — this button said "Contactar a mi sanatorio" and opened a chat with
 // `+595000000000`: the app's own (unset) business number, on the screen a woman
@@ -17,7 +21,13 @@ import { assess511, CONTRACTIONS_511_HINT } from "@/lib/tools/contractions";
 // destination for "mi sanatorio" in the first place. It now uses the sanatorio
 // number the user saved herself (/emergencia), and falls back to the emergency
 // screen — which carries the national numbers — when she has not saved one.
-const BUSINESS_WA = businessWhatsApp(process.env.NEXT_PUBLIC_BUSINESS_WHATSAPP);
+// Never the business number: that fallback came back once the
+// NEXT_PUBLIC_BUSINESS_WHATSAPP env var was set, which CI never sets.
+function laborPrefill(week?: number): string {
+  return week && week > 0
+    ? `Hola, estoy de ${week} semanas y estoy teniendo contracciones. ¿Qué me recomiendan hacer?`
+    : "Hola, estoy embarazada y estoy teniendo contracciones. ¿Qué me recomiendan hacer?";
+}
 
 function fmtClock(ts: number): string {
   return new Date(ts).toLocaleTimeString("es-PY", {
@@ -81,11 +91,7 @@ export default function ContraccionesPage() {
     : null;
 
   const sanatorio = profile.sanatorioPhone?.trim();
-  const waHref = sanatorio
-    ? waLink(sanatorio, defaultPrefill(profile.week))
-    : BUSINESS_WA
-      ? waLink(BUSINESS_WA, defaultPrefill(profile.week))
-      : null;
+  const waHref = sanatorio ? waLink(sanatorio, laborPrefill(profile.week)) : null;
 
   return (
     <div className="space-y-5">
@@ -118,10 +124,50 @@ export default function ContraccionesPage() {
         )}
       </div>
 
+      {/* The verdict sits directly under the timer, above the contact button
+          and the log. It used to be the last thing on the page — under the
+          log, the disclaimer and the byline — which after twenty rows meant
+          scrolling past everything she had just recorded to find the one
+          sentence that said what to do about it. `"preterm"` is the louder of
+          the two (see lib/tools/contractions.ts): regular contractions before
+          37 weeks are an alarm sign, so it carries its own way out — the
+          emergency screen and a tap-to-call 141 — rather than depending on
+          whether she has saved a sanatorio number. */}
+      {pattern511?.pattern === "preterm" && (
+        <div
+          role="alert"
+          className="space-y-3 rounded-card border-2 border-terracotta bg-terracotta/15 p-4 text-sm text-ink"
+        >
+          <p className="font-extrabold">{CONTRACTIONS_PRETERM_ALERT.es}</p>
+          <div className="flex gap-2">
+            <Link
+              href="/emergencia"
+              className="flex-1 rounded-tile bg-terracotta px-3 py-2.5 text-center text-sm font-extrabold text-white transition active:scale-[0.99]"
+            >
+              Ir a Emergencia
+            </Link>
+            <a
+              href="tel:141"
+              className="flex-1 rounded-tile border border-terracotta bg-white px-3 py-2.5 text-center text-sm font-extrabold text-terracotta transition active:scale-[0.99]"
+            >
+              Llamar al 141
+            </a>
+          </div>
+        </div>
+      )}
+      {pattern511?.pattern === "5-1-1" && (
+        <div
+          role="alert"
+          className="space-y-2 rounded-card border border-terracotta/30 bg-terracotta/10 p-4 text-sm text-ink"
+        >
+          <p className="font-extrabold">{CONTRACTIONS_511_HINT.es}</p>
+        </div>
+      )}
+
       {waHref ? (
         <WhatsAppButton
           href={waHref}
-          label={sanatorio ? "Contactar a mi sanatorio" : "Escribinos por WhatsApp"}
+          label="Contactar a mi sanatorio"
           className="w-full"
         />
       ) : (
@@ -165,15 +211,6 @@ export default function ContraccionesPage() {
         cada vez más seguidas, o ante cualquier duda, contactá a tu sanatorio.
       </p>
       <MedicalReviewByline />
-
-      {pattern511 && (
-        <div
-          role="alert"
-          className="space-y-2 rounded-card border border-terracotta/30 bg-terracotta/10 p-4 text-sm text-ink"
-        >
-          <p className="font-extrabold">{CONTRACTIONS_511_HINT.es}</p>
-        </div>
-      )}
     </div>
   );
 }

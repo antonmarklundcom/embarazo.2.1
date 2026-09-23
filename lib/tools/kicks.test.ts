@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { kickBaseline, kickNudge, type KickSessionSample } from "./kicks";
+import {
+  KICK_GOAL,
+  KICK_WINDOW_MS,
+  KICKS_NUDGE_HINT,
+  KICKS_WINDOW_ALERT,
+  kickBaseline,
+  kickNudge,
+  kickWindowMissed,
+  type KickSessionSample,
+} from "./kicks";
 
 // BUILD-PLAN D7. The nudge only ever compares a woman against her own recent
 // history — these tests are what makes "no baseline, no opinion" true.
@@ -76,5 +85,30 @@ describe("kickNudge", () => {
   it("never nudges off a zero baseline", () => {
     const today = session(0, 20, 0);
     expect(kickNudge(today, 0)).toBeNull();
+  });
+});
+
+describe("kickWindowMissed", () => {
+  it("is false inside the 2-hour window, whatever the count", () => {
+    expect(kickWindowMissed(0, KICK_WINDOW_MS)).toBe(false);
+    expect(kickWindowMissed(3, 30 * 60 * 1000)).toBe(false);
+  });
+
+  it("is true past 2 hours with fewer than the goal", () => {
+    expect(kickWindowMissed(KICK_GOAL - 1, KICK_WINDOW_MS + 1)).toBe(true);
+    expect(kickWindowMissed(0, 3 * HOUR)).toBe(true);
+  });
+
+  it("is false past 2 hours once the goal was reached", () => {
+    expect(kickWindowMissed(KICK_GOAL, 3 * HOUR)).toBe(false);
+  });
+});
+
+describe("kick copy", () => {
+  it("never shows a route path as text — the screen renders the link", () => {
+    for (const text of [KICKS_NUDGE_HINT, KICKS_WINDOW_ALERT]) {
+      expect(text.es).not.toContain("/emergencia");
+      expect(text.gn).not.toContain("/emergencia");
+    }
   });
 });

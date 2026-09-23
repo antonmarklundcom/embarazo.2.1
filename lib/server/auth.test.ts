@@ -67,6 +67,7 @@ const dbState = vi.hoisted(() => ({
   // FIFO queue: each `select()...limit()` call resolves the next entry.
   selectResults: [] as unknown[][],
   insertedRows: [] as unknown[],
+  updates: [] as { set: Record<string, unknown>; where: unknown }[],
 }));
 
 vi.mock("./db", () => ({
@@ -84,6 +85,14 @@ vi.mock("./db", () => ({
         dbState.insertedRows.push(row);
         return Promise.resolve(undefined);
       },
+    }),
+    update: () => ({
+      set: (set: Record<string, unknown>) => ({
+        where: (where: unknown) => {
+          dbState.updates.push({ set, where });
+          return Promise.resolve(undefined);
+        },
+      }),
     }),
   }),
 }));
@@ -112,6 +121,11 @@ let authorize: (
   credentials: Partial<Record<"email" | "password", unknown>>,
   request: Request,
 ) => Promise<unknown>;
+let revokeUnverifiedPassword: (email: string) => Promise<void>;
+let canPromoteFromAllowlist: (
+  provider: string | undefined,
+  emailVerified: Date | null,
+) => boolean;
 let registerCredentialsUser: (
   email: string,
   password: string,
@@ -125,6 +139,8 @@ beforeAll(async () => {
 
   const auth = await import("./auth");
   registerCredentialsUser = auth.registerCredentialsUser;
+  revokeUnverifiedPassword = auth.revokeUnverifiedPassword;
+  canPromoteFromAllowlist = auth.canPromoteFromAllowlist;
 
   // `authorize()` lives inside `buildConfig()`'s Credentials provider, which
   // is only built when `instance()` runs. `getSession()` is the cheapest
@@ -143,6 +159,7 @@ beforeAll(async () => {
 afterEach(() => {
   dbState.selectResults.length = 0;
   dbState.insertedRows.length = 0;
+  dbState.updates.length = 0;
   dbState.isDatabaseConfigured.mockReturnValue(true);
   verification.calls.length = 0;
   verification.fail = false;
@@ -373,5 +390,41 @@ describe("authorize() — R0-3's rate limit", () => {
       requestFrom("10.0.0.100"), // brand new bucket
     );
     expect(result).not.toBeNull();
+  });
+});
+
+// Pre-hijack: a password registered on someone else's address must not
+// survive that address's owner signing in with Google/Facebook.
+describe("revokeUnverifiedPassword() — OAuth sign-in over a password row", () => {
+  it("clears the password and bumps the session version", async () => {
+    await revokeUnverifiedPassword("victima@example.com");
+    expect(dbState.updates).toHaveLength(1);
+    const { set } = dbState.updates[0]!;
+    expect(set.passwordHash).toBeNull();
+    expect(set).toHaveProperty("sessionVersion");
+  });
+
+  it("does nothing without a database", async () => {
+    dbState.isDatabaseConfigured.mockReturnValue(false);
+    await revokeUnverifiedPassword("victima@example.com");
+    expect(dbState.updates).toHaveLength(0);
+  });
+});
+
+describe("canPromoteFromAllowlist() — who may pick up ADMIN_EMAILS", () => {
+  it("trusts an OAuth provider's address", () => {
+    expect(canPromoteFromAllowlist("google", null)).toBe(true);
+  });
+
+  it("refuses a password sign-in on an unconfirmed address", () => {
+    expect(canPromoteFromAllowlist("credentials", null)).toBe(false);
+  });
+
+  it("accepts a password sign-in once the address is confirmed", () => {
+    expect(canPromoteFromAllowlist("credentials", new Date())).toBe(true);
+  });
+
+  it("refuses when the provider is unknown", () => {
+    expect(canPromoteFromAllowlist(undefined, new Date())).toBe(false);
   });
 });

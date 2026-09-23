@@ -9,17 +9,24 @@ import { getTrimester } from "./pregnancy";
 // trimester is derived from the week so it can never drift out of sync.
 type RawWeek = Omit<WeekInfo, "trimester">;
 
+/**
+ * Weeks 1–2's `sizeComparison`. It is not a size — there is nothing to compare
+ * yet — so every "Del tamaño de …" template has to know about it, or it renders
+ * "Del tamaño de todavía no hay embrión". `sizeLine` below is how they know.
+ */
+export const NO_EMBRYO_YET = "todavía no hay embrión";
+
 const RAW_WEEKS: RawWeek[] = [
   {
     week: 1,
-    sizeComparison: "todavía no hay embrión",
+    sizeComparison: NO_EMBRYO_YET,
     milestone:
       "Tu cuerpo se prepara. Las semanas se cuentan desde tu última menstruación, así que en la semana 1 todavía no hubo concepción.",
     tip: "Si estás buscando embarazo, empezá con ácido fólico y reducí el cigarrillo y el alcohol desde ahora.",
   },
   {
     week: 2,
-    sizeComparison: "todavía no hay embrión",
+    sizeComparison: NO_EMBRYO_YET,
     milestone:
       "Es la semana de la ovulación para muchas. El cuerpo libera un óvulo que puede ser fecundado en estos días.",
     tip: "Tomá el tereré y el agua que necesites: una buena hidratación acompaña todo el proceso, sobre todo con el calor.",
@@ -393,4 +400,22 @@ export function getWeek(week: number): WeekInfo {
   const clamped = Math.min(42, Math.max(1, Math.floor(week)));
   // WEEKS is 1-indexed by content; find is safe and clear.
   return WEEKS.find((w) => w.week === clamped) ?? WEEKS[0]!;
+}
+
+/** Whether a week's `sizeComparison` is a size at all (false for weeks 1–2). */
+export function hasSizeComparison(sizeComparison: string): boolean {
+  return sizeComparison !== NO_EMBRYO_YET;
+}
+
+/**
+ * The caption under a week's hero: "Del tamaño de una lenteja", or — for
+ * weeks 1–2, where there is nothing to compare — just "Todavía no hay
+ * embrión". Keyed on the text rather than the week number on purpose: it is
+ * the content that makes the template wrong, so it is the content that decides.
+ */
+export function sizeLine(sizeComparison: string): string {
+  if (!hasSizeComparison(sizeComparison)) {
+    return sizeComparison.charAt(0).toUpperCase() + sizeComparison.slice(1);
+  }
+  return `Del tamaño de ${sizeComparison}`;
 }

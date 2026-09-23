@@ -136,3 +136,36 @@ test("the kicks nudge stays silent with fewer than 3 prior sessions", async ({ p
 
   await expect(page.getByText("menos que tu ritmo habitual")).toHaveCount(0);
 });
+
+test("a regular pattern before 37 weeks is a preterm alert, above the log, not silence", async ({
+  page,
+}) => {
+  // ~20 weeks: the old screen showed nothing at all for this exact hour.
+  await completeOnboarding(page, { daysAgo: 140 });
+  await page.goto("/herramientas/contracciones");
+
+  const now = Date.now();
+  const sevenContractions = Array.from({ length: 7 }, (_, i) => {
+    const startedAt = now - (6 - i) * 5 * 60 * 1000;
+    return { startedAt, durationSec: 60, intervalSec: i === 0 ? 0 : 300 };
+  });
+  await seedContractions(page, sevenContractions);
+  await page.reload();
+
+  const alert = page.getByRole("alert").filter({ hasText: "antes de las 37 semanas" });
+  await expect(alert).toBeVisible();
+  await expect(alert.getByRole("link", { name: "Ir a Emergencia" })).toHaveAttribute(
+    "href",
+    "/emergencia",
+  );
+  await expect(alert.getByRole("link", { name: "Llamar al 141" })).toHaveAttribute(
+    "href",
+    "tel:141",
+  );
+  // The term hint is a different answer and must not appear alongside it.
+  await expect(page.getByText("es momento de llamar a tu sanatorio")).toHaveCount(0);
+  // Above the log, not under it: the alert's box starts before the heading's.
+  const alertBox = await alert.boundingBox();
+  const logBox = await page.getByRole("heading", { name: "Registro" }).boundingBox();
+  expect(alertBox!.y).toBeLessThan(logBox!.y);
+});

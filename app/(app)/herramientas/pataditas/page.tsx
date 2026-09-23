@@ -1,13 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type KickSession } from "@/lib/db";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
-import { kickBaseline, kickNudge, KICKS_NUDGE_HINT } from "@/lib/tools/kicks";
-
-const GOAL = 10;
-const SESSION_MS = 2 * 60 * 60 * 1000; // 2h goal window
+import {
+  kickBaseline,
+  kickNudge,
+  kickWindowMissed,
+  KICK_GOAL as GOAL,
+  KICKS_NUDGE_HINT,
+  KICKS_WINDOW_ALERT,
+} from "@/lib/tools/kicks";
 
 function fmtTime(ts: number): string {
   return new Date(ts).toLocaleString("es-PY", {
@@ -27,6 +32,17 @@ function fmtDuration(ms: number): string {
 
 export default function PataditasPage() {
   const [activeId, setActiveId] = useState<number | null>(null);
+  const [, setTick] = useState(0);
+
+  // Re-render every 30 s while a session is open. Without it the clock and
+  // the 2-hour alert below only moved when she tapped — and the case the alert
+  // exists for is precisely the one where she has stopped tapping because the
+  // baby has stopped moving.
+  useEffect(() => {
+    if (activeId === null) return;
+    const id = setInterval(() => setTick((t) => t + 1), 30_000);
+    return () => clearInterval(id);
+  }, [activeId]);
 
   const sessions = useLiveQuery(
     () => db().kickSessions.orderBy("startedAt").reverse().limit(10).toArray(),
@@ -66,6 +82,7 @@ export default function PataditasPage() {
 
   const count = active?.count ?? 0;
   const elapsed = active ? Date.now() - active.startedAt : 0;
+  const windowMissed = active ? kickWindowMissed(count, elapsed) : false;
 
   // D7 — compare today's most recently *completed* session against her own
   // last 7, never against a universal number. `sessions` is already ordered
@@ -102,7 +119,7 @@ export default function PataditasPage() {
             type="button"
             onClick={addKick}
             className="flex h-56 w-56 flex-col items-center justify-center rounded-full bg-rose/20 text-petrol-dark shadow-soft transition active:scale-[0.97]"
-            aria-label="Registrar una pataditas"
+            aria-label="Registrar una patadita"
           >
             <span className="text-6xl font-medium">{count}</span>
             <span className="mt-1 text-sm text-muted">
@@ -111,8 +128,24 @@ export default function PataditasPage() {
           </button>
           <p className="text-sm text-muted">
             Tiempo de la sesión: {fmtDuration(elapsed)}
-            {elapsed > SESSION_MS && " (pasaste las 2 horas)"}
           </p>
+          {/* Two hours without reaching the goal is the counting method's own
+              "fewer movements than expected" — it was a muted "(pasaste las 2
+              horas)" after the clock. Now an alert with a real way out. */}
+          {windowMissed && (
+            <div
+              role="alert"
+              className="w-full space-y-3 rounded-card border-2 border-terracotta bg-terracotta/15 p-4 text-sm text-ink"
+            >
+              <p className="font-extrabold">{KICKS_WINDOW_ALERT.es}</p>
+              <Link
+                href="/emergencia"
+                className="block rounded-tile bg-terracotta px-3 py-2.5 text-center text-sm font-extrabold text-white transition active:scale-[0.99]"
+              >
+                Ir a Emergencia
+              </Link>
+            </div>
+          )}
           <button
             type="button"
             onClick={finishSession}
@@ -134,6 +167,9 @@ export default function PataditasPage() {
           className="space-y-2 rounded-card border border-terracotta/30 bg-terracotta/10 p-4 text-sm text-ink"
         >
           <p className="font-extrabold">{KICKS_NUDGE_HINT.es}</p>
+          <Link href="/emergencia" className="inline-block font-extrabold text-terracotta underline">
+            Ver señales de alarma y números de emergencia
+          </Link>
         </div>
       )}
 

@@ -206,7 +206,28 @@ export default function CercaTuyoPage() {
         </div>
       )}
 
-      {!isLoading && (isError || listings.length === 0) && (
+      {!isLoading && isError && (
+        // Offline or the request failed: that is not "we have nothing here",
+        // and saying so would tell her the directory is empty when it isn't.
+        <div className="rounded-card bg-white p-5 text-center shadow-soft">
+          <p className="text-sm text-ink">
+            No pudimos cargar el directorio. Revisá tu conexión y probá de nuevo.
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            Si es una urgencia, los números de emergencia funcionan sin internet.
+          </p>
+          <div className="mt-3 flex justify-center">
+            <Link
+              href="/emergencia"
+              className="rounded-tile bg-terracotta px-4 py-2.5 text-sm font-extrabold text-white"
+            >
+              Ver emergencia
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {!isLoading && !isError && listings.length === 0 && (
         <div className="rounded-card bg-white p-5 text-center shadow-soft">
           <p className="text-sm text-ink">
             Todavía no tenemos lugares cargados para esta búsqueda.

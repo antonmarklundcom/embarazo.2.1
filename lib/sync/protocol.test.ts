@@ -5,11 +5,13 @@ import {
   MAX_PULL_LIMIT,
   MAX_PUSH_RECORDS,
   PULL_ALLOWED_PARAMS,
+  PULL_OVERLAP_MS,
   PullQuerySchema,
   PushRequestSchema,
   SyncRecordSchema,
   decodeCursor,
   encodeCursor,
+  pullSince,
 } from "./protocol";
 
 // BUILD-PLAN A3, standing rule 4: new API surface gets a zod whitelist and
@@ -134,6 +136,25 @@ describe("pull cursor", () => {
   it("returns null for junk rather than throwing", () => {
     for (const junk of ["", "abc", "1:", ":a:b", "x:store:id"]) {
       expect(decodeCursor(junk)).toBeNull();
+    }
+  });
+});
+
+describe("pullSince", () => {
+  it("starts a fixed overlap behind the high-water mark, never below zero", () => {
+    expect(PULL_OVERLAP_MS).toBe(30_000);
+    expect(pullSince(0)).toBe(0);
+    expect(pullSince(PULL_OVERLAP_MS - 1)).toBe(0);
+    expect(pullSince(1_790_000_000_000)).toBe(
+      1_790_000_000_000 - PULL_OVERLAP_MS,
+    );
+  });
+
+  it("always yields a `since` the pull route accepts", () => {
+    for (const mark of [0, 1, PULL_OVERLAP_MS, 1_790_000_000_000]) {
+      expect(PullQuerySchema.safeParse({ since: pullSince(mark) }).success).toBe(
+        true,
+      );
     }
   });
 });

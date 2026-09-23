@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useImageFailed } from "@/lib/hooks/useImageFailed";
 
 import { ThemeBackdrop } from "./ThemeBackdrop";
 import { useHeroTheme } from "@/lib/hero/preferences";
-import { heroTheme, themeInk } from "@/lib/hero/themes";
+import { fallbackInk, heroTheme } from "@/lib/hero/themes";
 
 // U7 — the baby on the chosen background, sized by whatever frames it.
 //
@@ -26,9 +26,9 @@ export function HeroSubject({
   alt: string;
   priority?: boolean;
 }) {
-  const [imgError, setImgError] = useState(false);
+  const { ref, failed: imgError, onError } = useImageFailed();
   const themeId = useHeroTheme();
-  const ink = themeInk(heroTheme(themeId));
+  const numberInk = fallbackInk(heroTheme(themeId));
 
   // Weeks 1–2: no embryo, so no subject — the theme alone, which is the honest
   // rendering of "todavía no hay embrión".
@@ -40,18 +40,19 @@ export function HeroSubject({
       {hasSubject && !imgError ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
+          ref={ref}
           src={`/assets/semanas/bebe-${week}.webp`}
           alt={alt}
           className="relative block h-full w-full object-cover"
           style={{ objectPosition: "center 18%" }}
           fetchPriority={priority ? "high" : undefined}
-          onError={() => setImgError(true)}
+          onError={onError}
         />
       ) : (
         <span className="relative flex h-full items-center justify-center">
           <span
             className="text-5xl font-black leading-none"
-            style={{ color: ink.strong, opacity: 0.6 }}
+            style={{ color: numberInk, opacity: 0.6 }}
           >
             {week}
           </span>

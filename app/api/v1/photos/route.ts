@@ -248,7 +248,9 @@ export async function POST(req: NextRequest) {
   }
 
   if (data.action === "upload-url") {
-    const url = uploadUrl(ctx.userId, objectKey, data.contentType);
+    // `bytes` is signed as Content-Length, so the PUT must be exactly the size
+    // the schema above just bounded — see `uploadUrl`.
+    const url = uploadUrl(ctx.userId, objectKey, data.contentType, data.bytes);
     if (!url) return unavailable();
     return NextResponse.json({ url, contentType: data.contentType }, { headers: HEADERS });
   }

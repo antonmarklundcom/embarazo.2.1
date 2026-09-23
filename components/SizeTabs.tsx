@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 
-import { getWeek } from "@/lib/weeks";
+import { getWeek, hasSizeComparison } from "@/lib/weeks";
 import { formatCm, limbSize } from "@/lib/seed/limbSizes";
 
 // BUILD-PLAN C3 — size comparison tabs (feature map #12).
@@ -42,7 +42,10 @@ export function SizeTabs({ week }: { week: number }) {
       id: "tamano",
       label: "Tamaño",
       value: measures || "Todavía sin medida",
-      comparison: info.sizeComparison,
+      // Weeks 1–2 have no comparison, only a sentence that says so; behind
+      // "Como …" it read "Como todavía no hay embrión." — the same bug as the
+      // hero's "Del tamaño de". Empty falls through to the honest line below.
+      comparison: hasSizeComparison(info.sizeComparison) ? info.sizeComparison : "",
     },
   ];
   if (limbs?.footCm) {

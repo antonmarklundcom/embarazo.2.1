@@ -22,9 +22,19 @@ function isValidIsoDate(raw: string): boolean {
   return !Number.isNaN(ms);
 }
 
-/** Today's date, `daysAgo` days earlier, as `YYYY-MM-DD`. */
+/**
+ * Today's date, `daysAgo` days earlier, as `YYYY-MM-DD` — in the device's
+ * own calendar. `toISOString()` is UTC: in Paraguay (UTC-3) after 21:00 it
+ * is already tomorrow there, so `?w=20` prefilled a date one day late and she
+ * saw "Semana 19". Stepping with `setDate` also keeps a DST change inside the
+ * span from shifting the day.
+ */
 function isoDateDaysAgo(daysAgo: number, now: number): string {
-  return new Date(now - daysAgo * 86_400_000).toISOString().slice(0, 10);
+  const date = new Date(now);
+  date.setDate(date.getDate() - daysAgo);
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
 }
 
 /**

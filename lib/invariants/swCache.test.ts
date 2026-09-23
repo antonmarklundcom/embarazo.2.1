@@ -110,6 +110,28 @@ describe("the service worker cannot cache a session-scoped response", () => {
     }
   });
 
+  it("precaches the safety pages from a cold install", () => {
+    // R0-2 found /emergencia and /derechos documented as offline and missing
+    // from `pageRoutes`; the two timers and the carné followed. Nothing else
+    // pins the list, and dropping one of these is silent until a phone with
+    // no signal opens it for the first time. Read back out of the source the
+    // same way the patterns above are, and never behind PRIVATE_NAVIGATION.
+    const start = SW.indexOf("const pageRoutes");
+    const end = SW.indexOf("];", start);
+    expect(start).toBeGreaterThan(-1);
+    const list = SW.slice(start, end);
+    for (const path of [
+      "/emergencia",
+      "/derechos",
+      "/herramientas/contracciones",
+      "/herramientas/pataditas",
+      "/herramientas/carne",
+    ]) {
+      expect(list, path).toContain(`"${path}"`);
+      expect(PRIVATE_NAVIGATION.test(path), path).toBe(false);
+    }
+  });
+
   it("puts the NetworkOnly rules before defaultCache", () => {
     // Serwist takes the first matching rule. Below `...defaultCache` these
     // rules are unreachable and the leak is back with the tests still green.
@@ -123,5 +145,17 @@ describe("the service worker cannot cache a session-scoped response", () => {
     expect(second).toBeGreaterThan(-1);
     expect(first).toBeLessThan(fallback);
     expect(second).toBeLessThan(fallback);
+  });
+
+  it("never caches a presigned bucket URL, and says so before defaultCache", () => {
+    // K4 photo restore GETs a presigned URL on the bucket's origin, and
+    // defaultCache's last rule caches every cross-origin GET under
+    // `cross-origin`. The NetworkOnly rule has to win that race.
+    const rule = SW.indexOf('!sameOrigin && url.searchParams.has("X-Amz-Signature")');
+    const fallback = SW.lastIndexOf("...defaultCache");
+    expect(rule).toBeGreaterThan(-1);
+    expect(rule).toBeLessThan(fallback);
+    const handler = SW.slice(rule, SW.indexOf("}", rule));
+    expect(handler).toContain("new NetworkOnly()");
   });
 });

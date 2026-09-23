@@ -78,3 +78,15 @@ export function moodLabel(key?: Mood): string {
 export function moodEmoji(key?: Mood): string {
   return moodOption(key)?.emoji ?? "•";
 }
+
+/**
+ * The two faces that get more than "Anotado. Gracias por contarnos.".
+ *
+ * Answering "Muy mal" with the same thank-you as "Muy bien" treated the answer
+ * as data entry. The home check-in now adds one gentle line and a way to
+ * /emergencia for these two — not a diagnosis, not a questionnaire, and not on
+ * "Regular", which is an ordinary day and should stay one.
+ */
+export function moodNeedsSupport(key: Mood | undefined): boolean {
+  return key === "mal" || key === "muy_mal";
+}

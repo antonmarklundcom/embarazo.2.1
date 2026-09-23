@@ -66,14 +66,27 @@ describe("assess511", () => {
     expect(assess511([stale, ...recent.slice(1)], NOW)).toBeNull();
   });
 
-  it("never fires below the term threshold, whatever the numbers say", () => {
+  it("reports a regular pattern before term as preterm, not as silence", () => {
+    // This test used to pin the opposite — `null` below 37 weeks — and that
+    // was the bug: regular contractions before term are an alarm sign, and
+    // the screen showed her nothing at all.
     const entries = series(7, 5 * 60, 60);
     expect(
       assess511(entries, NOW, { weekAtNow: MIN_WEEK_FOR_HINT - 1 }),
-    ).toBeNull();
+    ).toEqual({ pattern: "preterm" });
+    expect(assess511(entries, NOW, { weekAtNow: 30 })).toEqual({ pattern: "preterm" });
     expect(
       assess511(entries, NOW, { weekAtNow: MIN_WEEK_FOR_HINT }),
     ).toEqual({ pattern: "5-1-1" });
+    // An unknown week is treated as term, never as a reason for silence.
+    expect(assess511(entries, NOW, {})).toEqual({ pattern: "5-1-1" });
+  });
+
+  it("stays silent before term when the pattern is not regular", () => {
+    // Same detection as at term — the week changes the verdict, not the bar.
+    expect(assess511(series(5, 5 * 60, 60), NOW, { weekAtNow: 32 })).toBeNull();
+    expect(assess511(series(7, 12 * 60, 60), NOW, { weekAtNow: 32 })).toBeNull();
+    expect(assess511(series(7, 5 * 60, 20), NOW, { weekAtNow: 32 })).toBeNull();
   });
 
   it("says nothing with no entries at all", () => {

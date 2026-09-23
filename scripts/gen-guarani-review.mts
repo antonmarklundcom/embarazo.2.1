@@ -12,8 +12,11 @@ import {
 import { BENEFITS } from "../lib/derechos.ts";
 import { CHEERS } from "../lib/sharing/cheers.ts";
 import { DICT, type CoreKey } from "../lib/i18n/dict.ts";
-import { CONTRACTIONS_511_HINT } from "../lib/tools/contractions.ts";
-import { KICKS_NUDGE_HINT } from "../lib/tools/kicks.ts";
+import {
+  CONTRACTIONS_511_HINT,
+  CONTRACTIONS_PRETERM_ALERT,
+} from "../lib/tools/contractions.ts";
+import { KICKS_NUDGE_HINT, KICKS_WINDOW_ALERT } from "../lib/tools/kicks.ts";
 
 // K19 — generate the Guaraní review sheet.
 //
@@ -129,13 +132,16 @@ const sections: Section[] = [
   {
     title: "6. Herramientas — 5-1-1 y pataditas",
     why:
-      "El aviso del patrón 5-1-1 en Contracciones y el aviso de menos " +
-      "movimiento en Pataditas (D7). Dos frases nada más, pero cada una puede " +
+      "Los avisos de Contracciones (patrón 5-1-1 y contracciones regulares " +
+      "antes de las 37 semanas) y de Pataditas (menos movimiento que tu ritmo, " +
+      "y 2 horas sin llegar a 10) (D7). Pocas frases, pero cada una puede " +
       "ser la que decide si alguien llama al sanatorio o no — igual de " +
       "importante que las señales de alarma.",
     lines: [
       { where: "Contracciones · patrón 5-1-1", es: CONTRACTIONS_511_HINT.es, gn: CONTRACTIONS_511_HINT.gn ?? "" },
+      { where: "Contracciones · antes de las 37 semanas", es: CONTRACTIONS_PRETERM_ALERT.es, gn: CONTRACTIONS_PRETERM_ALERT.gn ?? "" },
       { where: "Pataditas · menos que tu ritmo", es: KICKS_NUDGE_HINT.es, gn: KICKS_NUDGE_HINT.gn ?? "" },
+      { where: "Pataditas · 2 horas sin llegar a 10", es: KICKS_WINDOW_ALERT.es, gn: KICKS_WINDOW_ALERT.gn ?? "" },
     ],
   },
   {

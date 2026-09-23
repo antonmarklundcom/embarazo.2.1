@@ -16,6 +16,17 @@ import {
   decryptNote,
 } from "@/lib/crypto";
 import { PrivacyLine } from "@/components/PrivacyLine";
+import {
+  ControlPrepPanel,
+  ControlQuestionsReport,
+  RecentReport,
+} from "@/components/control/ControlPrep";
+import {
+  readPicks,
+  summarizeRecent,
+  writePicks,
+  type ControlPicks,
+} from "@/lib/controlPrep";
 
 const MOOD_LABELS: Record<Mood, string> = {
   muy_bien: "Muy bien",
@@ -49,10 +60,18 @@ export default function ResumenPage() {
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState("");
   const [unlockedNonce, setUnlockedNonce] = useState(0);
+  // "Preparar mi control": what she picked to ask, and her own questions.
+  const [picks, setPicks] = useState<ControlPicks>({ picked: [], own: [] });
 
   useEffect(() => {
     if (isPinSet() && !isUnlocked()) setPinNeeded(true);
+    setPicks(readPicks());
   }, []);
+
+  function changePicks(next: ControlPicks) {
+    setPicks(next);
+    writePicks(next);
+  }
 
   const data = useLiveQuery(async () => {
     // Every read here is filtered through notDeleted: since A3 these stores
@@ -81,6 +100,22 @@ export default function ResumenPage() {
       for (const s of e.symptoms) c.set(s, (c.get(s) ?? 0) + 1);
     return [...c.entries()].sort((a, b) => b[1] - a[1]);
   }, [data?.journal]);
+
+  const recent = useMemo(
+    () =>
+      data
+        ? summarizeRecent(
+            {
+              weights: data.weights,
+              journal: data.journal,
+              kicks: data.kicks,
+              contractions: data.contractions,
+            },
+            generatedAt,
+          )
+        : null,
+    [data, generatedAt],
+  );
 
   const moodCounts = useMemo(() => {
     const c = new Map<Mood, number>();
@@ -150,6 +185,13 @@ export default function ResumenPage() {
         </p>
       </div>
 
+      <ControlPrepPanel
+        week={week}
+        nextAppointment={profile?.nextAppointment}
+        picks={picks}
+        onChange={changePicks}
+      />
+
       {/* PIN prompt to include encrypted notes */}
       {pinNeeded && (
         <section className="no-print rounded-card border border-sage/30 bg-sage/5 p-4">
@@ -214,6 +256,12 @@ export default function ResumenPage() {
             }
           />
         </ReportSection>
+
+        {/* Preparar mi control: her questions first — they are why she is
+            showing this page — then the last four weeks at a glance, before
+            the full history below. */}
+        <ControlQuestionsReport picks={picks} />
+        {recent && <RecentReport summary={recent} />}
 
         {/* Peso */}
         <ReportSection title="Peso registrado">

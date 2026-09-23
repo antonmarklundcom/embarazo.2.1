@@ -139,8 +139,8 @@ const TOOLS: Tool[] = [
   },
   {
     href: "/herramientas/resumen",
-    title: "Resumen del control",
-    desc: "Organizá tus datos en una hoja para mostrarle a tu médico/a.",
+    title: "Preparar mi control",
+    desc: "Preguntas para tu semana y tus datos en una hoja para mostrarle a tu médico/a.",
     icon: "summary",
     tone: "bg-pastel-arena",
   },

@@ -407,14 +407,16 @@ async function readFreshCheer(now: number): Promise<string | null> {
   }
 }
 
-async function composeNotification(): Promise<{ title: string; body: string }> {
+async function composeNotification(): Promise<{ title: string; body: string; url?: string }> {
   const now = Date.now();
   const local = await readLocalReminderState();
 
   // Her own control first: it is the common case, it needs no network, and a
   // device that tracks both would otherwise describe somebody else's.
+  // Tapping her own control reminder opens "Preparar mi control": the day
+  // before is exactly when to pick the questions to ask.
   const own = ownReminderSentence(local.nextAppointment, now);
-  if (own) return own;
+  if (own) return { ...own, url: "/herramientas/resumen" };
 
   if (local.companionReminder) {
     const companion = companionReminderSentence(
@@ -451,7 +453,7 @@ async function composeNotification(): Promise<{ title: string; body: string }> {
 self.addEventListener("push", (event) => {
   event.waitUntil(
     (async () => {
-      const { title, body } = await composeNotification();
+      const { title, body, url } = await composeNotification();
       await self.registration.showNotification(title, {
         body,
         icon: "/icons/icon-192.png",
@@ -461,7 +463,7 @@ self.addEventListener("push", (event) => {
         // from lib.dom's NotificationOptions, and its default of false is what
         // we want anyway.)
         tag: NOTIFICATION_TAG,
-        data: { url: "/" },
+        data: { url: url ?? "/" },
       });
     })(),
   );
@@ -476,9 +478,16 @@ self.addEventListener("notificationclick", (event) => {
         type: "window",
         includeUncontrolled: true,
       });
-      // Focus an open tab rather than opening a second one.
+      // Focus an open tab rather than opening a second one — and take it to
+      // the notification's screen, which a bare focus() never did.
       for (const client of clientList) {
-        if ("focus" in client) return client.focus();
+        if ("focus" in client) {
+          const focused = await client.focus();
+          if (target !== "/" && "navigate" in focused) {
+            await focused.navigate(target).catch(() => undefined);
+          }
+          return focused;
+        }
       }
       return self.clients.openWindow(target);
     })(),

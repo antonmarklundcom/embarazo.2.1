@@ -627,4 +627,12 @@ export async function wipeAllData(): Promise<void> {
   const instance = _db ?? new MiBebeDB();
   await instance.delete();
   _db = null;
+  // "Preparar mi control" keeps her own questions in localStorage
+  // (`lib/controlPrep.ts`). They are hers, written in her words, so they go
+  // with everything else.
+  try {
+    window.localStorage.removeItem("mibebe.control.questions");
+  } catch {
+    // Storage refused; nothing was stored either.
+  }
 }

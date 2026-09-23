@@ -8,6 +8,7 @@ import { ComparisonFigure } from "./hero/ComparisonFigure";
 import { useHeroTheme, useShowComparison } from "@/lib/hero/preferences";
 import { heroTheme, themeInk } from "@/lib/hero/themes";
 import { measurementNote, switchesMeasurementAt } from "@/lib/hero/scale";
+import { sizeLine } from "@/lib/weeks";
 
 // Weekly "bebé a las N semanas" hero, v2 (U7).
 //
@@ -105,7 +106,7 @@ export function WeekHeroImage({
           Semana {week}
         </p>
         <p className="mt-1 text-sm font-bold" style={{ color: ink.soft }}>
-          Del tamaño de {sizeComparison}
+          {sizeLine(sizeComparison)}
         </p>
         {measures && (
           <p className="mt-0.5 text-xs font-bold" style={{ color: ink.soft }}>

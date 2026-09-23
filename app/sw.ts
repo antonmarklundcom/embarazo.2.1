@@ -55,6 +55,17 @@ const pageRoutes: string[] = [
   // worst possible page to fail on.
   "/emergencia",
   "/derechos",
+  // The same gap, one level down (docs/log/r0-2.md flagged it and left it for
+  // a maintainer call): the two timers a woman reaches for when something may
+  // be wrong, and the carné she hands over at the guardia. All three are
+  // "use client" pages whose data is already on the phone (Dexie), so the only
+  // thing standing between them and a cold, signal-less first open was this
+  // list. Contracciones and Pataditas now carry their own alarm (preterm
+  // contractions, 2 hours without 10 movements) — an alarm that only exists
+  // with signal is not one.
+  "/herramientas/contracciones",
+  "/herramientas/pataditas",
+  "/herramientas/carne",
   ...Array.from(
     { length: MAX_WEEK - MIN_WEEK + 1 },
     (_, i) => `/semana/${MIN_WEEK + i}`,

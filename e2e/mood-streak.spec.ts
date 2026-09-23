@@ -65,3 +65,20 @@ test("a face exists for every mood the journal can store", async ({ page }) => {
     ).toBeVisible();
   }
 });
+
+test("a low mood gets a gentle line and a way to help, an ordinary one does not", async ({
+  page,
+}) => {
+  await completeOnboarding(page);
+
+  await page.getByRole("button", { name: "Regular", exact: true }).click();
+  await expect(page.getByText("Anotado. Gracias por contarnos.")).toBeVisible();
+  await expect(page.getByText("no estás sola")).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Muy mal", exact: true }).click();
+  await expect(page.getByText("Si te sentís así seguido, no estás sola.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Ayuda y emergencia" })).toHaveAttribute(
+    "href",
+    "/emergencia",
+  );
+});

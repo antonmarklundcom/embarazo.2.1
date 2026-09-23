@@ -7,6 +7,7 @@ import Link from "next/link";
 import { primaryBabyName } from "@/lib/babies";
 import { babyAtWeekLabel as roleBabyAtWeekLabel } from "@/lib/roleCopy";
 import type { BabyIdentity, Role } from "@/lib/db";
+import { sizeLine } from "@/lib/weeks";
 
 import { HeroSubject } from "@/components/hero/HeroSubject";
 import { ThemeChip } from "@/components/hero/ThemeChip";
@@ -116,7 +117,7 @@ export function WeekHero({
         {completedLabel ?? `Semana ${week}`}
       </p>
       <p className="mt-0.5 text-xs font-bold text-muted">
-        Del tamaño de {sizeComparison}
+        {sizeLine(sizeComparison)}
       </p>
       {/* U7: the way into the theme sheet, on the card it changes. */}
       <div className="mt-2">

@@ -110,6 +110,28 @@ describe("the service worker cannot cache a session-scoped response", () => {
     }
   });
 
+  it("precaches the safety pages from a cold install", () => {
+    // R0-2 found /emergencia and /derechos documented as offline and missing
+    // from `pageRoutes`; the two timers and the carné followed. Nothing else
+    // pins the list, and dropping one of these is silent until a phone with
+    // no signal opens it for the first time. Read back out of the source the
+    // same way the patterns above are, and never behind PRIVATE_NAVIGATION.
+    const start = SW.indexOf("const pageRoutes");
+    const end = SW.indexOf("];", start);
+    expect(start).toBeGreaterThan(-1);
+    const list = SW.slice(start, end);
+    for (const path of [
+      "/emergencia",
+      "/derechos",
+      "/herramientas/contracciones",
+      "/herramientas/pataditas",
+      "/herramientas/carne",
+    ]) {
+      expect(list, path).toContain(`"${path}"`);
+      expect(PRIVATE_NAVIGATION.test(path), path).toBe(false);
+    }
+  });
+
   it("puts the NetworkOnly rules before defaultCache", () => {
     // Serwist takes the first matching rule. Below `...defaultCache` these
     // rules are unreachable and the leak is back with the tests still green.

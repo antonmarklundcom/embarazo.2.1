@@ -5,6 +5,7 @@ import { useImageFailed } from "@/lib/hooks/useImageFailed";
 import { ThemeBackdrop } from "./ThemeBackdrop";
 import { useHeroTheme } from "@/lib/hero/preferences";
 import { fallbackInk, heroTheme } from "@/lib/hero/themes";
+import { hasWeekArt, weekArtAlt, weekArtSrc } from "@/lib/hero/weekArt";
 
 // U7 — the baby on the chosen background, sized by whatever frames it.
 //
@@ -30,9 +31,11 @@ export function HeroSubject({
   const themeId = useHeroTheme();
   const numberInk = fallbackInk(heroTheme(themeId));
 
-  // Weeks 1–2: no embryo, so no subject — the theme alone, which is the honest
-  // rendering of "todavía no hay embrión".
-  const hasSubject = week >= 3;
+  // Which weeks have a file is `lib/hero/weekArt.ts`'s call: with the cutout
+  // renders, weeks 1–2 have no embryo and show the theme alone; the site's
+  // framed set has a calendar for them. `object-cover` suits both — the framed
+  // pictures are square, so the circle only trims their empty corners.
+  const hasSubject = hasWeekArt(week);
 
   return (
     <span className="relative block h-full w-full">
@@ -41,8 +44,8 @@ export function HeroSubject({
         // eslint-disable-next-line @next/next/no-img-element
         <img
           ref={ref}
-          src={`/assets/semanas/bebe-${week}.webp`}
-          alt={alt}
+          src={weekArtSrc(week)}
+          alt={weekArtAlt(week) ?? alt}
           className="relative block h-full w-full object-cover"
           style={{ objectPosition: "center 18%" }}
           fetchPriority={priority ? "high" : undefined}

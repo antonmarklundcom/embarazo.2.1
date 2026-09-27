@@ -99,20 +99,40 @@ test("the same theme follows from home to a week page", async ({ page }) => {
   ).toHaveAttribute("aria-pressed", "true");
 });
 
-test("the hero is finished with no renders in the repo", async ({ page }) => {
-  // This is production today: `public/assets/semanas/` is empty, so every
-  // <img> 404s and the fallback is what everybody sees. It has to look
-  // deliberate rather than broken — the exit criterion for this unit.
+test("the site's week illustrations show under the hero on weeks 1, 20 and 42", async ({
+  page,
+}) => {
+  // Growth plan item 7: `public/assets/semanas/` holds the site's 42 framed
+  // illustrations. Week 1 is a calendar (no embryo yet), 20 and 42 are sizes.
+  await completeOnboarding(page);
+
+  const cases: Array<[number, string]> = [
+    [1, "Un calendario: en la semana 1 todavía no hay embrión."],
+    [20, "El tamaño de tu bebé en la semana 20: una banana."],
+    [42, "El tamaño de tu bebé en la semana 42: una sandía grande y madura."],
+  ];
+  for (const [week, alt] of cases) {
+    await page.goto(`/semana/${week}`);
+    await expect(page.getByText(`SEMANA ${week} ·`)).toBeVisible();
+    const img = page.getByRole("img", { name: alt });
+    await expect(img).toBeVisible();
+    await expect(img).toHaveAttribute("src", `/assets/semanas/bebe-${week}.webp`);
+    // Decoded, not just requested: a 404 would stay hidden behind the fallback.
+    expect(await img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
+  }
+});
+
+test("the hero still looks finished when a week's image is missing", async ({ page }) => {
+  // The fallback is no longer what everybody sees, but a failed or blocked
+  // fetch still lands here, and it has to look deliberate rather than broken.
+  await page.route(/\/assets\/semanas\/bebe-\d+\.webp$/, (route) =>
+    route.fulfill({ status: 404, body: "" }),
+  );
   await completeOnboarding(page);
   await page.goto("/semana/24");
 
   // The week number stands in for the render, and every caption still reads.
   await expect(page.getByText("SEMANA 24 · 2.º TRIMESTRE")).toBeVisible();
   await expect(page.getByText("Del tamaño de una mandioca")).toBeVisible();
-
-  // Weeks 1–2 have no embryo and must not ask for a render that will never
-  // exist.
-  await page.goto("/semana/1");
-  await expect(page.getByText("SEMANA 1 · 1.º TRIMESTRE")).toBeVisible();
-  await expect(page.locator('img[src="/assets/semanas/bebe-1.webp"]')).toHaveCount(0);
+  await expect(page.locator('img[src="/assets/semanas/bebe-24.webp"]')).toBeHidden();
 });

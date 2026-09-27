@@ -8,7 +8,8 @@
   "actual_spend_credits": "~42.5 (weeks: 40 kept + 3 blocked + 2 superseded pilots ≈ 22.5; comparisons: 40 kept = 20; blocked or rate-limited submissions are not charged)",
   "ledger_checked": "not checked this session",
   "download_status": "awaiting-allowlist — this cloud environment gets CONNECT 403 for *.cloudfront.net. Add it under the environment's Network access → Allowed domains, then run `npm run localize:images` and commit public/assets/semanas/*.webp and public/assets/comparaciones/*.webp.",
-  "review": "Founder to approve both sets in the Higgsfield gallery before localizing; medical reviewer optional (stylised, non-anatomical)."
+  "review": "Founder to approve both sets in the Higgsfield gallery before localizing; medical reviewer optional (stylised, non-anatomical).",
+  "site_set_in_repo": "2026-09-27, growth plan item 7: public/assets/semanas/bebe-<week>.webp currently holds the site's 42 opaque size illustrations (scripts/import-site-week-art.mjs), shown framed (lib/hero/weekArt.ts WEEK_ART_STYLE='framed'). Localizing this manifest's cutouts overwrites them; flip WEEK_ART_STYLE to 'cutout' in the same commit. The cloudfront download answered HTTP 200 from a cloud session on 2026-09-27."
  },
  "images": [
   {

@@ -1,9 +1,20 @@
 # Week renders and comparison objects
 
-This directory is **empty on purpose**. The app is built to look finished
-without it (`components/WeekHeroImage.tsx` falls back to the week number on the
-chosen theme), and it starts looking better the day the first file lands — no
-code change, no deploy flag.
+**Today (growth plan item 7):** this directory holds `bebe-1.webp` …
+`bebe-42.webp`, the site's size illustrations (embarazo.com.py
+`assets/img/tamano-bebe-semana-<n>-<fruit>-640.webp`), copied byte for byte by
+`node scripts/import-site-week-art.mjs [../embarazo]`. They are **opaque**
+(a flat pastel ground is part of each picture), so `lib/hero/weekArt.ts` sets
+`WEEK_ART_STYLE = "framed"` and the hero shows them as a framed picture on the
+theme instead of compositing them. Weeks 1–2 are calendars.
+
+Everything below describes the **cutout** set this directory was designed for
+(transparent renders, weeks 3–42). Moving to it: localize the renders
+(`npm run localize:images`, after the founder approves them), then flip
+`WEEK_ART_STYLE` to `"cutout"`.
+
+The app still looks finished with no file at all (`components/WeekHeroImage.tsx`
+falls back to the week number and a drawing on the chosen theme).
 
 Written for U10 and for the founder running generation locally.
 

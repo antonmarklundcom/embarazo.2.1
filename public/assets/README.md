@@ -8,7 +8,7 @@ without touching code.
 
 | Folder | File name | Used by |
 |---|---|---|
-| `semanas/` | `bebe-<week>.webp` (e.g. `bebe-21.webp`, weeks 4–42) | Home hero + `/semana/<week>` hero — the "Tu bebé a las N semanas" render |
+| `semanas/` | `bebe-<week>.webp` (e.g. `bebe-21.webp`, weeks 1–42 today) | Home hero + `/semana/<week>` hero — today the site's framed size illustrations (see `semanas/README.md`) |
 | `articulos/` | `<article-slug>.webp` | Guía / article cards |
 | `hero/` | `<name>.webp` | Lifestyle photos on Home / landing |
 

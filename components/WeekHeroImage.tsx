@@ -10,6 +10,7 @@ import { useHeroTheme, useShowComparison } from "@/lib/hero/preferences";
 import { bareInk, captionScrim, heroTheme, themeInk } from "@/lib/hero/themes";
 import { measurementNote, switchesMeasurementAt } from "@/lib/hero/scale";
 import { formatLength, formatWeight, sizeLine } from "@/lib/weeks";
+import { WEEK_ART_STYLE, hasWeekArt, weekArtAlt, weekArtSrc } from "@/lib/hero/weekArt";
 
 // Weekly "bebé a las N semanas" hero, v2 (U7).
 //
@@ -23,10 +24,12 @@ import { formatLength, formatWeight, sizeLine } from "@/lib/weeks";
 // assumption about a photograph, and it breaks the moment the background is a
 // pale lace medallion, so the scrim and the ink now come from the theme.
 //
-// **The renders are not in the repo.** `public/assets/semanas/` is empty (see
-// its README); this composites a 404 into the same week-number fallback G3
-// shipped, on the theme rather than on flat sand. That is production today,
-// and the exit criterion is that it looks finished that way.
+// **What is on disk today is the site's framed set, not the cutouts.**
+// `public/assets/semanas/` holds the 42 size illustrations copied from
+// embarazo.com.py (`scripts/import-site-week-art.mjs`): opaque squares, so
+// they sit in the card as a framed picture where the drawn fallback was, and
+// the theme stays around them. The composited layout below is kept for the
+// transparent renders; `lib/hero/weekArt.ts` says which set is on disk.
 export function WeekHeroImage({
   week,
   trimester,
@@ -52,12 +55,17 @@ export function WeekHeroImage({
   // and the text are the whole card, which is the honest version of "todavía
   // no hay embrión".
   const hasSubject = week >= 3;
-  // The render layout only once the render has actually loaded. Until then
-  // (which is today: `public/assets/semanas/` is empty) the card is the bare
-  // layout — caption on the theme in its own dark ink, and the drawn baby
-  // beside the size comparison — so it never flashes a scrimmed caption over
-  // an empty frame and then swaps after hydration.
-  const onRender = hasSubject && loaded;
+  const hasArt = hasWeekArt(week);
+  const framed = WEEK_ART_STYLE === "framed";
+  // The render layout only once a cutout render has actually loaded. Until
+  // then the card is the bare layout — caption on the theme in its own dark
+  // ink, and the drawn baby beside the size comparison — so it never flashes a
+  // scrimmed caption over an empty frame and then swaps after hydration.
+  const onRender = !framed && hasArt && loaded;
+  // The framed set: the picture takes the drawing's place in the bare layout.
+  // It IS the size comparison (a fruit), so the "hide the comparison" toggle
+  // hides it too — except on weeks 1–2, where it is a calendar, not a size.
+  const framedShown = framed && hasArt && loaded && (showComparison || !hasSubject);
   const ink = onRender ? themeInk(theme) : bareInk(theme);
 
   const measures = [
@@ -98,19 +106,28 @@ export function WeekHeroImage({
     </>
   );
 
-  // The probe: always in the DOM for weeks with a subject, so the day a render
-  // lands it is picked up with no code change. Hidden until it has loaded.
-  const probe = hasSubject ? (
+  const shown = onRender || framedShown;
+  // The probe: always in the DOM for weeks with art, so the day a file lands
+  // it is picked up with no code change. Hidden until it has loaded.
+  const probe = hasArt ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       ref={ref}
-      src={`/assets/semanas/bebe-${week}.webp`}
-      alt={onRender ? (alt ?? `Tu bebé a las ${week} semanas`) : ""}
-      aria-hidden={onRender ? undefined : true}
-      // `object-contain`, not `cover`: the render has alpha and a theme
-      // behind it, so cropping it to fill would cut the subject the
-      // background exists to frame.
-      className={onRender ? "block h-full w-full object-contain" : "hidden"}
+      src={weekArtSrc(week)}
+      alt={shown ? (weekArtAlt(week) ?? alt ?? `Tu bebé a las ${week} semanas`) : ""}
+      aria-hidden={shown ? undefined : true}
+      width={framed ? 200 : undefined}
+      height={framed ? 200 : undefined}
+      // Cutout: `object-contain`, not `cover` — the render has alpha and a
+      // theme behind it, so cropping it to fill would cut the subject the
+      // background exists to frame. Framed: a square picture in a square box.
+      className={
+        framedShown
+          ? "block h-[200px] w-[200px] rounded-2xl object-cover shadow-soft"
+          : onRender
+            ? "block h-full w-full object-contain"
+            : "hidden"
+      }
       onLoad={onLoad}
     />
   ) : null;
@@ -119,10 +136,12 @@ export function WeekHeroImage({
     return (
       <div className="relative overflow-hidden rounded-card shadow-soft">
         <ThemeBackdrop theme={themeId} />
-        {probe}
+        {!framedShown && probe}
         <div className="relative px-5 pb-5 pt-6">
           {caption}
-          {hasSubject && (
+          {framedShown ? (
+            <figure className="m-0 mt-4 flex justify-center">{probe}</figure>
+          ) : hasSubject && (
             <div className="mt-4 flex justify-center">
               {showComparison ? (
                 <ComparisonFigure

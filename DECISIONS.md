@@ -4507,3 +4507,20 @@ The plan lives in the site repo (`antonmarklundcom/embarazo`,
   worker did not register. Whatever the answer, onboarding finishes.
 - The shared e2e walk-through declines ("Ahora no"); `onboarding-avisos.spec.ts`
   covers "Sí", "Ahora no" and the iPhone case, counting permission requests.
+
+## 2026-09-27 — growth plan item 14: a Play review link, off until the listing exists
+
+- **`NEXT_PUBLIC_PLAY_STORE_URL`, unset by default.** Only an https
+  `play.google.com/store/apps/details?id=…` value counts as set
+  (`lib/rating/playReview.ts`), so a typo cannot send anybody elsewhere.
+- **Only inside the Android app.** The TWA launches with
+  `document.referrer` = `android-app://…`; that first-page fact is kept in
+  sessionStorage (`mibebe.twa`) for the session. In a browser there is nothing
+  installed to review, so the card stays as it is.
+- **With both, "¿Cómo te está yendo?" splits in two:** "Me está gustando:
+  dejar una reseña" (Play) and "Tengo algo para contarles" (WhatsApp, when the
+  business number is set). Without them, the card is unchanged, byte for byte.
+- Verified: unit tests for the rule; CI e2e proves the default (Android referrer,
+  no Play link); the switched-on path was run against a local build with the
+  variable set. Anton turns it on after the Play listing exists (site
+  `docs/human-todo.md` 3c).

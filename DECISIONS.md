@@ -4473,3 +4473,21 @@ The plan lives in the site repo (`antonmarklundcom/embarazo`,
 - `docs/ANDROID-LAUNCH.md` §3.1: still "App interactions, collected, not
   linked". The funnel is added as a third bullet under that row, and no other
   row moves. `docs/QR-CLINICS.md` is the URL shape to print on cards.
+
+## 2026-09-27 — growth plan item 11: the share card carries the week's picture and, if she wants, the nickname
+
+- **The week's illustration replaces the drawn baby** on the week card: the
+  same `bebe-<n>.webp` the hero shows (item 7), loaded by `ShareCard` from the
+  app's own origin and drawn framed on the ñandutí. `lib/share/draw.ts` still
+  loads nothing and holds no URL (its tests say so); when the file is missing
+  or fails, the card draws its own baby as before.
+- **"Semana N · <tamaño>"** is the line under the picture (`shareWeekLine`);
+  `size` now holds the bare comparison ("una banana").
+- **The nickname is the first share field that is hers, not the week's.** It
+  reverses a line of E2's rule on purpose, because the plan asks for it and the
+  share is hers: it is offered as a ticked "Con el apodo «…»" box only on Hoy,
+  only when the profile has a name, never on the bump frame, and the privacy
+  line under the button says "y el apodo" whenever it is on. `ShareCardContent`
+  gains `nickname` and the pinned key set in `share.test.ts` changed with it;
+  `babyName`/`babies` stay forbidden, so nothing in `lib/share` reads the
+  profile. Twins share "Ana y Sofía". Capped at 24 characters.

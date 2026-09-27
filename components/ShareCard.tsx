@@ -13,6 +13,7 @@ import {
   weekCardContent,
 } from "@/lib/share/card";
 import { drawBumpFrame, drawWeekCard } from "@/lib/share/draw";
+import { hasWeekArt, weekArtSrc } from "@/lib/hero/weekArt";
 import { partnerShareText, partnerWhatsAppUrl } from "@/lib/share/partner";
 
 /** Read at build time, like `InviteFriend`'s; absent in dev and previews. */
@@ -49,6 +50,23 @@ async function toFile(
   return blob ? new File([blob], name, { type: "image/png" }) : null;
 }
 
+/**
+ * Growth plan item 11 — the week's illustration for the card, from the app's
+ * own origin (the same file the week hero shows). `null` when there is none or
+ * it fails to load: the card then draws its own baby, as it always did.
+ */
+async function loadWeekArt(week: number): Promise<HTMLImageElement | null> {
+  if (!hasWeekArt(week)) return null;
+  const image = new Image();
+  image.src = weekArtSrc(week);
+  try {
+    await image.decode();
+    return image;
+  } catch {
+    return null;
+  }
+}
+
 export function ShareCard({
   week,
   photo,
@@ -75,6 +93,12 @@ export function ShareCard({
    * them to message themselves is noise. The bump-frame instance leaves it off.
    */
   offerPartner = false,
+  /**
+   * Growth plan item 11 — the baby's nickname from her profile, offered as a
+   * ticked "Con el apodo" box. Only Hoy passes it; the card carries it only
+   * while the box is ticked.
+   */
+  nickname,
   label = "Compartir",
   className = "",
 }: {
@@ -83,12 +107,15 @@ export function ShareCard({
   photo?: Blob;
   offerInvite?: boolean;
   offerPartner?: boolean;
+  nickname?: string | null;
   label?: string;
   className?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [shared, setShared] = useState(false);
+  const [withNickname, setWithNickname] = useState(true);
+  const cardNickname = nickname?.trim() ? nickname.trim() : null;
 
   const partnerText = offerPartner ? partnerShareText(week, APP_URL) : null;
 
@@ -108,7 +135,16 @@ export function ShareCard({
         );
         bitmap.close();
       } else {
-        file = await toFile((ctx) => drawWeekCard(ctx, weekCardContent(week)), name);
+        const art = await loadWeekArt(week);
+        file = await toFile(
+          (ctx) =>
+            drawWeekCard(
+              ctx,
+              weekCardContent(week, withNickname ? cardNickname : null),
+              art ?? undefined,
+            ),
+          name,
+        );
       }
 
       if (!file) {
@@ -139,8 +175,21 @@ export function ShareCard({
     }
   }
 
+  const offerNickname = cardNickname !== null && !photo;
+
   return (
     <div className={className}>
+      {offerNickname && (
+        <label className="mb-2 flex min-h-[44px] items-center gap-2 text-sm font-bold text-ink">
+          <input
+            type="checkbox"
+            checked={withNickname}
+            onChange={(event) => setWithNickname(event.target.checked)}
+            className="h-5 w-5 accent-petrol"
+          />
+          Con el apodo «{cardNickname}»
+        </label>
+      )}
       <button
         type="button"
         onClick={() => void share()}
@@ -185,7 +234,8 @@ export function ShareCard({
       )}
 
       <p className="mt-1 text-[11px] leading-relaxed text-muted">
-        La imagen se arma en tu teléfono y solo lleva la semana. La foto no sale
+        La imagen se arma en tu teléfono y solo lleva la semana
+        {offerNickname && withNickname ? " y el apodo" : ""}. La foto no sale
         de acá hasta que vos elegís con quién compartirla.
       </p>
     </div>

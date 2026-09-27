@@ -3,6 +3,7 @@ import {
   CARD_WIDTH,
   shareEyebrow,
   shareHeadline,
+  shareWeekLine,
   type ShareCardContent,
 } from "./card";
 
@@ -321,7 +322,8 @@ function drawHeader(
   ctx.letterSpacing = "0px";
 
   const headline = shareHeadline(content);
-  fitFont(ctx, headline, 900, headlineSize, 80, CARD_WIDTH - 160);
+  // 56, not 80: a nickname (growth plan 11) can be up to 24 characters.
+  fitFont(ctx, headline, 900, headlineSize, 56, CARD_WIDTH - 160);
   ctx.fillStyle = INK;
   ctx.fillText(headline, CENTER_X, headlineY);
 }
@@ -361,9 +363,35 @@ function drawGround(ctx: CanvasRenderingContext2D, content: ShareCardContent): v
  * and figure in the middle half, the size line and the pill at the foot, with
  * the medallion's outer ring kept clear of both text blocks.
  */
+/** A decoded picture the caller already has; this module never loads one. */
+type Picture = CanvasImageSource & { width: number; height: number };
+
+/**
+ * Growth plan item 11 — the week's own illustration (the same file the week
+ * hero shows, loaded by the caller from the app's origin), framed as a rounded
+ * square on the lace with a white border. Square and `cover`, like the hero.
+ */
+function drawWeekArt(ctx: CanvasRenderingContext2D, art: Picture, cx: number, cy: number, size: number): void {
+  const x = cx - size / 2;
+  const y = cy - size / 2;
+  ctx.save();
+  roundedRect(ctx, x, y, size, size, 64);
+  ctx.clip();
+  const scale = Math.max(size / art.width, size / art.height);
+  const w = art.width * scale;
+  const h = art.height * scale;
+  ctx.drawImage(art, cx - w / 2, cy - h / 2, w, h);
+  ctx.restore();
+  ctx.strokeStyle = WHITE;
+  ctx.lineWidth = 16;
+  roundedRect(ctx, x, y, size, size, 64);
+  ctx.stroke();
+}
+
 export function drawWeekCard(
   ctx: CanvasRenderingContext2D,
   content: ShareCardContent,
+  art?: Picture,
 ): void {
   drawGround(ctx, content);
   drawHeader(ctx, content, 136, 276, 128);
@@ -388,7 +416,9 @@ export function drawWeekCard(
   drawSparkle(ctx, 204, 512, 14);
   drawSparkle(ctx, 858, 906, 12);
 
-  if (content.week >= FIRST_BABY_WEEK) {
+  if (art) {
+    drawWeekArt(ctx, art, CENTER_X, artY, 500);
+  } else if (content.week >= FIRST_BABY_WEEK) {
     // The figure grows a little across the pregnancy — 290px across at week 9
     // to 350px at 40 — so a week-35 card does not look like a week-10 one.
     const growth = Math.min(1, Math.max(0, (content.week - FIRST_BABY_WEEK) / 31));
@@ -397,18 +427,20 @@ export function drawWeekCard(
     drawGlow(ctx, CENTER_X, artY, content.week);
   }
 
-  // The size line — or, for the weeks that have no size yet, the tagline,
-  // quieter and on one line, since it is the app talking rather than the week.
+  // "Semana 20 · una banana" (growth plan item 11) — or, for the weeks that
+  // have no size yet, the tagline, quieter and on one line, since it is the app
+  // talking rather than the week.
   ctx.textAlign = "center";
   if (content.size) {
+    const line = shareWeekLine(content);
     ctx.fillStyle = INK;
-    // Shrink a little before breaking: "Del tamaño de una aceituna" reads
-    // better on one line at 52px than on two at 58px. Only the genuinely long
-    // ones wrap, at full size.
+    // Shrink a little before breaking: a short line reads better on one line
+    // at 52px than on two at 58px. Only the genuinely long ones wrap, at full
+    // size ("Semana 42 · una sandía grande y madura").
     const maxWidth = CARD_WIDTH - 180;
-    fitFont(ctx, content.size, 800, 58, 50, maxWidth);
-    if (ctx.measureText(content.size).width > maxWidth) ctx.font = font(800, 58);
-    const lines = balancedLines(ctx, content.size, maxWidth);
+    fitFont(ctx, line, 800, 58, 50, maxWidth);
+    if (ctx.measureText(line).width > maxWidth) ctx.font = font(800, 58);
+    const lines = balancedLines(ctx, line, maxWidth);
     const firstY = lines.length === 1 ? 1072 : 1040;
     lines.forEach((line, i) => ctx.fillText(line, CENTER_X, firstY + i * 70));
   } else {

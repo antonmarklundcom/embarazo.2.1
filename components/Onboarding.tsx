@@ -39,6 +39,7 @@ import { BabyStep } from "./onboarding/BabyStep";
 import { CodigoStep } from "./onboarding/CodigoStep";
 import { DepartmentStep } from "./onboarding/DepartmentStep";
 import { InviteStep } from "./onboarding/InviteStep";
+import { AvisosStep } from "./onboarding/AvisosStep";
 import { LmpStep } from "./onboarding/LmpStep";
 import { ModeStep } from "./onboarding/ModeStep";
 import { PerfilStep } from "./onboarding/PerfilStep";
@@ -520,7 +521,11 @@ export function Onboarding({
       )}
 
       {step === "invitar" && (
-        <InviteStep onFinish={() => goTo(null)} onBack={goBack} />
+        <InviteStep onFinish={() => goTo(nextStep("invitar", context))} onBack={goBack} />
+      )}
+
+      {step === "avisos" && (
+        <AvisosStep onFinish={() => goTo(null)} onBack={goBack} />
       )}
 
       {saveError && step !== "department" && (

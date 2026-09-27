@@ -32,6 +32,8 @@ export interface OnboardOptions {
    * false and assert the companion screen instead.
    */
   landsOnHome?: boolean;
+  /** Growth plan item 8: stop on "¿Te aviso…?" so a spec can answer it itself. */
+  stopBeforeAvisos?: boolean;
 }
 
 export async function completeOnboarding(
@@ -45,6 +47,7 @@ export async function completeOnboarding(
     method = "lmp",
     babyName,
     landsOnHome = true,
+    stopBeforeAvisos = false,
   } = options;
 
   await page.goto("/");
@@ -92,7 +95,14 @@ export async function completeOnboarding(
 
   if (mode === "embarazada") {
     if (babyName) await page.locator("#babyName").fill(babyName);
-    await page.getByRole("button", { name: "Empezar" }).click();
+    await page.getByRole("button", { name: "Continuar" }).click();
+    // Growth plan item 8 — the weekly-notice question is last. The shared
+    // walk-through declines it; install-push specs answer it themselves.
+    await expect(
+      page.getByRole("heading", { name: "¿Te aviso cuando empieza tu semana nueva?" }),
+    ).toBeVisible();
+    if (stopBeforeAvisos) return;
+    await page.getByRole("button", { name: "Ahora no" }).click();
     if (landsOnHome) await expect(page.getByText("Tip de hoy")).toBeVisible();
     else {
       await expect(

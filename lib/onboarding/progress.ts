@@ -29,6 +29,9 @@ export const ONBOARDING_STEPS = [
   "codigo",
   "bebe",
   "invitar",
+  // Growth plan item 8 — last, so the question comes once she has seen the app
+  // is hers, and never on a page load.
+  "avisos",
 ] as const;
 
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
@@ -90,6 +93,9 @@ export function stepsFor(context: OnboardingContext): OnboardingStep[] {
     if (step === "department") return !context.invited;
     if (step === "bebe") return own;
     if (step === "invitar") return own && context.signedIn;
+    // "Tu semana nueva" is a pregnancy's weeks: nothing to announce while
+    // planning, and a companion gets the owner's news through her.
+    if (step === "avisos") return own;
     return true;
   });
 }

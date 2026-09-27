@@ -130,7 +130,8 @@ test("leaving the flow at the account step and coming back resumes it", async ({
   await expect(page.getByRole("button", { name: "Estoy embarazada" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Seguir sin cuenta" }).click();
-  await page.getByRole("button", { name: "Empezar" }).click();
+  await page.getByRole("button", { name: "Continuar" }).click();
+  await page.getByRole("button", { name: "Ahora no" }).click();
   await expect(page.getByText("Tip de hoy")).toBeVisible();
 
   // Finishing forgets the draft; the next open is the app, not the flow.
@@ -289,7 +290,8 @@ test("the situación answers are optional, stored, and changeable", async ({ pag
   await page.locator("#dep").selectOption({ index: 1 });
   await page.getByRole("button", { name: "Continuar" }).click();
   await page.getByRole("button", { name: "Seguir sin cuenta" }).click();
-  await page.getByRole("button", { name: "Empezar" }).click();
+  await page.getByRole("button", { name: "Continuar" }).click();
+  await page.getByRole("button", { name: "Ahora no" }).click();
   await expect(page.getByText("Tip de hoy")).toBeVisible();
 
   // /derechos asked this question on every visit and forgot it on every exit.

@@ -4491,3 +4491,19 @@ The plan lives in the site repo (`antonmarklundcom/embarazo`,
   gains `nickname` and the pinned key set in `share.test.ts` changed with it;
   `babyName`/`babies` stay forbidden, so nothing in `lib/share` reads the
   profile. Twins share "Ana y Sofía". Capped at 24 characters.
+
+## 2026-09-27 — growth plan item 8: the weekly notice is asked at the end of onboarding
+
+- **A last onboarding step, "¿Te aviso cuando empieza tu semana nueva?"**
+  (`avisos`, `components/onboarding/AvisosStep.tsx`), only for her own
+  pregnancy (not planeando, not an invited companion). B5's rule holds: the
+  browser is asked only after she taps "Sí", through `enableWeekStartNotice`,
+  the same path Hoy's new-week card uses, so `requestPermission()` still has
+  one caller. "Ahora no" asks nothing.
+- **iPhone without the app installed:** "Sí" shows Ajustes' install copy
+  instead of a prompt that cannot work, then lets her finish.
+- **Onboarding never waits on the browser for long:** "Sí" is capped at 8 s,
+  because `navigator.serviceWorker.ready` never settles where the service
+  worker did not register. Whatever the answer, onboarding finishes.
+- The shared e2e walk-through declines ("Ahora no"); `onboarding-avisos.spec.ts`
+  covers "Sí", "Ahora no" and the iPhone case, counting permission requests.

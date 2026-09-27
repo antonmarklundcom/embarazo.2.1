@@ -56,6 +56,7 @@ describe("stepsFor", () => {
       "cuenta",
       "bebe",
       "invitar",
+      "avisos",
     ]);
   });
 
@@ -85,8 +86,17 @@ describe("nextStep / previousStep", () => {
   const context = ctx({ mode: "embarazada", signedIn: false });
 
   it("ends the flow after the last step", () => {
-    expect(nextStep("bebe", context)).toBeNull();
-    expect(isLastStep("bebe", context)).toBe(true);
+    // Growth plan item 8: the weekly-notice question closes the flow.
+    expect(nextStep("bebe", context)).toBe("avisos");
+    expect(isLastStep("bebe", context)).toBe(false);
+    expect(nextStep("avisos", context)).toBeNull();
+    expect(isLastStep("avisos", context)).toBe(true);
+  });
+
+  it("asks about the weekly notice only for her own pregnancy", () => {
+    expect(stepsFor(ctx({ mode: "embarazada", signedIn: false }))).toContain("avisos");
+    expect(stepsFor(ctx({ mode: "planeando", signedIn: true }))).not.toContain("avisos");
+    expect(stepsFor(ctx({ mode: "embarazada", signedIn: true, invited: true }))).not.toContain("avisos");
   });
 
   it("moves the account step's successor when an account appears", () => {

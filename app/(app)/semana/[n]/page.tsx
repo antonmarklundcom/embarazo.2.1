@@ -9,6 +9,7 @@ import { WeekArticleFeed } from "@/components/WeekArticleFeed";
 import { perspectivesFor } from "@/lib/seed/perspectives";
 import { questionsForWeek } from "@/lib/controlPrep";
 import { weekMessage, whatsAppShareHref } from "@/lib/weekShare";
+import { siteWeekUrl } from "@/lib/siteLinks";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL;
 
@@ -33,6 +34,8 @@ export async function generateMetadata({
   return {
     title: `Semana ${week}`,
     description: `Semana ${week}: ${size}. ${info.milestone}`,
+    // The site's week page is the indexable one (lib/siteLinks.ts).
+    alternates: { canonical: siteWeekUrl(week) },
   };
 }
 

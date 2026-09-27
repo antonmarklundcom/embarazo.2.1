@@ -18,10 +18,17 @@
 // week gets, looked up from `lib/weeks.ts` and a fixed table below. None of it
 // is *hers*. The test that pins the key set (`share.test.ts`) changed in the
 // same commit, so adding a field is still a visible, reviewed decision.
+//
+// Growth plan item 11 made one such decision, and it is the first field that is
+// hers rather than the week's: `nickname`, the baby's name as she typed it in
+// onboarding. It is null unless she leaves "Con el apodo" ticked on the card she
+// is about to share herself, it is never on the bump frame, and it is the only
+// exception — `babyName`/`babies` (the profile fields) stay forbidden here, so
+// nothing reads the profile directly. DECISIONS.md, growth plan Batch E.
 
 import { APP_NAME } from "@/lib/brand";
 import { getTrimester } from "@/lib/pregnancy";
-import { getWeek, hasSizeComparison, sizeLine } from "@/lib/weeks";
+import { getWeek, hasSizeComparison } from "@/lib/weeks";
 
 /** Instagram-story-ish portrait; also fine as a WhatsApp status. */
 export const CARD_WIDTH = 1080;
@@ -42,14 +49,19 @@ export interface ShareCardContent {
   /** 1, 2 or 3 — derived from `week` (`lib/pregnancy.getTrimester`). */
   trimester: 1 | 2 | 3;
   /**
-   * "Del tamaño de una banana" — `lib/weeks.ts`'s `sizeLine`, keyed on the
-   * week. `null` for weeks 1–2, where there is nothing to compare yet and
-   * "Todavía no hay embrión" is not a line anybody wants on a celebration
-   * card; the drawing puts the tagline in that slot instead.
+   * "una banana" — `lib/weeks.ts`'s size comparison for the week, drawn as
+   * "Semana 20 · una banana" (`shareWeekLine`). `null` for weeks 1–2, where
+   * there is nothing to compare yet; the drawing puts the tagline in that slot.
    */
   size: string | null;
   /** A fixed label for a handful of special weeks ("Mitad del camino"), else `null`. */
   milestone: string | null;
+  /**
+   * Growth plan item 11 — the baby's nickname, ONLY when she chose to put it on
+   * this card (ShareCard's "Con el apodo" box). `null` otherwise and always on
+   * the bump frame. The one field not derived from the week.
+   */
+  nickname: string | null;
   /** Fixed app wordmark, not user content. */
   brand: string;
   /** Fixed public domain for the footer pill, not user content. */
@@ -94,7 +106,6 @@ export const SHARE_FORBIDDEN_FIELDS = [
   "daysElapsed",
   "babyName",
   "babies",
-  "nickname",
   "department",
   "sanatorio",
   "weight",
@@ -114,14 +125,28 @@ function weekFacts(
   return {
     week,
     trimester: getTrimester(week),
-    size: hasSizeComparison(sizeComparison) ? sizeLine(sizeComparison) : null,
+    size: hasSizeComparison(sizeComparison) ? sizeComparison : null,
     milestone: SHARE_MILESTONES[week] ?? null,
   };
 }
 
-export function weekCardContent(week: number): ShareCardContent {
+/** Longest nickname the headline carries; a longer one is cut at a word. */
+export const NICKNAME_MAX = 24;
+
+/** Trimmed and capped, or `null` for an empty one. */
+export function cardNickname(raw: string | null | undefined): string | null {
+  const value = (raw ?? "").trim().replace(/\s+/g, " ");
+  if (value === "") return null;
+  if (value.length <= NICKNAME_MAX) return value;
+  const cut = value.slice(0, NICKNAME_MAX);
+  const space = cut.lastIndexOf(" ");
+  return (space > 8 ? cut.slice(0, space) : cut).trim();
+}
+
+export function weekCardContent(week: number, nickname: string | null = null): ShareCardContent {
   return {
     ...weekFacts(week),
+    nickname: cardNickname(nickname),
     brand: SHARE_BRAND,
     site: SHARE_SITE,
     tagline: "Mi embarazo, semana a semana",
@@ -131,6 +156,7 @@ export function weekCardContent(week: number): ShareCardContent {
 export function bumpFrameContent(week: number): ShareCardContent {
   return {
     ...weekFacts(week),
+    nickname: null,
     brand: SHARE_BRAND,
     site: SHARE_SITE,
     tagline: "Mi pancita esta semana",
@@ -148,9 +174,21 @@ export function shareEyebrow(content: ShareCardContent): string {
   return label.toLocaleUpperCase("es");
 }
 
-/** "¡Semana 20!" — the headline both cards lead with. */
+/**
+ * "¡Semana 20!" — the headline both cards lead with; the baby's nickname
+ * instead when she chose to add it, because then the week moves to the line
+ * under the picture (`shareWeekLine`) and would otherwise be said twice.
+ */
 export function shareHeadline(content: ShareCardContent): string {
-  return `¡Semana ${content.week}!`;
+  return content.nickname ?? `¡Semana ${content.week}!`;
+}
+
+/**
+ * Growth plan item 11 — the line under the picture: "Semana 20 · una banana".
+ * Weeks 1–2 have no size, so the line is the tagline there.
+ */
+export function shareWeekLine(content: ShareCardContent): string {
+  return content.size ? `Semana ${content.week} · ${content.size}` : content.tagline;
 }
 
 /** "mi-bebe-semana-24.png" — a filename somebody can find in Descargas. */

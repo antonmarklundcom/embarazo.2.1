@@ -13,6 +13,9 @@ import {
   shareEyebrow,
   shareFileName,
   shareHeadline,
+  shareWeekLine,
+  cardNickname,
+  NICKNAME_MAX,
   shareText,
   weekCardContent,
 } from "./card";
@@ -37,7 +40,9 @@ function mentions(text: string, field: string): boolean {
 }
 
 describe("what a shared image may carry", () => {
-  const KEYS = ["brand", "milestone", "site", "size", "tagline", "trimester", "week"];
+  // Growth plan item 11 added `nickname`: the one field that is hers, null
+  // unless she ticks "Con el apodo", and always null on the bump frame.
+  const KEYS = ["brand", "milestone", "nickname", "site", "size", "tagline", "trimester", "week"];
 
   it("is the week, what the week implies, and fixed brand lines — nothing else", () => {
     const content = weekCardContent(24);
@@ -47,6 +52,18 @@ describe("what a shared image may carry", () => {
 
   it("says the same about the bump frame", () => {
     expect(Object.keys(bumpFrameContent(24)).sort()).toEqual(KEYS);
+  });
+
+  it("carries the nickname only when it is passed, trimmed and capped", () => {
+    expect(weekCardContent(20).nickname).toBeNull();
+    expect(weekCardContent(20, "   ").nickname).toBeNull();
+    expect(weekCardContent(20, "  Mateo ").nickname).toBe("Mateo");
+    expect(weekCardContent(20, "Mateo").week).toBe(20);
+    expect(cardNickname("Ana Sofía y María Belén de los Ángeles")!.length).toBeLessThanOrEqual(NICKNAME_MAX);
+    expect(bumpFrameContent(20).nickname).toBeNull();
+    // The nickname becomes the headline, so the week moves under the picture.
+    expect(shareHeadline(weekCardContent(20, "Mateo"))).toBe("Mateo");
+    expect(shareHeadline(weekCardContent(20))).toBe("¡Semana 20!");
   });
 
   it("derives every field from the week number alone", () => {
@@ -61,7 +78,8 @@ describe("what a shared image may carry", () => {
 
   it("carries the week's size, trimester and milestone", () => {
     const twenty = weekCardContent(20);
-    expect(twenty.size).toBe("Del tamaño de una banana");
+    expect(twenty.size).toBe("una banana");
+    expect(shareWeekLine(twenty)).toBe("Semana 20 · una banana");
     expect(twenty.trimester).toBe(2);
     expect(twenty.milestone).toBe("Mitad del camino");
 
@@ -73,7 +91,9 @@ describe("what a shared image may carry", () => {
   it("has no size line for weeks 1–2, where there is no embryo to compare", () => {
     expect(weekCardContent(1).size).toBeNull();
     expect(weekCardContent(2).size).toBeNull();
-    expect(weekCardContent(3).size).toMatch(/^Del tamaño de /);
+    expect(weekCardContent(3).size).toBe("una semilla de chía");
+    expect(shareWeekLine(weekCardContent(3))).toBe("Semana 3 · una semilla de chía");
+    expect(shareWeekLine(weekCardContent(1))).toBe(weekCardContent(1).tagline);
   });
 
   it("labels the special weeks and leaves the rest to the trimester", () => {
@@ -246,7 +266,7 @@ describe("drawWeekCard", () => {
       drawWeekCard(ctx, content);
       // A long size line may wrap onto two lines; rejoin before comparing.
       expect(texts.slice(0, 2)).toEqual([shareEyebrow(content), shareHeadline(content)]);
-      expect(texts.slice(2, -1).join(" ")).toBe(content.size ?? content.tagline);
+      expect(texts.slice(2, -1).join(" ")).toBe(shareWeekLine(content));
       expect(texts.at(-1)).toBe(`${content.brand} · ${content.site}`);
     }
   });
@@ -259,6 +279,21 @@ describe("drawWeekCard", () => {
     const later = recordingContext();
     drawWeekCard(later.ctx, weekCardContent(9));
     expect(paths.some((d) => d.startsWith("M62 150"))).toBe(true);
+  });
+});
+
+describe("drawWeekCard with the week's illustration (growth plan 11)", () => {
+  it("draws the picture instead of the drawn baby, and the same strings", () => {
+    const drawn: unknown[] = [];
+    const { ctx, texts } = recordingContext();
+    (ctx as unknown as { drawImage: (...args: unknown[]) => void }).drawImage = (...args) => drawn.push(args[0]);
+    const art = { width: 640, height: 640 } as unknown as CanvasImageSource & { width: number; height: number };
+    const content = weekCardContent(20, "Mateo");
+    drawWeekCard(ctx, content, art);
+    expect(drawn).toEqual([art]);
+    expect(paths.some((d) => d.startsWith("M62 150"))).toBe(false);
+    expect(texts[1]).toBe("Mateo");
+    expect(texts.slice(2, -1).join(" ")).toBe("Semana 20 · una banana");
   });
 });
 

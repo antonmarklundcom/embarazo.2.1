@@ -30,8 +30,9 @@ tracked there, not duplicated here.
 - Recomendados internal-path CTAs (`/derechos`, `/emergencia`) open in a new
   tab, same as every other CTA — a minor UX rough edge worth revisiting on a
   real phone before launch. — `docs/log/u3.md`
-- The week-hero E2 share card keeps its flat, un-themed card design, per
-  U7's own backlog note. — `docs/log/u7.md`
+- The E2 share card follows the trimester pastel, not the hero theme she
+  chose; growth plan item 11 added the week's illustration, the optional
+  nickname and "Semana N · <tamaño>". — `docs/log/u7.md`, `lib/share/draw.ts`
 
 ## AI usage & spend
 

@@ -68,6 +68,15 @@ import { flush as flushFunnel, markOnboarded } from "@/lib/stats/funnel.client";
 // "Hoy" screen — brand design 1a (docs/archive/REDESIGN-PLAN.md §2): week strip,
 // photo hero with fallback, tip, mood check-in, herramientas grid, reading
 // rail. Paraguay-specific cards (derechos, recursos, temporada) stay below.
+/**
+ * Growth plan item 11 — the name(s) she gave the baby, for the share card's
+ * "Con el apodo" box: "Mateo", or "Ana y Sofía" for twins. `null` when unnamed.
+ */
+function shareNickname(babies: { name?: string }[] | undefined): string | null {
+  const names = (babies ?? []).map((baby) => baby.name?.trim()).filter((name): name is string => Boolean(name));
+  return names.length > 0 ? names.join(" y ") : null;
+}
+
 export default function InicioPage() {
   const profile = useProfile();
   // K9-F5 — a code from the WhatsApp invitation link, when the app was opened
@@ -267,6 +276,7 @@ export default function InicioPage() {
         label="Compartir mi semana"
         offerInvite
         offerPartner={isSelfCentered(profile.role)}
+        nickname={shareNickname(profile.babies)}
       />
 
       {/* C8: one-tap access to emergencia · carné · preguntas, and the

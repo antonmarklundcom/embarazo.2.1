@@ -67,3 +67,21 @@ test("the copy tells the truth about where the image is made", async ({ page }) 
 
   await expect(page.getByText(/se arma en tu teléfono y solo lleva la semana/)).toBeVisible();
 });
+
+// Growth plan item 11 — the baby's nickname is offered, ticked, and honest.
+test("the nickname is offered on the card, and the note says so", async ({ page }) => {
+  await completeOnboarding(page, { daysAgo: 140, babyName: "Mateo" });
+
+  const box = page.getByRole("checkbox", { name: "Con el apodo «Mateo»" });
+  await expect(box).toBeChecked();
+  await expect(page.getByText(/solo lleva la semana y el apodo/)).toBeVisible();
+
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Compartir mi semana" }).click();
+  const file = await download;
+  expect(file.suggestedFilename()).toMatch(/^mi-bebe-semana-\d+\.png$/);
+  if (process.env.SHARE_CARD_OUT) await file.saveAs(process.env.SHARE_CARD_OUT);
+
+  await box.uncheck();
+  await expect(page.getByText(/solo lleva la semana\. La foto/)).toBeVisible();
+});

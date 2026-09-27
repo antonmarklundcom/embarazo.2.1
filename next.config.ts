@@ -155,6 +155,19 @@ const nextConfig = {
     // vendercrm PR #84, propia.node PR #81, trabajo PR #82.
     cpus: 1,
   },
+  // The public landing moved to the SEO site (embarazo.com.py). Permanent, so
+  // search engines fold /conoce's history into the site's home page.
+  async redirects() {
+    const site = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://embarazo.com.py").replace(/\/+$/, "");
+    return [{ source: "/conoce", destination: `${site}/`, statusCode: 301 as const }];
+  },
+  // Google Play's Trusted Web Activity check fetches this exact path. A dot
+  // directory is not a route segment Next serves reliably, so it is rewritten
+  // to a handler that reads the package and fingerprints from env
+  // (app/api/assetlinks/route.ts, docs/ANDROID-LAUNCH.md §2.3).
+  async rewrites() {
+    return [{ source: "/.well-known/assetlinks.json", destination: "/api/assetlinks" }];
+  },
   async headers() {
     return [
       {

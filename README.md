@@ -59,6 +59,11 @@ node scripts/gen-icons.mjs  # regenera los iconos PWA en public/icons/
 NEXT_PUBLIC_APP_URL=                 # URL pública, ej. https://app.tudominio.com.py
 NEXT_PUBLIC_BUSINESS_WHATSAPP=       # +595... contacto de respaldo
 NEXT_PUBLIC_MEDICAL_REVIEWER=        # ej. "Dra. ___, gineco-obstetra"
+NEXT_PUBLIC_SITE_URL=                # sitio SEO; por defecto https://embarazo.com.py (canonicals, /conoce 301)
+
+# --- GOOGLE PLAY / TWA (opcional; sin esto assetlinks.json devuelve []) ---
+TWA_PACKAGE_NAME=                    # ej. py.com.embarazo.app
+TWA_SHA256_FINGERPRINTS=             # clave de subida,clave de firma de Play (ambas, separadas por coma)
 
 # --- CUENTAS (opcional; sin esto la app corre en modo local) ---
 DATABASE_URL=                        # mysql://... ; sin valor = solo dispositivo

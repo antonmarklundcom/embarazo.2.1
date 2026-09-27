@@ -7,6 +7,7 @@ import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { readTimeLabel } from "@/lib/articles/readTime";
 import { relatedTool } from "@/lib/articles/relatedTool";
 import { RecordContentView } from "@/components/RecordContentView";
+import { siteGuideUrl } from "@/lib/siteLinks";
 
 // Statically generate the guías so they precache for offline (spec §9).
 export async function generateStaticParams() {
@@ -22,7 +23,13 @@ export async function generateMetadata({
   const { slug } = await params;
   const article = getArticleBySlug(slug);
   if (!article) return { title: "Guía no encontrada" };
-  return { title: article.title, description: article.excerpt };
+  // Guides with a site twin defer to it for search (lib/siteLinks.ts).
+  const canonical = siteGuideUrl(slug);
+  return {
+    title: article.title,
+    description: article.excerpt,
+    ...(canonical ? { alternates: { canonical } } : {}),
+  };
 }
 
 export default async function GuiaDetailPage({

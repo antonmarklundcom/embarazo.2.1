@@ -1,11 +1,13 @@
 import type { MetadataRoute } from "next";
 import { ARTICLES } from "@/lib/seed/articles";
-import { MAX_WEEK, MIN_WEEK } from "@/lib/pregnancy";
+import { siteGuideUrl } from "@/lib/siteLinks";
 
-// SEO surface for the guías + week pages, currently invisible to search
-// engines (build spec §5 follow-up). App-shell tool pages that only make
-// sense with local on-device data (e.g. /herramientas/*) are intentionally
-// excluded — they carry no organic-search value on their own.
+// The app's own search surface. Week pages, guías with a site twin and the
+// old /conoce landing are left out: embarazo.com.py is the indexable version
+// of each (their canonicals point there — lib/siteLinks.ts), and /conoce
+// 301s to the site. App-shell tool pages that only make sense with local
+// on-device data (e.g. /herramientas/*) are excluded as well — they carry no
+// organic-search value on their own.
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mibebe.app";
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -13,7 +15,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${appUrl}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
-    { url: `${appUrl}/conoce`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
     { url: `${appUrl}/guias`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${appUrl}/derechos`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${appUrl}/directorio`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
@@ -28,22 +29,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${appUrl}/terminos`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
   ];
 
-  const weekRoutes: MetadataRoute.Sitemap = Array.from(
-    { length: MAX_WEEK - MIN_WEEK + 1 },
-    (_, i) => MIN_WEEK + i,
-  ).map((week) => ({
-    url: `${appUrl}/semana/${week}`,
-    lastModified: now,
-    changeFrequency: "monthly",
-    priority: 0.7,
-  }));
-
-  const articleRoutes: MetadataRoute.Sitemap = ARTICLES.map((a) => ({
+  const articleRoutes: MetadataRoute.Sitemap = ARTICLES.filter(
+    (a) => siteGuideUrl(a.slug) === null,
+  ).map((a) => ({
     url: `${appUrl}/guias/${a.slug}`,
     lastModified: new Date(a.date),
     changeFrequency: "monthly",
     priority: 0.7,
   }));
 
-  return [...staticRoutes, ...weekRoutes, ...articleRoutes];
+  return [...staticRoutes, ...articleRoutes];
 }

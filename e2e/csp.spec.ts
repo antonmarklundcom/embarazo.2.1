@@ -91,12 +91,13 @@ function describeAll(violations: Violation[]): string {
  *
  * Read from the running server rather than imported from `app/sitemap.ts`, so
  * that a route added to the sitemap is automatically a route this policy is
- * tested against — including the 42 week pages and every guía.
+ * tested against. Week pages and site-twinned guías left the sitemap when
+ * embarazo.com.py became their canonical, so they are walked separately below.
  */
 async function sitemapPaths(page: Page): Promise<string[]> {
   const xml = await (await page.request.get("/sitemap.xml")).text();
   const urls = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]!);
-  expect(urls.length, "the sitemap came back empty").toBeGreaterThan(40);
+  expect(urls.length, "the sitemap came back empty").toBeGreaterThan(5);
   return [...new Set(urls.map((url) => new URL(url).pathname))];
 }
 
@@ -144,6 +145,31 @@ test.describe("the enforced policy blocks nothing the app needs", () => {
       "/guias/videos",
       "/admin",
     ]) {
+      await page.goto(path, { waitUntil: "domcontentloaded" });
+      violations.push(...(await collect(page, fromConsole)));
+    }
+
+    expect(violations, describeAll(violations)).toEqual([]);
+  });
+});
+
+test.describe("the pages whose canonical lives on embarazo.com.py", () => {
+  test("every week page and every guía renders with zero violations", async ({
+    page,
+  }) => {
+    const fromConsole = await watchForViolations(page);
+    const violations: Violation[] = [];
+
+    await page.goto("/guias", { waitUntil: "domcontentloaded" });
+    const guides = await page
+      .locator("main a[href^='/guias/']")
+      .evaluateAll((links) =>
+        links.map((link) => (link as HTMLAnchorElement).getAttribute("href")!),
+      );
+    expect(guides.length, "the guías index came back empty").toBeGreaterThan(0);
+
+    const weeks = Array.from({ length: 42 }, (_, i) => `/semana/${i + 1}`);
+    for (const path of [...weeks, ...new Set(guides)]) {
       await page.goto(path, { waitUntil: "domcontentloaded" });
       violations.push(...(await collect(page, fromConsole)));
     }

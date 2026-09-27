@@ -122,17 +122,25 @@ test("the site's week illustrations show under the hero on weeks 1, 20 and 42", 
   }
 });
 
-test("the hero still looks finished when a week's image is missing", async ({ page }) => {
-  // The fallback is no longer what everybody sees, but a failed or blocked
-  // fetch still lands here, and it has to look deliberate rather than broken.
-  await page.route(/\/assets\/semanas\/bebe-\d+\.webp$/, (route) =>
-    route.fulfill({ status: 404, body: "" }),
-  );
-  await completeOnboarding(page);
-  await page.goto("/semana/24");
+test.describe("with the week image unavailable", () => {
+  // The 404 below is faked with page.route, and once the app's service worker
+  // controls the page its image requests no longer pass through page.route —
+  // the real file loads and the test sees it (CI run #317). Blocking the worker
+  // for this one test keeps the fake 404 the only answer.
+  test.use({ serviceWorkers: "block" });
 
-  // The week number stands in for the render, and every caption still reads.
-  await expect(page.getByText("SEMANA 24 · 2.º TRIMESTRE")).toBeVisible();
-  await expect(page.getByText("Del tamaño de una mandioca")).toBeVisible();
-  await expect(page.locator('img[src="/assets/semanas/bebe-24.webp"]')).toBeHidden();
+  test("the hero still looks finished when a week's image is missing", async ({ page }) => {
+    // The fallback is no longer what everybody sees, but a failed or blocked
+    // fetch still lands here, and it has to look deliberate rather than broken.
+    await page.route(/\/assets\/semanas\/bebe-\d+\.webp$/, (route) =>
+      route.fulfill({ status: 404, body: "" }),
+    );
+    await completeOnboarding(page);
+    await page.goto("/semana/24");
+
+    // The week number stands in for the render, and every caption still reads.
+    await expect(page.getByText("SEMANA 24 · 2.º TRIMESTRE")).toBeVisible();
+    await expect(page.getByText("Del tamaño de una mandioca")).toBeVisible();
+    await expect(page.locator('img[src="/assets/semanas/bebe-24.webp"]')).toBeHidden();
+  });
 });

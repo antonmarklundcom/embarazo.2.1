@@ -99,6 +99,9 @@ export const TABLE_DISPOSITION = {
   // nothing here belonging to the account being deleted. Deleting a woman's
   // account must not un-count a sponsor's month.
   placementClicks: "no user data",
+  // Growth plan 16–18. Same shape and reason: `(metric, key, day, count)`
+  // with no identity column, so there is no row of hers to delete.
+  funnelStats: "no user data",
 
   // K20. DELETED, and this was the decision worth arguing about.
   //

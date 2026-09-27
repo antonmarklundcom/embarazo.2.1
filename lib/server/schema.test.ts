@@ -10,6 +10,7 @@ import {
   companionCheers,
   companionTasks,
   contentStats,
+  funnelStats,
   photoBlobs,
   placementClicks,
   schema,
@@ -54,14 +55,25 @@ describe("placementClicks carries no identity either (K15)", () => {
     expect(columns).toContain("day");
   });
 
-  it("is the complete list of aggregate tables, so a third one lands here", () => {
+  it("funnelStats (growth plan 16–18) is the third, and holds to the same rule", () => {
+    const columns = columnNames(funnelStats).map((c) => c.toLowerCase());
+    for (const forbidden of ["user", "session", "device", "ip", "token"]) {
+      expect(
+        columns.some((c) => c.includes(forbidden)),
+        `funnelStats must not carry a "${forbidden}" column`,
+      ).toBe(false);
+    }
+    expect(columns.sort()).toEqual(["count", "day", "key", "metric"]);
+  });
+
+  it("is the complete list of aggregate tables, so a new one lands here", () => {
     // Adding a counter is a data-contract decision (§4.5), and this is the
     // cheapest moment to have to make it: the test fails on whoever adds the
     // table, not on whoever notices a year later.
     const aggregates = Object.keys(schema).filter((name) =>
       /Stats$|Clicks$/.test(name),
     );
-    expect(aggregates.sort()).toEqual(["contentStats", "placementClicks"]);
+    expect(aggregates.sort()).toEqual(["contentStats", "funnelStats", "placementClicks"]);
   });
 });
 
@@ -228,6 +240,8 @@ describe("schema export", () => {
         "companionTasks",
         "communityQuestions",
         "contentStats",
+        // Growth plan 16–18 — the third aggregate counter.
+        "funnelStats",
         "photoBlobs",
         "placementClicks",
         "invites",

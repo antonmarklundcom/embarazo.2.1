@@ -221,6 +221,17 @@ Row by row, with the thing that makes each answer defensible:
   stays true by test rather than by memory. It does **not** move any other row
   on this form — in particular it does not touch Approximate location, which
   is the next bullet.
+- **App interactions, third row: the install funnel (growth plan 16–18).**
+  Declare it under the same row for the same reason. `funnelStats` is
+  `(metric, key, day, count)`: arrivals from the site by page type, a clinic QR
+  card's slug, onboarding finished (by that first visit's channel), first tool
+  opened, and opened again after 7+ days. "Once per install" is decided on the
+  phone, in its own localStorage, so the server never receives a device id to
+  deduplicate by. `recordFunnel` takes an event and a clock and nothing else,
+  and `lib/stats/funnel.test.ts` rejects every extra field. Collected, **not
+  linked**, Analytics, not optional: the same answers as the rows above. It does
+  not move Approximate location either: a clinic slug names a card, not where
+  the phone is.
 - **Approximate location — still no**, and this is J3's win that survives. See
   below.
 

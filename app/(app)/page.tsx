@@ -63,6 +63,7 @@ import { WeekContentRail } from "@/components/home/WeekContentRail";
 import { WeekHero } from "@/components/home/WeekHero";
 import { NewWeekCard } from "@/components/home/NewWeekCard";
 import { WeekStrip } from "@/components/home/WeekStrip";
+import { flush as flushFunnel, markOnboarded } from "@/lib/stats/funnel.client";
 
 // "Hoy" screen — brand design 1a (docs/archive/REDESIGN-PLAN.md §2): week strip,
 // photo hero with fallback, tip, mood check-in, herramientas grid, reading
@@ -136,7 +137,12 @@ export default function InicioPage() {
   if (flow === "active") {
     return (
       <Onboarding
-        onDone={() => setFlow("done")}
+        onDone={() => {
+          // Growth plan item 17: onboarding finished, counted once per device.
+          markOnboarded();
+          void flushFunnel();
+          setFlow("done");
+        }}
         initialCode={inviteCode}
         initialSiteAnswers={siteAnswers}
       />

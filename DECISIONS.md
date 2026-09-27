@@ -4439,3 +4439,37 @@ The plan lives in the site repo (`antonmarklundcom/embarazo`,
   it outlasts the toast).
 - **20a — no change.** No user-facing copy assumes private care; every
   mention already reads "hospital o sanatorio".
+
+## 2026-09-27 — growth plan Batch B (items 16, 17, 18): the install funnel
+
+- **One new aggregate table, `funnelStats` `(metric, key, day, count)`**, the
+  third after `contentStats` and `placementClicks`, with the same rule: no
+  user, session, device or IP column (`lib/server/schema.test.ts` pins the
+  column list and the list of aggregate tables). Five metrics: `arrival` (key =
+  the site's `utm_medium`, unknown values as `other`), `qr` (key = the card's
+  `?src=`, lower-cased, `[a-z0-9-]{1,40}` or dropped), `onboarded` (key = the
+  first visit's channel: `directo`, `qr` or `sitio-<medium>`), `first_tool`
+  and `return7` (key `total`).
+- **"Once per install" is decided on the phone, not the server.**
+  `lib/stats/funnel.client.ts` keeps one localStorage entry (`mibebe.funnel`)
+  that fixes the channel on the first page load and remembers what was
+  already queued. The server only ever gets bare increments, so it cannot tell
+  two installs apart and does not need to. Events are queued before sending
+  and dropped only on 204 (or on a 400, which retrying would not fix), so an
+  arrival on a bad connection is sent on the next open, never twice.
+- **Phones that onboarded before this shipped are left out** of onboarded /
+  first tool / return, which have no stamp to measure from. The weekly table is
+  a clean cohort from launch day rather than a mix. Their first load after the
+  deploy does fix a channel, so one of them opening a site link that day counts
+  one arrival. Accepted, and the admin note says the numbers start now.
+- **The landing URL is read in a layout effect** (`components/FunnelBeacon.tsx`)
+  because the home page strips `w`/`fpp`/`fum`/`modo` in a passive effect, and a
+  child's effects run before its parent's.
+- **New route `POST /api/v1/stats/funnel`** rather than widening
+  `/api/v1/stats`'s body, whose `.strict()` two-field shape is itself a
+  tested promise. There is no GET: the numbers are read on `/admin/metricas`
+  (new "Instalaciones y regreso" weekly table plus by-medium, by-channel and
+  by-QR tables).
+- `docs/ANDROID-LAUNCH.md` §3.1: still "App interactions, collected, not
+  linked". The funnel is added as a third bullet under that row, and no other
+  row moves. `docs/QR-CLINICS.md` is the URL shape to print on cards.

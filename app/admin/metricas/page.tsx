@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { adminDb, requireAdmin } from "@/lib/server/admin";
 import { allMetrics, type FunnelStep } from "@/lib/server/adminMetrics";
+import { funnelRows } from "@/lib/server/funnelStats";
+import { totalsByKey, weeklyFunnel, type FunnelRow } from "@/lib/stats/funnel";
 
 // BUILD-PLAN K16 — `/admin/metricas`.
 //
@@ -63,6 +65,87 @@ function Big({ value, label }: { value: string; label: string }) {
   );
 }
 
+// Growth plan 16–18: the site's `utm_medium` values, as the founder reads them.
+const MEDIUM_LABELS: Record<string, string> = {
+  week: "Página de semana",
+  tool: "Calculadora / herramienta",
+  article: "Artículo",
+  hub: "Página índice",
+  home: "Inicio del sitio",
+  content: "Otra página de contenido",
+  product: "Página de la app",
+  other: "Otro valor",
+};
+
+function channelLabel(key: string): string {
+  if (key === "directo") return "Directo (sin sitio ni QR)";
+  if (key === "qr") return "Código QR";
+  if (key.startsWith("sitio-")) return `Sitio · ${MEDIUM_LABELS[key.slice(6)] ?? key.slice(6)}`;
+  return key;
+}
+
+function KeyTable({
+  rows,
+  label,
+  empty,
+  heading,
+}: {
+  rows: { key: string; count: number }[];
+  label: (key: string) => string;
+  empty: string;
+  heading: string;
+}) {
+  if (rows.length === 0) return <p className="text-sm text-muted">{empty}</p>;
+  return (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="text-left text-xs uppercase tracking-wide text-muted">
+          <th className="pb-1 font-extrabold">{heading}</th>
+          <th className="pb-1 text-right font-extrabold">Cantidad</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row) => (
+          <tr key={row.key} className="border-t border-line">
+            <td className="py-1.5 font-semibold text-ink">{label(row.key)}</td>
+            <td className="py-1.5 text-right font-extrabold text-ink">{row.count}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function InstallFunnel({ rows }: { rows: FunnelRow[] }) {
+  const weeks = weeklyFunnel(rows, new Date());
+  return (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="text-left text-xs uppercase tracking-wide text-muted">
+          <th className="pb-1 font-extrabold">Semana (lun.)</th>
+          <th className="pb-1 text-right font-extrabold">Del sitio</th>
+          <th className="pb-1 text-right font-extrabold">QR</th>
+          <th className="pb-1 text-right font-extrabold">Terminó onboarding</th>
+          <th className="pb-1 text-right font-extrabold">1.ª herramienta</th>
+          <th className="pb-1 text-right font-extrabold">Volvió 7+ días</th>
+        </tr>
+      </thead>
+      <tbody>
+        {weeks.map((row) => (
+          <tr key={row.week} className="border-t border-line">
+            <td className="py-1.5 font-semibold text-ink">{row.week}</td>
+            <td className="py-1.5 text-right text-ink">{row.arrivals}</td>
+            <td className="py-1.5 text-right text-ink">{row.qr}</td>
+            <td className="py-1.5 text-right font-extrabold text-ink">{row.onboarded}</td>
+            <td className="py-1.5 text-right text-ink">{row.firstTool}</td>
+            <td className="py-1.5 text-right text-ink">{row.return7}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 function Funnel({ steps }: { steps: FunnelStep[] }) {
   const top = steps[0]?.count ?? 0;
   return (
@@ -110,7 +193,10 @@ export default async function AdminMetricsPage() {
     );
   }
 
-  const metrics = await allMetrics(database);
+  const [metrics, installRows] = await Promise.all([
+    allMetrics(database),
+    funnelRows(database),
+  ]);
 
   return (
     <div className="space-y-5">
@@ -132,6 +218,49 @@ export default async function AdminMetricsPage() {
           </p>
         )}
       </header>
+
+      <Card
+        title="Instalaciones y regreso"
+        note="Cuenta a TODAS, con o sin cuenta: cada teléfono manda un «+1» sin identificarse, una sola vez por paso. Cada fila es la semana en que llegó ese +1, no una cohorte: «volvió 7+ días» de esta semana son personas que terminaron el onboarding antes. Los teléfonos que ya usaban la app antes de este contador no suman en las últimas tres columnas."
+      >
+        <InstallFunnel rows={installRows} />
+      </Card>
+
+      <Card
+        title="Llegadas desde el sitio"
+        note="Últimas 10 semanas, por tipo de página de embarazo.com.py que trajo a la persona. Una vez por teléfono, en su primera visita."
+      >
+        <KeyTable
+          rows={totalsByKey(installRows, "arrival")}
+          label={(key) => MEDIUM_LABELS[key] ?? key}
+          heading="Tipo de página"
+          empty="Todavía no llegó nadie desde el sitio."
+        />
+      </Card>
+
+      <Card
+        title="Terminó el onboarding, por canal"
+        note="Últimas 10 semanas. El canal es el de la primera visita de ese teléfono."
+      >
+        <KeyTable
+          rows={totalsByKey(installRows, "onboarded")}
+          label={channelLabel}
+          heading="Canal"
+          empty="Todavía nadie terminó el onboarding con este contador activo."
+        />
+      </Card>
+
+      <Card
+        title="Códigos QR de clínicas"
+        note="Últimas 10 semanas, por el ?src= impreso en cada tarjeta (docs/QR-CLINICS.md)."
+      >
+        <KeyTable
+          rows={totalsByKey(installRows, "qr")}
+          label={(key) => key}
+          heading="Tarjeta"
+          empty="Todavía nadie llegó por un código QR."
+        />
+      </Card>
 
       <Card
         title="Onboarding"

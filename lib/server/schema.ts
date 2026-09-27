@@ -674,6 +674,38 @@ export const placementClicks = mysqlTable(
 );
 
 // ---------------------------------------------------------------------------
+// Install funnel (growth plan items 16–18)
+// ---------------------------------------------------------------------------
+
+/**
+ * Where installs come from and whether they stay: arrivals from the site by
+ * page type, clinic QR sources, onboarding finished, first tool opened, and
+ * opened again a week later — one bare increment each, per day.
+ *
+ * The third aggregate table, and it holds to the first two's rule: **no user,
+ * session, device or IP column.** "Once per install" is decided on the device
+ * (`lib/stats/funnel.client.ts`), so the server never needs to know which
+ * install sent a count. `key` is a closed set or a bounded slug, validated by
+ * `FunnelEventSchema` before it gets here.
+ */
+export const funnelStats = mysqlTable(
+  "funnelStats",
+  {
+    metric: varchar("metric", { length: 16 }).notNull(),
+    key: varchar("key", { length: 48 }).notNull(),
+    // "YYYY-MM-DD", same daily bucket as `contentStats`.
+    day: varchar("day", { length: 10 }).notNull(),
+    count: int("count").default(0).notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({
+      columns: [table.metric, table.key, table.day],
+    }),
+    // NO user column here either. See the note above, and §4.5.
+  }),
+);
+
+// ---------------------------------------------------------------------------
 // Curated Q&A (K20)
 // ---------------------------------------------------------------------------
 
@@ -791,6 +823,7 @@ export const schema = {
   aiGenerations,
   contentStats,
   placementClicks,
+  funnelStats,
   communityQuestions,
   adminAudit,
   appFlags,

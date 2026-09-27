@@ -12,13 +12,19 @@ test("sharing the week card produces a PNG without touching the network", async 
 }) => {
   // Anything that could carry an image out of the page: a POST/PUT, or a
   // request whose body is not empty. GETs for placements and the directory are
-  // the home screen doing its normal work and are not what this guards.
+  // the home screen doing its normal work and are not what this guards. Nor is
+  // the install-funnel counter onboarding sends (growth plan 17): a
+  // `{metric, key}` body under 100 bytes to its own endpoint cannot carry an
+  // image, and anything larger, or anywhere else, still fails here.
   const uploads: string[] = [];
   page.on("request", (request) => {
     const method = request.method();
-    if (method !== "GET" && method !== "HEAD") {
-      uploads.push(`${method} ${request.url()}`);
-    }
+    if (method === "GET" || method === "HEAD") return;
+    const isFunnelCount =
+      method === "POST" &&
+      new URL(request.url()).pathname === "/api/v1/stats/funnel" &&
+      (request.postData() ?? "").length < 100;
+    if (!isFunnelCount) uploads.push(`${method} ${request.url()}`);
   });
 
   await completeOnboarding(page, { daysAgo: 140 });

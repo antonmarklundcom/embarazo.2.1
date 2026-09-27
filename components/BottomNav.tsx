@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useProfile } from "@/lib/useProfile";
 import { useT } from "@/lib/i18n/useLocale";
+import { navTabs, type NavTab } from "@/lib/nav/tabs";
 
 // Fixed bottom tab bar — brand design: terracotta active state,
 // white bar over line border.
@@ -18,24 +19,28 @@ import { useT } from "@/lib/i18n/useLocale";
 // route (fertility/TTC tasks) distinct from the pregnancy one, and both are
 // real Dexie-backed pages a nav tab should deep-link to directly rather than
 // via an intermediate picker.
+//
+// Growth plan item 12: Cerca tuyo is shown only while it has published
+// content (`lib/nav/tabs.ts`); the server layout decides and passes it down.
 function checklistHref(mode: "embarazada" | "planeando"): string {
   return mode === "planeando" ? "/planeando/checklist" : "/herramientas/checklist";
 }
 
-export function BottomNav() {
+export function BottomNav({ showNearby }: { showNearby: boolean }) {
   const pathname = usePathname();
   const { mode } = useProfile();
   // K19-L1: the five tab labels are the most-read strings in the app, which is
   // why they are the first thing the locale toggle has to move.
   const t = useT();
 
-  const TABS = [
-    { href: "/", label: t("nav.today"), icon: HomeIcon },
-    { href: "/guias", label: t("nav.guides"), icon: BookIcon },
-    { href: checklistHref(mode), label: t("nav.checklist"), icon: ChecklistIcon },
-    { href: "/herramientas", label: t("nav.tools"), icon: ToolsIcon },
-    { href: "/directorio", label: t("nav.nearby"), icon: MapIcon },
-  ];
+  const ALL: Record<NavTab, { href: string; label: string; icon: (p: IconProps) => React.JSX.Element }> = {
+    today: { href: "/", label: t("nav.today"), icon: HomeIcon },
+    guides: { href: "/guias", label: t("nav.guides"), icon: BookIcon },
+    checklist: { href: checklistHref(mode), label: t("nav.checklist"), icon: ChecklistIcon },
+    tools: { href: "/herramientas", label: t("nav.tools"), icon: ToolsIcon },
+    nearby: { href: "/directorio", label: t("nav.nearby"), icon: MapIcon },
+  };
+  const TABS = navTabs(showNearby).map((id) => ALL[id]);
 
   function isActive(href: string): boolean {
     if (href === "/") return pathname === "/";

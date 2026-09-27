@@ -11,9 +11,13 @@ tracked there, not duplicated here.
 
 ## Content & images
 
-- `public/assets/semanas/` and `public/assets/comparaciones/` are still
-  empty — every week-hero `<img>` 404s to its fallback; production today,
-  not a regression. — `docs/log/u7.md`
+- `public/assets/semanas/` holds the site's 42 framed size illustrations
+  (growth plan item 7, `scripts/import-site-week-art.mjs`), shown as a framed
+  picture rather than composited, because they are opaque. The transparent
+  cutout renders in `docs/imagery-manifest.json` are generated but not
+  localized (founder approval pending); `public/assets/comparaciones/` is
+  still empty, so the drawn comparison is the fallback when the fruit toggle
+  is off. — `docs/log/u7.md`, `lib/hero/weekArt.ts`
 - All 12 "Ejercicios" entries stay unpublished (the tile shows "Pronto")
   until the founder supplies the step images named in
   `public/assets/ejercicios/README.md`. — `docs/log/u5.md`

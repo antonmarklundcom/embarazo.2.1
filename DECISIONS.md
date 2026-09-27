@@ -4406,3 +4406,36 @@ unit in the 09-11 queue.
 W4's PIN-card follow-up and the pre-existing Windows test/e2e flakes are
 tracked in `docs/decisions-needed.md` and `KNOWN-ISSUES.md`, not repeated
 here.
+
+## 2026-09-27 — growth plan Batch A (items 7, 12, 13, 20a)
+
+The plan lives in the site repo (`antonmarklundcom/embarazo`,
+`docs/growth-plan-2026-09.md`).
+
+- **7 — the site's week illustrations fill the hero, framed, not
+  composited.** `public/assets/semanas/bebe-<n>.webp` now holds the site's 42
+  size illustrations (`scripts/import-site-week-art.mjs`, 640 px WebP, ~16 KB
+  each). They are opaque squares with a pastel ground, and U7's layout
+  composites a transparent subject over the theme, so pasted in as-is they
+  would show a coloured square on her ñandutí — the failure
+  `public/assets/semanas/README.md` calls worse than missing. They are shown as
+  a framed 200 px picture in the card where the drawn fallback sat, with the
+  theme kept around them; the "hide the comparison" toggle hides them on weeks
+  3–42 (the picture *is* the fruit) and not on 1–2 (calendars). Alt text names
+  what is drawn ("El tamaño de tu bebé en la semana 20: una banana."), not
+  "tu bebé". One constant, `WEEK_ART_STYLE` in `lib/hero/weekArt.ts`, flips
+  back to the composited layout the day the transparent renders in
+  `docs/imagery-manifest.json` are approved and localized.
+- **12 — "Cerca tuyo" leaves the nav while it has nothing published.** Every
+  directory listing and event in the seed is a placeholder, so the tab opened
+  on an empty list. `lib/nav/tabs.ts` shows it only when `publishedOnly` lets
+  at least one listing or event through; the server layout decides once, so
+  the server render and the hydrated nav agree (four tabs today, five the day
+  one real entry lands). Not replaced by another tab: a new tab needs a
+  Guaraní label, and no Guaraní string ships without the native review.
+  `/directorio` and `/eventos` stay reachable from their links.
+- **13 — no change.** The Línea 155 card already renders right after a low
+  mood (verified on a real render; it is derived from today's saved mood, so
+  it outlasts the toast).
+- **20a — no change.** No user-facing copy assumes private care; every
+  mention already reads "hospital o sanatorio".

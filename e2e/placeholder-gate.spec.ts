@@ -30,6 +30,12 @@ test("directorio shows an honest empty state, not invented businesses", async ({
   ).toBeVisible();
   await expect(page.getByText(/Estamos armando el directorio/i)).toBeVisible();
   await expectNoPlaceholderContent(page);
+
+  // Growth plan item 12: with nothing published, "Cerca tuyo" leaves the
+  // bottom nav (four tabs), but the route above still answers.
+  const nav = page.getByRole("navigation", { name: "Navegación principal" });
+  await expect(nav.getByRole("link")).toHaveCount(4);
+  await expect(nav.getByRole("link", { name: "Cerca tuyo" })).toHaveCount(0);
 });
 
 test("eventos shows an honest empty state, not invented charlas", async ({

@@ -1,0 +1,81 @@
+// Growth plan item 9 ("Ya nació") — the baby's age, and the rules for the
+// birth date, as pure functions. Derived, never stored: the pregnancy record
+// keeps only `birthDate`, and everything a screen shows comes from here.
+//
+// Days are counted in the device's own calendar (the R0-1 lesson: a
+// `toISOString()` date is tomorrow in Asunción after 21:00), so a baby born
+// "today" is 0 days old until local midnight, wherever the phone is.
+
+const DAY_MS = 86_400_000;
+
+/** Local midnight of the day `ms` falls on. */
+export function localDay(ms: number): number {
+  const d = new Date(ms);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+/** Whole local days between two instants (DST-safe: rounds the 23/25 h days). */
+function daysBetween(from: number, to: number): number {
+  return Math.round((localDay(to) - localDay(from)) / DAY_MS);
+}
+
+/** From which pregnancy week Hoy offers "¿Ya nació tu bebé?". */
+export const BIRTH_CARD_FROM_WEEK = 37;
+
+/** Earliest birth date the form accepts, in pregnancy weeks from the LMP. */
+export const EARLIEST_BIRTH_WEEK = 22;
+
+/**
+ * The dates the "Ya nació" form accepts: not before week 22 of this pregnancy
+ * and not after today. Returned as local midnights.
+ */
+export function birthDateBounds(lmpDate: number, now: number = Date.now()): { min: number; max: number } {
+  return {
+    min: localDay(lmpDate + EARLIEST_BIRTH_WEEK * 7 * DAY_MS),
+    max: localDay(now),
+  };
+}
+
+export function isValidBirthDate(birthDate: number, lmpDate: number, now: number = Date.now()): boolean {
+  const { min, max } = birthDateBounds(lmpDate, now);
+  const day = localDay(birthDate);
+  return Number.isFinite(day) && day >= min && day <= max;
+}
+
+export interface BabyAge {
+  days: number;
+  weeks: number;
+  /** Completed calendar months (born on the 31st: a month is the last day of the next month). */
+  months: number;
+}
+
+/** Completed calendar months from `birth` to `now`, in the local calendar. */
+function completedMonths(birth: number, now: number): number {
+  const b = new Date(localDay(birth));
+  const n = new Date(localDay(now));
+  let months = (n.getFullYear() - b.getFullYear()) * 12 + (n.getMonth() - b.getMonth());
+  // Not yet the "monthiversary" this month? Born on the 31st counts as reached
+  // on the last day of a shorter month.
+  const lastDayThisMonth = new Date(n.getFullYear(), n.getMonth() + 1, 0).getDate();
+  if (n.getDate() < Math.min(b.getDate(), lastDayThisMonth)) months -= 1;
+  return Math.max(0, months);
+}
+
+export function babyAge(birthDate: number, now: number = Date.now()): BabyAge {
+  const days = Math.max(0, daysBetween(birthDate, now));
+  return { days, weeks: Math.floor(days / 7), months: completedMonths(birthDate, now) };
+}
+
+/** Weeks until 8 weeks, then months: how people in Paraguay say a baby's age. */
+export const WEEKS_UNTIL = 8;
+
+/** "3 días", "1 semana", "5 semanas", "2 meses", "1 año". */
+export function babyAgeLabel(age: BabyAge): string {
+  if (age.days < 7) return age.days === 1 ? "1 día" : `${age.days} días`;
+  if (age.weeks < WEEKS_UNTIL) return age.weeks === 1 ? "1 semana" : `${age.weeks} semanas`;
+  if (age.months >= 12) {
+    const years = Math.floor(age.months / 12);
+    return years === 1 ? "1 año" : `${years} años`;
+  }
+  return age.months === 1 ? "1 mes" : `${age.months} meses`;
+}

@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { APP_NAME } from "@/lib/brand";
 import { businessWhatsApp, waLink } from "@/lib/whatsapp";
+import { TWA_SESSION_KEY, isTwaReferrer, offerPlayReview, playStoreUrl } from "@/lib/rating/playReview";
 
 // BUILD-PLAN C8 — shortcuts + feedback (feature map #18, #19).
 //
@@ -18,6 +20,29 @@ import { businessWhatsApp, waLink } from "@/lib/whatsapp";
 // screens shipped exactly that (see `lib/whatsapp.ts`).
 
 const BUSINESS_WA = businessWhatsApp(process.env.NEXT_PUBLIC_BUSINESS_WHATSAPP);
+/** Growth plan item 14 — unset by default; see lib/rating/playReview.ts. */
+const PLAY_STORE_URL = playStoreUrl(process.env.NEXT_PUBLIC_PLAY_STORE_URL);
+
+/**
+ * Whether this session runs inside the Android app, remembered past the launch
+ * navigation (the TWA referrer is only on the first page). Always false when
+ * the Play switch is off, so nothing is read or stored in that case.
+ */
+function useInsideAndroidApp(): boolean {
+  const [inside, setInside] = useState(false);
+  useEffect(() => {
+    if (!PLAY_STORE_URL) return;
+    let remembered = false;
+    try {
+      if (isTwaReferrer(document.referrer)) sessionStorage.setItem(TWA_SESSION_KEY, "1");
+      remembered = sessionStorage.getItem(TWA_SESSION_KEY) === "1";
+    } catch {
+      remembered = isTwaReferrer(document.referrer);
+    }
+    setInside(offerPlayReview({ playUrl: PLAY_STORE_URL, referrer: document.referrer, rememberedTwa: remembered }));
+  }, []);
+  return inside;
+}
 
 const SHORTCUTS = [
   {
@@ -46,6 +71,7 @@ const SHORTCUTS = [
 ] as const;
 
 export function HomeShortcuts({ week }: { week: number }) {
+  const playReview = useInsideAndroidApp();
   return (
     <div className="space-y-4">
       <section aria-labelledby="accesos" className="space-y-2.5 pt-1">
@@ -73,7 +99,31 @@ export function HomeShortcuts({ week }: { week: number }) {
         </div>
       </section>
 
-      {BUSINESS_WA && (
+      {playReview && PLAY_STORE_URL ? (
+        // Growth plan item 14: inside the Android app with the Play switch set,
+        // a happy answer goes to the listing and anything else to WhatsApp.
+        <section className="rounded-card border border-line bg-white p-4">
+          <h2 className="text-base font-extrabold text-ink">¿Cómo te está yendo?</h2>
+          <a
+            href={PLAY_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 flex min-h-[44px] w-full items-center justify-center rounded-tile bg-petrol px-4 text-sm font-extrabold text-white"
+          >
+            Me está gustando: dejar una reseña
+          </a>
+          {BUSINESS_WA && (
+            <WhatsAppButton
+              href={waLink(
+                BUSINESS_WA,
+                `Hola! Estoy usando ${APP_NAME} (semana ${week}) y quiero contarles algo: `,
+              )}
+              label="Tengo algo para contarles"
+              className="mt-2 w-full"
+            />
+          )}
+        </section>
+      ) : BUSINESS_WA && (
         <section className="rounded-card border border-line bg-white p-4">
           <h2 className="text-base font-extrabold text-ink">¿Cómo te está yendo?</h2>
           <p className="mt-1 text-sm font-semibold text-muted">

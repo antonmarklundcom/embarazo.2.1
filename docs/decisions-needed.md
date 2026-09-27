@@ -5,6 +5,18 @@ file they need is outside that unit's list. One line each, with the unit that
 raised it. A struck entry is one a later commit resolved; it stays, with the
 resolution, so the reasoning is not lost.
 
+## for the medical reviewer
+
+- **Daily tips t-32 … t-103 (growth plan item 10, 2026-09-27).** 72 tips added
+  to `lib/dailyTips.ts`, written as general clinical education (no doses, no
+  "wait and see"; ranges copied from the week and trimester content: pataditas
+  16–24 semanas, glucosa 24–28, tamizaje 11–14, prematuro antes de 37). They
+  render today on Hoy, one a day, like t-01 … t-31. Worth a line-by-line read:
+  t-35 (vacunas según el calendario vigente), t-40 (queso casero sin
+  pasteurizar), t-42 (cinturón de seguridad), t-61 (jengibre para las náuseas),
+  t-82 (ejercicio: ritmo en el que puedas conversar), t-92 (signos de
+  preeclampsia), t-100 (lactancia). Fix any line in place; `lib/dailyTips.test.ts` keeps the rules.
+
 ## answered
 
 - **App name (U8):** `Mi Bebé · Embarazo Paraguay`. Confirmed by Anton 2026-09-16.

@@ -75,7 +75,7 @@ const TOOLS: Tool[] = [
     href: "/herramientas/ejercicios",
     title: "Ejercicios",
     desc: "Ejercicios suaves para el embarazo, paso a paso con fotos.",
-    icon: "checklist",
+    icon: "exercise",
     tone: "bg-pastel-salvia",
     // D6 — locked with a "Pronto" badge until real step photos replace the
     // placeholder (same pattern as the video gallery below).

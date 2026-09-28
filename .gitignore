@@ -166,3 +166,7 @@ next-env.d.ts
 
 # Perf budget script output (W6, docs/log/w6.md)
 /docs/perf/
+
+# Exercise step art sources (growth plan item 15): originals stay local,
+# scripts/place-exercise-art.mjs writes the optimised WebP next to this folder
+/public/assets/ejercicios/src/

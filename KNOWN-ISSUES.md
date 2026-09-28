@@ -20,10 +20,8 @@ tracked there, not duplicated here.
   is off. — `docs/log/u7.md`, `lib/hero/weekArt.ts`
 - All 12 "Ejercicios" entries stay unpublished (the tile shows "Pronto")
   until the founder supplies the step images named in
-  `public/assets/ejercicios/README.md`. — `docs/log/u5.md`
-- The "Ejercicios" tile reuses the existing, thematically mismatched
-  `"checklist"` icon rather than a dedicated one — a one-line follow-up for
-  whoever next touches `components/ToolIcon.tsx`. — `docs/log/u5.md`
+  `public/assets/ejercicios/README.md` (art brief per step there;
+  `node scripts/place-exercise-art.mjs` places them). — `docs/log/u5.md`
 - Two of the eight Recomendados resources have no verified WhatsApp number
   (only landlines found for La Leche League Paraguay); every seeded entry
   uses `url` instead. — `docs/log/u3.md`

@@ -4608,3 +4608,23 @@ The plan lives in the site repo (`antonmarklundcom/embarazo`,
 - e2e: the Guaraní specs serve the flag on through a context route (the
   service worker fetches `/api/v1/flags`); a new test proves nothing leaks
   with it off, even for a profile stored as `gn`.
+
+## 2026-09-28 — week art: the baby is the character, a Paraguayan fruit is the size
+
+- **Cutout renders on, framed site pictures off** (`WEEK_ART_STYLE = "cutout"`,
+  Anton's go-ahead today). Weeks 16, 18, 26 and 28–42 were regenerated
+  (GPT Image 2.5 Sunburst, medium 1k, week 22 as style reference): the thin
+  outlines were fixed, and weeks 28–42 no longer show a newborn swaddled in a
+  blanket (a baby in the womb is not in a blanket; the old prompt was a
+  workaround for the safety filter).
+- **The size is the fruit, not the drawing.** A drawing cannot show 30 vs 34
+  weeks, so the week's size lives in the 40 comparison objects
+  (`public/assets/comparaciones/`, all fruits and vegetables people know in
+  Paraguay: chía, poroto, mamón, mandioca, choclo, coco, zapallo, sandía…).
+  `/semana/<n>` draws the baby render and the fruit side by side, to scale
+  (`ComparisonFigure` → `WeekBabyFigure`); Hoy puts the fruit as a badge on
+  the ring. The full-bleed composite under a caption scrim was tried and
+  rejected on a real render: it darkened the baby and hid the fruit
+  (`COMPOSITE_RENDER = false` in `WeekHeroImage`).
+- Weeks 1–2 show no figure (no embryo). A missing file still falls back to
+  the drawn baby / a dashed outline, never a broken image.

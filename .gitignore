@@ -170,3 +170,8 @@ next-env.d.ts
 # Exercise step art sources (growth plan item 15): originals stay local,
 # scripts/place-exercise-art.mjs writes the optimised WebP next to this folder
 /public/assets/ejercicios/src/
+
+# Original PNGs the localizer downloads before optimizing (scripts/localize-week-renders.mjs)
+/public/assets/semanas/src/
+/public/assets/comparaciones/src/
+/public/assets/bebe/src/

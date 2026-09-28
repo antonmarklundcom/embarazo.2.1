@@ -8,6 +8,8 @@ import { primaryBabyName } from "@/lib/babies";
 import { babyAtWeekLabel as roleBabyAtWeekLabel } from "@/lib/roleCopy";
 import type { BabyIdentity, Role } from "@/lib/db";
 import { sizeLine } from "@/lib/weeks";
+import { comparisonFor } from "@/lib/seed/comparisons";
+import { useImageFailed } from "@/lib/hooks/useImageFailed";
 
 import { HeroSubject } from "@/components/hero/HeroSubject";
 import { ThemeChip } from "@/components/hero/ThemeChip";
@@ -104,6 +106,10 @@ export function WeekHero({
         >
           <HeroSubject week={week} alt={babyAtWeekLabel(babies, role, week)} />
         </div>
+        {/* 2026-09-28: the week's size, told by a Paraguayan fruit or
+            vegetable rather than by the baby drawing (the same character
+            every week). Decorative: the size line below says it in words. */}
+        <SizeBadge week={week} />
       </Link>
 
       {/* B3: `week+day` is the default display, in carné notation ("24+3").
@@ -136,6 +142,29 @@ export function WeekHero({
         <HeroStat value={String(daysLeft)} label="Faltan" />
       </div>
     </div>
+  );
+}
+
+function SizeBadge({ week }: { week: number }) {
+  const comparison = comparisonFor(week);
+  const { ref, failed, onError } = useImageFailed();
+  if (!comparison?.imageSrc || failed) return null;
+  return (
+    <span
+      className="absolute bottom-1 right-1 flex h-[68px] w-[68px] items-center justify-center rounded-full border-4 border-white bg-cream shadow-soft"
+      aria-hidden
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        ref={ref}
+        src={comparison.imageSrc}
+        alt=""
+        width={48}
+        height={48}
+        className="block h-12 w-12 object-contain"
+        onError={onError}
+      />
+    </span>
   );
 }
 

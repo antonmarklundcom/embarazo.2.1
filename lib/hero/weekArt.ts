@@ -14,7 +14,12 @@ import { getWeek, hasSizeComparison } from "@/lib/weeks";
 //
 // Swapping in the cutouts is `npm run localize:images` plus flipping this one
 // constant; no other file needs to know which set is on disk.
-export const WEEK_ART_STYLE: "framed" | "cutout" = "framed";
+//
+// 2026-09-28: the cutouts are on disk (weeks 16, 18, 26 and 28–42 regenerated
+// that day, see the manifest). The week's SIZE is told by the comparison
+// object beside the baby (`public/assets/comparaciones/`), not by the baby
+// drawing, which is the same character every week.
+export const WEEK_ART_STYLE: "framed" | "cutout" = "cutout";
 
 /** Weeks that have a file. The site set covers 1–42 (1–2 are calendars). */
 export function hasWeekArt(week: number): boolean {

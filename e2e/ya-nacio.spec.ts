@@ -66,10 +66,11 @@ test("the baby home: age, the four cards, alarm signs to /emergencia, and no mis
     "href",
     "/guias/despues-del-nacimiento-tramites",
   );
-  // The picture is not in the repo yet: no broken image, the drawn fallback shows.
+  // The age-band picture (0–2 months) loads; the drawn face is only the fallback.
   const hero = page.getByRole("region", { name: "Tu bebé" });
-  await expect(hero.getByRole("img")).toHaveCount(0);
-  await expect(hero.locator("svg")).toBeVisible();
+  const picture = hero.getByRole("img", { name: /recién nacido/ });
+  await expect(picture).toBeVisible();
+  await expect.poll(() => picture.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
   // The pregnancy hero is gone, the mood check-in stays.
   await expect(page.getByText("Tip de hoy")).toHaveCount(0);
 

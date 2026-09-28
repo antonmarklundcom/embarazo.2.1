@@ -4628,3 +4628,15 @@ The plan lives in the site repo (`antonmarklundcom/embarazo`,
   (`COMPOSITE_RENDER = false` in `WeekHeroImage`).
 - Weeks 1–2 show no figure (no embryo). A missing file still falls back to
   the drawn baby / a dashed outline, never a broken image.
+
+## 2026-09-28 — Ejercicios published, baby age-band pictures placed
+
+- **All 24 exercise step images generated and placed** from the art brief in
+  `public/assets/ejercicios/README.md` (GPT Image 2.5 Sunburst, medium 1k, 4:3,
+  0.5 credits each; the first step's image is the character reference, so it
+  is the same woman in all 24). `scripts/place-exercise-art.mjs` wrote 960×720
+  WebP (≈20–30 KB) and pointed each `imageSrc` at it. D6 gated the entries
+  on real images only, so all 12 exercises publish and the tile unlocks.
+- **The four "Ya nació" age-band pictures** (`public/assets/bebe/`, manifest
+  `baby`) are placed, with the week-42 render as the character reference, so
+  the baby on the baby home is the same baby as in the pregnancy.

@@ -13,11 +13,11 @@
     "steps": [
       {
         "text": "Caminá a un ritmo cómodo, donde puedas hablar sin quedarte sin aire.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/caminar-1.webp"
       },
       {
         "text": "Usá calzado cómodo y llevá agua, sobre todo con calor.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/caminar-2.webp"
       }
     ],
     "avoidIf": [
@@ -40,11 +40,11 @@
     "steps": [
       {
         "text": "Apoyá la espalda contra la pared, rodillas un poco flexionadas.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/inclinacion-pelvica-1.webp"
       },
       {
         "text": "Aplaná la zona lumbar contra la pared apretando suave el abdomen, sostené unos segundos y soltá.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/inclinacion-pelvica-2.webp"
       }
     ],
     "avoidIf": [
@@ -67,11 +67,11 @@
     "steps": [
       {
         "text": "Apoyate en manos y rodillas, con las muñecas debajo de los hombros.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/gato-vaca-1.webp"
       },
       {
         "text": "Al inhalar, arqueá la espalda suave hacia abajo (vaca); al exhalar, redondeála hacia arriba (gato).",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/gato-vaca-2.webp"
       }
     ],
     "avoidIf": [
@@ -94,11 +94,11 @@
     "steps": [
       {
         "text": "Parate frente a una silla, pies separados al ancho de la cadera.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/sentadilla-con-apoyo-1.webp"
       },
       {
         "text": "Bajá despacio como si te fueras a sentar, sin llegar a tocar la silla, y volvé a subir.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/sentadilla-con-apoyo-2.webp"
       }
     ],
     "avoidIf": [
@@ -121,11 +121,11 @@
     "steps": [
       {
         "text": "Acostate de costado, con la cabeza apoyada en el brazo o una almohada.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/elevacion-lateral-de-pierna-1.webp"
       },
       {
         "text": "Levantá la pierna de arriba despacio, sin girar la cadera hacia atrás, y bajala.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/elevacion-lateral-de-pierna-2.webp"
       }
     ],
     "avoidIf": [
@@ -148,11 +148,11 @@
     "steps": [
       {
         "text": "Parate frente a una pared, manos apoyadas a la altura de los hombros.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/estiramiento-de-pantorrilla-1.webp"
       },
       {
         "text": "Llevá un pie hacia atrás, talón en el piso, e inclinate suave hacia la pared hasta sentir el estiramiento.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/estiramiento-de-pantorrilla-2.webp"
       }
     ],
     "avoidIf": ["si tenés hinchazón brusca o dolor en una sola pantorrilla (consultá antes de estirar)"],
@@ -172,11 +172,11 @@
     "steps": [
       {
         "text": "Sentada o parada, inclinná la cabeza suave hacia un hombro y sostené unos segundos.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/estiramiento-de-cuello-y-hombros-1.webp"
       },
       {
         "text": "Hacé círculos lentos con los hombros hacia atrás.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/estiramiento-de-cuello-y-hombros-2.webp"
       }
     ],
     "avoidIf": ["si tenés mareos al mover la cabeza"],
@@ -196,11 +196,11 @@
     "steps": [
       {
         "text": "Sentada cómoda, una mano en el pecho y otra en la panza.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/respiracion-diafragmatica-1.webp"
       },
       {
         "text": "Inhalá por la nariz sintiendo que la panza se infla, exhalá despacio por la boca. Nunca aguantes el aire.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/respiracion-diafragmatica-2.webp"
       }
     ],
     "avoidIf": ["si sentís falta de aire en reposo (consultá antes de seguir)"],
@@ -220,11 +220,11 @@
     "steps": [
       {
         "text": "Sentada, levantá un pie del piso y girá el tobillo en círculos.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/circulos-de-tobillo-1.webp"
       },
       {
         "text": "Cambiá de dirección y después probá con el otro pie.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/circulos-de-tobillo-2.webp"
       }
     ],
     "avoidIf": ["si la hinchazón aparece de golpe y de un solo lado (consultá antes)"],
@@ -244,11 +244,11 @@
     "steps": [
       {
         "text": "Parate sujetándote del respaldo de una silla o de una pared.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/elevacion-de-talones-1.webp"
       },
       {
         "text": "Subite de puntitas despacio y bajá con control.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/elevacion-de-talones-2.webp"
       }
     ],
     "avoidIf": ["si el equilibrio te cuesta, no lo hagas sin apoyo"],
@@ -268,11 +268,11 @@
     "steps": [
       {
         "text": "Sentada, cruzá los brazos por delante del pecho tomando cada mano el hombro opuesto.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/estiramiento-de-espalda-alta-1.webp"
       },
       {
         "text": "Redondeá la espalda alta suave, como abrazándote, y sostené unos segundos.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/estiramiento-de-espalda-alta-2.webp"
       }
     ],
     "avoidIf": ["si tenés dolor agudo en la espalda (consultá antes de estirar)"],
@@ -292,11 +292,11 @@
     "steps": [
       {
         "text": "Apretá como si quisieras aguantar el pis, sin apretar la panza ni los glúteos, y soltá del todo.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/kegel-piso-pelvico-1.webp"
       },
       {
         "text": "Para contar las repeticiones con un cronómetro guiado, abrí la herramienta Kegel en Herramientas.",
-        "imageSrc": "/assets/ejercicios/placeholder.webp"
+        "imageSrc": "/assets/ejercicios/kegel-piso-pelvico-2.webp"
       }
     ],
     "avoidIf": ["mientras hacés pis (podés lastimarte la vejiga)"],

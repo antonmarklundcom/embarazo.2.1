@@ -2,53 +2,38 @@ import { test, expect } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
 
-// BUILD-PLAN D6 — "Ejercicios" ships gated exactly like the video gallery: no
-// real step images exist yet (every entry's imageSrc is the shared
-// placeholder), so the tile shows "Pronto" and the route itself renders its
-// own empty state rather than a spinner or a 404. This is the state that
-// ships today — the same posture `e2e/precios.spec.ts` takes for K10.
-//
-// Note: unlike some other specs in this file's family, there is no
-// "with one entry published" e2e here. Publishing an entry for real would
-// mean shipping a real, committed image and unlocking the tile in
-// production — which the unit is explicitly not allowed to do (the tile must
-// stay locked today). That path is proven instead at the unit level
-// (`lib/seed/ejercicios.test.ts`, "the gate itself, proven against a
-// synthetic fixture"), against a fixture that never reaches this build.
+// BUILD-PLAN D6 — "Ejercicios" was gated on real step images (the same rule
+// as the video gallery). On 2026-09-28 all 24 images landed
+// (`public/assets/ejercicios/README.md`, `scripts/place-exercise-art.mjs`), so
+// all 12 exercises are published and the tile is a link. The gate itself is
+// still proven at the unit level (`lib/seed/ejercicios.test.ts`).
 
-test("the tile shows Pronto and is not a link, with nothing published", async ({ page }) => {
+test("the tile opens the list of all 12 exercises", async ({ page }) => {
   await completeOnboarding(page, { daysAgo: 70 });
   await page.goto("/herramientas");
 
-  const tile = page.getByText("Ejercicios", { exact: true }).locator("..");
+  const tile = page.getByRole("link", { name: /^Ejercicios/ });
   await expect(tile).toBeVisible();
-  await expect(page.getByText("Pronto").first()).toBeVisible();
-
-  // Locked tiles render as a non-interactive div, never an <a>. (Kegel's own
-  // tile mentions "Ejercicios" in its sr-only description, so this must match
-  // the tile's own accessible name exactly, not merely contain the word.)
-  await expect(page.getByRole("link", { name: "Ejercicios", exact: true })).toHaveCount(0);
+  await tile.click();
+  await expect(page).toHaveURL(/\/herramientas\/ejercicios$/);
+  await expect(page.getByRole("link", { name: /Caminar/ }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: /Piso pélvico/ }).first()).toBeVisible();
 });
 
-test("direct navigation shows the real empty state, not a 404", async ({ page }) => {
+test("an exercise shows its illustrated steps, and every image loads", async ({ page }) => {
   await completeOnboarding(page, { daysAgo: 70 });
-  await page.goto("/herramientas/ejercicios");
+  await page.goto("/herramientas/ejercicios/caminar");
 
-  await expect(
-    page.getByRole("heading", { name: "Muy pronto vamos a sumar ejercicios ilustrados" }),
-  ).toBeVisible();
-
-  // The hand-off to the one prenatal-exercise tool that IS shipped today.
-  const kegelLink = page.getByRole("link", { name: /Ir a Kegel/ });
-  await expect(kegelLink).toBeVisible();
-  await kegelLink.click();
-  await expect(page).toHaveURL(/\/herramientas\/kegel$/);
+  const images = page.locator('img[src*="ejercicios%2Fcaminar-"]');
+  await expect(images).toHaveCount(2);
+  for (const img of await images.all()) {
+    await img.scrollIntoViewIfNeeded();
+    await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
+  }
 });
 
-test("an unpublished exercise id 404s rather than rendering placeholder content", async ({
-  page,
-}) => {
+test("an unknown exercise id 404s", async ({ page }) => {
   await completeOnboarding(page, { daysAgo: 70 });
-  const response = await page.goto("/herramientas/ejercicios/caminar");
+  const response = await page.goto("/herramientas/ejercicios/no-existe");
   expect(response?.status()).toBe(404);
 });

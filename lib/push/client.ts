@@ -7,6 +7,7 @@ import {
   type PushCategory,
 } from "./categories";
 import { weekStartTimes, weeklyTipTimes } from "./weekly";
+import { babyAgeTimes } from "@/lib/baby/push";
 
 // BUILD-PLAN B5 — the device half.
 //
@@ -265,12 +266,17 @@ async function syncSubscription(
 
 /**
  * "Semana nueva": the days HER week turns over, from her own FUM
- * (`weekStartTimes`). A device with no pregnancy of its own — a companion,
+ * (`weekStartTimes`) — or, once the baby is born, the baby's weekly and then
+ * monthly birthdays (`babyAgeTimes`, growth plan item 9). A device with no pregnancy of its own — a companion,
  * or planning mode — keeps the plain weekly slot.
  */
 async function consejosTimes(now: number = Date.now()): Promise<number[]> {
   try {
     const pregnancy = notDeleted(await db().pregnancy.toArray())[0];
+    // Growth plan item 9 (G3): after the birth, the baby's birthdays instead.
+    if (typeof pregnancy?.birthDate === "number") {
+      return babyAgeTimes(pregnancy.birthDate, now);
+    }
     if (typeof pregnancy?.lmpDate === "number") {
       return weekStartTimes(pregnancy.lmpDate, now);
     }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 import { DICT } from "./dict";
@@ -68,5 +68,45 @@ describe("docs/GUARANI-REVIEW.md", () => {
     // The one instruction that changes the output most: without it a reviewer
     // "corrects" everyday speech into academic Guaraní nobody recognises.
     expect(sheet()).toMatch(/jopara/i);
+  });
+});
+
+// Growth plan item 20b — every Guaraní string the code holds is on the sheet,
+// not only the ones the generator was told about. A `gn:` added to a new file
+// would otherwise ship (the day the `guarani` flag is on) without a reviewer
+// ever seeing it.
+describe("coverage of the review sheet", () => {
+  function sourceFiles(dir: string): string[] {
+    const out: string[] = [];
+    for (const name of readdirSync(dir)) {
+      const path = join(dir, name);
+      if (statSync(path).isDirectory()) out.push(...sourceFiles(path));
+      else if (/\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name)) out.push(path);
+    }
+    return out;
+  }
+
+  it("lists every `gn:` string literal in lib/, components/ and app/", () => {
+    const text = sheet();
+    const missing: string[] = [];
+    let found = 0;
+    for (const dir of ["lib", "components", "app"]) {
+      for (const file of sourceFiles(join(process.cwd(), dir))) {
+        const source = readFileSync(file, "utf8");
+        for (const match of source.matchAll(/\bgn:\s*("(?:[^"\\]|\\.)*")/g)) {
+          const value = JSON.parse(match[1]!) as string;
+          found += 1;
+          if (!text.includes(value)) missing.push(`${file}: ${value}`);
+        }
+      }
+    }
+    expect(found).toBeGreaterThan(20);
+    expect(missing).toEqual([]);
+  });
+
+  it("lists every Guaraní word of the core dictionary", () => {
+    const text = sheet();
+    const missing = Object.values(DICT.gn).filter((value) => !text.includes(value));
+    expect(missing).toEqual([]);
   });
 });

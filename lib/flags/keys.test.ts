@@ -18,7 +18,7 @@ import {
 
 describe("the flag vocabulary", () => {
   it("is exactly these keys", () => {
-    expect([...FLAG_KEYS]).toEqual(["ai_baby_paused", "recomendados"]);
+    expect([...FLAG_KEYS]).toEqual(["ai_baby_paused", "guarani", "recomendados"]);
   });
 
   it("declares a scope, a default and a description for each", () => {
@@ -46,8 +46,8 @@ describe("the flag vocabulary", () => {
   });
 
   it("publishes only client-scope keys", () => {
-    expect(CLIENT_FLAG_KEYS).toEqual(["recomendados"]);
-    expect(clientScope(defaultFlags())).toEqual({ recomendados: false });
+    expect(CLIENT_FLAG_KEYS).toEqual(["guarani", "recomendados"]);
+    expect(clientScope(defaultFlags())).toEqual({ guarani: false, recomendados: false });
     expect(Object.keys(clientScope(defaultFlags()))).not.toContain(
       "ai_baby_paused",
     );
@@ -65,6 +65,7 @@ describe("folding stored rows onto the defaults", () => {
   it("takes a stored value over the default", () => {
     expect(mergeFlagRows([{ key: "recomendados", value: true }])).toEqual({
       ai_baby_paused: false,
+      guarani: false,
       recomendados: true,
     });
   });
@@ -85,7 +86,7 @@ describe("folding stored rows onto the defaults", () => {
       { key: "video_gallery", value: true },
       { key: "recomendados", value: true },
     ]);
-    expect(values).toEqual({ ai_baby_paused: false, recomendados: true });
+    expect(values).toEqual({ ai_baby_paused: false, guarani: false, recomendados: true });
   });
 
   it("ignores a null value", () => {

@@ -153,7 +153,7 @@ describe("/api/v1/flags takes no parameters and publishes client flags only", ()
     // the safe default of a flag store that cannot be read is "off".
     const res = await flagsGET(req("/api/v1/flags"));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ recomendados: false });
+    expect(await res.json()).toEqual({ guarani: false, recomendados: false });
   });
 
   it("never returns a server-scope key", async () => {

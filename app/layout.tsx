@@ -84,9 +84,12 @@ export default function RootLayout({
     // can know it (see lib/i18n/dict.ts on why there are no locale routes).
     <html lang="es-PY" className={nunito.variable}>
       <body className="bg-cream text-ink antialiased">
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          {/* Inside Providers: the locale reads the `guarani` flag. */}
+          <HtmlLang />
+        </Providers>
         <UpdateToast />
-        <HtmlLang />
         <ServiceWorkerRegistration />
         <SyncProvider />
       </body>

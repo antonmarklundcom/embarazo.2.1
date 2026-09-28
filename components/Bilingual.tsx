@@ -1,4 +1,7 @@
+"use client";
+
 import type { BilingualText } from "@/lib/content/schemas";
+import { useFlag } from "@/lib/flags/useFlag";
 
 /**
  * K19-L0 — renders an es-PY string with its Guaraní twin stacked underneath.
@@ -31,7 +34,10 @@ export function Bilingual({
   gnClassName?: string;
   as?: "span" | "p" | "div";
 }) {
-  if (!text.gn) {
+  // Growth plan item 20b: no Guaraní line until the `guarani` flag is on. The
+  // flag, never the locale: once on, the line shows for everyone (D6).
+  const guarani = useFlag("guarani");
+  if (!text.gn || !guarani) {
     return className ? <Tag className={className}>{text.es}</Tag> : <>{text.es}</>;
   }
   return (

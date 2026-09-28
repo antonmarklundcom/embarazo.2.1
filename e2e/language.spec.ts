@@ -2,6 +2,14 @@ import { test, expect } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
 import { gotoPrecached, waitForPrecache } from "./helpers/offline";
+import { serveClientFlags } from "./helpers/flags";
+
+// Growth plan item 20b: every Guaraní surface waits on the one `guarani` flag
+// (off by default, off on CI). The tests of what Guaraní DOES turn it on; the
+// last test proves nothing leaks while it is off.
+test.beforeEach(async ({ context }, testInfo) => {
+  if (!testInfo.title.includes("flag is off")) await serveClientFlags(context, { guarani: true });
+});
 
 // K19 — "Done when: toggle works offline; `<html lang>` follows the locale;
 // 42-week content untouched."
@@ -85,4 +93,37 @@ test("the weekly content stays in Spanish in Guaraní mode", async ({ page }) =>
 
   await page.goto("/semana/15");
   await expect(page.getByRole("heading", { name: "Para hacer esta semana" })).toBeVisible();
+});
+
+test("while the guarani flag is off, no Guaraní anywhere, even for a device that chose it", async ({
+  page,
+}) => {
+  await completeOnboarding(page);
+
+  // A device that picked Guaraní before the flag existed.
+  await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("mibebe");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const tx = db.transaction(["profile"], "readwrite");
+    const store = tx.objectStore("profile");
+    const all = store.getAll();
+    await new Promise((resolve) => (all.onsuccess = resolve));
+    for (const row of all.result as { locale?: string }[]) store.put({ ...row, locale: "gn" });
+    await new Promise((resolve) => (tx.oncomplete = resolve));
+  });
+
+  await page.goto("/ajustes");
+  await expect(page.getByRole("heading", { name: "Ajustes" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Guaraní" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Hoy" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Ko ára" })).toHaveCount(0);
+  await expect(page.locator("html")).toHaveAttribute("lang", "es-PY");
+
+  await page.goto("/emergencia");
+  await expect(page.getByText("Sangrado vaginal, en cualquier momento del embarazo")).toBeVisible();
+  await expect(page.getByText("Osẽramo ndehegui tuguy, oimeraẽva árape")).toHaveCount(0);
+  await expect(page.locator('[lang="gn"]')).toHaveCount(0);
 });

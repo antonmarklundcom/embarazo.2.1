@@ -1,6 +1,7 @@
 import { test, expect, type BrowserContext } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
+import { serveClientFlags } from "./helpers/flags";
 
 // BUILD-PLAN K2 — the companion experience.
 //
@@ -225,6 +226,8 @@ test("the mamá sees the ánimos, grouped, and acknowledges them once", async ({
   ]);
   const context = await browser.newContext();
   await serve(context, server);
+  // Growth plan item 20b: the Guaraní line needs the `guarani` flag.
+  await serveClientFlags(context, { guarani: true });
   const page = await context.newPage();
 
   await completeOnboarding(page);

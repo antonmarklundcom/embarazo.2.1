@@ -12,6 +12,7 @@ import { useHeroTheme } from "@/lib/hero/preferences";
 import { companionViewOf, useSharedViews } from "@/lib/sharing/useSharedViews";
 import { toDateInput } from "@/lib/appointments";
 import { useProfile } from "@/lib/useProfile";
+import { useGuarani } from "@/lib/i18n/useLocale";
 import {
   MIN_PIN_LENGTH,
   isPinSet,
@@ -67,6 +68,7 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
   const companionAppointmentAt = companionView?.snapshot?.nextAppointmentAt ?? null;
 
   const today = toDateInput(Date.now());
+  const guarani = useGuarani();
 
   // U11 — the way into U7's theme sheet from /ajustes, next to the language
   // toggle. Opens the same ThemeSheet the hero's ThemeChip already opens
@@ -150,9 +152,12 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
           pregnancy setting, because a woman who cannot read this screen has to
           find it without reading it: first group, two buttons, each labelled in
           its own language. */}
-      <SettingsGroup title="Idioma · Ñe'ẽ">
-        <LanguageSettings />
-      </SettingsGroup>
+      {/* Growth plan item 20b: only once the `guarani` flag is on. */}
+      {guarani && (
+        <SettingsGroup title="Idioma · Ñe'ẽ">
+          <LanguageSettings />
+        </SettingsGroup>
+      )}
 
       {/* U11 — a second door into U7's theme sheet (the first is the ThemeChip
           on the hero card itself). Shows the currently chosen theme's label;

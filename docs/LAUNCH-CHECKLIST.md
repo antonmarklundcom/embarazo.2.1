@@ -55,7 +55,7 @@ first.
 |---|---|---|---|
 | 1.1 | **Play account: organization or personal** | A personal account **cannot** be converted to an organization account later. Organization needs a D-U-N-S number (free, **1–4 weeks**) but is **exempt from the 12-testers × 14-days gate**. Personal is instant but adds 3–6 weeks before you can reach production. | `ANDROID-LAUNCH.md` §1 |
 | 1.2 | **The app name** | Expensive to change after launch, and it is the indexed title. "Mi Bebé" alone is generic and crowded — you will not rank for it. `Mi Bebé — Embarazo Paraguay` puts the two words people search in the title. Check Play results **and** the Paraguayan trademark register before committing. | `ANDROID-LAUNCH.md` §4 |
-| 1.3 | **Ship Guaraní reviewed-pending, or gate it** | The 78 Guaraní phrases are live in `main` today, hand-written and flagged pending review. If review will take longer than launch, decide deliberately — do not let it default. | `DECISIONS.md` D6 |
+| 1.3 | **Ship Guaraní reviewed-pending, or gate it** | **Decided 2026-09-28: gated.** Every Guaraní string (the Ajustes toggle and the `gn` line under the Spanish) waits on the `guarani` flag in `/admin/flags`, off by default. Turn it on after the native review of `docs/GUARANI-REVIEW.md`. | `DECISIONS.md` growth plan item 20b |
 
 > **Recommendation on 1.1: register as an organization**, using the legal
 > entity you already need for sponsor invoicing. Same $25, skips the 12-tester

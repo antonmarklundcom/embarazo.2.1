@@ -57,6 +57,19 @@ export const FLAG_DEFINITIONS = {
       "Muestra el riel de Recomendados. Apagado hasta que haya recomendaciones " +
       "reales cargadas.",
   },
+  // Growth plan item 20b — the one switch for every Guaraní string in the app:
+  // the Castellano/Guaraní toggle in Ajustes and the Guaraní line under the
+  // Spanish on the safety and derechos surfaces. Off until a native speaker
+  // has reviewed docs/GUARANI-REVIEW.md; a device that had chosen Guaraní
+  // keeps its choice and gets it back when this is turned on.
+  guarani: {
+    scope: "client",
+    default: false,
+    description:
+      "Muestra el guaraní: el selector de idioma en Ajustes y la línea en " +
+      "guaraní bajo el castellano. Apagado hasta la revisión nativa " +
+      "(docs/GUARANI-REVIEW.md).",
+  },
 } as const satisfies Record<string, FlagDefinition>;
 
 export type FlagKey = keyof typeof FLAG_DEFINITIONS;

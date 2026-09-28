@@ -2,6 +2,7 @@
 
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, notDeleted } from "../db";
+import { useFlag } from "../flags/useFlag";
 import {
   asLocale,
   DEFAULT_LOCALE,
@@ -30,11 +31,26 @@ import {
  * a Guaraní reader; a flash of `undefined` is not.
  */
 export function useLocale(): Locale {
+  const guarani = useGuarani();
   const locale = useLiveQuery(async () => {
     const rows = notDeleted(await db().profile.toArray());
     return asLocale(rows[0]?.locale);
   }, []);
+  // Growth plan item 20b: with the `guarani` flag off the app reads in
+  // Spanish whatever the row says. The stored choice is left alone, so it
+  // comes back the day the flag is turned on.
+  if (!guarani) return DEFAULT_LOCALE;
   return locale ?? DEFAULT_LOCALE;
+}
+
+/**
+ * Growth plan item 20b — whether any Guaraní is shown on this device: the
+ * Ajustes toggle and the `lang="gn"` lines under the Spanish. One flag
+ * (`guarani`, /admin/flags), off until the native review of
+ * docs/GUARANI-REVIEW.md. Off while the flag is unknown (first load offline).
+ */
+export function useGuarani(): boolean {
+  return useFlag("guarani");
 }
 
 /**

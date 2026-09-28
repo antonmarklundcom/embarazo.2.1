@@ -4568,3 +4568,21 @@ The plan lives in the site repo (`antonmarklundcom/embarazo`,
   image is generated here. Until a file exists the card draws a simple face;
   the `<img>` stays invisible until it has actually loaded, so a missing file
   never shows as a broken image.
+
+## 2026-09-28 — growth plan item 9 (G3): the weekly notice follows the baby
+
+- **Same toggle, same category (`consejos`), no new permission.** With a birth
+  date, the queue the device publishes is the baby's birthdays instead of the
+  pregnancy's week turnovers (`lib/baby/push.ts` → `babyAgeTimes`): every week
+  for the first 8 weeks, then each monthly birthday (a 31st lands on the last
+  day of a short month), 10:00 local, up to the first year, and then nothing.
+- **B5 holds.** The server still receives only instants. The service worker
+  reads `birthDate` from IndexedDB and writes "¡Tu bebé cumple 3 meses!" with
+  a one-line stage note; on a day that is not a birthday (a stale queue, a late
+  delivery) it says "Tu bebé tiene…" rather than claiming one. After a birth
+  it never writes a pregnancy week again.
+- **The switch is immediate.** Recording or undoing the birth re-publishes the
+  queue (`refreshWeeklyTips`), so a pregnancy poke already queued for next
+  week does not arrive after the baby.
+- The Ajustes description for "Tu semana nueva" now says it continues for the
+  baby's first year.

@@ -45,7 +45,7 @@ export const PUSH_CATEGORY_INFO: readonly PushCategoryInfo[] = [
     key: "consejos",
     label: "Tu semana nueva",
     description:
-      "Un aviso el día que empieza cada semana de tu embarazo, con lo que está pasando.",
+      "Un aviso el día que empieza cada semana de tu embarazo. Cuando nace tu bebé, uno por cada semana y cada mes de su primer año.",
     defaultOn: false,
   },
   {

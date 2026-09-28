@@ -15,6 +15,7 @@ import {
 // lib/push/sentences.test.ts, because a service worker is the hardest place in
 // the app to assert anything about.
 import { cheerSentence, weeklyTipSentence } from "@/lib/push/sentences";
+import { babyAgeSentence } from "@/lib/baby/push";
 
 // Service worker (build spec §9). Compiled from app/sw.ts → public/sw.js.
 declare global {
@@ -270,6 +271,8 @@ interface LocalReminderState {
   companionReminder: boolean;
   /** PR-5b — her gestational week, for the weekly tip. Null when unknown. */
   week: number | null;
+  /** Growth plan item 9 (G3) — the baby's birth date, once recorded. */
+  birthDate: number | null;
 }
 
 /** Read what the notification needs straight from Dexie's object store. */
@@ -280,6 +283,7 @@ async function readLocalReminderState(): Promise<LocalReminderState> {
       nextAppointment: null,
       companionReminder: false,
       week: null,
+      birthDate: null,
     };
     const done = (value: LocalReminderState) => {
       if (!settled) {
@@ -313,6 +317,7 @@ async function readLocalReminderState(): Promise<LocalReminderState> {
           const live = rows.find((row) => !row.deletedAt);
           const pregnancy = ((pregnancies.result ?? []) as {
             lmpDate?: number;
+            birthDate?: number;
             deletedAt?: number | null;
           }[]).find((row) => !row.deletedAt);
           done({
@@ -325,6 +330,8 @@ async function readLocalReminderState(): Promise<LocalReminderState> {
               typeof pregnancy?.lmpDate === "number"
                 ? getCurrentWeek(pregnancy.lmpDate)
                 : null,
+            birthDate:
+              typeof pregnancy?.birthDate === "number" ? pregnancy.birthDate : null,
           });
         };
         tx.onerror = () => done(NOTHING);
@@ -438,6 +445,10 @@ async function composeNotification(): Promise<{ title: string; body: string; url
   // The weekly tip. Also the honest landing place for a control reminder whose
   // appointment moved between scheduling and firing: there is something true
   // to say about her week either way.
+  // Growth plan item 9 (G3): after the birth, the notice is about the baby's
+  // age, never a pregnancy week that no longer exists.
+  if (local.birthDate !== null) return { ...babyAgeSentence(local.birthDate, now), url: "/" };
+
   const weekly = weeklyTipSentence(local.week);
   if (weekly) return weekly;
 

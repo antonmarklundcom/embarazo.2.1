@@ -1,6 +1,7 @@
 "use client";
 
 import { db, notDeleted } from "@/lib/db";
+import { refreshWeeklyTips } from "@/lib/push/client";
 import { isValidBirthDate, localDay } from "./age";
 
 // Growth plan item 9 ("Ya nació") — the only writers of `Pregnancy.birthDate`.
@@ -21,6 +22,9 @@ export async function recordBirth(birthDate: number, now: number = Date.now()): 
     // the first "Sí", not the last edit.
     birthRecordedAt: pregnancy.birthRecordedAt ?? now,
   });
+  // G3: the queued "semana nueva" pokes become baby-age ones right away.
+  // Fire and forget: without push, or offline, it does nothing.
+  void refreshWeeklyTips();
   return true;
 }
 
@@ -29,4 +33,5 @@ export async function clearBirth(): Promise<void> {
   const pregnancy = await livePregnancy();
   if (!pregnancy?.id) return;
   await db().pregnancy.update(pregnancy.id, { birthDate: undefined, birthRecordedAt: undefined });
+  void refreshWeeklyTips();
 }

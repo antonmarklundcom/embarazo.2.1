@@ -1,14 +1,14 @@
 # Week renders and comparison objects
 
-**Today (growth plan item 7):** this directory holds `bebe-1.webp` …
-`bebe-42.webp`, the site's size illustrations (embarazo.com.py
-`assets/img/tamano-bebe-semana-<n>-<fruit>-640.webp`), copied byte for byte by
-`node scripts/import-site-week-art.mjs [../embarazo]`. They are **opaque**
-(a flat pastel ground is part of each picture), so `lib/hero/weekArt.ts` sets
-`WEEK_ART_STYLE = "framed"` and the hero shows them as a framed picture on the
-theme instead of compositing them. Weeks 1–2 are calendars.
+**Today (2026-09-28):** this directory holds the transparent **cutout** renders
+`bebe-3.webp` … `bebe-42.webp` (`npm run localize:images` from
+`docs/imagery-manifest.json`; weeks 16, 18, 26 and 28–42 regenerated that day with
+week 22 as the style reference). `lib/hero/weekArt.ts` sets `WEEK_ART_STYLE = "cutout"`.
+The baby is the same character every week; the **size** is the comparison object in
+`../comparaciones/` (a Paraguayan fruit or vegetable), drawn to scale beside the baby
+on `/semana/<n>` and as a badge on the Hoy ring. Weeks 1–2 have no render.
 
-Everything below describes the **cutout** set this directory was designed for
+Everything below describes the cutout set
 (transparent renders, weeks 3–42). Moving to it: localize the renders
 (`npm run localize:images`, after the founder approves them), then flip
 `WEEK_ART_STYLE` to `"cutout"`.

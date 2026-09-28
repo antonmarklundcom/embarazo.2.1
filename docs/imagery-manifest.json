@@ -2,14 +2,15 @@
  "_notes": {
   "generated": "2026-09-23",
   "purpose": "Week renders for WeekHeroImage / HeroSubject (public/assets/semanas/bebe-<week>.webp, weeks 3–42). Transparent PNG sources; convert with npm run optimize:images per public/assets/semanas/README.md. Plus the 40 size-comparison objects (public/assets/comparaciones/<slug>.webp, slugs from lib/seed/comparisons.ts) regenerated 2026-09-23 on a transparent background — the 2026-09-21 set sat on coloured squares and never reached the repo.",
-  "style": "Flat editorial picture-book illustration matching the 40 size-comparison fruits made 2026-09-21. Weeks 3–4 glow/seed, 5–8 embryo, 9–27 curled baby, 28–42 wrapped in a sage muslin blanket (late-term unwrapped prompts were blocked by the provider's safety filter).",
+  "style": "Flat editorial picture-book illustration matching the 40 size-comparison fruits. Weeks 3–4 glow/seed, 5–8 embryo, 9–42 the same curled baby. 2026-09-28: weeks 16, 18, 26 and 28–42 regenerated with week 22 as style reference (thin outlines fixed; the swaddled 28–42 replaced: a baby in the womb is not in a blanket). The per-week size story is the comparison object, not the baby drawing.",
   "resolution_rule": "1:1 medium 1k — shown at most ~300 px wide on phones.",
   "cost_preflight": "0.5 credits per image (gpt_image_2_5 sunburst, medium, 1k, 1:1, transparent)",
   "actual_spend_credits": "~42.5 (weeks: 40 kept + 3 blocked + 2 superseded pilots ≈ 22.5; comparisons: 40 kept = 20; blocked or rate-limited submissions are not charged)",
   "ledger_checked": "not checked this session",
-  "download_status": "awaiting-allowlist — this cloud environment gets CONNECT 403 for *.cloudfront.net. Add it under the environment's Network access → Allowed domains, then run `npm run localize:images` and commit public/assets/semanas/*.webp and public/assets/comparaciones/*.webp.",
+  "download_status": "localized 2026-09-28",
   "review": "Founder to approve both sets in the Higgsfield gallery before localizing; medical reviewer optional (stylised, non-anatomical).",
-  "site_set_in_repo": "2026-09-27, growth plan item 7: public/assets/semanas/bebe-<week>.webp currently holds the site's 42 opaque size illustrations (scripts/import-site-week-art.mjs), shown framed (lib/hero/weekArt.ts WEEK_ART_STYLE='framed'). Localizing this manifest's cutouts overwrites them; flip WEEK_ART_STYLE to 'cutout' in the same commit. The cloudfront download answered HTTP 200 from a cloud session on 2026-09-27."
+  "site_set_in_repo": "2026-09-27, growth plan item 7: public/assets/semanas/bebe-<week>.webp currently holds the site's 42 opaque size illustrations (scripts/import-site-week-art.mjs), shown framed (lib/hero/weekArt.ts WEEK_ART_STYLE='framed'). Localizing this manifest's cutouts overwrites them; flip WEEK_ART_STYLE to 'cutout' in the same commit. The cloudfront download answered HTTP 200 from a cloud session on 2026-09-27.",
+  "regeneration_2026_09_28": "36 jobs + 5 filter failures (not charged) at 0.5 credits: 2 variants per week, one kept per week."
  },
  "images": [
   {
@@ -232,9 +233,11 @@
    "quality": "medium",
    "resolution": "1k",
    "background": "transparent",
-   "prompt": "Warm flat editorial illustration, soft organic shapes, subtle paper-grain texture, gentle hand-drawn outline in deep petrol green (#2F5D50), matching a children's-book size-comparison series. Palette: warm peach skin tones (#F4D3C2, #EFC6B0), a touch of blush pink (#F3DAD4) on the cheek, petrol green line work. Subject: an unborn baby at 16 weeks of pregnancy, slender body with a slightly large head, curled on its side with legs drawn up and knees toward the chest, tiny hands near the face, eyes closed, calm and sleeping. Seen from the side so no genitalia are visible. Drawn as the only subject, centred, with generous empty margin, isolated on a fully transparent background. No umbilical cord, no placenta, no womb, no text, no frame, no ground shadow. Avoid: photorealism, 3D render, gradients, anatomical or medical diagram look.",
-   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_174115_c118482f-1e9f-4e31-b404-fdc1cec57e90.png",
-   "job_id": "c118482f-1e9f-4e31-b404-fdc1cec57e90"
+   "prompt": "Same illustration style as the reference (week 22): bold petrol-green (#2F5D50) outline, warm peach skin, blush cheek, flat picture-book style, paper grain. The same sleeping baby at about 16 weeks, curled up, seen from the side. Transparent background; no blanket, clothing, cord, circle, text, frame or shadow.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260928_194359_50a223ff-b956-41ea-bdda-d83d71602ef4.png",
+   "job_id": "50a223ff-b956-41ea-bdda-d83d71602ef4",
+   "generated": "2026-09-28",
+   "reference_job": "90bed2d0-3fc8-4b8b-a858-7318e888bd12"
   },
   {
    "id": "bebe-17",
@@ -264,9 +267,11 @@
    "quality": "medium",
    "resolution": "1k",
    "background": "transparent",
-   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2, #EFC6B0), blush pink (#F3DAD4) cheek, petrol green lines. Subject: a sweet small baby at about 18 weeks of pregnancy, drawn as a simple slender curled-up figure seen from the side, knees tucked up to the chest, tiny hands near the face, eyes gently closed, peaceful. Simplified shapes, no anatomical detail. Centred with generous empty margin, isolated on a fully transparent background. No umbilical cord, no text, no frame, no ground shadow. Avoid: photorealism, 3D, gradients, medical diagram look.",
-   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175032_be7abf7f-9bb0-4d9f-b363-0351cb1198ee.png",
-   "job_id": "be7abf7f-9bb0-4d9f-b363-0351cb1198ee"
+   "prompt": "Same illustration style as the reference (week 22): bold petrol-green (#2F5D50) outline, warm peach skin, blush cheek, flat picture-book style, paper grain. The same sleeping baby at about 18 weeks, curled up, seen from the side. Transparent background; no blanket, clothing, cord, circle, text, frame or shadow.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260928_194359_7037da93-fa5d-40ce-b880-f9593f0fac2f.png",
+   "job_id": "7037da93-fa5d-40ce-b880-f9593f0fac2f",
+   "generated": "2026-09-28",
+   "reference_job": "90bed2d0-3fc8-4b8b-a858-7318e888bd12"
   },
   {
    "id": "bebe-19",
@@ -392,9 +397,11 @@
    "quality": "medium",
    "resolution": "1k",
    "background": "transparent",
-   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2, #EFC6B0), blush pink (#F3DAD4) cheek, petrol green lines. Subject: a sweet sleeping baby at about 26 weeks of pregnancy, drawn as a simple rounded bean-shaped curled-up figure seen from the side, knees tucked up to the chest, one little hand by the cheek, a few soft wisps of hair, eyes gently closed, peaceful smile. Simplified shapes, no anatomical detail. Centred with generous empty margin, isolated on a fully transparent background. No umbilical cord, no text, no frame, no ground shadow. Avoid: photorealism, 3D, gradients, medical diagram look.",
-   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_174158_e1253c91-9c68-4259-95cd-a6f97e974e6f.png",
-   "job_id": "e1253c91-9c68-4259-95cd-a6f97e974e6f"
+   "prompt": "Same illustration style as the reference (week 22): bold petrol-green (#2F5D50) outline, warm peach skin, blush cheek, flat picture-book style, paper grain. The same sleeping baby at about 26 weeks, curled up, seen from the side. Transparent background; no blanket, clothing, cord, circle, text, frame or shadow.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260928_194359_2f3932c8-7126-421f-a2d4-814f66b5cc9e.png",
+   "job_id": "2f3932c8-7126-421f-a2d4-814f66b5cc9e",
+   "generated": "2026-09-28",
+   "reference_job": "90bed2d0-3fc8-4b8b-a858-7318e888bd12"
   },
   {
    "id": "bebe-27",
@@ -424,9 +431,11 @@
    "quality": "medium",
    "resolution": "1k",
    "background": "transparent",
-   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2, #EFC6B0), blush pink (#F3DAD4) cheek, petrol green lines, soft sage green (#DFE8D8) blanket. Subject: a sweet sleeping baby at about 28 weeks of pregnancy, curled up on its side, snugly wrapped in a soft sage-green muslin blanket so only the round face, soft hair and one tiny hand show, eyes gently closed, peaceful. Simplified shapes, no anatomical detail. Centred with generous empty margin, isolated on a fully transparent background. No umbilical cord, no text, no frame, no ground shadow. Avoid: photorealism, 3D, gradients, medical diagram look.",
-   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175032_4962eeb6-3fec-4cfe-8eb3-4820bc965d9a.png",
-   "job_id": "4962eeb6-3fec-4cfe-8eb3-4820bc965d9a"
+   "prompt": "Same illustration style as the reference (week 22): bold petrol-green (#2F5D50) outline, warm peach skin, blush cheek, flat picture-book style, paper grain. The same sleeping baby at about 28 weeks, curled up, seen from the side. Transparent background; no blanket, clothing, cord, circle, text, frame or shadow.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260928_194359_0c4f1057-84f7-48be-9abb-2a45fbf6a1e7.png",
+   "job_id": "0c4f1057-84f7-48be-9abb-2a45fbf6a1e7",
+   "generated": "2026-09-28",
+   "reference_job": "90bed2d0-3fc8-4b8b-a858-7318e888bd12"
   },
   {
    "id": "bebe-29",
@@ -440,9 +449,11 @@
    "quality": "medium",
    "resolution": "1k",
    "background": "transparent",
-   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2, #EFC6B0), blush pink (#F3DAD4) cheek, petrol green lines, soft sage green (#DFE8D8) blanket. Subject: a sweet sleeping baby at about 29 weeks of pregnancy, curled up on its side, snugly wrapped in a soft sage-green muslin blanket so only the round face, soft hair and one tiny hand show, eyes gently closed, peaceful. Simplified shapes, no anatomical detail. Centred with generous empty margin, isolated on a fully transparent background. No umbilical cord, no text, no frame, no ground shadow. Avoid: photorealism, 3D, gradients, medical diagram look.",
-   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175032_cd5ed678-9c44-42b9-8660-723301b5deaa.png",
-   "job_id": "cd5ed678-9c44-42b9-8660-723301b5deaa"
+   "prompt": "Same illustration style as the reference (week 22): bold petrol-green (#2F5D50) outline, warm peach skin, blush cheek, flat picture-book style, paper grain. The same sleeping baby at about 29 weeks, curled up, seen from the side. Transparent background; no blanket, clothing, cord, circle, text, frame or shadow.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260928_194359_46b48a19-e8f6-4ebe-972b-61ab0e4efc18.png",
+   "job_id": "46b48a19-e8f6-4ebe-972b-61ab0e4efc18",
+   "generated": "2026-09-28",
+   "reference_job": "90bed2d0-3fc8-4b8b-a858-7318e888bd12"
   },
   {
    "id": "bebe-30",
@@ -456,9 +467,11 @@
    "quality": "medium",
    "resolution": "1k",
    "background": "transparent",
-   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2, #EFC6B0), blush pink (#F3DAD4) cheek, petrol green lines, soft sage green (#DFE8D8) blanket. Subject: a sweet sleeping baby at about 30 weeks of pregnancy, curled up on its side, snugly wrapped in a soft sage-green muslin blanket so only the round face, soft hair and one tiny hand show, eyes gently closed, peaceful. Simplified shapes, no anatomical detail. Centred with generous empty margin, isolated on a fully transparent background. No umbilical cord, no text, no frame, no ground shadow. Avoid: photorealism, 3D, gradients, medical diagram look.",
-   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175123_b8ce71aa-0313-4eb1-b7bf-c7d38efd8455.png",
-   "job_id": "b8ce71aa-0313-4eb1-b7bf-c7d38efd8455"
+   "prompt": "Same illustration style as the reference (week 22): bold petrol-green (#2F5D50) outline, warm peach skin, blush cheek, flat picture-book style, paper grain. The same sleeping baby at about 30 weeks, curled up, seen from the side. Transparent background; no blanket, clothing, cord, circle, text, frame or shadow.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260928_194359_a0ca73ef-e7bd-4c5f-9fb7-3c6c3c2f98cc.png",
+   "job_id": "a0ca73ef-e7bd-4c5f-9fb7-3c6c3c2f98cc",
+   "generated": "2026-09-28",
+   "reference_job": "90bed2d0-3fc8-4b8b-a858-7318e888bd12"
   },
   {
    "id": "bebe-31",
@@ -472,9 +485,11 @@
    "quality": "medium",
    "resolution": "1k",
    "background": "transparent",
-   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2, #EFC6B0), blush pink (#F3DAD4) cheek, petrol green lines, soft sage green (#DFE8D8) blanket. Subject: a sweet sleeping baby at about 31 weeks of pregnancy, curled up on its side, snugly wrapped in a soft sage-green muslin blanket so only the round face, soft hair and one tiny hand show, eyes gently closed, peaceful. Simplified shapes, no anatomical detail. Centred with generous empty margin, isolated on a fully transparent background. No umbilical cord, no text, no frame, no ground shadow. Avoid: photorealism, 3D, gradients, medical diagram look.",
-   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175222_9280f380-5de7-4a81-881e-f8d221e52cc4.png",
-   "job_id": "9280f380-5de7-4a81-881e-f8d221e52cc4"
+   "prompt": "Same illustration style as the reference (week 22): bold petrol-green (#2F5D50) outline, warm peach skin, blush cheek, flat picture-book style, paper grain. The same sleeping baby at about 31 weeks, curled up, seen from the side. Transparent background; no blanket, clothing, cord, circle, text, frame or shadow.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260928_194456_83c424c4-9754-4b93-b207-66d31a229703.png",
+   "job_id": "83c424c4-9754-4b93-b207-66d31a229703",
+   "generated": "2026-09-28",
+   "reference_job": "90bed2d0-3fc8-4b8b-a858-7318e888bd12"
   },
   {
    "id": "bebe-32",
@@ -488,9 +503,11 @@
    "quality": "medium",
    "resolution": "1k",
    "background": "transparent",
-   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2, #EFC6B0), blush pink (#F3DAD4) cheek, petrol green lines, soft sage green (#DFE8D8) blanket. Subject: a sweet sleeping baby at about 32 weeks of pregnancy, curled up on its side, snugly wrapped in a soft sage-green muslin blanket so only the round face, soft hair and one tiny hand show, eyes gently closed, peaceful. Simplified shapes, no anatomical detail. Centred with generous empty margin, isolated on a fully transparent background. No umbilical cord, no text, no frame, no ground shadow. Avoid: photorealism, 3D, gradients, medical diagram look.",
-   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175123_d0708afd-d5e5-4f76-b2e1-79cc6fd2e94d.png",
-   "job_id": "d0708afd-d5e5-4f76-b2e1-79cc6fd2e94d"
+   "prompt": "Same illustration style as the reference (week 22): bold petrol-green (#2F5D50) outline, warm peach skin, blush cheek, flat picture-book style, paper grain. The same sleeping baby at about 32 weeks, curled up, seen from the side. Transparent background; no blanket, clothing, cord, circle, text, frame or shadow.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260928_194456_71899f9b-15d0-43ca-8445-25eca134f53b.png",
+   "job_id": "71899f9b-15d0-43ca-8445-25eca134f53b",
+   "generated": "2026-09-28",
+   "reference_job": "90bed2d0-3fc8-4b8b-a858-7318e888bd12"
   },
   {
    "id": "bebe-33",
@@ -504,9 +521,11 @@
    "quality": "medium",
    "resolution": "1k",
    "background": "transparent",
-   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2, #EFC6B0), blush pink (#F3DAD4) cheek, petrol green lines, soft sage green (#DFE8D8) blanket. Subject: a sweet sleeping baby at about 33 weeks of pregnancy, curled up on its side, snugly wrapped in a soft sage-green muslin blanket so only the round face, soft hair and one tiny hand show, eyes gently closed, peaceful. Simplified shapes, no anatomical detail. Centred with generous empty margin, isolated on a fully transparent background. No umbilical cord, no text, no frame, no ground shadow. Avoid: photorealism, 3D, gradients, medical diagram look.",
-   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175123_ec536c45-ba15-44fa-99f5-42c55b8b1c82.png",
-   "job_id": "ec536c45-ba15-44fa-99f5-42c55b8b1c82"
+   "prompt": "Same illustration style as the reference (week 22): bold petrol-green (#2F5D50) outline, warm peach skin, blush cheek, flat picture-book style, paper grain. The same sleeping baby at about 33 weeks, curled up, seen from the side. Transparent background; no blanket, clothing, cord, circle, text, frame or shadow.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260928_194456_1330325d-98f1-476c-b458-6ef22974976f.png",
+   "job_id": "1330325d-98f1-476c-b458-6ef22974976f",
+   "generated": "2026-09-28",
+   "reference_job": "90bed2d0-3fc8-4b8b-a858-7318e888bd12"
   },
   {
    "id": "bebe-34",
@@ -520,9 +539,11 @@
    "quality": "medium",
    "resolution": "1k",
    "background": "transparent",
-   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2, #EFC6B0), blush pink (#F3DAD4) cheek, petrol green lines, soft sage green (#DFE8D8) blanket. Subject: a sweet sleeping baby at about 34 weeks of pregnancy, curled up on its side, snugly wrapped in a soft sage-green muslin blanket so only the round face, soft hair and one tiny hand show, eyes gently closed, peaceful. Simplified shapes, no anatomical detail. Centred with generous empty margin, isolated on a fully transparent background. No umbilical cord, no text, no frame, no ground shadow. Avoid: photorealism, 3D, gradients, medical diagram look.",
-   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175123_933bfe22-667d-4c7e-be3e-7bef0bac1b3d.png",
-   "job_id": "933bfe22-667d-4c7e-be3e-7bef0bac1b3d"
+   "prompt": "Same illustration style as the reference (week 22): bold petrol-green (#2F5D50) outline, warm peach skin, blush cheek, flat picture-book style, paper grain. The same sleeping baby at about 34 weeks, curled up, seen from the side. Transparent background; no blanket, clothing, cord, circle, text, frame or shadow.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260928_194456_99b35a45-192c-4380-9a82-93439a3c2c35.png",
+   "job_id": "99b35a45-192c-4380-9a82-93439a3c2c35",
+   "generated": "2026-09-28",
+   "reference_job": "90bed2d0-3fc8-4b8b-a858-7318e888bd12"
   },
   {
    "id": "bebe-35",
@@ -536,9 +557,11 @@
    "quality": "medium",
    "resolution": "1k",
    "background": "transparent",
-   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2, #EFC6B0), blush pink (#F3DAD4) cheek, petrol green lines, soft sage green (#DFE8D8) blanket. Subject: a sweet sleeping baby at about 35 weeks of pregnancy, curled up on its side, snugly wrapped in a soft sage-green muslin blanket so only the round face, soft hair and one tiny hand show, eyes gently closed, peaceful. Simplified shapes, no anatomical detail. Centred with generous empty margin, isolated on a fully transparent background. No umbilical cord, no text, no frame, no ground shadow. Avoid: photorealism, 3D, gradients, medical diagram look.",
-   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175124_f1f9e2ed-8b56-4a94-94b0-c168abfd1bad.png",
-   "job_id": "f1f9e2ed-8b56-4a94-94b0-c168abfd1bad"
+   "prompt": "Same illustration style as the reference (week 22): bold petrol-green (#2F5D50) outline, warm peach skin, blush cheek, flat picture-book style, paper grain. The same sleeping baby at about 35 weeks, curled up, seen from the side. Transparent background; no blanket, clothing, cord, circle, text, frame or shadow.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260928_194555_56d3784f-e592-4482-a4dd-6aba9c5f57fd.png",
+   "job_id": "56d3784f-e592-4482-a4dd-6aba9c5f57fd",
+   "generated": "2026-09-28",
+   "reference_job": "90bed2d0-3fc8-4b8b-a858-7318e888bd12"
   },
   {
    "id": "bebe-36",
@@ -552,9 +575,11 @@
    "quality": "medium",
    "resolution": "1k",
    "background": "transparent",
-   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2, #EFC6B0), blush pink (#F3DAD4) cheek, petrol green lines, soft sage green (#DFE8D8) blanket. Subject: a sweet sleeping baby at about 36 weeks of pregnancy, curled up on its side, snugly wrapped in a soft sage-green muslin blanket so only the round face, soft hair and one tiny hand show, eyes gently closed, peaceful. Simplified shapes, no anatomical detail. Centred with generous empty margin, isolated on a fully transparent background. No umbilical cord, no text, no frame, no ground shadow. Avoid: photorealism, 3D, gradients, medical diagram look.",
-   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175123_abcbca9a-2393-45db-aba8-4181d84042ff.png",
-   "job_id": "abcbca9a-2393-45db-aba8-4181d84042ff"
+   "prompt": "Same illustration style as the reference (week 22): bold petrol-green (#2F5D50) outline, warm peach skin, blush cheek, flat picture-book style, paper grain. The same sleeping baby at about 36 weeks, curled up, seen from the side. Transparent background; no blanket, clothing, cord, circle, text, frame or shadow.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260928_194555_ac5a672e-59ff-48bc-88d5-e7a2cbd40463.png",
+   "job_id": "ac5a672e-59ff-48bc-88d5-e7a2cbd40463",
+   "generated": "2026-09-28",
+   "reference_job": "90bed2d0-3fc8-4b8b-a858-7318e888bd12"
   },
   {
    "id": "bebe-37",
@@ -568,9 +593,11 @@
    "quality": "medium",
    "resolution": "1k",
    "background": "transparent",
-   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2, #EFC6B0), blush pink (#F3DAD4) cheek, petrol green lines, soft sage green (#DFE8D8) blanket. Subject: a sweet sleeping baby at about 37 weeks of pregnancy, curled up on its side, snugly wrapped in a soft sage-green muslin blanket so only the round face, soft hair and one tiny hand show, eyes gently closed, peaceful. Simplified shapes, no anatomical detail. Centred with generous empty margin, isolated on a fully transparent background. No umbilical cord, no text, no frame, no ground shadow. Avoid: photorealism, 3D, gradients, medical diagram look.",
-   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175123_797649b2-a239-4b8f-a284-80d5cd43f2f7.png",
-   "job_id": "797649b2-a239-4b8f-a284-80d5cd43f2f7"
+   "prompt": "Same illustration style as the reference (week 22): bold petrol-green (#2F5D50) outline, warm peach skin, blush cheek, flat picture-book style, paper grain. The same sleeping baby at about 37 weeks, curled up, seen from the side. Transparent background; no blanket, clothing, cord, circle, text, frame or shadow.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260928_194555_0d4537a2-8144-4cdc-9401-a691c01b7a82.png",
+   "job_id": "0d4537a2-8144-4cdc-9401-a691c01b7a82",
+   "generated": "2026-09-28",
+   "reference_job": "90bed2d0-3fc8-4b8b-a858-7318e888bd12"
   },
   {
    "id": "bebe-38",
@@ -584,9 +611,11 @@
    "quality": "medium",
    "resolution": "1k",
    "background": "transparent",
-   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2), blush pink (#F3DAD4) cheeks, soft sage green (#DFE8D8) blanket, petrol green lines. Subject: a sweet sleeping baby curled up on its side, snugly wrapped in a soft sage-green muslin blanket so only the round face, soft hair and one tiny hand show, eyes gently closed, peaceful. Simple rounded shapes. Centred with generous empty margin, isolated on a fully transparent background. No text, no frame, no ground shadow. Avoid: photorealism, 3D, gradients.",
-   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_174230_2545d9b6-defe-482e-ad9a-a88b3b72f944.png",
-   "job_id": "2545d9b6-defe-482e-ad9a-a88b3b72f944"
+   "prompt": "Same illustration style as the reference (week 22): bold petrol-green (#2F5D50) outline, warm peach skin, blush cheek, flat picture-book style, paper grain. The same sleeping baby at about 38 weeks, curled up, seen from the side. Transparent background; no blanket, clothing, cord, circle, text, frame or shadow.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260928_194555_1b42e2b8-e328-407f-a733-d903c50ef552.png",
+   "job_id": "1b42e2b8-e328-407f-a733-d903c50ef552",
+   "generated": "2026-09-28",
+   "reference_job": "90bed2d0-3fc8-4b8b-a858-7318e888bd12"
   },
   {
    "id": "bebe-39",
@@ -600,9 +629,11 @@
    "quality": "medium",
    "resolution": "1k",
    "background": "transparent",
-   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2, #EFC6B0), blush pink (#F3DAD4) cheek, petrol green lines, soft sage green (#DFE8D8) blanket. Subject: a sweet sleeping baby at about 39 weeks of pregnancy, curled up on its side, snugly wrapped in a soft sage-green muslin blanket so only the round face, soft hair and one tiny hand show, eyes gently closed, peaceful. Simplified shapes, no anatomical detail. Centred with generous empty margin, isolated on a fully transparent background. No umbilical cord, no text, no frame, no ground shadow. Avoid: photorealism, 3D, gradients, medical diagram look.",
-   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175123_d75cb89b-5603-4510-b6df-96962b9279c8.png",
-   "job_id": "d75cb89b-5603-4510-b6df-96962b9279c8"
+   "prompt": "Same illustration style as the reference (week 22): bold petrol-green (#2F5D50) outline, warm peach skin, blush cheek, flat picture-book style, paper grain. The same sleeping baby at about 39 weeks, curled up, seen from the side. Transparent background; no blanket, clothing, cord, circle, text, frame or shadow.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260928_194806_dfe0ca75-9403-4887-b85c-eebf766c248a.png",
+   "job_id": "dfe0ca75-9403-4887-b85c-eebf766c248a",
+   "generated": "2026-09-28",
+   "reference_job": "90bed2d0-3fc8-4b8b-a858-7318e888bd12"
   },
   {
    "id": "bebe-40",
@@ -616,9 +647,11 @@
    "quality": "medium",
    "resolution": "1k",
    "background": "transparent",
-   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2, #EFC6B0), blush pink (#F3DAD4) cheek, petrol green lines, soft sage green (#DFE8D8) blanket. Subject: a sweet sleeping baby at about 40 weeks of pregnancy, curled up on its side, snugly wrapped in a soft sage-green muslin blanket so only the round face, soft hair and one tiny hand show, eyes gently closed, peaceful. Simplified shapes, no anatomical detail. Centred with generous empty margin, isolated on a fully transparent background. No umbilical cord, no text, no frame, no ground shadow. Avoid: photorealism, 3D, gradients, medical diagram look.",
-   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175124_77d2afa1-4201-4254-8b1e-1405feb66a5b.png",
-   "job_id": "77d2afa1-4201-4254-8b1e-1405feb66a5b"
+   "prompt": "Same illustration style as the reference (week 22): bold petrol-green (#2F5D50) outline, warm peach skin, blush cheek, flat picture-book style, paper grain. The same sleeping baby at about 40 weeks, curled up, seen from the side. Transparent background; no blanket, clothing, cord, circle, text, frame or shadow.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260928_194806_e3a2d4b0-9158-4e48-b389-a8b70bf666ae.png",
+   "job_id": "e3a2d4b0-9158-4e48-b389-a8b70bf666ae",
+   "generated": "2026-09-28",
+   "reference_job": "90bed2d0-3fc8-4b8b-a858-7318e888bd12"
   },
   {
    "id": "bebe-41",
@@ -632,9 +665,11 @@
    "quality": "medium",
    "resolution": "1k",
    "background": "transparent",
-   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2, #EFC6B0), blush pink (#F3DAD4) cheek, petrol green lines, soft sage green (#DFE8D8) blanket. Subject: a sweet sleeping baby at about 41 weeks of pregnancy, curled up on its side, snugly wrapped in a soft sage-green muslin blanket so only the round face, soft hair and one tiny hand show, eyes gently closed, peaceful. Simplified shapes, no anatomical detail. Centred with generous empty margin, isolated on a fully transparent background. No umbilical cord, no text, no frame, no ground shadow. Avoid: photorealism, 3D, gradients, medical diagram look.",
-   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175123_b5570dfa-ac5b-42ae-8cb0-73ab907f3558.png",
-   "job_id": "b5570dfa-ac5b-42ae-8cb0-73ab907f3558"
+   "prompt": "Same illustration style as the reference (week 22): bold petrol-green (#2F5D50) outline, warm peach skin, blush cheek, flat picture-book style, paper grain. The same sleeping baby at about 41 weeks, curled up, seen from the side. Transparent background; no blanket, clothing, cord, circle, text, frame or shadow.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260928_194655_317396ee-3434-4251-9dbc-15befc8acb4a.png",
+   "job_id": "317396ee-3434-4251-9dbc-15befc8acb4a",
+   "generated": "2026-09-28",
+   "reference_job": "90bed2d0-3fc8-4b8b-a858-7318e888bd12"
   },
   {
    "id": "bebe-42",
@@ -648,9 +683,11 @@
    "quality": "medium",
    "resolution": "1k",
    "background": "transparent",
-   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2, #EFC6B0), blush pink (#F3DAD4) cheek, petrol green lines, soft sage green (#DFE8D8) blanket. Subject: a sweet sleeping baby at about 42 weeks of pregnancy, ready to be born, curled up on its side, snugly wrapped in a soft sage-green muslin blanket so only the round face, soft hair and one tiny hand show, eyes gently closed, peaceful. Simplified shapes, no anatomical detail. Centred with generous empty margin, isolated on a fully transparent background. No umbilical cord, no text, no frame, no ground shadow. Avoid: photorealism, 3D, gradients, medical diagram look.",
-   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175222_6c55a686-f09c-45ea-9333-cbf47a58ff73.png",
-   "job_id": "6c55a686-f09c-45ea-9333-cbf47a58ff73"
+   "prompt": "Same illustration style as the reference (week 22): bold petrol-green (#2F5D50) outline, warm peach skin, blush cheek, flat picture-book style, paper grain. The same sleeping baby at about 42 weeks, curled up, seen from the side. Transparent background; no blanket, clothing, cord, circle, text, frame or shadow.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260928_194654_700f2c0b-f528-4934-a160-1f0713472d9a.png",
+   "job_id": "700f2c0b-f528-4934-a160-1f0713472d9a",
+   "generated": "2026-09-28",
+   "reference_job": "90bed2d0-3fc8-4b8b-a858-7318e888bd12"
   }
  ],
  "comparisons": [

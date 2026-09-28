@@ -99,27 +99,43 @@ test("the same theme follows from home to a week page", async ({ page }) => {
   ).toHaveAttribute("aria-pressed", "true");
 });
 
-test("the site's week illustrations show under the hero on weeks 1, 20 and 42", async ({
+test("the week page shows the baby beside this week's Paraguayan fruit, both loaded", async ({
   page,
 }) => {
-  // Growth plan item 7: `public/assets/semanas/` holds the site's 42 framed
-  // illustrations. Week 1 is a calendar (no embryo yet), 20 and 42 are sizes.
+  // 2026-09-28: the cutout renders (`public/assets/semanas/`) and the size
+  // comparisons (`public/assets/comparaciones/`) are on disk. The size is told
+  // by the fruit or vegetable, drawn to scale beside the baby.
   await completeOnboarding(page);
 
   const cases: Array<[number, string]> = [
-    [1, "Un calendario: en la semana 1 todavía no hay embrión."],
-    [20, "El tamaño de tu bebé en la semana 20: una banana."],
-    [42, "El tamaño de tu bebé en la semana 42: una sandía grande y madura."],
+    [8, "poroto"],
+    [20, "banana"],
+    [42, "sandia-grande-y-madura"],
   ];
-  for (const [week, alt] of cases) {
+  for (const [week, item] of cases) {
     await page.goto(`/semana/${week}`);
     await expect(page.getByText(`SEMANA ${week} ·`)).toBeVisible();
-    const img = page.getByRole("img", { name: alt });
-    await expect(img).toBeVisible();
-    await expect(img).toHaveAttribute("src", `/assets/semanas/bebe-${week}.webp`);
-    // Decoded, not just requested: a 404 would stay hidden behind the fallback.
-    expect(await img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
+    const figure = page.locator("figure");
+    for (const src of [`/assets/semanas/bebe-${week}.webp`, `/assets/comparaciones/${item}.webp`]) {
+      const img = figure.locator(`img[src="${src}"]`);
+      await expect(img).toBeVisible();
+      // Decoded, not just requested: a 404 would swap in the drawn fallback.
+      await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
+    }
   }
+
+  // Week 1: no embryo yet, so no figure and no size.
+  await page.goto("/semana/1");
+  await expect(page.getByText("SEMANA 1 ·")).toBeVisible();
+  await expect(page.locator("figure")).toHaveCount(0);
+});
+
+test("Hoy shows this week's fruit on the ring", async ({ page }) => {
+  // 136 days: 19+3, week 20, a banana.
+  await completeOnboarding(page, { daysAgo: 136 });
+  const badge = page.locator('img[src="/assets/comparaciones/banana.webp"]');
+  await expect(badge).toBeVisible();
+  await expect.poll(() => badge.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
 });
 
 test.describe("with the week image unavailable", () => {

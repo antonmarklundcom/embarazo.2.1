@@ -5,7 +5,7 @@ import { useImageLoaded } from "@/lib/hooks/useImageFailed";
 import { ThemeBackdrop } from "./hero/ThemeBackdrop";
 import { ThemeChip } from "./hero/ThemeChip";
 import { ComparisonFigure } from "./hero/ComparisonFigure";
-import { BabyIllustration } from "./hero/BabyIllustration";
+import { WeekBabyFigure } from "./hero/WeekBabyFigure";
 import { useHeroTheme, useShowComparison } from "@/lib/hero/preferences";
 import { bareInk, captionScrim, heroTheme, themeInk } from "@/lib/hero/themes";
 import { measurementNote, switchesMeasurementAt } from "@/lib/hero/scale";
@@ -24,12 +24,11 @@ import { WEEK_ART_STYLE, hasWeekArt, weekArtAlt, weekArtSrc } from "@/lib/hero/w
 // assumption about a photograph, and it breaks the moment the background is a
 // pale lace medallion, so the scrim and the ink now come from the theme.
 //
-// **What is on disk today is the site's framed set, not the cutouts.**
-// `public/assets/semanas/` holds the 42 size illustrations copied from
-// embarazo.com.py (`scripts/import-site-week-art.mjs`): opaque squares, so
-// they sit in the card as a framed picture where the drawn fallback was, and
-// the theme stays around them. The composited layout below is kept for the
-// transparent renders; `lib/hero/weekArt.ts` says which set is on disk.
+// **What is on disk today is the cutout set** (2026-09-28): transparent baby
+// renders for weeks 3–42, composited over the theme, with this week's
+// Paraguayan fruit or vegetable drawn to scale beside it (`ComparisonFigure`).
+// The framed branch below stays for the site's opaque set; `lib/hero/weekArt.ts`
+// says which set is on disk.
 export function WeekHeroImage({
   week,
   trimester,
@@ -61,7 +60,14 @@ export function WeekHeroImage({
   // then the card is the bare layout — caption on the theme in its own dark
   // ink, and the drawn baby beside the size comparison — so it never flashes a
   // scrimmed caption over an empty frame and then swaps after hydration.
-  const onRender = !framed && hasArt && loaded;
+  //
+  // 2026-09-28: not used for the cutout set after all. Composited full-bleed
+  // under the caption scrim the render went dark and hid the one thing that
+  // tells the size, the fruit. The bare layout draws the render beside the
+  // fruit, to scale (`ComparisonFigure` → `WeekBabyFigure`), which is what
+  // the week page is for. Kept behind this constant, not deleted.
+  const COMPOSITE_RENDER = false;
+  const onRender = COMPOSITE_RENDER && !framed && hasArt && loaded;
   // The framed set: the picture takes the drawing's place in the bare layout.
   // It IS the size comparison (a fruit), so the "hide the comparison" toggle
   // hides it too — except on weeks 1–2, where it is a calendar, not a size.
@@ -152,7 +158,7 @@ export function WeekHeroImage({
                   illustrated
                 />
               ) : (
-                <BabyIllustration week={week} size={150} />
+                <WeekBabyFigure week={week} size={150} />
               )}
             </div>
           )}

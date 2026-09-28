@@ -1,7 +1,7 @@
 "use client";
 
 import { useImageFailed } from "@/lib/hooks/useImageFailed";
-import { BabyIllustration } from "./BabyIllustration";
+import { WeekBabyFigure } from "./WeekBabyFigure";
 
 import { comparisonFor } from "@/lib/seed/comparisons";
 import { heroScale, notToScaleCaption } from "@/lib/hero/scale";
@@ -74,7 +74,7 @@ export function ComparisonFigure({
       {babyPx !== null &&
         (illustrated ? (
           <span className="block shrink-0" style={{ width: babyPx, height: babyPx }}>
-            <BabyIllustration week={week} size={babyPx} />
+            <WeekBabyFigure week={week} size={babyPx} />
           </span>
         ) : (
           <span

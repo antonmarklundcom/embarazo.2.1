@@ -17,8 +17,12 @@ describe("ejercicios content (D6)", () => {
     expect(EJERCICIOS.length).toBeLessThanOrEqual(14);
   });
 
-  it("publishes nothing until real images replace the placeholder", () => {
-    expect(PUBLISHED_EJERCICIOS).toHaveLength(0);
+  it("publishes exactly the entries whose every step has a real image (all 12 since 2026-09-28)", () => {
+    const complete = EJERCICIOS.filter((exercise) =>
+      exercise.steps.every((step) => !step.imageSrc.includes("placeholder")),
+    );
+    expect(PUBLISHED_EJERCICIOS.map((e) => e.id)).toEqual(complete.map((e) => e.id));
+    expect(PUBLISHED_EJERCICIOS).toHaveLength(12);
   });
 
   it("every entry carries avoidIf and stopSigns", () => {
@@ -55,10 +59,11 @@ describe("ejercicios content (D6)", () => {
 });
 
 describe("getEjercicioById", () => {
-  it("finds nothing today — every entry is unpublished", () => {
-    for (const exercise of EJERCICIOS) {
-      expect(getEjercicioById(exercise.id)).toBeUndefined();
+  it("finds every published entry by id, and nothing else", () => {
+    for (const exercise of PUBLISHED_EJERCICIOS) {
+      expect(getEjercicioById(exercise.id)?.id).toBe(exercise.id);
     }
+    expect(getEjercicioById("no-existe")).toBeUndefined();
   });
 });
 

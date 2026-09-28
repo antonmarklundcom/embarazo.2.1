@@ -79,3 +79,22 @@ export function babyAgeLabel(age: BabyAge): string {
   }
   return age.months === 1 ? "1 mes" : `${age.months} meses`;
 }
+
+/** Hoy offers "¿Ya nació tu bebé?" from week 37 until a birth date exists. */
+export function offersBirthCard(week: number | undefined, birthDate: number | undefined): boolean {
+  return birthDate === undefined && week !== undefined && week >= BIRTH_CARD_FROM_WEEK;
+}
+
+/** How long "Deshacer" stays in Ajustes after "Sí, ya nació", for a mistaken tap. */
+export const UNDO_BIRTH_DAYS = 30;
+
+export function canUndoBirth(recordedAt: number | undefined, now: number = Date.now()): boolean {
+  if (recordedAt === undefined) return false;
+  return now - recordedAt < UNDO_BIRTH_DAYS * DAY_MS;
+}
+
+/** `<input type="date">` value → local midnight, or NaN. */
+export function parseDateInput(value: string): number {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return Number.NaN;
+  return new Date(`${value}T00:00:00`).getTime();
+}

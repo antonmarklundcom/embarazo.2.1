@@ -29,12 +29,15 @@ last, after the app part is live.
 
 ## Data
 
-- `Pregnancy.birthDate?: number` (epoch ms, local day). A plain optional, non-indexed field:
-  the same pattern `plannedDeliveryDate` and `gestationDays` used, so **no Dexie version bump
-  and no rename** (AGENTS.md). Synced like the rest of the pregnancy record.
+- `Pregnancy.birthDate?: number` (epoch ms, local midnight) and `birthRecordedAt?: number`
+  (when she tapped "Sí", for the 30-day undo). Dexie **v8** indexes `pregnancy.birthDate`:
+  additive, one index on an existing store, no upgrade step, no rename (AGENTS.md).
+  `lib/db.test.ts` opens a v7 database with the v8 code and compares every row of every store.
+  Synced and backed up like the rest of the pregnancy record (opaque payload).
 - Baby age is derived, never stored: `lib/baby/age.ts` (pure, unit-tested) turns a birth date
   and "today" into weeks/months, in the device's calendar (the R0-1 lesson on UTC dates).
-- A companion sees "ya nació" through the existing snapshot; no new sharing surface.
+- The companion snapshot is unchanged in G1: it publishes the week and due date only, and
+  adding the birth to it needs a server field. Decided later, with G2 on screen.
 
 ## Inputs needed from Anton (go to docs/human-todo.md)
 

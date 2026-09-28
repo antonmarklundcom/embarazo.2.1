@@ -75,17 +75,25 @@ test("a direct visit sends nothing until onboarding, and then only 'directo'", a
 test("the endpoint takes a metric and a key, and refuses anything more", async ({
   request,
 }) => {
+  // Its own rate-limit bucket. Without a forwarded address every request in
+  // the suite shares one key, and the funnel beacons of the specs running
+  // alongside (every onboarding posts) can spend its 30/minute before this
+  // test's first POST — a 429 that says nothing about the endpoint's rules.
+  const headers = { "x-forwarded-for": "203.0.113.75" };
   const ok = await request.post("/api/v1/stats/funnel", {
+    headers,
     data: { metric: "arrival", key: "week" },
   });
   expect(ok.status()).toBe(204);
 
   const extra = await request.post("/api/v1/stats/funnel", {
+    headers,
     data: { metric: "arrival", key: "week", deviceId: "abc" },
   });
   expect(extra.status()).toBe(400);
 
   const badSlug = await request.post("/api/v1/stats/funnel", {
+    headers,
     data: { metric: "qr", key: "Clínica Sur" },
   });
   expect(badSlug.status()).toBe(400);

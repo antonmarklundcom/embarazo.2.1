@@ -2,11 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import {
   BIRTH_CARD_FROM_WEEK,
+  UNDO_BIRTH_DAYS,
   babyAge,
   babyAgeLabel,
   birthDateBounds,
+  canUndoBirth,
   isValidBirthDate,
   localDay,
+  offersBirthCard,
+  parseDateInput,
 } from "./age";
 
 // Growth plan item 9 — the age maths behind "Tu bebé tiene…".
@@ -71,5 +75,29 @@ describe("birth date rules", () => {
 
   it("offers the card from week 37", () => {
     expect(BIRTH_CARD_FROM_WEEK).toBe(37);
+  });
+});
+
+describe("the Hoy card and the undo", () => {
+  it("offers the card from week 37 only while there is no birth date", () => {
+    expect(offersBirthCard(36, undefined)).toBe(false);
+    expect(offersBirthCard(37, undefined)).toBe(true);
+    expect(offersBirthCard(42, undefined)).toBe(true);
+    expect(offersBirthCard(38, at(2026, 9, 1))).toBe(false);
+    expect(offersBirthCard(undefined, undefined)).toBe(false);
+  });
+
+  it("lets a mistaken tap be undone for 30 days", () => {
+    const tapped = at(2026, 9, 1);
+    expect(canUndoBirth(undefined, tapped)).toBe(false);
+    expect(canUndoBirth(tapped, tapped)).toBe(true);
+    expect(canUndoBirth(tapped, tapped + (UNDO_BIRTH_DAYS * 86_400_000 - 1))).toBe(true);
+    expect(canUndoBirth(tapped, tapped + UNDO_BIRTH_DAYS * 86_400_000)).toBe(false);
+  });
+
+  it("reads a date input as local midnight", () => {
+    expect(parseDateInput("2026-09-27")).toBe(new Date(2026, 8, 27).getTime());
+    expect(parseDateInput("")).toBeNaN();
+    expect(parseDateInput("27/09/2026")).toBeNaN();
   });
 });

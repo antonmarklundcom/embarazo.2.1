@@ -4524,3 +4524,24 @@ The plan lives in the site repo (`antonmarklundcom/embarazo`,
   no Play link); the switched-on path was run against a local build with the
   variable set. Anton turns it on after the Play listing exists (site
   `docs/human-todo.md` 3c).
+
+## 2026-09-28 — growth plan item 9 (G1): "Ya nació", the birth date on the pregnancy record
+
+- **The birth lives on the pregnancy row** (`birthDate`, local midnight, plus
+  `birthRecordedAt`), not in a new store: the baby is the end of this
+  pregnancy, it syncs and backs up with it, and every pregnancy tool keeps
+  its data. The age is derived (`lib/baby/age.ts`), never stored.
+- **Dexie v8 indexes `pregnancy.birthDate`.** Additive (one index on an
+  existing store, no upgrade step, no rename). The per-version upgrade tests
+  now include v7, and a dedicated test opens a v7 database with the v8 code
+  and compares every row of every store field for field.
+- **Asked on Hoy from week 37, never guessed.** "¿Ya nació tu bebé?" with
+  "Sí, ya nació" and a date that defaults to today, bounded to week 22 of the
+  pregnancy and today. Nothing else on Hoy changes in G1; after saving, the
+  card becomes a one-line "¡Felicidades!" with the age.
+- **Corrections and undo live in Ajustes** ("Fecha de nacimiento"), shown
+  only once a date exists. The date can always be corrected; "Deshacer «Ya
+  nació»" lasts 30 days from the first "Sí" (a mistaken tap), and brings the
+  pregnancy back untouched.
+- **Companions do not see the birth yet**: the shared snapshot publishes week
+  and due date only; adding the birth needs a server field, decided with G2.

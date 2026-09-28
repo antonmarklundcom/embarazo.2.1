@@ -175,7 +175,8 @@ v4 `carnePhotos`, `clinical` → **v5 adds sync bookkeeping**
 (`updatedAt`/`deletedAt`/`dirty` on synced stores, plus a `syncState`
 table) → v6 `sleepEntries`, `favoriteNames` (D2) → **v7 gives the two photo
 stores a cross-device `uid` and an `uploadedAt` marker** (K4 opt-in backup;
-they still do not sync). **Never renumber or edit past versions.** DB name
+they still do not sync) → v8 indexes `pregnancy.birthDate` ("Ya nació",
+growth plan item 9; additive, no upgrade step). **Never renumber or edit past versions.** DB name
 is `mibebe`.
 
 An `.upgrade()` step runs inside a transaction scoped to **its own version's**

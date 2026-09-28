@@ -62,6 +62,7 @@ import { RecomendadosRail } from "@/components/RecomendadosRail";
 import { WeekContentRail } from "@/components/home/WeekContentRail";
 import { WeekHero } from "@/components/home/WeekHero";
 import { NewWeekCard } from "@/components/home/NewWeekCard";
+import { BirthCard } from "@/components/baby/BirthCard";
 import { WeekStrip } from "@/components/home/WeekStrip";
 import { flush as flushFunnel, markOnboarded } from "@/lib/stats/funnel.client";
 
@@ -236,6 +237,10 @@ export default function InicioPage() {
         lmpDate={lmpDate}
         sizeComparison={info.sizeComparison}
       />
+
+      {/* Growth plan item 9 (G1): "¿Ya nació tu bebé?" from week 37, and a
+          one-line confirmation once she has recorded the date. */}
+      <BirthCard week={week} lmpDate={lmpDate} birthDate={profile.birthDate} />
 
       {/* C1: circular week hero + progress ring + stats row (map #9, #10).
           Everything below this comment, down to the tool/reading rails, is

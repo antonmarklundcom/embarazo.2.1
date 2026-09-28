@@ -157,6 +157,16 @@ export interface Pregnancy extends Partial<SyncMeta> {
   // Planned delivery date (e.g. a scheduled cesárea), separate from the
   // estimated `dueDate` (feature map #6). Optional, local-only.
   plannedDeliveryDate?: number;
+  /**
+   * Growth plan item 9 ("Ya nació") — the day the baby was born, as local
+   * midnight (epoch ms). Absent while she is pregnant, which is every row
+   * written before v8. Set from the Hoy card at week 37+, changed or undone
+   * from Ajustes. The baby's age is derived from it (`lib/baby/age.ts`),
+   * never stored.
+   */
+  birthDate?: number;
+  /** When she tapped "Sí, ya nació": the undo in Ajustes lasts 30 days from it. */
+  birthRecordedAt?: number;
 }
 
 export interface JournalEntry extends Partial<SyncMeta> {
@@ -528,6 +538,16 @@ export class MiBebeDB extends Dexie {
           }
         }
       });
+
+    // v8 (growth plan item 9, "Ya nació"): the pregnancy record gains an
+    // optional `birthDate`, indexed so the service worker and the baby-mode
+    // screens can ask "has any pregnancy here ended?" without a scan. Additive:
+    // one index on an existing store, no rename, no upgrade step — rows written
+    // before v8 have no `birthDate`, and IndexedDB simply leaves them out of
+    // the new index.
+    this.version(8).stores({
+      pregnancy: "++id, &uid, updatedAt, dirty, birthDate",
+    });
 
     this.registerSyncHooks();
     this.registerPhotoHooks();

@@ -31,7 +31,9 @@ export type ToolIconName =
   | "dental"
   // K7 (§7) — two shipped screens that were reachable from nowhere.
   | "ai"
-  | "faq";
+  | "faq"
+  // Growth plan item 15 — the "Ejercicios" tile had borrowed "checklist".
+  | "exercise";
 
 export function ToolIcon({
   name,
@@ -190,6 +192,16 @@ export function ToolIcon({
       return (
         <svg {...common}>
           <path d="M12 4c2 0 2.5-1 4.5-1S20 4.5 20 7.5c0 3-1.2 4.5-1.8 7.5-.5 2.5-.7 5-2.2 5s-1.5-4-4-4-2.5 4-4 4-1.7-2.5-2.2-5C5.2 12 4 10.5 4 7.5 4 4.5 5.5 3 7.5 3S10 4 12 4Z" />
+        </svg>
+      );
+    // A figure mid-stretch, one arm up: gentle movement, not a gym. No
+    // dumbbell — the screen is walking, stretching and breathing.
+    case "exercise":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="4.5" r="1.8" />
+          <path d="M12 8v6.5M12 9.5 17 5.5M12 9.5l-4.5 3" />
+          <path d="M12 14.5 8.5 20.5M12 14.5l3.5 6" />
         </svg>
       );
     case "checklist":

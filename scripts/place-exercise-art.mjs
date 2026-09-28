@@ -21,7 +21,7 @@
 // neither a placeholder nor a file on disk.
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import sharp from "sharp";
@@ -29,7 +29,7 @@ import sharp from "sharp";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SEED = join(ROOT, "lib", "seed", "ejercicios.json");
 const OUT_DIR = join(ROOT, "public", "assets", "ejercicios");
-const SRC_DIR = process.argv[2] ? join(process.cwd(), process.argv[2]) : join(OUT_DIR, "src");
+const SRC_DIR = process.argv[2] ? resolve(process.argv[2]) : join(OUT_DIR, "src");
 const WIDTH = 960;
 const HEIGHT = 720;
 const BUDGET_BYTES = 90 * 1024;

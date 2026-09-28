@@ -4545,3 +4545,26 @@ The plan lives in the site repo (`antonmarklundcom/embarazo`,
   pregnancy back untouched.
 - **Companions do not see the birth yet**: the shared snapshot publishes week
   and due date only; adding the birth needs a server field, decided with G2.
+
+## 2026-09-28 — growth plan item 9 (G2): Hoy for a baby, 0–12 months
+
+- **A birth date turns Hoy into the baby home** (`components/baby/BabyHome.tsx`):
+  "Tu bebé tiene N días / semanas / meses" (weeks until 8, then months, the
+  way people say it here), then Vacunas, Trámites, Alimentación y sueño and
+  Señales de alarma. The mood check-in (with its Línea 155 card), the tools
+  grid and the footer stay under it; the pregnancy week hero, tip and reading
+  leave Hoy. No data is hidden: every pregnancy screen is still in
+  Herramientas and the week pages stay reachable.
+- **Vacunas lists no calendar.** "Llevá la libreta a cada control" and where
+  the schedule comes from, nothing else, until a sourced PAI 0–12 month
+  calendar is in the repo (Anton's input, `docs/decisions-needed.md`).
+- **Trámites reuses the existing guía** (`/guias/despues-del-nacimiento-tramites`),
+  not a rewrite.
+- **Alimentación, sueño and alarm signs are class (B)** in `lib/baby/content.ts`,
+  no doses (a test forbids dose units), pending medical review; every alarm
+  sign links to `/emergencia`.
+- **One picture per age band** (0–2, 3–5, 6–8, 9–12 months), named in
+  `docs/imagery-manifest.json` → `baby` with prompts, status "pending": no
+  image is generated here. Until a file exists the card draws a simple face;
+  the `<img>` stays invisible until it has actually loaded, so a missing file
+  never shows as a broken image.

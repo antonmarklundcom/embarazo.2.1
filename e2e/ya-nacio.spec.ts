@@ -30,13 +30,13 @@ test("from week 37 she records the birth date, and can undo it from Ajustes", as
   await date.fill(localInput(2));
   await card.getByRole("button", { name: "Guardar la fecha" }).click();
 
-  const done = page.getByRole("region", { name: "Tu bebé ya nació" });
-  await expect(done).toContainText("Hoy tiene 2 días");
+  // G2: Hoy is now about the baby.
+  await expect(page.getByRole("heading", { name: "Tu bebé tiene 2 días" })).toBeVisible();
   await expect(card).toHaveCount(0);
 
   // It survives a reload: it is on the pregnancy record, not in component state.
   await page.reload();
-  await expect(page.getByRole("region", { name: "Tu bebé ya nació" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tu bebé tiene 2 días" })).toBeVisible();
 
   await page.goto("/ajustes");
   const settings = page.getByRole("region", { name: "Fecha de nacimiento" });
@@ -46,5 +46,35 @@ test("from week 37 she records the birth date, and can undo it from Ajustes", as
 
   await page.goto("/");
   await expect(page.getByRole("region", { name: "¿Ya nació tu bebé?" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Tu bebé ya nació" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: /Tu bebé tiene/ })).toHaveCount(0);
+});
+
+test("the baby home: age, the four cards, alarm signs to /emergencia, and no missing picture", async ({ page }) => {
+  await completeOnboarding(page, { daysAgo: 262 });
+  const card = page.getByRole("region", { name: "¿Ya nació tu bebé?" });
+  await card.getByRole("button", { name: "Sí, ya nació" }).click();
+  await card.getByLabel("¿Qué día nació?").fill(localInput(10));
+  await card.getByRole("button", { name: "Guardar la fecha" }).click();
+
+  await expect(page.getByRole("heading", { name: "Tu bebé tiene 1 semana" })).toBeVisible();
+  for (const name of ["Vacunas", "Trámites", "Alimentación y sueño", "Señales de alarma en tu bebé"]) {
+    await expect(page.getByRole("region", { name })).toBeVisible();
+  }
+  // The vaccine card lists no calendar until a sourced one exists.
+  await expect(page.getByRole("region", { name: "Vacunas" })).toContainText("libreta de vacunación");
+  await expect(page.getByRole("region", { name: "Trámites" }).getByRole("link")).toHaveAttribute(
+    "href",
+    "/guias/despues-del-nacimiento-tramites",
+  );
+  // The picture is not in the repo yet: no broken image, the drawn fallback shows.
+  const hero = page.getByRole("region", { name: "Tu bebé" });
+  await expect(hero.getByRole("img")).toHaveCount(0);
+  await expect(hero.locator("svg")).toBeVisible();
+  // The pregnancy hero is gone, the mood check-in stays.
+  await expect(page.getByText("Tip de hoy")).toHaveCount(0);
+
+  const alarm = page.getByRole("region", { name: "Señales de alarma en tu bebé" }).getByRole("link");
+  expect(await alarm.count()).toBeGreaterThan(4);
+  await alarm.first().click();
+  await expect(page).toHaveURL(/\/emergencia$/);
 });

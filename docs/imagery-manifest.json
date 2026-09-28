@@ -1254,5 +1254,48 @@
    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175831_5663c675-d8f4-43d2-9253-8021b4a8e8e4.png",
    "job_id": "5663c675-d8f4-43d2-9253-8021b4a8e8e4"
   }
+ ],
+ "baby_note": "Growth plan item 9 (G2, 'Ya nació'): one illustration per age band on the baby home (lib/baby/content.ts BABY_STAGES). NOT generated yet: status 'pending' until an image session fills them. 4:3, shown at most ~360 px wide; export 960x720 WebP. The screen renders a drawn fallback while a file is missing.",
+ "baby": [
+  {
+   "id": "bebe-0-2-meses",
+   "stage": "0-2",
+   "file": "public/assets/bebe/bebe-0-2-meses.webp",
+   "alt_es": "Ilustración: un bebé recién nacido dormido, envuelto en una manta.",
+   "ratio": "4:3",
+   "px": 960,
+   "status": "pending",
+   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2, #EFC6B0), blush pink (#F3DAD4), sage (#DFE8D8), petrol green lines. Plain sand background (#F8E2CB), no text, no logos, no brand clothing. Centred with generous empty margin; nothing important within 8% of the edge. Subject: a sleeping newborn baby, warm light-brown skin, wrapped in a sage muslin blanket, lying on its back. Same baby character across the four stages, calm and happy."
+  },
+  {
+   "id": "bebe-3-5-meses",
+   "stage": "3-5",
+   "file": "public/assets/bebe/bebe-3-5-meses.webp",
+   "alt_es": "Ilustración: un bebé de pocos meses boca abajo, levantando la cabeza.",
+   "ratio": "4:3",
+   "px": 960,
+   "status": "pending",
+   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2, #EFC6B0), blush pink (#F3DAD4), sage (#DFE8D8), petrol green lines. Plain sand background (#F8E2CB), no text, no logos, no brand clothing. Centred with generous empty margin; nothing important within 8% of the edge. Subject: a baby of about four months lying on its tummy on a soft blanket, lifting its head and smiling. Same baby character across the four stages, calm and happy."
+  },
+  {
+   "id": "bebe-6-8-meses",
+   "stage": "6-8",
+   "file": "public/assets/bebe/bebe-6-8-meses.webp",
+   "alt_es": "Ilustración: un bebé sentado, probando una cucharita de puré.",
+   "ratio": "4:3",
+   "px": 960,
+   "status": "pending",
+   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2, #EFC6B0), blush pink (#F3DAD4), sage (#DFE8D8), petrol green lines. Plain sand background (#F8E2CB), no text, no logos, no brand clothing. Centred with generous empty margin; nothing important within 8% of the edge. Subject: a baby of about seven months sitting up, trying a small spoon of orange purée held by an adult hand entering the frame. Same baby character across the four stages, calm and happy."
+  },
+  {
+   "id": "bebe-9-12-meses",
+   "stage": "9-12",
+   "file": "public/assets/bebe/bebe-9-12-meses.webp",
+   "alt_es": "Ilustración: un bebé gateando hacia una pelota.",
+   "ratio": "4:3",
+   "px": 960,
+   "status": "pending",
+   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50). Palette: warm peach (#F4D3C2, #EFC6B0), blush pink (#F3DAD4), sage (#DFE8D8), petrol green lines. Plain sand background (#F8E2CB), no text, no logos, no brand clothing. Centred with generous empty margin; nothing important within 8% of the edge. Subject: a baby of about ten months crawling towards a soft fabric ball. Same baby character across the four stages, calm and happy."
+  }
  ]
 }

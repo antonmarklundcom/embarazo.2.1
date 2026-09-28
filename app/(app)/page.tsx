@@ -63,6 +63,7 @@ import { WeekContentRail } from "@/components/home/WeekContentRail";
 import { WeekHero } from "@/components/home/WeekHero";
 import { NewWeekCard } from "@/components/home/NewWeekCard";
 import { BirthCard } from "@/components/baby/BirthCard";
+import { BabyHome } from "@/components/baby/BabyHome";
 import { WeekStrip } from "@/components/home/WeekStrip";
 import { flush as flushFunnel, markOnboarded } from "@/lib/stats/funnel.client";
 
@@ -204,6 +205,21 @@ export default function InicioPage() {
   const week = profile.week!;
   const trimester = profile.trimester!;
   const department = profile.department!;
+
+  // Growth plan item 9 (G2): once she has said the baby was born, Hoy is about
+  // the baby. The mood check-in (and its Línea 155 card), the tools and the
+  // footer stay; the pregnancy week, its tip and its reading do not lead any
+  // more. Every pregnancy screen is still one tap away in Herramientas.
+  if (profile.birthDate !== undefined) {
+    return (
+      <div className="space-y-4">
+        <BabyHome birthDate={profile.birthDate} />
+        <MoodCheckIn role={profile.role} week={week} />
+        <HomeToolsGrid />
+        <HomeFooter department={department} />
+      </div>
+    );
+  }
   const info = getWeek(week);
   const tip = getDailyTip(week, trimester);
   const completedLabel = profile.completed
@@ -238,8 +254,8 @@ export default function InicioPage() {
         sizeComparison={info.sizeComparison}
       />
 
-      {/* Growth plan item 9 (G1): "¿Ya nació tu bebé?" from week 37, and a
-          one-line confirmation once she has recorded the date. */}
+      {/* Growth plan item 9 (G1): "¿Ya nació tu bebé?" from week 37. Once
+          she answers, the baby branch above takes over Hoy. */}
       <BirthCard week={week} lmpDate={lmpDate} birthDate={profile.birthDate} />
 
       {/* C1: circular week hero + progress ring + stats row (map #9, #10).

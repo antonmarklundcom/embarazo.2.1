@@ -4,8 +4,6 @@ import { useState } from "react";
 
 import { toDateInput } from "@/lib/appointments";
 import {
-  babyAge,
-  babyAgeLabel,
   birthDateBounds,
   isValidBirthDate,
   offersBirthCard,
@@ -17,9 +15,9 @@ import { recordBirth } from "@/lib/baby/record";
 //
 // Nothing changes until she taps "Sí, ya nació" and saves a date: no prompt,
 // no guess from the due date. The date defaults to today and can be set back
-// (never into the future, never before week 22). Once saved, the card turns
-// into a one-line confirmation; changing the date or undoing it lives in
-// Ajustes, so a stray tap on Hoy cannot undo anything.
+// (never into the future, never before week 22). Once saved, Hoy switches to
+// the baby home (G2); changing the date or undoing it lives in Ajustes, so a
+// stray tap on Hoy cannot undo anything.
 
 export function BirthCard({
   week,
@@ -34,18 +32,6 @@ export function BirthCard({
   const [value, setValue] = useState(() => toDateInput(Date.now()));
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-
-  if (birthDate !== undefined) {
-    const born = new Date(birthDate).toLocaleDateString("es-PY", { day: "numeric", month: "long" });
-    return (
-      <section aria-label="Tu bebé ya nació" className="rounded-card bg-pastel-rosa p-4 shadow-soft">
-        <p className="text-base font-extrabold text-ink">¡Felicidades! Tu bebé nació el {born}.</p>
-        <p className="mt-1 text-sm text-muted">
-          Hoy tiene {babyAgeLabel(babyAge(birthDate))}. Si la fecha no es esa, cambiala en Ajustes.
-        </p>
-      </section>
-    );
-  }
 
   if (!offersBirthCard(week, birthDate)) return null;
 

@@ -17,6 +17,15 @@ resolution, so the reasoning is not lost.
   t-82 (ejercicio: ritmo en el que puedas conversar), t-92 (signos de
   preeclampsia), t-100 (lactancia). Fix any line in place; `lib/dailyTips.test.ts` keeps the rules.
 
+- **"Ya nació" baby home copy (growth plan item 9, G2, 2026-09-28).** `lib/baby/content.ts`:
+  feeding (exclusive breastfeeding to 6 months per WHO, then complementary food, no honey
+  before one year), safe sleep (on the back, firm flat surface, own cot in the parents' room,
+  no smoke), and seven alarm signs in a baby, each linking to `/emergencia` (fever, especially
+  under 3 months; breathing difficulty; not feeding; very drowsy; jaundice in the first days;
+  convulsions; few wet nappies / diarrhoea / red umbilical stump). Live on Hoy once a birth
+  date is recorded. The vaccine card names no vaccine and no age on purpose: it waits for a
+  **sourced PAI 0–12 month calendar** (MSPBS), which is a separate input Anton has to supply.
+
 ## answered
 
 - **App name (U8):** `Mi Bebé · Embarazo Paraguay`. Confirmed by Anton 2026-09-16.

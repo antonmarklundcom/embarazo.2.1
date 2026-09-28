@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import { groupCheers } from "@/lib/sharing/cheers";
+import { useGuarani } from "@/lib/i18n/useLocale";
 import { markCheersSeen, type ReceivedCheer } from "@/lib/sharing/client";
 
 // BUILD-PLAN K2 — what she sees when somebody sends ánimo.
@@ -25,6 +26,7 @@ function relative(ms: number, now: number): string {
 
 export function CheersCard({ cheers }: { cheers: ReceivedCheer[] }) {
   const acknowledged = useRef(false);
+  const guarani = useGuarani();
 
   const unseen = cheers.filter((cheer) => cheer.seenAt === null).length;
 
@@ -64,7 +66,7 @@ export function CheersCard({ cheers }: { cheers: ReceivedCheer[] }) {
                   <span className="ml-1.5 font-black text-petrol">×{count}</span>
                 )}
               </p>
-              {cheer.text.gn && (
+              {guarani && cheer.text.gn && (
                 <p lang="gn" className="text-sm font-semibold italic text-ink/70">
                   {cheer.text.gn}
                 </p>

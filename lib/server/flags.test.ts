@@ -40,7 +40,7 @@ describe("with no database configured", () => {
   });
 
   it("publishes the client-scope defaults and nothing else", async () => {
-    expect(await getClientFlags()).toEqual({ recomendados: false });
+    expect(await getClientFlags()).toEqual({ guarani: false, recomendados: false });
   });
 
   it("reports itself unwritable rather than pretending a write worked", async () => {

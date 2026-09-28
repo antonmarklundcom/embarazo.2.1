@@ -45,6 +45,8 @@ tracked there, not duplicated here.
 
 ## Guaraní
 
+- No Guaraní is shown while the `guarani` flag is off (the default, growth
+  plan item 20b): it waits on the native review of `docs/GUARANI-REVIEW.md`.
 - The 5-1-1 and kicks-nudge Guaraní strings (D7) are hand-written jopara,
   pending the same native-speaker review every other `gn` string on
   `docs/GUARANI-REVIEW.md` is waiting on. — `docs/log/u4.md`

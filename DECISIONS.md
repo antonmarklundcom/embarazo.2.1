@@ -4586,3 +4586,25 @@ The plan lives in the site repo (`antonmarklundcom/embarazo`,
   week does not arrive after the baby.
 - The Ajustes description for "Tu semana nueva" now says it continues for the
   baby's first year.
+
+## 2026-09-28 — growth plan item 20b (Batch H): Guaraní behind one flag, off
+
+- **Anton's call (LAUNCH-CHECKLIST 1.3): gate it.** The toggle and the
+  stacked Guaraní lines were live and unreviewed. They now wait on one client
+  flag, `guarani`, off by default and switched in `/admin/flags` with no
+  deploy. Off means: no "Idioma · Ñe'ẽ" group in Ajustes, the app reads in
+  Spanish whatever the profile row says, and `<Bilingual>` / the cheers card
+  drop the `lang="gn"` line.
+- **A device's choice is kept, not reset.** `useLocale` returns `es` while the
+  flag is off but never writes the row, so a woman who had picked Guaraní gets
+  it back the moment the flag turns on.
+- **D6 still holds once on:** `<Bilingual>` reads the flag, never the locale,
+  so the safety lines are stacked for everyone again, whether or not she
+  opened Ajustes (`dict.test.ts` pins both).
+- **The review sheet covers everything.** A test now scans `lib/`,
+  `components/` and `app/` for every `gn:` literal plus every `DICT.gn` value
+  and fails if one is missing from `docs/GUARANI-REVIEW.md` (82 phrases today,
+  none missing). The sheet itself says how to switch Guaraní on.
+- e2e: the Guaraní specs serve the flag on through a context route (the
+  service worker fetches `/api/v1/flags`); a new test proves nothing leaks
+  with it off, even for a profile stored as `gn`.

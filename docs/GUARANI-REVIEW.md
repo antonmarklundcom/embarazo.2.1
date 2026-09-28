@@ -168,4 +168,13 @@ Cada sección sale de un archivo distinto:
 | Sección 7 | `lib/i18n/dict.ts` (columna `gn`) |
 
 Esta hoja se genera con `npm run gen:guarani-review` y un test falla si queda
-desactualizada respecto al código. Al aplicar las correcciones, regenerala.
+desactualizada respecto al código, o si algún texto en guaraní del código no
+aparece acá. Al aplicar las correcciones, regenerala.
+
+## Encender el guaraní
+
+Hoy **no se muestra ningún texto en guaraní**: ni el selector de idioma en
+Ajustes ni la línea en guaraní bajo el castellano. Todo depende de un solo
+interruptor, el flag `guarani` en `/admin/flags` (apagado por defecto).
+Cuando esta hoja esté revisada y corregida, se enciende ahí, sin deploy. Quien
+ya había elegido guaraní en su teléfono lo recupera en ese momento.

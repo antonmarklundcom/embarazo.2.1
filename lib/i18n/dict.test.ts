@@ -157,6 +157,8 @@ describe("L0 safety strings", () => {
     expect(source).not.toMatch(/from "@\/lib\/i18n/);
     expect(source).not.toMatch(/\buseLocale\(|\buseT\(/);
     expect(source).toMatch(/lang="gn"/);
+    // Growth plan item 20b: gated by the one `guarani` flag, nothing else.
+    expect(source).toMatch(/useFlag\("guarani"\)/);
   });
 });
 

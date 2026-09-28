@@ -11,10 +11,6 @@ tracked there, not duplicated here.
 
 ## Content & images
 
-- All 12 "Ejercicios" entries stay unpublished (the tile shows "Pronto")
-  until the founder supplies the step images named in
-  `public/assets/ejercicios/README.md` (art brief per step there;
-  `node scripts/place-exercise-art.mjs` places them). — `docs/log/u5.md`
 - Two of the eight Recomendados resources have no verified WhatsApp number
   (only landlines found for La Leche League Paraguay); every seeded entry
   uses `url` instead. — `docs/log/u3.md`

@@ -1,5 +1,7 @@
 # Imágenes de "Ejercicios" (D6)
 
+**Estado (2026-09-28):** las 24 imágenes están colocadas (GPT Image 2.5 Sunburst, calidad media 1k, la misma mujer en todas, generadas con la imagen del primer paso como referencia) y los 12 ejercicios están publicados. Lo de abajo queda como referencia para reemplazar una imagen.
+
 Cada ejercicio en `lib/seed/ejercicios.json` tiene 1–4 pasos, y cada paso
 apunta hoy a `/assets/ejercicios/placeholder.webp` — esa imagen **no existe
 todavía a propósito**: mientras el `imageSrc` de un paso diga "placeholder",

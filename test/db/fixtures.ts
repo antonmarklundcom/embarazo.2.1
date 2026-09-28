@@ -68,6 +68,9 @@ export const SCHEMAS: Record<number, Record<string, string>> = {
     photoEntries: "++id, week, createdAt, &uid, uploadedAt",
     carnePhotos: "++id, createdAt, &uid, uploadedAt",
   },
+  8: {
+    pregnancy: "++id, &uid, updatedAt, dirty, birthDate",
+  },
 };
 
 /** Every version with a fixture, oldest first. */
@@ -134,6 +137,8 @@ export const SEED: Record<number, Record<string, Record<string, unknown>[]>> = {
     ],
   },
   7: {},
+  // v8 adds an index, not a store; a device on v8 may have a birth date.
+  8: {},
 };
 
 /** Everything a device on `version` would have, store by store. */

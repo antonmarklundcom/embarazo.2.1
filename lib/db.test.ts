@@ -205,6 +205,59 @@ describe("upgrading from every version a phone could still be on", () => {
   });
 });
 
+describe("v7 → v8 (\"Ya nació\", growth plan item 9)", () => {
+  // The build before v8 is the one every current phone runs. Open its database
+  // with today's code and compare every row of every store, field for field:
+  // v8 adds one index and must not change, drop or re-stamp a single record.
+  async function readAll(database: Dexie): Promise<Record<string, unknown[]>> {
+    const out: Record<string, unknown[]> = {};
+    for (const table of database.tables) {
+      out[table.name] = await table.toArray();
+    }
+    return out;
+  }
+
+  it("keeps every record of a v7 database exactly as it was", async () => {
+    await seedDatabaseAt(7);
+    const before = new Dexie("mibebe");
+    before.version(7).stores(schemaAt(7));
+    await before.open();
+    const rowsBefore = await readAll(before);
+    before.close();
+
+    const database = new MiBebeDB();
+    await database.open();
+    expect(database.verno).toBe(8);
+    const rowsAfter = await readAll(database);
+
+    expect(Object.keys(rowsAfter).sort()).toEqual(Object.keys(rowsBefore).sort());
+    for (const [store, rows] of Object.entries(rowsBefore)) {
+      expect(rowsAfter[store], store).toEqual(rows);
+    }
+    // Nothing had a birth date before v8, and nothing invented one.
+    expect(await database.pregnancy.where("birthDate").above(0).count()).toBe(0);
+    database.close();
+  });
+
+  it("stores a birth date on the existing pregnancy and finds it by the new index", async () => {
+    await seedDatabaseAt(7);
+    const database = new MiBebeDB();
+    await database.open();
+    const pregnancy = (await database.pregnancy.toArray())[0]!;
+    await database.pregnancy.update(pregnancy.id!, { birthDate: SEEDED_AT, birthRecordedAt: SEEDED_AT });
+    database.close();
+
+    const reopened = new MiBebeDB();
+    await reopened.open();
+    const found = await reopened.pregnancy.where("birthDate").equals(SEEDED_AT).toArray();
+    expect(found).toHaveLength(1);
+    expect(found[0]?.lmpDate).toBe(pregnancy.lmpDate);
+    expect(found[0]?.uid).toBe(pregnancy.uid);
+    expect(await reopened.pregnancy.count()).toBe(1);
+    reopened.close();
+  });
+});
+
 describe("regression — an upgrade step may not read a later version's constants", () => {
   // V3 found this, and it was live.
   //

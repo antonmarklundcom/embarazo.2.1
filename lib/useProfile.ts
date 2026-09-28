@@ -48,6 +48,10 @@ export interface ProfileState extends PregnancyAnswers {
   gestationDays?: number;
   /** B3: planned delivery date, separate from the estimated due date. */
   plannedDeliveryDate?: number;
+  /** Growth plan item 9: the day the baby was born, once she has said so. */
+  birthDate?: number;
+  /** When she said so — the Ajustes undo lasts 30 days from it. */
+  birthRecordedAt?: number;
 }
 
 /**
@@ -127,5 +131,7 @@ export function useProfile(): ProfileState {
     method: pregnancy.method ?? "lmp",
     gestationDays,
     plannedDeliveryDate: pregnancy.plannedDeliveryDate,
+    birthDate: pregnancy.birthDate,
+    birthRecordedAt: pregnancy.birthRecordedAt,
   };
 }

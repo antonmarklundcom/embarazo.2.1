@@ -38,6 +38,7 @@ import { InviteFriend } from "@/components/InviteFriend";
 import { AppointmentSettings } from "@/components/ajustes/AppointmentSettings";
 import { BabyNamesSettings } from "@/components/ajustes/BabyNamesSettings";
 import { BackupSettings } from "@/components/ajustes/BackupSettings";
+import { BirthSettings } from "@/components/ajustes/BirthSettings";
 import { DangerZone } from "@/components/ajustes/DangerZone";
 import { DepartmentSettings } from "@/components/ajustes/DepartmentSettings";
 import { GestationSettings } from "@/components/ajustes/GestationSettings";
@@ -208,6 +209,12 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
           mode={profile.mode}
           gestationDays={profile.gestationDays}
           plannedDeliveryDate={profile.plannedDeliveryDate}
+        />
+        <BirthSettings
+          mode={profile.mode}
+          lmpDate={profile.lmpDate}
+          birthDate={profile.birthDate}
+          birthRecordedAt={profile.birthRecordedAt}
         />
         <BabyNamesSettings mode={profile.mode} babies={profile.babies} />
         <AppointmentSettings

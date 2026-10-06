@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   DUMMY_HASH_FOR_TIMING,
   EmailSchema,
-  hashPassword,
+  NewPasswordSchema,
   PasswordSchema,
+  fitsBcrypt,
+  hashPassword,
   verifyPassword,
 } from "./password";
 
@@ -60,5 +62,26 @@ describe("DUMMY_HASH_FOR_TIMING", () => {
     await expect(
       verifyPassword("anything at all", DUMMY_HASH_FOR_TIMING),
     ).resolves.toBe(false);
+  });
+});
+
+describe("F17 — a password being set must fit bcrypt's 72 bytes", () => {
+  it("accepts exactly 72 bytes and refuses 73", () => {
+    expect(NewPasswordSchema.safeParse("a".repeat(72)).success).toBe(true);
+    expect(NewPasswordSchema.safeParse("a".repeat(73)).success).toBe(false);
+  });
+
+  it("counts UTF-8 bytes, not characters: 37 'ñ' is 74 bytes", () => {
+    expect(fitsBcrypt("ñ".repeat(36))).toBe(true);
+    expect(fitsBcrypt("ñ".repeat(37))).toBe(false);
+    expect(NewPasswordSchema.safeParse("ñ".repeat(37)).success).toBe(false);
+  });
+
+  it("still lets sign-in accept a long legacy password (PasswordSchema)", () => {
+    expect(PasswordSchema.safeParse("a".repeat(150)).success).toBe(true);
+  });
+
+  it("keeps the 8-character floor", () => {
+    expect(NewPasswordSchema.safeParse("short1").success).toBe(false);
   });
 });

@@ -3,7 +3,12 @@
 import { headers } from "next/headers";
 import { z } from "zod";
 
-import { EmailSchema, PasswordSchema } from "@/lib/auth/password";
+import {
+  EmailSchema,
+  NewPasswordSchema,
+  PASSWORD_TOO_LONG_MESSAGE,
+  fitsBcrypt,
+} from "@/lib/auth/password";
 import { isAuthAvailable } from "@/lib/server/auth";
 import { requestPasswordReset, resetPassword } from "@/lib/server/passwordReset";
 
@@ -36,7 +41,8 @@ const ResetSchema = z
     // compared by hash, so trimming or lowercasing it would corrupt it. Bounded
     // in `resetPassword()`; `z.string()` here only asserts it is one.
     token: z.string().min(1).max(512),
-    password: PasswordSchema,
+    // F17: a reset SETS a password, so it must fit bcrypt's 72 bytes.
+    password: NewPasswordSchema,
   })
   .strict();
 
@@ -113,6 +119,10 @@ export async function resetPasswordAction(
     password: formData.get("password"),
   });
   if (!parsed.success) {
+    const password = formData.get("password");
+    if (typeof password === "string" && password.length >= 8 && !fitsBcrypt(password)) {
+      return { error: PASSWORD_TOO_LONG_MESSAGE };
+    }
     return {
       error:
         "Elegí una contraseña de al menos 8 caracteres y volvé a abrir el enlace si te da error.",

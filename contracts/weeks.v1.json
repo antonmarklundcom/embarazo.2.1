@@ -1,0 +1,301 @@
+{
+  "contract": "mibebe.weeks",
+  "version": 1,
+  "weekNumbering": "in-progress",
+  "weeks": [
+    {
+      "week": 1,
+      "sizeComparison": "todavía no hay embrión",
+      "lengthCm": null,
+      "weightG": null,
+      "milestone": "Tu cuerpo se prepara. Las semanas se cuentan desde tu última menstruación, así que en la semana 1 todavía no hubo concepción."
+    },
+    {
+      "week": 2,
+      "sizeComparison": "todavía no hay embrión",
+      "lengthCm": null,
+      "weightG": null,
+      "milestone": "Es la semana de la ovulación para muchas. El cuerpo libera un óvulo que puede ser fecundado en estos días."
+    },
+    {
+      "week": 3,
+      "sizeComparison": "una semilla de chía",
+      "lengthCm": 0.01,
+      "weightG": null,
+      "milestone": "Si hubo fecundación, el óvulo se transforma en un grupito de células que viaja hacia el útero. Todo es microscópico todavía."
+    },
+    {
+      "week": 4,
+      "sizeComparison": "una semilla de amapola",
+      "lengthCm": 0.1,
+      "weightG": null,
+      "milestone": "El embrión se implanta en el útero. Es cuando muchas notan el atraso y un test puede dar positivo."
+    },
+    {
+      "week": 5,
+      "sizeComparison": "un grano de sésamo",
+      "lengthCm": 0.2,
+      "weightG": 1,
+      "milestone": "Empieza a formarse el tubo neural, que será el cerebro y la médula. El corazón ya está dando sus primeros latidos."
+    },
+    {
+      "week": 6,
+      "sizeComparison": "una lenteja",
+      "lengthCm": 0.4,
+      "weightG": 1,
+      "milestone": "El corazón late más fuerte y se forman los brotes de los brazos y las piernas. La carita empieza a definirse."
+    },
+    {
+      "week": 7,
+      "sizeComparison": "un grano de maíz",
+      "lengthCm": 1,
+      "weightG": 1,
+      "milestone": "El cerebro crece rápido y se forman manos y pies en pequeños brotes. El embrión se mueve, aunque todavía no lo sentís."
+    },
+    {
+      "week": 8,
+      "sizeComparison": "un poroto",
+      "lengthCm": 1.6,
+      "weightG": 1,
+      "milestone": "Ya tiene parpados, labio superior y la punta de la nariz. Los dedos empiezan a separarse."
+    },
+    {
+      "week": 9,
+      "sizeComparison": "una aceituna",
+      "lengthCm": 2.3,
+      "weightG": 2,
+      "milestone": "Termina la etapa de embrión: ahora se llama feto. Tiene todos los órganos principales esbozados."
+    },
+    {
+      "week": 10,
+      "sizeComparison": "una guinda",
+      "lengthCm": 3.1,
+      "weightG": 4,
+      "milestone": "Se forman las uñas y empieza a funcionar el sistema digestivo. Los huesos comienzan a endurecerse."
+    },
+    {
+      "week": 11,
+      "sizeComparison": "una frutilla",
+      "lengthCm": 4.1,
+      "weightG": 7,
+      "milestone": "El bebé ya abre y cierra las manitos y mueve la cabeza. La placenta crece para nutrirlo mejor."
+    },
+    {
+      "week": 12,
+      "sizeComparison": "una lima",
+      "lengthCm": 5.4,
+      "weightG": 14,
+      "milestone": "Casi todos los órganos están formados. Los reflejos aparecen y el bebé puede mover los dedos."
+    },
+    {
+      "week": 13,
+      "sizeComparison": "un durazno",
+      "lengthCm": 7.4,
+      "weightG": 23,
+      "milestone": "Última semana del primer trimestre. Ya tiene huellas digitales y las cuerdas vocales se están formando."
+    },
+    {
+      "week": 14,
+      "sizeComparison": "un limón",
+      "lengthCm": 8.7,
+      "weightG": 43,
+      "milestone": "Arranca el segundo trimestre, el más llevadero para muchas. El bebé hace muecas y puede chuparse el dedo."
+    },
+    {
+      "week": 15,
+      "sizeComparison": "una mandarina",
+      "lengthCm": 10.1,
+      "weightG": 70,
+      "milestone": "El bebé percibe la luz aunque tenga los ojos cerrados y empieza a oír sonidos de tu cuerpo."
+    },
+    {
+      "week": 16,
+      "sizeComparison": "una palta pequeña",
+      "lengthCm": 11.6,
+      "weightG": 100,
+      "milestone": "Los músculos de la cara ya funcionan y el cuello se sostiene mejor. Algunas mamás empiezan a intuir movimientos."
+    },
+    {
+      "week": 17,
+      "sizeComparison": "una granada",
+      "lengthCm": 13,
+      "weightG": 140,
+      "milestone": "Se forma la grasa que le dará calor al nacer. El esqueleto, antes blando, se va volviendo hueso."
+    },
+    {
+      "week": 18,
+      "sizeComparison": "un mamón pequeño",
+      "lengthCm": 14.2,
+      "weightG": 190,
+      "milestone": "El bebé se mueve bastante: estira, patea y se da vuelta. Sus oídos ya están en su lugar y oye mejor."
+    },
+    {
+      "week": 19,
+      "sizeComparison": "un mango",
+      "lengthCm": 15.3,
+      "weightG": 240,
+      "milestone": "Una capa protectora cubre su piel. Si es nena, ya tiene formados sus óvulos; si es varón, sus genitales se definen."
+    },
+    {
+      "week": 20,
+      "sizeComparison": "una banana",
+      "lengthCm": 25.6,
+      "weightG": 300,
+      "milestone": "Llegaste a la mitad del camino. El bebé traga líquido y sus riñones ya producen pis."
+    },
+    {
+      "week": 21,
+      "sizeComparison": "una mazorca de choclo",
+      "lengthCm": 26.7,
+      "weightG": 360,
+      "milestone": "Los movimientos se vuelven más fuertes y seguidos. Tiene momentos de actividad y de descanso."
+    },
+    {
+      "week": 22,
+      "sizeComparison": "un mamón mediano",
+      "lengthCm": 27.8,
+      "weightG": 430,
+      "milestone": "Sus rasgos ya son los que tendrá al nacer: cejas, labios y los primeros pelitos."
+    },
+    {
+      "week": 23,
+      "sizeComparison": "un pomelo",
+      "lengthCm": 28.9,
+      "weightG": 501,
+      "milestone": "Empieza a escuchar tu voz, tu corazón y los ruidos de afuera. La audición se afina cada semana."
+    },
+    {
+      "week": 24,
+      "sizeComparison": "una mandioca",
+      "lengthCm": 30,
+      "weightG": 600,
+      "milestone": "Los pulmones desarrollan las ramitas por donde después entrará el aire. La carita está casi completa."
+    },
+    {
+      "week": 25,
+      "sizeComparison": "un coco",
+      "lengthCm": 34.6,
+      "weightG": 660,
+      "milestone": "Va ganando grasa y la piel se pone menos arrugada. Reacciona a tu voz con movimientos."
+    },
+    {
+      "week": 26,
+      "sizeComparison": "un repollo pequeño",
+      "lengthCm": 35.6,
+      "weightG": 760,
+      "milestone": "Abre los ojos por primera vez y responde a la luz fuerte sobre la panza. Los pulmones siguen madurando."
+    },
+    {
+      "week": 27,
+      "sizeComparison": "una coliflor",
+      "lengthCm": 36.6,
+      "weightG": 875,
+      "milestone": "Última semana del segundo trimestre. El bebé tiene hipo a veces; vas a sentir pequeños saltitos rítmicos."
+    },
+    {
+      "week": 28,
+      "sizeComparison": "una berenjena grande",
+      "lengthCm": 37.6,
+      "weightG": 1005,
+      "milestone": "Arranca el tercer trimestre. El bebé sueña, parpadea y su cerebro forma surcos cada vez más complejos."
+    },
+    {
+      "week": 29,
+      "sizeComparison": "un coco grande",
+      "lengthCm": 38.6,
+      "weightG": 1153,
+      "milestone": "Los músculos y los pulmones siguen madurando. Sus pataditas son cada vez más firmes."
+    },
+    {
+      "week": 30,
+      "sizeComparison": "un repollo",
+      "lengthCm": 39.9,
+      "weightG": 1319,
+      "milestone": "La médula ósea ya fabrica glóbulos rojos. El bebé regula mejor su propia temperatura."
+    },
+    {
+      "week": 31,
+      "sizeComparison": "un coco con su cáscara",
+      "lengthCm": 41.1,
+      "weightG": 1502,
+      "milestone": "Puede mover la cabeza de lado a lado y patalear con fuerza. Ocupa cada vez más espacio."
+    },
+    {
+      "week": 32,
+      "sizeComparison": "una lechuga",
+      "lengthCm": 42.4,
+      "weightG": 1702,
+      "milestone": "Practica respirar moviendo el diafragma y ya tiene uñas en los deditos. Muchos bebés se acomodan cabeza abajo."
+    },
+    {
+      "week": 33,
+      "sizeComparison": "un ananá",
+      "lengthCm": 43.7,
+      "weightG": 1918,
+      "milestone": "Los huesos del cráneo todavía están blandos y separados para poder pasar por el parto. El sistema inmune se fortalece."
+    },
+    {
+      "week": 34,
+      "sizeComparison": "un melón pequeño",
+      "lengthCm": 45,
+      "weightG": 2146,
+      "milestone": "Los pulmones y el sistema nervioso siguen madurando; nacer en esta etapa todavía implica prematuridad."
+    },
+    {
+      "week": 35,
+      "sizeComparison": "un melón",
+      "lengthCm": 46.2,
+      "weightG": 2383,
+      "milestone": "Engorda rápido y la panza ya casi no le deja espacio para grandes giros. Sus riñones están completos."
+    },
+    {
+      "week": 36,
+      "sizeComparison": "una lechuga grande",
+      "lengthCm": 47.4,
+      "weightG": 2622,
+      "milestone": "Sigue acumulando reservas y madurando; aún no llegó al término. La mayoría ya está cabeza abajo."
+    },
+    {
+      "week": 37,
+      "sizeComparison": "una sandía pequeña",
+      "lengthCm": 48.6,
+      "weightG": 2859,
+      "milestone": "Se acerca al término, que empieza a las 37 semanas completas del carné. El bebé practica respirar y agarrar con la mano."
+    },
+    {
+      "week": 38,
+      "sizeComparison": "un zapallo pequeño",
+      "lengthCm": 49.8,
+      "weightG": 3083,
+      "milestone": "Casi todo está listo. Sigue acumulando grasa que le dará calor y energía después de nacer."
+    },
+    {
+      "week": 39,
+      "sizeComparison": "una sandía mediana",
+      "lengthCm": 50.7,
+      "weightG": 3288,
+      "milestone": "Se acerca al término completo, que empieza a las 39 semanas completas. Los pulmones y el cerebro siguen afinándose."
+    },
+    {
+      "week": 40,
+      "sizeComparison": "una sandía",
+      "lengthCm": 51.2,
+      "weightG": 3462,
+      "milestone": "Se acerca tu fecha probable de parto. Recordá que es una estimación: muchos bebés nacen unos días antes o después."
+    },
+    {
+      "week": 41,
+      "sizeComparison": "una sandía grande",
+      "lengthCm": 51.7,
+      "weightG": 3597,
+      "milestone": "El bebé sigue creciendo un poquito. El equipo de salud vigila de cerca que todo siga bien."
+    },
+    {
+      "week": 42,
+      "sizeComparison": "una sandía grande y madura",
+      "lengthCm": 51.7,
+      "weightG": 3685,
+      "milestone": "Pocos embarazos llegan hasta acá. El nacimiento está muy cerca y el seguimiento médico es más estricto."
+    }
+  ]
+}

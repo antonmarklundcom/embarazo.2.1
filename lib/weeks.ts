@@ -1,5 +1,5 @@
 import type { WeekInfo } from "./types";
-import { getTrimester } from "./pregnancy";
+import { getTrimester } from "./pregnancy.ts";
 
 // Weeks 1–42 with real, Paraguay-specific content in es-PY voseo (build spec §5).
 // Size comparisons use everyday Paraguayan items and progress realistically.

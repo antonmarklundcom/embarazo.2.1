@@ -58,6 +58,19 @@ function sourceLines(): { file: string; line: number; text: string }[] {
 
 const LINES = sourceLines();
 
+/** Files whose prose (comments removed, whitespace and tags collapsed) matches. */
+function claimsIn(pattern: RegExp): string[] {
+  const byFile = new Map<string, string[]>();
+  for (const { file, text } of LINES) {
+    const trimmed = text.trim();
+    if (trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*")) continue;
+    byFile.set(file, [...(byFile.get(file) ?? []), text]);
+  }
+  return [...byFile]
+    .filter(([, lines]) => pattern.test(lines.join(" ").replace(/<[^>]+>/g, "").replace(/\s+/g, " ")))
+    .map(([file]) => file);
+}
+
 function find(pattern: RegExp): Hit[] {
   return LINES.filter(({ text }) => pattern.test(text)).map((hit) => ({
     file: hit.file,
@@ -105,6 +118,17 @@ describe("claims the app stopped being able to make", () => {
         !/sin cuenta|Quedan solo en este teléfono\. Se borran/i.test(hit.text),
     );
     expect(hits).toEqual([]);
+  });
+
+  it("never claims a medical review or a data flow that does not exist", () => {
+    // /terminos said "revisado por nuestro equipo médico" while every page
+    // says no reviewer exists yet; a named reviewer is shown where one does.
+    // The trimester/department were stripped from /directory long ago
+    // (app/api/v1/directory/route.ts rejects every parameter). JSX wraps
+    // sentences across lines, so this reads whole files, not lines.
+    expect(
+      claimsIn(/revisado por nuestro equipo m[ée]dico|(env[ií]ando|viaja al servidor)[^.]{0,80}trimestre/i),
+    ).toEqual([]);
   });
 
   it("F09: offers no switch for sharing photos, which nobody can see", () => {

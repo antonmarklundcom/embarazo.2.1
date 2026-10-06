@@ -145,11 +145,13 @@ export default function PrivacidadPage() {
       <section className="space-y-2">
         <h2 className="text-base font-extrabold text-ink">Qué más viaja a un servidor, con o sin cuenta</h2>
         <p className="text-sm leading-relaxed text-muted">
-          Para mostrarte recursos y contactos cercanos (sanatorios, ecografía,
-          farmacias, eventos), la app consulta nuestro servidor enviando
-          únicamente tu <strong>trimestre</strong> y tu <strong>departamento</strong>
-          — nunca tu nombre, tu fecha exacta, tus síntomas ni ningún otro dato
-          de salud. Cuando tocás un botón de WhatsApp hacia un sanatorio o
+          Para mostrarte recursos y contactos (sanatorios, ecografía,
+          farmacias, eventos), la app se los pide a nuestro servidor{" "}
+          <strong>sin enviar ningún dato tuyo</strong>: ni tu semana ni tu
+          departamento. Para saber qué se lee más, contamos de forma anónima
+          qué contenido se abre y en qué semana de embarazo está quien lo lee,
+          sumado por día, sin tu nombre, tu cuenta ni tu dispositivo. Cuando
+          tocás un botón de WhatsApp hacia un sanatorio o
           negocio, te redirigimos a wa.me; si configuramos atribución de
           clics, solo registramos qué recurso tocaste, nunca tu identidad.
         </p>

@@ -49,8 +49,9 @@ export function PrivacyNotices() {
             con PIN, nunca.
           </li>
           <li>
-            • Sin cuenta, lo único que viaja al servidor es tu trimestre y tu
-            departamento, para mostrarte recursos cercanos.
+            • Sin cuenta, al servidor solo llegan contadores anónimos (qué se
+            lee y en qué semana, sin nada que diga de quién) y, si activás
+            avisos, la suscripción de tu navegador.
           </li>
           <li>• No usamos cookies de seguimiento ni rastreadores.</li>
         </ul>

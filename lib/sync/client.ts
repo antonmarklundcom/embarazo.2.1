@@ -103,8 +103,13 @@ function toEnvelope(store: SyncedStore, row: LocalRow): SyncRecordInput {
   return {
     store,
     recordId: row.uid,
-    updatedAt: row.updatedAt,
-    deletedAt: row.deletedAt ?? null,
+    // N3: the v5 upgrade backfilled `updatedAt: 0` for rows with no
+    // `createdAt` (weights, kicks, contractions, checklist, cycle settings,
+    // clinical). The server takes positive timestamps only, so such a row was
+    // refused on every sync. 1 keeps its meaning — older than anything — and
+    // `markClean` still compares against the row's own value.
+    updatedAt: row.updatedAt > 0 ? row.updatedAt : 1,
+    deletedAt: row.deletedAt ? row.deletedAt : null,
     payload: toPayload(store, row),
   };
 }
@@ -444,8 +449,21 @@ export async function syncNow(): Promise<SyncSummary> {
     // device and starting over.
     if (decision === "adopt") await writeSyncState({ accountId });
 
-    const pushed = await push();
+    // N3: a push that fails (a server error, a record it will not take) must
+    // not also stop this phone from receiving everything else. Pull anyway,
+    // then report the push failure.
+    let pushed = 0;
+    let pushError: unknown = null;
+    try {
+      pushed = await push();
+    } catch (err) {
+      if (err instanceof SyncHttpError && (err.status === 401 || err.status === 404)) {
+        throw err;
+      }
+      pushError = err;
+    }
     const { pulled, conflicts } = await pull();
+    if (pushError) throw pushError;
 
     if (decision === "adopt") {
       await writeSyncState({ accountId, linkedAt: Date.now() });

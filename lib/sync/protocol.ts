@@ -68,6 +68,46 @@ export const PushRequestSchema = z
 export type PushRequest = z.infer<typeof PushRequestSchema>;
 
 /**
+ * N3 — the envelope of a push, without judging each record yet.
+ *
+ * `PushRequestSchema` validated the whole batch as one, so a single record the
+ * server would not take (a pre-v5 row whose backfilled `updatedAt` is 0, a body
+ * over MAX_PAYLOAD_BYTES) made every push from that phone a 400 — forever,
+ * since the record stays dirty — and the client then skipped its pull too.
+ * The route now takes the batch with this, and judges records one by one with
+ * `partitionRecords`.
+ */
+export const PushBatchSchema = z
+  .object({
+    records: z.array(z.unknown()).max(MAX_PUSH_RECORDS),
+  })
+  .strict();
+
+/** Split a batch into records to store and per-record rejections. */
+export function partitionRecords(records: unknown[]): {
+  valid: SyncRecordInput[];
+  rejected: PushResult[];
+} {
+  const valid: SyncRecordInput[] = [];
+  const rejected: PushResult[] = [];
+  for (const record of records) {
+    const parsed = SyncRecordSchema.safeParse(record);
+    if (parsed.success) {
+      valid.push(parsed.data);
+      continue;
+    }
+    const raw = (record ?? {}) as { store?: unknown; recordId?: unknown };
+    rejected.push({
+      store: typeof raw.store === "string" ? raw.store : "",
+      recordId: typeof raw.recordId === "string" ? raw.recordId : "",
+      outcome: "rejected",
+      reason: "registro inválido",
+    });
+  }
+  return { valid, rejected };
+}
+
+/**
  * Per-record outcome of a push.
  *
  * `stale` is not an error: the server simply holds a newer version, and the

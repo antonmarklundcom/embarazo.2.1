@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { resetSyncAvailability, syncNow } from "@/lib/sync/client";
 import { pullRecords, pushRecords, type StoredRecord, type SyncBackend } from "@/lib/server/sync";
-import { PullQuerySchema, PushRequestSchema } from "@/lib/sync/protocol";
+import { PullQuerySchema, PushBatchSchema, partitionRecords } from "@/lib/sync/protocol";
 
 // The REAL device half of sync (lib/sync/client.ts) against the REAL server
 // rules (lib/server/sync.ts), with a fetch that routes between them and a Map
@@ -59,9 +59,12 @@ beforeEach(() => {
   vi.stubGlobal("fetch", async (input: string | URL, init?: RequestInit) => {
     const url = new URL(String(input), "http://app.test");
     if (init?.method === "POST") {
-      const body = PushRequestSchema.parse(JSON.parse(String(init.body)));
+      // Same steps as app/api/v1/sync/route.ts (N3: per-record judgement).
+      const body = PushBatchSchema.parse(JSON.parse(String(init.body)));
       pushedRecords += body.records.length;
-      return Response.json(await pushRecords(backend, USER, body.records, Date.now()));
+      const { valid, rejected } = partitionRecords(body.records);
+      const result = await pushRecords(backend, USER, valid, Date.now());
+      return Response.json({ ...result, results: [...result.results, ...rejected] });
     }
     const query = PullQuerySchema.parse({
       since: url.searchParams.get("since") ?? 0,
@@ -153,5 +156,26 @@ describe("pulled records stay clean (N7)", () => {
 
     await syncNow();
     expect(backend.rows.get(`${USER}|weightEntries|w1`)?.payload).toMatchObject({ kg: 61 });
+  });
+});
+
+describe("N3 — one bad record does not stop sync", () => {
+  it("a row the v5 upgrade left at updatedAt 0 is pushed (as 1) and marked clean", async () => {
+    await db().weightEntries.add({ uid: "pre-v5", date: 3, kg: 58, updatedAt: 0, dirty: 1, deletedAt: null } as never);
+    expect((await syncNow()).outcome).toBe("ok");
+    expect(backend.rows.get(`${USER}|weightEntries|pre-v5`)?.updatedAt).toBe(1);
+    expect((await db().weightEntries.where("uid").equals("pre-v5").first())?.dirty).toBe(0);
+  });
+
+  it("a record the server rejects does not stop the rest, or the pull", async () => {
+    await otherDevicePushes(Date.now() - 1000, 60); // something waiting to be pulled
+    await db().journalEntries.add({ uid: "too-big", week: 1, symptoms: [], note: "x".repeat(70_000), createdAt: 5 } as never);
+    await db().weightEntries.add({ uid: "fine", date: 4, kg: 59 } as never);
+
+    await syncNow();
+
+    expect(backend.rows.has(`${USER}|weightEntries|fine`)).toBe(true);
+    expect(backend.rows.has(`${USER}|journalEntries|too-big`)).toBe(false);
+    expect((await db().weightEntries.where("uid").equals("w1").first())?.kg).toBe(60);
   });
 });

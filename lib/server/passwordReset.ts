@@ -5,7 +5,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { db, isDatabaseConfigured } from "./db";
 import { users, verificationTokens } from "./schema";
 import { isEmailConfigured, sendPasswordResetEmail } from "./email";
-import { EmailSchema, PasswordSchema, hashPassword } from "@/lib/auth/password";
+import { EmailSchema, NewPasswordSchema, hashPassword } from "@/lib/auth/password";
 import {
   RESET_TOKEN_TTL_MS,
   generateResetToken,
@@ -188,10 +188,14 @@ export async function requestPasswordReset(
  * Finish a password reset: consume the token, set the new password, sign every
  * existing session out.
  *
- * Single-use is enforced by deleting the row, and the delete is scoped to the
- * exact `(identifier, token)` pair — the table's primary key — so the second use
- * of the same link finds nothing and gets `invalid-token`, indistinguishable
- * from a made-up token.
+ * F18 — single use is a CLAIM, not a read. The token row is deleted inside the
+ * same transaction that writes the password, and the write happens only if that
+ * delete removed exactly one row. Two requests racing with one link therefore
+ * get exactly one success; the loser's delete matches nothing and it answers
+ * `invalid-token`, indistinguishable from a made-up token. A failed password
+ * write rolls the claim back, so the link is not burned by our own error, and a
+ * newer reset request (which replaces the row) invalidates an older one that is
+ * still hashing.
  */
 export async function resetPassword(
   rawToken: string,
@@ -199,19 +203,17 @@ export async function resetPassword(
 ): Promise<ResetPasswordResult> {
   if (!isDatabaseConfigured()) return { ok: false, error: "not-configured" };
 
-  // Cheap guard before any query: `base64url` of 32 bytes is 43 characters, and
-  // a 1 MB "token" should not become a database round-trip.
   if (typeof rawToken !== "string" || rawToken.length === 0 || rawToken.length > 512) {
     return { ok: false, error: "invalid-token" };
   }
 
-  // Validated before the lookup, so a too-short password never consumes the
-  // token — otherwise a mistyped new password would burn the link and send the
-  // user back to the start of the flow.
-  const password = PasswordSchema.safeParse(newPassword);
+  // F17: setting a password — it must fit bcrypt's 72 bytes.
+  const password = NewPasswordSchema.safeParse(newPassword);
   if (!password.success) return { ok: false, error: "weak-password" };
 
   const hashed = hashResetToken(rawToken);
+
+  // A cheap read first, so a made-up or expired token costs no bcrypt.
   const [row] = await db()
     .select({
       identifier: verificationTokens.identifier,
@@ -224,8 +226,6 @@ export async function resetPassword(
   if (!row) return { ok: false, error: "invalid-token" };
 
   if (row.expires.getTime() <= Date.now()) {
-    // Spent either way: an expired link must not stay in the table waiting for
-    // a clock skew or a careless future query to accept it.
     await db()
       .delete(verificationTokens)
       .where(
@@ -237,44 +237,59 @@ export async function resetPassword(
     return { ok: false, error: "expired" };
   }
 
-  // Resolve the account by email once, and update by primary key afterwards.
-  // `users.email` carries no unique index (it is the Auth.js adapter's column
-  // set, unchanged), so an `UPDATE ... WHERE email = ?` is a statement whose row
-  // count depends on data this code does not control. Setting a password hash is
-  // not something to do with a `WHERE` clause that might match twice.
-  const [account] = await db()
+  // The identifier must be an account's address. A confirmation token
+  // (`verify:<email>`) or an address with no account is a dead end here, and
+  // a dead end must not spend the token — a misused link costs nothing.
+  const [owner] = await db()
     .select({ id: users.id })
     .from(users)
     .where(eq(users.email, row.identifier))
     .limit(1);
-  if (!account) return { ok: false, error: "invalid-token" };
+  if (!owner) return { ok: false, error: "invalid-token" };
 
   const passwordHash = await hashPassword(password.data);
 
-  await db()
-    .update(users)
-    .set({
-      passwordHash,
-      // I1/U6's mechanism (`bumpSessionVersion` in lib/server/supportBackend.ts):
-      // the version is stamped into every JWT at sign-in and compared on every
-      // request, so +1 here ends every session this account has open, on every
-      // device. Correct for a reset rather than merely tidy — somebody choosing
-      // a new password is plausibly doing it *because* a device is no longer
-      // theirs, and leaving that device signed in would defeat the whole point.
-      sessionVersion: sql`${users.sessionVersion} + 1`,
-    })
-    .where(eq(users.id, account.id));
+  // It may have expired while bcrypt ran.
+  if (row.expires.getTime() <= Date.now()) return { ok: false, error: "expired" };
 
-  // Single-use. Last, so a failed update above leaves the link usable rather
-  // than stranding the user with a spent token and the old password.
-  await db()
-    .delete(verificationTokens)
-    .where(
-      and(
-        eq(verificationTokens.identifier, row.identifier),
-        eq(verificationTokens.token, hashed),
-      ),
-    );
+  return db().transaction(async (tx) => {
+    const claim = await tx
+      .delete(verificationTokens)
+      .where(
+        and(
+          eq(verificationTokens.identifier, row.identifier),
+          eq(verificationTokens.token, hashed),
+        ),
+      );
+    if (affectedRows(claim) !== 1) {
+      return { ok: false, error: "invalid-token" } as const;
+    }
 
-  return { ok: true };
+    const [account] = await tx
+      .select({ id: users.id, deletedAt: users.deletedAt })
+      .from(users)
+      .where(eq(users.email, row.identifier))
+      .limit(1);
+    // No account (or one being erased): the token is spent either way.
+    if (!account || account.deletedAt) {
+      return { ok: false, error: "invalid-token" } as const;
+    }
+
+    await tx
+      .update(users)
+      .set({
+        passwordHash,
+        sessionVersion: sql`${users.sessionVersion} + 1`,
+      })
+      .where(eq(users.id, account.id));
+
+    return { ok: true } as const;
+  });
+}
+
+/** mysql2 reports a DELETE's row count here — same reading as lib/server/account.ts. */
+function affectedRows(result: unknown): number {
+  const header = Array.isArray(result) ? result[0] : result;
+  const rows = (header as { affectedRows?: number } | undefined)?.affectedRows;
+  return typeof rows === "number" ? rows : 0;
 }

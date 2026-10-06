@@ -128,11 +128,16 @@ const fakeDb = {
     where: (clause: unknown) => {
       const rows = tableRows(table);
       const kept = rows.filter((row) => !matches(row, clause));
+      const removed = rows.length - kept.length;
       rows.length = 0;
       rows.push(...kept);
-      return Promise.resolve(undefined);
+      // mysql2's shape: [ResultSetHeader, undefined].
+      return Promise.resolve([{ affectedRows: removed }, undefined]);
     },
   }),
+  // Single-threaded fake: a transaction is the callback run against the same
+  // tables. What it cannot model is a rollback, which the MariaDB suite does.
+  transaction: async <T,>(fn: (tx: unknown) => Promise<T>): Promise<T> => fn(fakeDb),
   update: (table: unknown) => ({
     set: (values: Row) => ({
       where: (clause: unknown) => {
@@ -561,5 +566,36 @@ describe("resetPassword() - every open session ends", () => {
       ok: false,
       error: "not-configured",
     });
+  });
+});
+
+describe("resetPassword() - F18: one link, one success", () => {
+  it("gives exactly one of two overlapping requests the reset", async () => {
+    const token = "tok-concurrent";
+    store.users.push({ id: "u-race", email: "race@example.com", passwordHash: await hashPassword(OLD_PASSWORD), sessionVersion: 0 });
+    store.tokens.push({ identifier: "race@example.com", token: hashResetToken(token), expires: new Date(Date.now() + RESET_TOKEN_TTL_MS) });
+
+    const results = await Promise.all([
+      resetPassword(token, "the first new pass 1"),
+      resetPassword(token, "the second new pass 2"),
+    ]);
+
+    expect(results.filter((r) => r.ok)).toHaveLength(1);
+    expect(results.filter((r) => !r.ok)).toEqual([{ ok: false, error: "invalid-token" }]);
+    const user = store.users.find((u) => u.id === "u-race")!;
+    expect(user.sessionVersion).toBe(1);
+    const winner = results[0]!.ok ? "the first new pass 1" : "the second new pass 2";
+    expect(await verifyPassword(winner, user.passwordHash as string)).toBe(true);
+  });
+});
+
+describe("resetPassword() - F17: the new password must fit bcrypt", () => {
+  it("refuses a new password longer than 72 bytes without spending the token", async () => {
+    const token = "tok-long";
+    store.users.push({ id: "u-long", email: "long@example.com", passwordHash: await hashPassword(OLD_PASSWORD), sessionVersion: 0 });
+    store.tokens.push({ identifier: "long@example.com", token: hashResetToken(token), expires: new Date(Date.now() + RESET_TOKEN_TTL_MS) });
+
+    expect(await resetPassword(token, "ñ".repeat(37))).toEqual({ ok: false, error: "weak-password" });
+    expect(store.tokens.some((t) => t.identifier === "long@example.com")).toBe(true);
   });
 });

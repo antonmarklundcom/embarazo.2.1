@@ -135,11 +135,14 @@ const fakeDb = {
     where: (clause: unknown) => {
       const rows = tableRows(table);
       const kept = rows.filter((row) => !matches(row, clause));
+      const removed = rows.length - kept.length;
       rows.length = 0;
       rows.push(...kept);
-      return Promise.resolve(undefined);
+      // mysql2's shape: [ResultSetHeader, undefined] (resetPassword's F18 claim reads it).
+      return Promise.resolve([{ affectedRows: removed }, undefined]);
     },
   }),
+  transaction: async <T,>(fn: (tx: unknown) => Promise<T>): Promise<T> => fn(fakeDb),
   update: (table: unknown) => ({
     set: (values: Row) => ({
       where: (clause: unknown) => {

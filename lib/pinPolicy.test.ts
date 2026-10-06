@@ -20,8 +20,10 @@ const AJUSTES = readFileSync(
   "utf8",
 );
 
-const STORES = readFileSync(
-  join(process.cwd(), "lib", "sync", "stores.ts"),
+const BACKUP = readFileSync(join(process.cwd(), "lib", "backup.ts"), "utf8");
+
+const MERGE = readFileSync(
+  join(process.cwd(), "lib", "sync", "merge.ts"),
   "utf8",
 );
 
@@ -37,11 +39,13 @@ describe("the PIN floor", () => {
     expect(AJUSTES).not.toMatch(/pinInput\.length < \d/);
   });
 
-  it("still applies to notes that actually sync, which is why it matters", () => {
-    // If this ever stops being true, the floor can come back down — and if
-    // someone removes it without noticing this, the reasoning above is wrong
-    // in a way nothing else would catch.
-    expect(STORES).toContain('"journalEntries"');
+  it("still applies because a downloaded backup carries the ciphertext AND the salt", () => {
+    // Encrypted note bodies are withheld from sync (merge.ts), so the offline
+    // attack surface is not the server — it is the backup file, which holds
+    // the ciphertext, the salt and the verifier together. If backups ever stop
+    // carrying PIN material, the reasoning in lib/crypto.ts changes with it.
+    expect(BACKUP).toContain("exportPinMaterial()");
+    expect(MERGE).toContain("payload.noteEncrypted === true");
   });
 });
 
@@ -60,9 +64,15 @@ describe("the copy says what it does and does not protect", () => {
     expect(pinSection).toContain("probando todas las combinaciones");
   });
 
-  it("does not claim the notes simply stay on the phone", () => {
-    // They sync. The guarantee is that they sync *encrypted*, which is a
-    // stronger and more specific promise than the one it replaced.
-    expect(pinSection).not.toMatch(/quedan en (tu|este) tel[ée]fono/i);
+  it("says where the encrypted text goes, and does not claim it syncs", () => {
+    // F09: this card said "Se sincronizan cifradas" from K18 (2026-08-20) on,
+    // but A3 (2026-08-12) already withheld encrypted bodies from sync. A user
+    // reading the old line believed her private notes were backed up. They are
+    // on this phone and in the files she downloads, nowhere else.
+    // JSX wraps sentences across source lines; compare the words, not the layout.
+    const words = pinSection.replace(/\s+/g, " ");
+    expect(words).toContain("no se sube al servidor");
+    expect(words).toContain("copias de seguridad que");
+    expect(words).not.toMatch(/sincronizan cifrad/i);
   });
 });

@@ -20,10 +20,11 @@ const PBKDF2_ITERATIONS = 150_000;
  * 150 000 PBKDF2 iterations are fine, because they get one guess at a time
  * through a UI.
  *
- * Since A3, `journalEntries` is in `SYNCED_STORES`. The ciphertext is now also
- * a row on a server. That is an **offline** attack surface: anyone who ever
- * reads that table can grind the whole keyspace at their own pace, with no UI
- * in the way. A four-digit PIN is 10 000 candidates — hours on one machine,
+ * The ciphertext now also travels in every downloaded backup, together with
+ * the salt and the verifier (`exportPinMaterial`). That file is an **offline**
+ * attack surface: anyone who gets a copy can grind the whole keyspace at their
+ * own pace, with no UI in the way. (The note body itself is withheld from sync —
+ * `WITHHELD_NOTE` in lib/sync/merge.ts — so the server never holds it.) A four-digit PIN is 10 000 candidates — hours on one machine,
  * whatever the iteration count. Six digits is 100× that. Still not a password,
  * and the copy in Ajustes says so in plain words rather than implying it is.
  *

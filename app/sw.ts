@@ -302,6 +302,21 @@ async function readLocalReminderState(): Promise<LocalReminderState> {
     request.onerror = () => done(NOTHING);
     request.onsuccess = () => {
       const database = request.result;
+      // F21: this connection used to stay open for as long as the worker
+      // lived (~30 s after a push in Chrome), and an open connection that
+      // ignores `versionchange` blocks deleteDatabase and every schema
+      // upgrade. "Borrar todos mis datos" and the account-deletion wipe waited
+      // on it. Close it as soon as the read is over, and yield at once if a
+      // page asks to delete or upgrade meanwhile.
+      database.onversionchange = () => database.close();
+      const finish = (value: LocalReminderState) => {
+        try {
+          database.close();
+        } catch {
+          // Already closed by onversionchange.
+        }
+        done(value);
+      };
       try {
         // Both stores in one transaction: two sequential ones would be two
         // chances for the push event to be killed halfway through.
@@ -320,7 +335,7 @@ async function readLocalReminderState(): Promise<LocalReminderState> {
             birthDate?: number;
             deletedAt?: number | null;
           }[]).find((row) => !row.deletedAt);
-          done({
+          finish({
             nextAppointment:
               typeof live?.nextAppointment === "number"
                 ? live.nextAppointment
@@ -334,10 +349,10 @@ async function readLocalReminderState(): Promise<LocalReminderState> {
               typeof pregnancy?.birthDate === "number" ? pregnancy.birthDate : null,
           });
         };
-        tx.onerror = () => done(NOTHING);
-        tx.onabort = () => done(NOTHING);
+        tx.onerror = () => finish(NOTHING);
+        tx.onabort = () => finish(NOTHING);
       } catch {
-        done(NOTHING);
+        finish(NOTHING);
       }
     };
   });

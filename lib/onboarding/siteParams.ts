@@ -13,13 +13,42 @@ import type { OnboardingAnswers } from "./progress";
 // user reaches (the date step "asks her to confirm or correct", per the
 // plan) rather than skipping steps — nobody's flow is short-circuited by a
 // URL they didn't necessarily construct themselves.
+//
+// F12 (2026-10 review): the calculator now hands its date over in the URL
+// FRAGMENT (`#fum=` or `#fpp=`), which the browser never sends to a server, so
+// a due date no longer lands in request URLs and access logs. The key also
+// says which date she typed: the site used to turn every FUM into `?fpp=`,
+// and the app labelled it an ultrasound date. Query links keep working for
+// as long as old pages and shares are around; a fragment, when present, wins.
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-function isValidIsoDate(raw: string): boolean {
+/** Every key the site may hand over, in the query or the fragment. */
+export const SITE_PARAM_NAMES = ["w", "fpp", "fum", "modo"] as const;
+const DATE_PARAM_NAMES = ["w", "fpp", "fum"] as const;
+
+/**
+ * A real calendar day. F12: `new Date("2026-02-30")` quietly becomes 2 March,
+ * so the old check accepted it; the site's own check round-trips, and so does
+ * this one now. Civil-date arithmetic in UTC, so no time zone can move it.
+ */
+export function isValidIsoDate(raw: string): boolean {
   if (!ISO_DATE.test(raw)) return false;
-  const ms = new Date(`${raw}T00:00:00`).getTime();
-  return !Number.isNaN(ms);
+  const [year, month, day] = raw.split("-").map(Number) as [number, number, number];
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
+function paramsOf(raw: string): URLSearchParams {
+  try {
+    return new URLSearchParams(raw.replace(/^[?#]/, ""));
+  } catch {
+    return new URLSearchParams();
+  }
 }
 
 /**
@@ -38,33 +67,33 @@ function isoDateDaysAgo(daysAgo: number, now: number): string {
 }
 
 /**
- * Parse the site's deep-link params out of a landing URL's query string.
- * Returns a patch to merge into onboarding answers, or `null` when the URL
- * carries none of them (the common case — most visits are not from the
- * site).
+ * Parse the site's deep-link params out of a landing URL's query string and
+ * fragment. Returns a patch to merge into onboarding answers, or `null` when
+ * the URL carries none of them (the common case — most visits are not from
+ * the site).
  */
 export function siteParamsToAnswers(
   search: string,
   now: number = Date.now(),
+  hash: string = "",
 ): Partial<OnboardingAnswers> | null {
-  let params: URLSearchParams;
-  try {
-    params = new URLSearchParams(search);
-  } catch {
-    return null;
-  }
+  const query = paramsOf(search);
+  const fragment = paramsOf(hash);
+  // The date comes from one place, never half from each: a fragment that
+  // names any date key is the whole answer.
+  const dates = DATE_PARAM_NAMES.some((name) => fragment.has(name)) ? fragment : query;
 
   const patch: Partial<OnboardingAnswers> = {};
 
-  if (params.get("modo") === "planeando") {
+  if ((fragment.get("modo") ?? query.get("modo")) === "planeando") {
     patch.mode = "planeando";
   }
 
   // `fpp`/`fum` (the calculator) win over `w` (a week page) when both are
   // somehow present — an exact date beats a week estimate.
-  const fpp = params.get("fpp");
-  const fum = params.get("fum");
-  const w = params.get("w");
+  const fpp = dates.get("fpp");
+  const fum = dates.get("fum");
+  const w = dates.get("w");
 
   if (fpp && isValidIsoDate(fpp)) {
     patch.method = "ecografia";
@@ -83,4 +112,27 @@ export function siteParamsToAnswers(
   }
 
   return Object.keys(patch).length > 0 ? patch : null;
+}
+
+/**
+ * The same URL without any site param, or `null` when there was nothing to
+ * remove. A fragment that is not ours (`#seccion`) is left exactly as it was.
+ */
+export function withoutSiteParams(href: string): string | null {
+  const url = new URL(href);
+  let changed = false;
+  for (const name of SITE_PARAM_NAMES) {
+    if (url.searchParams.has(name)) {
+      url.searchParams.delete(name);
+      changed = true;
+    }
+  }
+  const fragment = paramsOf(url.hash);
+  if (SITE_PARAM_NAMES.some((name) => fragment.has(name))) {
+    for (const name of SITE_PARAM_NAMES) fragment.delete(name);
+    const rest = fragment.toString();
+    url.hash = rest ? `#${rest}` : "";
+    changed = true;
+  }
+  return changed ? url.pathname + url.search + url.hash : null;
 }

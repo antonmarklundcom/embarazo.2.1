@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { siteParamsToAnswers } from "./siteParams";
+import { isValidIsoDate, siteParamsToAnswers, withoutSiteParams } from "./siteParams";
 
 const NOW = new Date("2026-09-02T00:00:00Z").getTime();
 
@@ -72,5 +72,69 @@ describe("siteParamsToAnswers", () => {
 
   it("ignores an unrecognised modo value", () => {
     expect(siteParamsToAnswers("?modo=embarazada", NOW)).toBeNull();
+  });
+
+  it("F12: refuses a day that does not exist instead of rolling it over", () => {
+    expect(siteParamsToAnswers("?fum=2026-02-30", NOW)).toBeNull();
+    expect(siteParamsToAnswers("?fpp=2027-02-29", NOW)).toBeNull();
+    expect(siteParamsToAnswers("?fpp=2026-04-31", NOW)).toBeNull();
+    // A real leap day and month ends still pass.
+    expect(siteParamsToAnswers("?fpp=2028-02-29", NOW)?.dueDateInput).toBe("2028-02-29");
+    expect(siteParamsToAnswers("?fum=2026-01-31", NOW)?.lmp).toBe("2026-01-31");
+  });
+
+  it("F12: reads the calculator's date from the fragment, with the method she chose", () => {
+    expect(siteParamsToAnswers("", NOW, "#fum=2026-04-01")).toEqual({ method: "lmp", lmp: "2026-04-01" });
+    expect(siteParamsToAnswers("", NOW, "#fpp=2027-02-12")).toEqual({
+      method: "ecografia",
+      dueDateInput: "2027-02-12",
+    });
+  });
+
+  it("F12: a fragment date is the whole answer, not merged with an old query", () => {
+    expect(siteParamsToAnswers("?fpp=2027-02-12&w=20", NOW, "#fum=2026-04-01")).toEqual({
+      method: "lmp",
+      lmp: "2026-04-01",
+    });
+    // …and a fragment with no date leaves the query's date in charge.
+    expect(siteParamsToAnswers("?fpp=2027-02-12", NOW, "#modo=planeando")).toEqual({
+      mode: "planeando",
+      method: "ecografia",
+      dueDateInput: "2027-02-12",
+    });
+  });
+
+  it("F12: ignores a fragment that is not the site's", () => {
+    expect(siteParamsToAnswers("", NOW, "#seccion")).toBeNull();
+    expect(siteParamsToAnswers("", NOW, "#fum=2026-02-30")).toBeNull();
+  });
+});
+
+describe("isValidIsoDate", () => {
+  it("does not depend on the device's time zone", () => {
+    const saved = process.env.TZ;
+    try {
+      for (const tz of ["America/Asuncion", "Pacific/Kiritimati", "Pacific/Pago_Pago", "UTC"]) {
+        process.env.TZ = tz;
+        expect(isValidIsoDate("2026-10-04")).toBe(true);
+        expect(isValidIsoDate("2026-02-29")).toBe(false);
+      }
+    } finally {
+      if (saved === undefined) delete process.env.TZ;
+      else process.env.TZ = saved;
+    }
+  });
+});
+
+describe("withoutSiteParams", () => {
+  it("drops the site's keys from the query and the fragment, keeping the rest", () => {
+    expect(withoutSiteParams("https://app.test/?fpp=2027-02-12&w=20&codigo=AB12")).toBe("/?codigo=AB12");
+    expect(withoutSiteParams("https://app.test/#fum=2026-04-01")).toBe("/");
+    expect(withoutSiteParams("https://app.test/?ref=site#fum=2026-04-01&modo=planeando")).toBe("/?ref=site");
+  });
+
+  it("leaves a URL with nothing of the site's alone", () => {
+    expect(withoutSiteParams("https://app.test/?codigo=AB12")).toBeNull();
+    expect(withoutSiteParams("https://app.test/#seccion")).toBeNull();
   });
 });

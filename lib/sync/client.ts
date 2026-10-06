@@ -140,9 +140,10 @@ async function push(): Promise<number> {
   let pushed = 0;
   for (let i = 0; i < dirty.length; i += MAX_PUSH_RECORDS) {
     const batch = dirty.slice(i, i + MAX_PUSH_RECORDS);
+    const accountId = (await readSyncState())?.accountId;
     const res = await fetch(SYNC_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: accountId ? accountHeaders(accountId) : { "Content-Type": "application/json" },
       body: JSON.stringify({
         records: batch.map(({ store, row }) => toEnvelope(store, row)),
       }),
@@ -344,6 +345,60 @@ async function fetchAccountId(): Promise<string> {
   const res = await fetch(url.toString());
   if (!res.ok) throw httpError(res.status);
   return ((await res.json()) as PullResponse).accountId;
+}
+
+// ---------------------------------------------------------------------------
+// F01 — the account link, for every path that sends this phone's data
+// ---------------------------------------------------------------------------
+
+/** Header carrying the account this device's data is linked to (F01). */
+export const ACCOUNT_HEADER = "X-Mibebe-Account";
+
+export type AccountLink =
+  /** Signed in, and this phone's data belongs to that account (or now does). */
+  | { status: "linked"; accountId: string }
+  /** Signed in to a DIFFERENT account than this phone's data. Send nothing. */
+  | { status: "mismatch" }
+  /** No session, or no account system: nothing can cross accounts. */
+  | { status: "no-session" }
+  /** Could not ask. Callers treat it as "not now". */
+  | { status: "offline" };
+
+/**
+ * A6's rule — `decideAccountLink` — for callers other than sync.
+ *
+ * Ordinary sync refused to push one account's records into another, but photo
+ * backup, the companion snapshot and push schedules read the same local data
+ * and posted it with whatever session cookie was current (F01). Every one of
+ * them now asks this first, and sends the linked id in `ACCOUNT_HEADER` so the
+ * server can refuse a request whose cookie changed after the check.
+ *
+ * "adopt" (never linked) links here exactly as `syncNow` would, so the first
+ * sync and the first photo upload after sign-in agree on the owner.
+ */
+export async function ensureAccountLink(): Promise<AccountLink> {
+  if (typeof window === "undefined") return { status: "no-session" };
+  let accountId: string;
+  try {
+    accountId = await fetchAccountId();
+  } catch (err) {
+    if (err instanceof SyncHttpError && (err.status === 401 || err.status === 404)) {
+      return { status: "no-session" };
+    }
+    return { status: "offline" };
+  }
+  const decision = decideAccountLink((await readSyncState())?.accountId, accountId);
+  if (decision === "refuse") {
+    await writeSyncState({ lastError: ACCOUNT_MISMATCH_MESSAGE }).catch(() => {});
+    return { status: "mismatch" };
+  }
+  if (decision === "adopt") await writeSyncState({ accountId });
+  return { status: "linked", accountId };
+}
+
+/** Headers for a JSON request that sends this phone's data as `accountId`. */
+export function accountHeaders(accountId: string): Record<string, string> {
+  return { "Content-Type": "application/json", [ACCOUNT_HEADER]: accountId };
 }
 
 /**

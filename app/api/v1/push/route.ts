@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { refuseCrossSite, refuseOtherAccount } from "@/lib/server/requestGuard";
 import { z } from "zod";
 
 import { getSession } from "@/lib/server/auth";
@@ -111,6 +112,9 @@ function throttled(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   if (!isPushConfigured()) return unavailable();
+  // F08: only this app's own pages, and only JSON.
+  const crossSite = refuseCrossSite(req);
+  if (crossSite) return crossSite;
   const limited = throttled(req);
   if (limited) return limited;
   const database = dbOrNull();
@@ -140,6 +144,12 @@ export async function POST(req: NextRequest) {
   // A session links the subscription to an account when there is one, so A5's
   // deletion removes it. Its absence is not an error.
   const session = await getSession();
+  // F01: reminder times computed from another account's local data are not
+  // filed under this one.
+  if (session?.user?.id) {
+    const otherAccount = refuseOtherAccount(req, session.user.id);
+    if (otherAccount) return otherAccount;
+  }
 
   await saveSubscription(backend, {
     endpoint,
@@ -168,6 +178,8 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   if (!isPushConfigured()) return unavailable();
+  const crossSite = refuseCrossSite(req);
+  if (crossSite) return crossSite;
   const limited = throttled(req);
   if (limited) return limited;
   const database = dbOrNull();

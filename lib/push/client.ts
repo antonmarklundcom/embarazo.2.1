@@ -1,6 +1,8 @@
 "use client";
 
 import { db, notDeleted } from "@/lib/db";
+import { ACCOUNT_HEADER, ensureAccountLink } from "@/lib/sync/client";
+import { fetchSharedViews } from "@/lib/sharing/client";
 import {
   DEFAULT_CATEGORIES,
   normaliseCategories,
@@ -221,6 +223,65 @@ export async function setCompanionReminder(
   await refreshReminders(companionAppointmentAt);
 }
 
+// ---------------------------------------------------------------------------
+// Posting the subscription (F01, N5)
+// ---------------------------------------------------------------------------
+
+/**
+ * Set when the server did not store the last subscription or schedule, so the
+ * next app start re-sends all of it (`refreshWeeklyTips`). N5: a failed POST
+ * used to be silent — the switch said "on" and the appointment reminders were
+ * never on the server.
+ */
+const RESYNC_KEY = "mibebe.push.resync";
+
+function markResync(pending: boolean): void {
+  try {
+    if (pending) localStorage.setItem(RESYNC_KEY, "1");
+    else localStorage.removeItem(RESYNC_KEY);
+  } catch {
+    // Storage refused: the next settings visit re-sends anyway.
+  }
+}
+
+/** True when the last attempt to store this device's schedule failed. */
+export function pushResyncPending(): boolean {
+  try {
+    return localStorage.getItem(RESYNC_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * POST the subscription. True only when the server stored it.
+ *
+ * F01: the reminder times come from this phone's data, so they are filed under
+ * the signed-in account only when that data belongs to it. On another
+ * account's phone nothing is sent (and nothing is marked for resync: there is
+ * nothing to retry until the data and the account agree). Signed out, the
+ * subscription is anonymous, as it always was.
+ */
+async function postSubscription(body: Record<string, unknown>): Promise<boolean> {
+  const link = await ensureAccountLink();
+  if (link.status === "mismatch") return false;
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (link.status === "linked") headers[ACCOUNT_HEADER] = link.accountId;
+  let ok = false;
+  try {
+    const res = await fetch("/api/v1/push", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+    ok = res.ok;
+  } catch {
+    ok = false;
+  }
+  markResync(!ok);
+  return ok;
+}
+
 /**
  * Send the subscription, its opt-ins, and the times to poke it.
  *
@@ -232,7 +293,7 @@ async function syncSubscription(
   subscription: PushSubscription,
   categories: PushCategory[],
   companionAppointmentAt: number | null = null,
-): Promise<void> {
+): Promise<boolean> {
   const json = subscription.toJSON();
   const now = Date.now();
   const reminders = categories.includes("recordatorios")
@@ -246,22 +307,15 @@ async function syncSubscription(
   // a queue that lies about what the server is going to do.
   const consejos = categories.includes("consejos") ? await consejosTimes(now) : [];
 
-  try {
-    await fetch("/api/v1/push", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        endpoint: subscription.endpoint,
-        keys: { p256dh: json.keys?.p256dh, auth: json.keys?.auth },
-        categories,
-        reminders,
-        consejos,
-      }),
-    });
-  } catch {
-    // Offline. The next settings visit or the next appointment change
-    // re-sends; nothing about the app breaks in the meantime.
-  }
+  // A failure is remembered (`RESYNC_KEY`) and the next app start re-sends
+  // everything; nothing about the app breaks in the meantime.
+  return postSubscription({
+    endpoint: subscription.endpoint,
+    keys: { p256dh: json.keys?.p256dh, auth: json.keys?.auth },
+    categories,
+    reminders,
+    consejos,
+  });
 }
 
 /**
@@ -398,21 +452,28 @@ export async function refreshWeeklyTips(): Promise<void> {
   const subscription = await existingSubscription();
   if (!subscription) return;
 
+  // N5: the last full publish never reached the server. Re-send all of it,
+  // appointment reminders included — with the accompanied control fetched live
+  // (as the service worker does) so the K8 companion reminder is not dropped.
+  if (pushResyncPending()) {
+    const views = await fetchSharedViews();
+    const companion = views.find((view) => view.role !== "owner");
+    await syncSubscription(
+      subscription,
+      readLocalCategories(),
+      companion?.snapshot?.nextAppointmentAt ?? null,
+    );
+    return;
+  }
+
   const categories = readLocalCategories();
   const json = subscription.toJSON();
 
-  try {
-    await fetch("/api/v1/push", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        endpoint: subscription.endpoint,
-        keys: { p256dh: json.keys?.p256dh, auth: json.keys?.auth },
-        categories,
-        consejos: categories.includes("consejos") ? await consejosTimes() : [],
-      }),
-    });
-  } catch {
-    // Offline. The queue still holds whatever was enqueued last time.
-  }
+  // Offline or refused: the queue still holds whatever was enqueued last time.
+  await postSubscription({
+    endpoint: subscription.endpoint,
+    keys: { p256dh: json.keys?.p256dh, auth: json.keys?.auth },
+    categories,
+    consejos: categories.includes("consejos") ? await consejosTimes() : [],
+  });
 }

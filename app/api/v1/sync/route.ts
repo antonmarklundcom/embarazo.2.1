@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { refuseCrossSite, refuseOtherAccount } from "@/lib/server/requestGuard";
 
 import { getSession, isAuthAvailable } from "@/lib/server/auth";
 import { dbOrNull } from "@/lib/server/db";
@@ -51,6 +52,9 @@ async function context(req: NextRequest) {
   const session = await getSession();
   const userId = session?.user?.id;
   if (!userId) return { error: unauthorized() } as const;
+  // F01: the device said which account its data belongs to; refuse another.
+  const otherAccount = refuseOtherAccount(req, userId);
+  if (otherAccount) return { error: otherAccount } as const;
 
   const database = dbOrNull();
   if (!database) return { error: notConfigured() } as const;
@@ -59,6 +63,9 @@ async function context(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // F08: only this app's own pages, and only JSON.
+  const crossSite = refuseCrossSite(req);
+  if (crossSite) return crossSite;
   const ctx = await context(req);
   if ("error" in ctx) return ctx.error;
 

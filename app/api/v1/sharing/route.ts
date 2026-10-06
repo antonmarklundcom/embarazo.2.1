@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { refuseCrossSite, refuseOtherAccount } from "@/lib/server/requestGuard";
 import { z } from "zod";
 
 import { getSession, isAuthAvailable } from "@/lib/server/auth";
@@ -198,6 +199,9 @@ async function context(req: NextRequest) {
       ),
     } as const;
   }
+  // F01: a snapshot built from another account's local data is refused.
+  const otherAccount = refuseOtherAccount(req, userId);
+  if (otherAccount) return { error: otherAccount } as const;
   const database = dbOrNull();
   if (!database) return { error: unavailable() } as const;
   // V2 — the rules in `lib/server/sharing.ts` take a `SharingBackend`, not a
@@ -273,6 +277,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // F08: only this app's own pages, and only JSON.
+  const crossSite = refuseCrossSite(req);
+  if (crossSite) return crossSite;
   const ctx = await context(req);
   if ("error" in ctx) return ctx.error;
 

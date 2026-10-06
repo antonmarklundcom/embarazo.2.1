@@ -11,6 +11,7 @@ import {
 import {
   disablePush,
   enablePush,
+  pushResyncPending,
   readPushState,
   setCategories,
   type PushState,
@@ -56,7 +57,13 @@ export function PushSettings({
     setState({ ...state!, status });
     setBusy(false);
 
-    if (status === "denied") {
+    if (status === "on" && pushResyncPending()) {
+      // N5: the browser subscription exists, but the server did not store the
+      // schedule. Said plainly instead of a switch that only looks on.
+      setMessage(
+        "Activamos los avisos en este teléfono, pero no pudimos guardarlos todavía. Lo intentamos de nuevo la próxima vez que abras la app con internet.",
+      );
+    } else if (status === "denied") {
       setMessage(
         "Tu navegador bloqueó los avisos. Podés habilitarlos desde la configuración del navegador, en los permisos de este sitio.",
       );

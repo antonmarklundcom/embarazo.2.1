@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { refuseCrossSite } from "@/lib/server/requestGuard";
 import { z } from "zod";
 
 import { clientKeyFromHeaders, isRateLimited } from "@/lib/rateLimit";
@@ -47,6 +48,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  // F08: only this app's own pages, and only JSON.
+  const crossSite = refuseCrossSite(req);
+  if (crossSite) return crossSite;
   if (!isAuthAvailable()) {
     return NextResponse.json(
       { error: "necesitás una cuenta para preguntar" },

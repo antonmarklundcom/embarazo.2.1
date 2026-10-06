@@ -7,7 +7,7 @@
 // non-negotiable, and it is why every entry point below swallows its errors
 // into `syncState.lastError` rather than throwing at a caller.
 
-import { db, type ConflictRow, type SyncStateRow } from "@/lib/db";
+import { db, syncBookkeeping, type ConflictRow, type SyncStateRow } from "@/lib/db";
 import {
   mergeIncoming,
   toPayload,
@@ -119,15 +119,18 @@ async function markClean(
   recordId: string,
   pushedUpdatedAt: number,
 ): Promise<void> {
-  const table = db().table(store);
-  const row = (await table.where("uid").equals(recordId).first()) as
-    | LocalRow
-    | undefined;
-  if (!row || row.id === undefined) return;
-  if (row.updatedAt !== pushedUpdatedAt) return;
-  // Pass `updatedAt` explicitly so the stamping hook leaves it alone; this is
-  // bookkeeping, not a user edit.
-  await table.update(row.id, { dirty: 0, updatedAt: row.updatedAt });
+  // N7: inside `syncBookkeeping` so the stamping hook leaves `updatedAt`
+  // alone. Passing it explicitly was not enough — Dexie drops a key whose
+  // value did not change, so the hook used to stamp "now" on every push.
+  await syncBookkeeping([store], async () => {
+    const table = db().table(store);
+    const row = (await table.where("uid").equals(recordId).first()) as
+      | LocalRow
+      | undefined;
+    if (!row || row.id === undefined) return;
+    if (row.updatedAt !== pushedUpdatedAt) return;
+    await table.update(row.id, { dirty: 0 });
+  });
 }
 
 async function push(): Promise<number> {
@@ -211,36 +214,40 @@ async function applyIncoming(
   incoming: SyncEnvelope,
 ): Promise<{ applied: boolean; conflict: boolean }> {
   const store = incoming.store;
-  const table = db().table(store);
 
-  const local = (await table.where("uid").equals(incoming.recordId).first()) as
-    | LocalRow
-    | undefined;
+  // One bookkeeping transaction for read, merge and write: applying a remote
+  // record is not a local change and must not become one (N7 — `put` over a
+  // clean row used to come out dirty, so every pulled record was echoed back
+  // and then re-stamped). Reading inside the same transaction also means a
+  // user edit cannot land between the merge decision and the write.
+  return syncBookkeeping([store, "conflicts"], async () => {
+    const table = db().table(store);
+    const local = (await table.where("uid").equals(incoming.recordId).first()) as
+      | LocalRow
+      | undefined;
 
-  const merged = mergeIncoming(store, incoming, local);
-  if (!merged.apply || !merged.row) {
-    return { applied: false, conflict: false };
-  }
+    const merged = mergeIncoming(store, incoming, local);
+    if (!merged.apply || !merged.row) {
+      return { applied: false, conflict: false };
+    }
 
-  if (merged.conflict) {
-    const conflict: ConflictRow = {
-      store: merged.conflict.store,
-      recordId: merged.conflict.recordId,
-      detectedAt: Date.now(),
-      localUpdatedAt: merged.conflict.localUpdatedAt,
-      remoteUpdatedAt: merged.conflict.remoteUpdatedAt,
-      localPayload: merged.conflict.localPayload,
-      resolved: 0,
-    };
-    await db().conflicts.add(conflict);
-  }
+    if (merged.conflict) {
+      const conflict: ConflictRow = {
+        store: merged.conflict.store,
+        recordId: merged.conflict.recordId,
+        detectedAt: Date.now(),
+        localUpdatedAt: merged.conflict.localUpdatedAt,
+        remoteUpdatedAt: merged.conflict.remoteUpdatedAt,
+        localPayload: merged.conflict.localPayload,
+        resolved: 0,
+      };
+      await db().conflicts.add(conflict);
+    }
 
-  // `put` carries dirty: 0 and the remote `updatedAt` explicitly, so the
-  // stamping hooks in lib/db.ts leave both alone — applying a remote record is
-  // not a local change and must not become one.
-  await table.put(merged.row as never);
+    await table.put(merged.row as never);
 
-  return { applied: true, conflict: merged.conflict !== null };
+    return { applied: true, conflict: merged.conflict !== null };
+  });
 }
 
 async function pull(): Promise<{ pulled: number; conflicts: number }> {

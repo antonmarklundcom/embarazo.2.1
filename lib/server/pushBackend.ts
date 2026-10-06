@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, eq, isNull, lte, sql } from "drizzle-orm";
 
 import type { Database } from "./db";
 import { pushReminders, pushSubscriptions } from "./schema";
@@ -30,6 +30,8 @@ export interface DueReminder {
   endpoint: string;
   category: PushCategory;
   categories: PushCategory[] | null;
+  /** When it was due — N5's give-up rule needs it. */
+  fireAt: number;
 }
 
 export interface PushBackend {
@@ -54,8 +56,17 @@ export interface PushBackend {
     rows: { id: string; endpoint: string; category: PushCategory; fireAt: number }[],
   ): Promise<void>;
   /** Due and unsent, joined with the subscription's current opt-ins. */
+  /** Oldest first (N5: an unordered LIMIT let a backlog starve new rows). */
   dueReminders(now: number, limit: number): Promise<DueReminder[]>;
   markSent(id: string, sentAt: number): Promise<void>;
+  /**
+   * N5 — take one reminder for this run: a conditional write, so of two
+   * overlapping dispatch runs exactly one sends it. False when another run
+   * already has it.
+   */
+  claim(id: string, at: number): Promise<boolean>;
+  /** Give a claimed reminder back after a failed send, for a later run. */
+  release(id: string): Promise<void>;
   pruneSentBefore(before: number): Promise<void>;
   /** Every endpoint this account currently has subscribed. */
   subscriptionEndpointsOf(userId: string): Promise<string[]>;
@@ -122,6 +133,7 @@ export function drizzlePushBackend(database: Database): PushBackend {
           endpoint: pushReminders.endpoint,
           category: pushReminders.category,
           categories: pushSubscriptions.categories,
+          fireAt: pushReminders.fireAt,
         })
         .from(pushReminders)
         .innerJoin(
@@ -129,11 +141,25 @@ export function drizzlePushBackend(database: Database): PushBackend {
           eq(pushSubscriptions.endpoint, pushReminders.endpoint),
         )
         .where(and(lte(pushReminders.fireAt, now), isNull(pushReminders.sentAt)))
+        .orderBy(asc(pushReminders.fireAt))
         .limit(limit);
     },
 
     async markSent(id, sentAt) {
       await database.update(pushReminders).set({ sentAt }).where(eq(pushReminders.id, id));
+    },
+
+    async claim(id, at) {
+      const result = await database
+        .update(pushReminders)
+        .set({ sentAt: at })
+        .where(and(eq(pushReminders.id, id), isNull(pushReminders.sentAt)));
+      const header = Array.isArray(result) ? result[0] : result;
+      return ((header as { affectedRows?: number } | undefined)?.affectedRows ?? 0) > 0;
+    },
+
+    async release(id) {
+      await database.update(pushReminders).set({ sentAt: null }).where(eq(pushReminders.id, id));
     },
 
     async pruneSentBefore(before) {

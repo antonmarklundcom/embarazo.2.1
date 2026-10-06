@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  GIVE_UP_AFTER_MS,
   deleteSubscription,
   dispatchDueReminders,
   pruneSentReminders,
@@ -87,18 +88,34 @@ function memoryBackend(): PushBackend & {
       // subscription does not come back.
       return [...reminders.values()]
         .filter((row) => row.sentAt === null && row.fireAt <= now && subs.has(row.endpoint))
+        // Mirrors the ORDER BY fireAt (N5).
+        .sort((a, b) => a.fireAt - b.fireAt)
         .slice(0, limit)
         .map((row) => ({
           id: row.id,
           endpoint: row.endpoint,
           category: row.category,
           categories: subs.get(row.endpoint)!.categories,
+          fireAt: row.fireAt,
         }));
     },
 
     async markSent(id, sentAt) {
       const row = reminders.get(id);
       if (row) row.sentAt = sentAt;
+    },
+
+    // N5: mirrors the conditional UPDATE … WHERE sentAt IS NULL.
+    async claim(id, at) {
+      const row = reminders.get(id);
+      if (!row || row.sentAt !== null) return false;
+      row.sentAt = at;
+      return true;
+    },
+
+    async release(id) {
+      const row = reminders.get(id);
+      if (row) row.sentAt = null;
     },
 
     async pruneSentBefore(before) {
@@ -277,6 +294,52 @@ describe("dispatching due reminders", () => {
   function fakeSender(outcome: SendOutcome) {
     return vi.fn(async () => outcome);
   }
+
+  it("N5: two overlapping runs send a due reminder once", async () => {
+    const backend = memoryBackend();
+    await saveSubscription(backend, { endpoint: ENDPOINT, p256dh: "p", auth: "a", categories: ["recordatorios"], userId: null });
+    await scheduleReminders(backend, ENDPOINT, "recordatorios", [NOW - 1000]);
+    const send = vi.fn(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+      return "sent" as const;
+    });
+
+    await Promise.all([dispatchDueReminders(backend, NOW, send), dispatchDueReminders(backend, NOW, send)]);
+
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it("N5: a failure is retried by a later run, then given up after a day", async () => {
+    const backend = memoryBackend();
+    await saveSubscription(backend, { endpoint: ENDPOINT, p256dh: "p", auth: "a", categories: ["recordatorios"], userId: null });
+    await scheduleReminders(backend, ENDPOINT, "recordatorios", [NOW - 1000]);
+    const row = () => [...backend.reminders.values()][0]!;
+
+    await dispatchDueReminders(backend, NOW, fakeSender("failed"));
+    expect(row().sentAt).toBeNull(); // released for a later run
+
+    await dispatchDueReminders(backend, NOW + GIVE_UP_AFTER_MS, fakeSender("failed"));
+    expect(row().sentAt).toBe(NOW + GIVE_UP_AFTER_MS); // given up: no longer due
+  });
+
+  it("N5: a backlog of failures cannot starve a healthy reminder", async () => {
+    const backend = memoryBackend();
+    for (let i = 0; i < 30; i += 1) {
+      const endpoint = `https://push.example.test/broken-${i}`;
+      await saveSubscription(backend, { endpoint, p256dh: "p", auth: "a", categories: ["consejos"], userId: null });
+      await scheduleReminders(backend, endpoint, "consejos", Array.from({ length: 12 }, (_, k) => NOW - 2 * GIVE_UP_AFTER_MS + k));
+    }
+    await saveSubscription(backend, { endpoint: ENDPOINT, p256dh: "p", auth: "a", categories: ["recordatorios"], userId: null });
+    await scheduleReminders(backend, ENDPOINT, "recordatorios", [NOW - 1000]);
+    const send = vi.fn(async (endpoint: string) => (endpoint === ENDPOINT ? ("sent" as const) : ("failed" as const)));
+
+    let healthy = 0;
+    for (let run = 0; run < 3 && healthy === 0; run += 1) {
+      healthy += (await dispatchDueReminders(backend, NOW + run, send)).sent;
+    }
+
+    expect(healthy).toBe(1);
+  });
 
   it("sends a due, opted-in reminder and marks it sent", async () => {
     const backend = memoryBackend();

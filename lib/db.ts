@@ -202,6 +202,12 @@ export interface PhotoBackupMeta {
   uid: string;
   /** When this device last confirmed the upload. Absent means "not yet". */
   uploadedAt?: number;
+  /**
+   * F03/N2 — when this device learned the backup copy was deleted on another
+   * device. Not indexed (no schema change). Such a photo stays on this phone
+   * but is not uploaded again: a deletion is never undone by a second device.
+   */
+  remoteDeletedAt?: number;
 }
 
 export interface KickSession extends Partial<SyncMeta> {

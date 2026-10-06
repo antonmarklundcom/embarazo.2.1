@@ -1,13 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { refuseCrossSite, refuseOtherAccount } from "@/lib/server/requestGuard";
 import { z } from "zod";
 
 import { getSession, isAuthAvailable } from "@/lib/server/auth";
 import { dbOrNull } from "@/lib/server/db";
 import {
   allObjectKeys,
-  deleteAllPhotoRows,
+  forgetPhotoRow,
   listPhotos,
   markPhotoDeleted,
+  photoRow,
   recordPhoto,
 } from "@/lib/server/photos";
 import { drizzlePhotosBackend } from "@/lib/server/photosBackend";
@@ -142,6 +144,10 @@ async function context(req: NextRequest) {
       ),
     } as const;
   }
+  // F01: a phone holding another account's photos must not list, upload into
+  // or delete from this one, even if its cookie changed after it checked.
+  const otherAccount = refuseOtherAccount(req, userId);
+  if (otherAccount) return { error: otherAccount } as const;
   const database = dbOrNull();
   if (!database) return { error: unavailable() } as const;
   return { userId, photos: drizzlePhotosBackend(database) } as const;
@@ -201,6 +207,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // F08: only this app's own pages, and only JSON.
+  const crossSite = refuseCrossSite(req);
+  if (crossSite) return crossSite;
   const ctx = await context(req);
   if ("error" in ctx) return ctx.error;
 
@@ -227,14 +236,32 @@ export async function POST(req: NextRequest) {
 
   if (data.action === "delete-all") {
     // The opt-out. Objects first — an orphaned row is recoverable, an orphaned
-    // object is not — and only then the rows.
+    // object is not — and a row goes only once ITS object is confirmed gone.
+    //
+    // F03: this used to delete every row whatever the storage provider said
+    // and answer `{ ok: true }`. A provider error therefore reported a
+    // completed erasure while the bytes stayed in the bucket, and threw away
+    // the only keys that could have retried it. Now a failed object keeps its
+    // row and the answer is 503 with the count still pending; the device keeps
+    // retrying until it is zero (lib/photos/client.ts).
     const keys = await allObjectKeys(ctx.photos, ctx.userId);
     let deleted = 0;
+    let pending = 0;
     for (const row of keys) {
-      if (await deleteObject(ctx.userId, row.objectKey)) deleted += 1;
+      if (await deleteObject(ctx.userId, row.objectKey)) {
+        await forgetPhotoRow(ctx.photos, ctx.userId, row.store, row.recordId);
+        deleted += 1;
+      } else {
+        pending += 1;
+      }
     }
-    await deleteAllPhotoRows(ctx.photos, ctx.userId);
-    return NextResponse.json({ ok: true, deleted }, { headers: HEADERS });
+    if (pending > 0) {
+      return NextResponse.json(
+        { ok: false, deleted, pending },
+        { status: 503, headers: HEADERS },
+      );
+    }
+    return NextResponse.json({ ok: true, deleted, pending: 0 }, { headers: HEADERS });
   }
 
   // Every key is built here, from the session's user id. A caller can name a
@@ -248,6 +275,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (data.action === "upload-url") {
+    // F03: a record deleted on any device is never uploaded into again. Ids
+    // are never reused for a new photo, so this is always a stale upload.
+    const existing = await photoRow(ctx.photos, ctx.userId, data.store, data.recordId);
+    if (existing?.deletedAt != null) return gone();
     // `bytes` is signed as Content-Length, so the PUT must be exactly the size
     // the schema above just bounded — see `uploadUrl`.
     const url = uploadUrl(ctx.userId, objectKey, data.contentType, data.bytes);
@@ -270,6 +301,14 @@ export async function POST(req: NextRequest) {
       },
       now,
     );
+    // F03: the upsert does not resurrect a tombstone, so a row still deleted
+    // after it means this upload finished after the photo was deleted. Its
+    // bytes are a late PUT nobody will ever list: remove them now.
+    const after = await photoRow(ctx.photos, ctx.userId, data.store, data.recordId);
+    if (after?.deletedAt != null) {
+      await deleteObject(ctx.userId, objectKey);
+      return gone();
+    }
     return NextResponse.json({ ok: true }, { headers: HEADERS });
   }
 
@@ -288,6 +327,22 @@ export async function POST(req: NextRequest) {
     data.recordId,
     now,
   );
-  if (key) await deleteObject(ctx.userId, key);
+  // F03: say so when the bytes are still there. The tombstone keeps the key,
+  // so the device's retry (it keeps the deletion queued until it hears 200)
+  // finishes the job.
+  if (key && !(await deleteObject(ctx.userId, key))) {
+    return NextResponse.json(
+      { ok: false, pending: 1 },
+      { status: 503, headers: HEADERS },
+    );
+  }
   return NextResponse.json({ ok: true }, { headers: HEADERS });
+}
+
+/** F03: this record was deleted; it takes no more uploads. */
+function gone() {
+  return NextResponse.json(
+    { error: "foto borrada", reason: "deleted" },
+    { status: 410, headers: HEADERS },
+  );
 }

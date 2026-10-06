@@ -118,9 +118,13 @@ describe("opting out and deleting an account both remove the objects", () => {
       ROUTE.indexOf('data.action === "delete-all"'),
       ROUTE.indexOf("const objectKey ="),
     );
+    // F03: per object — a row goes only after ITS object was confirmed gone,
+    // and a failure is reported (503) instead of a completed erasure.
     expect(block.indexOf("deleteObject")).toBeLessThan(
-      block.indexOf("deleteAllPhotoRows"),
+      block.indexOf("forgetPhotoRow"),
     );
+    expect(block).not.toContain("deleteAllPhotoRows");
+    expect(block).toContain("status: 503");
   });
 
   it("nulls a deleted photo's payload rather than keeping it as a tombstone", () => {

@@ -394,19 +394,39 @@ export function drizzleAccountExecutor(
 
     async deletePhotoBlobs(userId) {
       const rows = await database
-        .select({ objectKey: photoBlobs.objectKey })
+        .select({
+          store: photoBlobs.store,
+          recordId: photoBlobs.recordId,
+          objectKey: photoBlobs.objectKey,
+        })
         .from(photoBlobs)
         .where(eq(photoBlobs.userId, userId));
 
       // Objects first. An orphaned row is recoverable; an orphaned object with
       // nothing pointing at it is not.
+      //
+      // F03: and a row goes only when ITS object is confirmed gone. The result
+      // of `deleteObject` used to be ignored and every row deleted, so a
+      // provider error left bytes in the bucket with no key left to retry. A
+      // kept row outlives the user row on purpose: it is the durable record
+      // `runMaintenance` (lib/server/maintenance.ts) retries until the
+      // provider confirms.
+      let deleted = 0;
       for (const row of rows) {
-        await deleteObject(userId, row.objectKey);
+        if (!(await deleteObject(userId, row.objectKey))) continue;
+        deleted += affected(
+          await database
+            .delete(photoBlobs)
+            .where(
+              and(
+                eq(photoBlobs.userId, userId),
+                eq(photoBlobs.store, row.store),
+                eq(photoBlobs.recordId, row.recordId),
+              ),
+            ),
+        );
       }
-
-      return affected(
-        await database.delete(photoBlobs).where(eq(photoBlobs.userId, userId)),
-      );
+      return deleted;
     },
 
     async deleteCommunityQuestions(userId) {

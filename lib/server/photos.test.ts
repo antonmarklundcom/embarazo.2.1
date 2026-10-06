@@ -34,12 +34,24 @@ function memoryBackend(): PhotosBackend & {
       const existing = rows.get(key(row.userId, row.store, row.recordId));
       // Mirrors the ON DUPLICATE KEY UPDATE: the primary key is (userId,
       // store, recordId), so a second upsert for the same photo replaces it
-      // rather than adding a row.
+      // rather than adding a row — while it is live, or when the write is
+      // newer than its tombstone (F03).
       if (existing) {
-        Object.assign(existing, row);
+        if (existing.deletedAt === null || row.updatedAt > existing.deletedAt) {
+          Object.assign(existing, row);
+        }
         return;
       }
       rows.set(key(row.userId, row.store, row.recordId), { ...row });
+    },
+
+    async findRow(userId, store, recordId) {
+      const row = rows.get(key(userId, store, recordId));
+      return row ? { objectKey: row.objectKey, deletedAt: row.deletedAt } : null;
+    },
+
+    async deleteRow(userId, store, recordId) {
+      rows.delete(key(userId, store, recordId));
     },
 
     async findObjectKey(userId, store, recordId) {
@@ -147,6 +159,22 @@ describe("recording a photo", () => {
     );
 
     expect(backend.rows.get(`${OWNER}|${STORE}|r1`)?.deletedAt).toBeNull();
+  });
+});
+
+describe("F03 — a late confirm cannot resurrect a deleted photo", () => {
+  it("keeps the tombstone when the confirm carries the photo's (older) creation time", async () => {
+    const backend = memoryBackend();
+    const createdAt = NOW - 60_000;
+    await recordPhoto(backend, OWNER, { store: STORE, recordId: "late", objectKey: "k", contentType: "image/jpeg", bytes: 1, payload: { week: 20 }, updatedAt: createdAt }, NOW - 50_000);
+    await markPhotoDeleted(backend, OWNER, STORE, "late", NOW);
+
+    // The slow upload's confirm arrives after the deletion.
+    await recordPhoto(backend, OWNER, { store: STORE, recordId: "late", objectKey: "k", contentType: "image/jpeg", bytes: 1, payload: { week: 20 }, updatedAt: createdAt }, NOW + 5_000);
+
+    const row = backend.rows.get(`${OWNER}|${STORE}|late`);
+    expect(row?.deletedAt).toBe(NOW);
+    expect(row?.payload).toBeNull();
   });
 });
 

@@ -75,6 +75,12 @@ export const SHARED_EXTRA_FIELDS = [
  * preference is recorded and enforced from the day K4 has something to publish
  * — turning a stored "no" into an accident is exactly the failure this file is
  * arranged to prevent.
+ *
+ * F09 (2026-10 review): the reverse holds too. The `fotos` switch was shown
+ * with copy that promised photos never left the phone, so a stored "yes" was
+ * given to a switch that did nothing. It is no longer shown
+ * (components/SharingLevels.tsx), and if photo sharing is built it must NOT
+ * read this preference: ask again, under a new key.
  */
 export const LEVEL_FIELDS: Record<
   SharingLevel,

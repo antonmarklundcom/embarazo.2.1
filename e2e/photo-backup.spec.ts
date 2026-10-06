@@ -190,7 +190,9 @@ test("the opt-in is absent when it could not work, and the diary still works", a
   await page.goto("/ajustes");
   // An opt-in for something that cannot happen is a broken switch, not a
   // choice.
-  await expect(page.getByText("Copia de tus fotos")).toHaveCount(0);
+  // (The card, by its heading: the privacy summary names the option in
+  // passing since F09, and saying it is opt-in is true everywhere.)
+  await expect(page.getByRole("heading", { name: "Copia de tus fotos" })).toHaveCount(0);
 
   await addBumpPhoto(page);
 

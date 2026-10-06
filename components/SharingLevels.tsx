@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import {
+  LEVEL_FIELDS,
   SHARING_DEFAULTS,
   SHARING_LEVELS,
   type SharingLevel,
@@ -24,9 +25,8 @@ import {
 // `family` is not a weaker partner — it is a different relationship, and the
 // server enforces that in `readSnapshotFor` rather than trusting this screen.
 
-const COPY: Record<
-  SharingLevel,
-  { title: string; on: string; off: string; note?: string }
+const COPY: Partial<
+  Record<SharingLevel, { title: string; on: string; off: string; note?: string }>
 > = {
   peso: {
     title: "Tu peso",
@@ -38,16 +38,16 @@ const COPY: Record<
     on: "Ve cuántas contaste la última vez.",
     off: "No ve tus conteos.",
   },
-  fotos: {
-    title: "Las fotos de la panza",
-    on: "Va a verlas cuando actives la copia de seguridad de fotos.",
-    off: "No ve tus fotos.",
-    // Honest about the order things ship in: the preference is real and is
-    // stored now; there is nothing to send until photos can leave the device
-    // at all (ARCHITECTURE.md §4.4, amended by K4).
-    note: "Por ahora tus fotos no salen de tu teléfono, así que todavía no hay nada que compartir. Cuando eso cambie, esta llave ya va a estar puesta como vos la dejaste.",
-  },
 };
+
+// F09 (2026-10 review): the `fotos` switch is not shown. It said "va a verlas
+// cuando actives la copia de seguridad" — the copy exists now, and nobody but
+// her sees it — and its note said photos never leave the phone. A switch that
+// does nothing, described with a promise, is not consent to anything: the
+// stored preference stays where it is for old clients, but if photo sharing
+// is ever built it must ask again rather than honour this one
+// (lib/sharing/levels.ts).
+const SHOWN_LEVELS = SHARING_LEVELS.filter((level) => LEVEL_FIELDS[level].length > 0);
 
 export function SharingLevels({ onChanged }: { onChanged?: () => void }) {
   const [prefs, setPrefs] = useState<SharingPreferences | null>(null);
@@ -83,13 +83,15 @@ export function SharingLevels({ onChanged }: { onChanged?: () => void }) {
       <p className="mt-1 text-sm leading-relaxed text-muted">
         Además de tu semana, tu fecha probable de parto y tu próximo control,
         podés compartir esto con tu pareja. Solo con tu pareja — la familia no
-        lo ve nunca. Todo empieza apagado y lo apagás cuando quieras.
+        lo ve nunca. Todo empieza apagado y lo apagás cuando quieras. Tus
+        fotos no se comparten con nadie.
       </p>
 
       <ul className="mt-3 space-y-2">
-        {SHARING_LEVELS.map((level) => {
+        {SHOWN_LEVELS.map((level) => {
           const on = current[level];
           const copy = COPY[level];
+          if (!copy) return null;
           return (
             <li key={level}>
               <button

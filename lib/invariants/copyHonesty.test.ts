@@ -90,6 +90,28 @@ describe("claims the app stopped being able to make", () => {
     expect(hits).toEqual([]);
   });
 
+  it("F09: never says a synced record stays only on the phone", () => {
+    // The 2026-10 review found the unconditional form on the screens of
+    // stores that sync with an account (síntomas, checklists, calendario,
+    // emergencia), and "nunca se suben" on the photo diary after K4. Both
+    // are fine with their condition named; without it they are false.
+    const hits = find(
+      /(queda|quedan|se guarda|guardados?) solo en (tu|este) tel[ée]fono|nunca se suben|viajan cifradas/i,
+    ).filter(
+      (hit) =>
+        !hit.text.startsWith("//") &&
+        !hit.text.startsWith("*") &&
+        !hit.text.startsWith("{/*") &&
+        !/sin cuenta|Quedan solo en este teléfono\. Se borran/i.test(hit.text),
+    );
+    expect(hits).toEqual([]);
+  });
+
+  it("F09: offers no switch for sharing photos, which nobody can see", () => {
+    const source = readFileSync(join(process.cwd(), "components/SharingLevels.tsx"), "utf8");
+    expect(source).not.toMatch(/Va a verlas|no salen de tu teléfono/);
+  });
+
   it("has removed the WordPress hook that never existed", () => {
     // K18: three `if (WP_API_URL)` branches that fell through to the seed data
     // regardless. Dead code shaped like a feature.

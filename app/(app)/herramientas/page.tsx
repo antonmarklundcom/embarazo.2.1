@@ -112,7 +112,7 @@ const TOOLS: Tool[] = [
   {
     href: "/herramientas/fotos",
     title: "Diario de fotos",
-    desc: "Seguí el crecimiento de tu panza, solo en tu teléfono.",
+    desc: "Seguí el crecimiento de tu panza, semana a semana.",
     icon: "camera",
     tone: "bg-pastel-salvia",
   },

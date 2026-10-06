@@ -50,7 +50,8 @@ export default function DerechosPage() {
         </h1>
         <p className="mt-1 text-sm text-muted">
           Licencia, IPS, gratuidad y ayudas: qué te corresponde en Paraguay
-          según tu situación. Tu respuesta queda solo en tu teléfono.
+          según tu situación. Lo que elijas acá no se guarda: solo cambia lo
+          que ves.
         </p>
       </header>
 

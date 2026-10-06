@@ -397,13 +397,15 @@ test("the owner's toggles start off and publish what she chose", async ({
 
   const peso = page.getByRole("switch", { name: /Tu peso/ });
   const pataditas = page.getByRole("switch", { name: /Las pataditas/ });
-  const fotos = page.getByRole("switch", { name: /fotos de la panza/ });
+  // F09: there is no photo switch — nobody but her can see her photos, so a
+  // switch for it would be consent to nothing. The stored preference still
+  // publishes as false.
+  await expect(page.getByRole("switch", { name: /fotos/i })).toHaveCount(0);
 
   // Sharing her weight has to be something she did, not something she failed
   // to prevent.
   await expect(peso).toHaveAttribute("aria-checked", "false");
   await expect(pataditas).toHaveAttribute("aria-checked", "false");
-  await expect(fotos).toHaveAttribute("aria-checked", "false");
 
   await peso.click();
   await expect(peso).toHaveAttribute("aria-checked", "true");

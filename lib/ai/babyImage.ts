@@ -125,7 +125,7 @@ export const AI_BABY_LABEL =
 export const AI_BABY_CONSENT_POINTS = [
   "Las fotos que subas se envían al servicio de Google que genera la imagen.",
   "No guardamos las fotos: se usan para generar y se descartan en el momento.",
-  "La imagen generada queda solo en tu teléfono, y solo si la guardás vos.",
+  "La imagen generada se guarda en tu teléfono solo si la guardás vos, en tu diario de fotos; si activaste «Copia de tus fotos», también se sube a tu copia.",
   "Es entretenimiento. No tiene nada que ver con tu salud ni con la del bebé.",
 ] as const;
 

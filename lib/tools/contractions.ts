@@ -31,11 +31,17 @@ export interface ContractionSample {
 
 export interface Assess511Options {
   /**
-   * Current gestational week, if known. Below `MIN_WEEK_FOR_HINT` a matching
-   * pattern is reported as `"preterm"`; omitted, it is treated as term (the
-   * hint still fires — an unknown week never silences it on its own).
+   * COMPLETED weeks of gestation right now, if known — the carné's "36+5" is
+   * 36, never the app's display week (which would say 37). Below
+   * `MIN_WEEK_FOR_HINT` a matching pattern is reported as `"preterm"`;
+   * omitted, it is treated as term (the hint still fires — an unknown week
+   * never silences it on its own).
+   *
+   * F05 (2026-10 review): this was the display week, `floor(days / 7) + 1`,
+   * so from 36+0 to 36+6 — still preterm — a regular pattern got the "labour
+   * is starting" hint instead of the preterm alert. Term is 37+0 completed.
    */
-  weekAtNow?: number;
+  completedWeeks?: number;
   /** A contraction currently being timed, not yet in `entries`. */
   inProgressStartedAt?: number;
 }
@@ -54,9 +60,9 @@ const MIN_COUNT = 6;
 const MAX_AVG_INTERVAL_SEC = 5 * 60;
 const MIN_MEDIAN_DURATION_SEC = 45;
 /**
- * Term, for this module: from this week on a regular pattern is the 5-1-1
- * hint; before it, the same pattern is the preterm alert — see the module
- * note above.
+ * Term, for this module, in completed weeks: from 37+0 on a regular pattern is
+ * the 5-1-1 hint; before it, the same pattern is the preterm alert — see the
+ * module note above.
  */
 export const MIN_WEEK_FOR_HINT = 37;
 
@@ -105,7 +111,7 @@ export function assess511(
   // The week decides which answer, never whether there is one: see the module
   // note — a regular pattern before term is the alarm, not the silence.
   const preterm =
-    options.weekAtNow !== undefined && options.weekAtNow < MIN_WEEK_FOR_HINT;
+    options.completedWeeks !== undefined && options.completedWeeks < MIN_WEEK_FOR_HINT;
   return { pattern: preterm ? "preterm" : "5-1-1" };
 }
 

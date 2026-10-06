@@ -7,6 +7,11 @@ import { db } from "@/lib/db";
 import { useProfile } from "@/lib/useProfile";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { waLink } from "@/lib/whatsapp";
+import {
+  formatCompletedGestation,
+  getCompletedGestation,
+  type CompletedGestation,
+} from "@/lib/pregnancy";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import {
   assess511,
@@ -23,9 +28,12 @@ import {
 // screen — which carries the national numbers — when she has not saved one.
 // Never the business number: that fallback came back once the
 // NEXT_PUBLIC_BUSINESS_WHATSAPP env var was set, which CI never sets.
-function laborPrefill(week?: number): string {
-  return week && week > 0
-    ? `Hola, estoy de ${week} semanas y estoy teniendo contracciones. ¿Qué me recomiendan hacer?`
+// F05: the sanatorio reads gestation the way the carné writes it — completed
+// weeks and days. "Estoy de 37 semanas" at 36+2 was the display week, one
+// week ahead of what any clinician would understand by it.
+function laborPrefill(completed?: CompletedGestation): string {
+  return completed
+    ? `Hola, estoy embarazada de ${formatCompletedGestation(completed)} y estoy teniendo contracciones. ¿Qué me recomiendan hacer?`
     : "Hola, estoy embarazada y estoy teniendo contracciones. ¿Qué me recomiendan hacer?";
 }
 
@@ -79,19 +87,22 @@ export default function ContraccionesPage() {
   const elapsed =
     runningStart !== null ? Math.round((Date.now() - runningStart) / 1000) : 0;
 
+  const now = Date.now();
+  const completed =
+    profile.lmpDate !== undefined ? getCompletedGestation(profile.lmpDate, now) : undefined;
   const pattern511 = entries
     ? assess511(
         entries.map((e) => ({ startedAt: e.startedAt, durationSec: e.durationSec })),
-        Date.now(),
+        now,
         {
-          weekAtNow: profile.week,
+          completedWeeks: completed?.weeks,
           inProgressStartedAt: runningStart ?? undefined,
         },
       )
     : null;
 
   const sanatorio = profile.sanatorioPhone?.trim();
-  const waHref = sanatorio ? waLink(sanatorio, laborPrefill(profile.week)) : null;
+  const waHref = sanatorio ? waLink(sanatorio, laborPrefill(completed)) : null;
 
   return (
     <div className="space-y-5">

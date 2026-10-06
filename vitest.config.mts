@@ -31,7 +31,8 @@ export default defineConfig({
     // against its own node_modules and its own (possibly stale) source,
     // which is at best redundant and at worst a false failure from a
     // build artifact the worktree happened to have on disk.
-    exclude: ["node_modules/**", "lib/db.test.ts", "test/db/**", ".claude/**"],
+    // test/mysql/** is the opt-in real-database project (vitest.mysql.config.mts).
+    exclude: ["node_modules/**", "lib/db.test.ts", "test/db/**", "test/mysql/**", ".claude/**"],
   },
   resolve: {
     alias: {

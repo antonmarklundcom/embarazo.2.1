@@ -116,8 +116,10 @@ test("the week page shows the baby beside this week's Paraguayan fruit, both loa
     await page.goto(`/semana/${week}`);
     await expect(page.getByText(`SEMANA ${week} ·`)).toBeVisible();
     const figure = page.locator("figure");
+    // N6: the week render carries a `?v=` revision so a re-drawn file reaches
+    // phones that cached the old one; match the path, not the exact URL.
     for (const src of [`/assets/semanas/bebe-${week}.webp`, `/assets/comparaciones/${item}.webp`]) {
-      const img = figure.locator(`img[src="${src}"]`);
+      const img = figure.locator(`img[src^="${src}"]`);
       await expect(img).toBeVisible();
       // Decoded, not just requested: a 404 would swap in the drawn fallback.
       await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
@@ -148,7 +150,7 @@ test.describe("with the week image unavailable", () => {
   test("the hero still looks finished when a week's image is missing", async ({ page }) => {
     // The fallback is no longer what everybody sees, but a failed or blocked
     // fetch still lands here, and it has to look deliberate rather than broken.
-    await page.route(/\/assets\/semanas\/bebe-\d+\.webp$/, (route) =>
+    await page.route(/\/assets\/semanas\/bebe-\d+\.webp(\?.*)?$/, (route) =>
       route.fulfill({ status: 404, body: "" }),
     );
     await completeOnboarding(page);
@@ -157,6 +159,6 @@ test.describe("with the week image unavailable", () => {
     // The week number stands in for the render, and every caption still reads.
     await expect(page.getByText("SEMANA 24 · 2.º TRIMESTRE")).toBeVisible();
     await expect(page.getByText("Del tamaño de una mandioca")).toBeVisible();
-    await expect(page.locator('img[src="/assets/semanas/bebe-24.webp"]')).toBeHidden();
+    await expect(page.locator('img[src^="/assets/semanas/bebe-24.webp"]')).toBeHidden();
   });
 });

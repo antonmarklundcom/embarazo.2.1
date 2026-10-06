@@ -170,11 +170,14 @@ export default function BorrarCuentaPage() {
           ))}
         </ul>
         <p className="mt-3 text-sm leading-relaxed text-ink/90">
-          Se borra del servidor: no nos queda una copia. La única excepción es
-          el <strong>registro de acciones administrativas</strong> — queda
-          constancia de que alguien de nuestro equipo hizo una acción y cuándo,
-          sin tu nombre, sin tu correo y sin nada de tus datos de salud. Sin eso
-          no podríamos demostrar qué se hizo con tu pedido.
+          Se borra del servidor: no nos queda una copia. Quedan solo dos
+          constancias, sin tu nombre, sin tu correo y sin nada de tus datos de
+          salud: el <strong>registro de acciones administrativas</strong> — que
+          alguien de nuestro equipo hizo una acción y cuándo; sin eso no
+          podríamos demostrar qué se hizo con tu pedido — y, si usaste la
+          imagen de bebé con IA, <strong>cuántas se generaron ese mes y cuánto
+          costaron</strong>, sin nada que diga de quién eran. Tus fotos y las
+          imágenes nunca se guardaron.
         </p>
         <p className="mt-3 rounded-tile bg-sand-bg px-3 py-2 text-sm leading-relaxed text-sand-text">
           <strong>Lo que está solo en tu teléfono se queda en tu teléfono.</strong>{" "}

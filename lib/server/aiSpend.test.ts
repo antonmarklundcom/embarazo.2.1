@@ -7,6 +7,7 @@ import {
   type AiSpendStore,
   type GenerationRow,
 } from "./aiSpend";
+import { ERASED_AI_USER } from "./aiBaby";
 
 // BUILD-PLAN I4 — "what did AI cost this month" has to be arithmetic anyone
 // can check by hand, so `summariseMonth` is tested with no database at all,
@@ -63,6 +64,19 @@ describe("summariseMonth", () => {
   it("never divides by a zero ceiling", () => {
     const report = summariseMonth("2026-09", rows, 3, 0);
     expect(report.spendShare).toBe(0);
+  });
+
+  it("F16: an erased account's generations are spend, but nobody's", () => {
+    const erased: GenerationRow[] = [
+      ...rows,
+      { userId: ERASED_AI_USER, status: "succeeded", costUsdMicros: 40_000 },
+      { userId: ERASED_AI_USER, status: "succeeded", costUsdMicros: 40_000 },
+      { userId: ERASED_AI_USER, status: "succeeded", costUsdMicros: 40_000 },
+    ];
+    const report = summariseMonth("2026-09", erased, 3, 50);
+    expect(report.spendUsd).toBeCloseTo(0.28);
+    expect(report.distinctUsers).toBe(2);
+    expect(report.usersAtQuota).toBe(1);
   });
 
   it("is all zero on an empty month", () => {

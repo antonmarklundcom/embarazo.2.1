@@ -58,6 +58,18 @@ export function isConfigured(): boolean {
 // The quota store
 // ---------------------------------------------------------------------------
 
+/**
+ * F16: the owner an `aiGenerations` row is given when its account is erased.
+ *
+ * The rows are the spend ledger as well as her usage history, and the global
+ * ceiling sums them. Deleting them on erasure took money already spent out of
+ * the month's total, so generate → delete account → sign up again walked past
+ * the ceiling. Erasure now removes the person and keeps the cost: the row
+ * says a generation happened this month and what it cost, and no longer whose
+ * it was. Never a valid account id (those are UUIDs).
+ */
+export const ERASED_AI_USER = "erased-account";
+
 /** A reservation: the `aiGenerations` row written before the model is called. */
 export interface Reservation {
   id: string;

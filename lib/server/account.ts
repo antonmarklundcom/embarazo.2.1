@@ -5,6 +5,7 @@ import { and, eq, inArray, isNotNull, lt, or, sql } from "drizzle-orm";
 import type { Database } from "./db";
 import { deleteObject } from "./photoStorage";
 import { verificationIdentifier } from "./emailVerification";
+import { ERASED_AI_USER } from "./aiBaby";
 import {
   accounts,
   aiGenerations,
@@ -89,7 +90,13 @@ export const TABLE_DISPOSITION = {
   // endpoints rather than by a userId column. Missing them would leave the
   // server poking a deleted account's phone on a schedule nobody can cancel.
   pushReminders: "deleted",
-  aiGenerations: "deleted",
+  // F16. ANONYMISED, not deleted: the rows are also the AI spend ledger the
+  // global monthly ceiling sums. Deleting them un-spent money that was spent
+  // and let generate → erase → sign up again walk past the ceiling. The owner
+  // is replaced with `ERASED_AI_USER`; what is left is "one generation, this
+  // month, this model, this cost" — nothing that says whose it was. The table
+  // never held a prompt or a photo (§10).
+  aiGenerations: "anonymised (spend ledger kept, owner removed)",
 
   // Carries no identity at all (ARCHITECTURE.md §4.5) — keyed
   // (week, contentId, day), so there is nothing here that belongs to anyone.
@@ -173,7 +180,8 @@ export interface AccountDeleteExecutor {
   pushEndpointsOf(userId: string): Promise<string[]>;
   deletePushReminders(endpoints: string[]): Promise<number>;
   deletePushSubscriptions(userId: string): Promise<number>;
-  deleteAiGenerations(userId: string): Promise<number>;
+  /** F16: hand this user's generations to `ERASED_AI_USER`; return how many. */
+  anonymiseAiGenerations(userId: string): Promise<number>;
   /** Memberships held BY the user, plus every membership OF their pregnancies. */
   deleteMemberships(userId: string, pregnancyIds: string[]): Promise<number>;
   /** Invites they created, invites to their pregnancies, invites they accepted. */
@@ -227,7 +235,7 @@ export async function deleteAccountData(
     syncRecords: await executor.deleteSyncRecords(userId),
     pushReminders: await executor.deletePushReminders(endpoints),
     pushSubscriptions: await executor.deletePushSubscriptions(userId),
-    aiGenerations: await executor.deleteAiGenerations(userId),
+    aiGenerations: await executor.anonymiseAiGenerations(userId),
     invites: await executor.deleteInvites(userId, pregnancyIds),
     pregnancyMembers: await executor.deleteMemberships(userId, pregnancyIds),
     companionSnapshots: await executor.deleteCompanionSnapshots(pregnancyIds),
@@ -247,6 +255,7 @@ export async function deleteAccountData(
   // window is a single request long; one more pass closes it.
   counts.syncRecords! += await executor.deleteSyncRecords(userId);
   counts.photoBlobs! += await executor.deletePhotoBlobs(userId);
+  counts.aiGenerations! += await executor.anonymiseAiGenerations(userId);
   const latePregnancies = await executor.ownedPregnancyIds(userId);
   counts.pregnancyMembers! += await executor.deleteMemberships(userId, latePregnancies);
   counts.pregnancies! += await executor.deletePregnancies(latePregnancies);
@@ -353,10 +362,11 @@ export function drizzleAccountExecutor(
       );
     },
 
-    async deleteAiGenerations(userId) {
+    async anonymiseAiGenerations(userId) {
       return affected(
         await database
-          .delete(aiGenerations)
+          .update(aiGenerations)
+          .set({ userId: ERASED_AI_USER })
           .where(eq(aiGenerations.userId, userId)),
       );
     },

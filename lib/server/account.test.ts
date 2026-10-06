@@ -5,6 +5,7 @@ import {
   deleteAccountData,
   type AccountDeleteExecutor,
 } from "./account";
+import { ERASED_AI_USER } from "./aiBaby";
 import { schema } from "./schema";
 
 // BUILD-PLAN A5: "deletion leaves zero rows for that user, verified by a test".
@@ -107,8 +108,15 @@ function memoryDb() {
     async deletePushSubscriptions(userId) {
       return removeWhere("pushSubscriptions", (r) => r.userId === userId);
     },
-    async deleteAiGenerations(userId) {
-      return removeWhere("aiGenerations", (r) => r.userId === userId);
+    async anonymiseAiGenerations(userId) {
+      let changed = 0;
+      for (const row of tables.aiGenerations!) {
+        if (row.userId === userId) {
+          row.userId = ERASED_AI_USER;
+          changed += 1;
+        }
+      }
+      return changed;
     },
     async deleteMemberships(userId, pregnancyIds) {
       return removeWhere(
@@ -261,7 +269,10 @@ function seed(db: ReturnType<typeof memoryDb>) {
     },
   );
 
-  tables.aiGenerations!.push({ userId: VICTIM }, { userId: BYSTANDER });
+  tables.aiGenerations!.push(
+    { id: "g1", userId: VICTIM, status: "succeeded", costUsdMicros: 40_000 },
+    { id: "g2", userId: BYSTANDER, status: "succeeded", costUsdMicros: 40_000 },
+  );
 
   tables.contentStats!.push({ week: 12, contentId: "guia", day: "2026-08-12" });
   // K20. The victim's approved question is the interesting one: it is public
@@ -392,6 +403,28 @@ describe("F19 — every token namespace goes", () => {
   });
 });
 
+describe("F16 — erasure removes the person, not the money", () => {
+  it("keeps the generation's cost with no owner, so the month's spend does not drop", async () => {
+    const db = memoryDb();
+    seed(db);
+    const spend = () =>
+      db.tables.aiGenerations!.reduce((sum, r) => sum + Number(r.costUsdMicros ?? 0), 0);
+    const before = spend();
+
+    const counts = await deleteAccountData(db.executor, VICTIM);
+
+    expect(spend()).toBe(before);
+    expect(counts.aiGenerations).toBe(1);
+    expect(db.tables.aiGenerations!.map((r) => r.userId).sort()).toEqual(
+      [BYSTANDER, ERASED_AI_USER].sort(),
+    );
+  });
+
+  it("is a decision on record, not a retained table", () => {
+    expect(TABLE_DISPOSITION.aiGenerations).toMatch(/^anonymised/);
+  });
+});
+
 describe("deleteAccountData", () => {
   it("leaves zero rows for the deleted user", async () => {
     const db = memoryDb();
@@ -443,7 +476,7 @@ describe("deleteAccountData", () => {
     expect(db.tables.users![0]!.id).toBe(BYSTANDER);
     expect(db.tables.syncRecords).toHaveLength(1);
     expect(db.tables.pregnancies).toHaveLength(1);
-    expect(db.tables.aiGenerations).toHaveLength(1);
+    expect(db.tables.aiGenerations!.filter((r) => r.userId === BYSTANDER)).toHaveLength(1);
     // The bystander's own invite to their own pregnancy survives.
     expect(db.tables.invites!.map((i) => i.code)).toEqual(["3"]);
   });

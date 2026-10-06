@@ -56,7 +56,18 @@ function memoryDb() {
     return before - tables[table]!.length;
   }
 
+  /** F02: the order the plan touched things in, for the revoke-first test. */
+  const calls: string[] = [];
+
   const executor: AccountDeleteExecutor = {
+    async markDeleting(userId) {
+      calls.push("markDeleting");
+      const user = tables.users!.find((u) => u.id === userId);
+      if (user) {
+        user.deletedAt ??= new Date(0);
+        user.sessionVersion = ((user.sessionVersion as number | undefined) ?? 0) + 1;
+      }
+    },
     async ownedPregnancyIds(userId) {
       return tables.pregnancies!
         .filter((p) => p.ownerUserId === userId)
@@ -67,6 +78,7 @@ function memoryDb() {
       return (user?.email as string | undefined) ?? null;
     },
     async deleteSyncRecords(userId) {
+      calls.push("deleteSyncRecords");
       return removeWhere("syncRecords", (r) => r.userId === userId);
     },
     async deleteAccounts(userId) {
@@ -77,7 +89,10 @@ function memoryDb() {
     },
     async deleteVerificationTokens(email) {
       if (!email) return 0;
-      return removeWhere("verificationTokens", (r) => r.identifier === email);
+      return removeWhere(
+        "verificationTokens",
+        (r) => r.identifier === email || r.identifier === `verify:${email}`,
+      );
     },
     async pushEndpointsOf(userId) {
       return tables.pushSubscriptions!
@@ -151,7 +166,7 @@ function memoryDb() {
     },
   };
 
-  return { tables, executor, deletedObjects };
+  return { tables, executor, deletedObjects, calls };
 }
 
 const VICTIM = "user-a";
@@ -170,7 +185,10 @@ function seed(db: ReturnType<typeof memoryDb>) {
   tables.sessions!.push({ userId: VICTIM }, { userId: BYSTANDER });
   tables.verificationTokens!.push(
     { identifier: "a@example.com" },
+    // F19: the confirmation namespace. It used to survive the erasure.
+    { identifier: "verify:a@example.com" },
     { identifier: "b@example.com" },
+    { identifier: "verify:b@example.com" },
   );
 
   for (let i = 0; i < 37; i += 1) {
@@ -331,6 +349,49 @@ describe("K4 — account deletion leaves zero blobs", () => {
   });
 });
 
+describe("F02 — sessions are revoked before anything is deleted", () => {
+  it("marks the account first, so no other device can keep writing", async () => {
+    const db = memoryDb();
+    seed(db);
+
+    await deleteAccountData(db.executor, VICTIM);
+
+    expect(db.calls[0]).toBe("markDeleting");
+    expect(db.calls.indexOf("markDeleting")).toBeLessThan(
+      db.calls.indexOf("deleteSyncRecords"),
+    );
+  });
+
+  it("sweeps records a late request wrote while the first pass ran", async () => {
+    const db = memoryDb();
+    seed(db);
+    const original = db.executor.deleteUser;
+    db.executor.deleteUser = async (userId) => {
+      // A sync push that had already passed its session check commits now.
+      db.tables.syncRecords!.push({ userId, store: "weightEntries" });
+      return original(userId);
+    };
+
+    await deleteAccountData(db.executor, VICTIM);
+
+    expect(db.tables.syncRecords!.some((r) => r.userId === VICTIM)).toBe(false);
+  });
+});
+
+describe("F19 — every token namespace goes", () => {
+  it("deletes the confirmation token as well as the reset token", async () => {
+    const db = memoryDb();
+    seed(db);
+
+    await deleteAccountData(db.executor, VICTIM);
+
+    expect(db.tables.verificationTokens!.map((r) => r.identifier)).toEqual([
+      "b@example.com",
+      "verify:b@example.com",
+    ]);
+  });
+});
+
 describe("deleteAccountData", () => {
   it("leaves zero rows for the deleted user", async () => {
     const db = memoryDb();
@@ -358,7 +419,7 @@ describe("deleteAccountData", () => {
     expect(counts.users).toBe(1);
     expect(counts.pregnancies).toBe(1);
     expect(counts.pushSubscriptions).toBe(1);
-    expect(counts.verificationTokens).toBe(1);
+    expect(counts.verificationTokens).toBe(2);
     expect(counts.pushReminders).toBe(1);
   });
 

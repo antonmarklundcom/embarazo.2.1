@@ -32,6 +32,16 @@ const hoisted = vi.hoisted(() => ({
           id?: string;
           options?: { authorize?: (...args: never[]) => unknown };
         }>;
+        callbacks?: {
+          session?: (args: {
+            session: { user: { id: string }; expires: string };
+            token: { sub?: string; sessionVersion?: number | null };
+          }) => Promise<{ user: { id: string } }>;
+          jwt?: (args: {
+            token: Record<string, unknown>;
+            user?: { id: string; sessionVersion?: number };
+          }) => Promise<Record<string, unknown>>;
+        };
       }
     | undefined,
 }));
@@ -426,5 +436,80 @@ describe("canPromoteFromAllowlist() — who may pick up ADMIN_EMAILS", () => {
 
   it("refuses when the provider is unknown", () => {
     expect(canPromoteFromAllowlist(undefined, new Date())).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// F02 / N4 — what a token resolves to
+// ---------------------------------------------------------------------------
+
+describe("session callback — F02: an erased or erasing account is signed out", () => {
+  const session = () => ({ user: { id: "" }, expires: "2099-01-01T00:00:00.000Z" });
+  const callback = () => hoisted.capturedConfig!.callbacks!.session!;
+
+  it("signs out a token whose account row no longer exists", async () => {
+    dbState.selectResults.push([]);
+    const out = await callback()({ session: session(), token: { sub: "u1", sessionVersion: 0 } });
+    expect(out.user.id).toBe("");
+  });
+
+  it("signs out a token whose account is marked for deletion", async () => {
+    dbState.selectResults.push([{ sessionVersion: 0, deletedAt: new Date() }]);
+    const out = await callback()({ session: session(), token: { sub: "u1", sessionVersion: 0 } });
+    expect(out.user.id).toBe("");
+  });
+
+  it("keeps a live account whose version matches", async () => {
+    dbState.selectResults.push([{ sessionVersion: 3, deletedAt: null }]);
+    const out = await callback()({ session: session(), token: { sub: "u1", sessionVersion: 3 } });
+    expect(out.user.id).toBe("u1");
+  });
+
+  it("signs out a token stamped before a revocation", async () => {
+    dbState.selectResults.push([{ sessionVersion: 4, deletedAt: null }]);
+    const out = await callback()({ session: session(), token: { sub: "u1", sessionVersion: 3 } });
+    expect(out.user.id).toBe("");
+  });
+
+  it("leaves the session alone when the database cannot be asked", async () => {
+    dbState.isDatabaseConfigured.mockReturnValue(false);
+    const out = await callback()({ session: session(), token: { sub: "u1", sessionVersion: 3 } });
+    expect(out.user.id).toBe("u1");
+  });
+});
+
+describe("jwt callback and authorize() — N4: the version checked is the version stamped", () => {
+  it("authorize() returns the session version from the same row as the hash", async () => {
+    dbState.selectResults.push([
+      { id: "u7", email: "ana@example.com", passwordHash: realHash, name: "Ana", image: null, sessionVersion: 7, deletedAt: null },
+    ]);
+    const result = (await authorize(
+      { email: "ana@example.com", password: REAL_PASSWORD },
+      requestFrom("10.0.7.1"),
+    )) as { sessionVersion?: number };
+    expect(result.sessionVersion).toBe(7);
+  });
+
+  it("stamps that version without a second read after bcrypt", async () => {
+    // A second read would see the post-revocation version (8) — the race N4
+    // was about. Queue it to prove it is not consulted.
+    dbState.selectResults.push([{ sessionVersion: 8, deletedAt: null }]);
+    const token = await hoisted.capturedConfig!.callbacks!.jwt!({
+      token: {},
+      user: { id: "u7", sessionVersion: 7 },
+    });
+    expect(token.sessionVersion).toBe(7);
+    expect(token.sub).toBe("u7");
+  });
+
+  it("authorize() refuses an account marked for deletion even with the right password", async () => {
+    dbState.selectResults.push([
+      { id: "u9", email: "gone@example.com", passwordHash: realHash, name: null, image: null, sessionVersion: 1, deletedAt: new Date() },
+    ]);
+    const result = await authorize(
+      { email: "gone@example.com", password: REAL_PASSWORD },
+      requestFrom("10.0.7.2"),
+    );
+    expect(result).toBeNull();
   });
 });

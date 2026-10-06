@@ -302,11 +302,12 @@ export async function verifyEmailToken(
   // `UPDATE ... WHERE email = ?` is a statement whose row count depends on data
   // this code does not control.
   const [account] = await db()
-    .select({ id: users.id })
+    .select({ id: users.id, deletedAt: users.deletedAt })
     .from(users)
     .where(eq(users.email, email))
     .limit(1);
-  if (!account) return { ok: false, error: "invalid-token" };
+  // F02/F19: an account being erased confirms nothing.
+  if (!account || account.deletedAt) return { ok: false, error: "invalid-token" };
 
   await db()
     .update(users)

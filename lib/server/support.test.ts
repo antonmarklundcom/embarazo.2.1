@@ -156,21 +156,28 @@ describe("revocation is a real end to a session, not a hint", () => {
   const auth = readFileSync(join(process.cwd(), "lib", "server", "auth.ts"), "utf8");
 
   it("stamps the version into the token at sign-in", () => {
-    expect(auth).toContain("token.sessionVersion = await currentSessionVersion");
+    // N4: from the same row read as the password hash when there is one, so a
+    // revocation that lands during bcrypt is not stamped into the new token.
+    expect(auth).toContain("token.sessionVersion = user.sessionVersion");
+    expect(auth).toContain("await accountState(user.id)");
   });
 
   it("compares it on every session read", () => {
     // Without this comparison the column is decoration: a JWT keeps resolving
     // to its user until it expires, whatever the database says.
-    expect(auth).toMatch(/token\.sessionVersion !== current/);
+    expect(auth).toMatch(/token\.sessionVersion !== state\.version/);
+  });
+
+  it("signs out a token whose account is gone or being deleted (F02)", () => {
+    expect(auth).toMatch(/state\.kind === "gone"/);
   });
 
   it("leaves the session alone when the version cannot be read", () => {
     // A revocation feature that signs the whole userbase out during a database
     // hiccup is worse than one that is late.
-    const fn = auth.slice(auth.indexOf("async function currentSessionVersion"));
+    const fn = auth.slice(auth.indexOf("async function accountState"));
     const body = fn.slice(0, fn.indexOf("\n}\n"));
-    expect(body).toContain("return null");
+    expect(body).toContain('kind: "unknown"');
     expect(body).toContain("catch");
   });
 });

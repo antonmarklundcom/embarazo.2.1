@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { isValidIsoDate, siteParamsToAnswers, withoutSiteParams } from "./siteParams";
 
-const NOW = new Date("2026-09-02T00:00:00Z").getTime();
+// Local noon on 2 September, in whatever zone the suite runs. This was UTC
+// midnight, which is still 1 September in Paraguay: the week test failed under
+// TZ=America/Asuncion although the code was right (audit F12/F14). The
+// late-night case below pins its own zone and instant.
+const NOW = new Date(2026, 8, 2, 12, 0, 0).getTime();
 
 describe("siteParamsToAnswers", () => {
   it("returns null for a URL with none of the site params", () => {

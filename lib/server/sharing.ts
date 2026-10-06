@@ -42,7 +42,15 @@ export async function ensurePregnancyForOwner(
   now: number,
 ): Promise<string> {
   const existing = await backend.findPregnancyByOwner(ownerUserId);
-  if (existing) return existing;
+  if (existing) {
+    // F20: the pregnancy row and its owner row are two writes. If the second
+    // ever failed (a dropped connection, a killed process), every later call
+    // returned the pregnancy without the owner row — and /familia hid the guest
+    // list, "Quitar acceso" and the sharing levels while invites kept working.
+    // Every path now makes sure the owner row is there.
+    await ensureOwnerMembership(backend, existing, ownerUserId);
+    return existing;
+  }
 
   const id = crypto.randomUUID();
   try {
@@ -54,20 +62,38 @@ export async function ensurePregnancyForOwner(
     // definition, so re-reading is the whole recovery: this call returns the
     // same id the winner returned, which is what the caller wanted either way.
     const raced = await backend.findPregnancyByOwner(ownerUserId);
-    if (raced) return raced;
+    if (raced) {
+      await ensureOwnerMembership(backend, raced, ownerUserId);
+      return raced;
+    }
     // Not the race, then. A real failure the caller must see.
     throw error;
   }
 
   // The owner is a member of their own pregnancy. Without this row, "who can
   // see this" has to special-case the owner in every query that asks.
-  await backend.insertMembership({
+  await ensureOwnerMembership(backend, id, ownerUserId);
+  return id;
+}
+
+/**
+ * The owner's own row, idempotently. Derived from `pregnancies.ownerUserId`
+ * (the caller's session), never from anything a client sent. An upsert, so the
+ * winner and the loser of a creation race can both run it.
+ */
+async function ensureOwnerMembership(
+  backend: SharingBackend,
+  pregnancyId: string,
+  ownerUserId: string,
+): Promise<void> {
+  const current = await backend.liveMembership(ownerUserId, pregnancyId);
+  if (current?.role === "owner") return;
+  await backend.upsertMembership({
     id: crypto.randomUUID(),
-    pregnancyId: id,
+    pregnancyId,
     userId: ownerUserId,
     role: "owner",
   });
-  return id;
 }
 
 // ---------------------------------------------------------------------------
@@ -209,6 +235,14 @@ export async function acceptInvite(
   // their WhatsApp must not let them back in: only a NEW invite can.
   if (invite.acceptedAt && !current) return { ok: false, reason: "revoked" };
 
+  // F06: and while they ARE still a member, a re-tap changes nothing — so it
+  // writes nothing. It used to re-claim and re-upsert, and an owner removing
+  // them between the read above and that upsert was silently undone (the
+  // upsert clears `revokedAt`).
+  if (invite.acceptedAt && current) {
+    return { ok: true, pregnancyId: invite.pregnancyId, role: current.role };
+  }
+
   // Claim the code BEFORE granting anything. The `acceptedAt` check above is a
   // read, and two people tapping one forwarded link at the same moment both
   // read it unused; with the membership written first and the stamp second,
@@ -216,7 +250,13 @@ export async function acceptInvite(
   // so exactly one of them holds it, and the other is told the link is used —
   // which, by the time she hears it, is true.
   const claimed = await backend.markInviteAccepted(code, userId, new Date(now));
-  if (!claimed) return { ok: false, reason: "used" };
+  if (!claimed) {
+    // F06: the claim also refuses a revoked or expired invite, so say which.
+    const after = await backend.findInvite(code);
+    if (after?.revokedAt) return { ok: false, reason: "revoked" };
+    if (after && after.expiresAt.getTime() < now) return { ok: false, reason: "expired" };
+    return { ok: false, reason: "used" };
+  }
 
   // A new invite for someone removed earlier un-revokes their row rather than
   // failing on the unique index.

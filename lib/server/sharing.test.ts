@@ -194,6 +194,10 @@ function memoryBackend(): SharingBackend & {
       if (row.acceptedAt !== null && row.acceptedByUserId !== userId) {
         return false;
       }
+      // F06: the same conditional UPDATE also requires unrevoked, unexpired.
+      if (row.revokedAt !== null || row.expiresAt.getTime() <= at.getTime()) {
+        return false;
+      }
       row.acceptedAt = at;
       row.acceptedByUserId = userId;
       return true;

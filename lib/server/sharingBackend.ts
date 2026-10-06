@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, isNull, or } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, or } from "drizzle-orm";
 
 import type { Database } from "./db";
 import {
@@ -409,6 +409,11 @@ export function drizzleSharingBackend(database: Database): SharingBackend {
       // acceptances by different people exactly one matches. `affectedRows` is
       // rows *matched* here (mysql2 connects with CLIENT_FOUND_ROWS), so a
       // same-person re-tap that changes nothing still counts as held.
+      //
+      // F06: the same statement also requires the invite to be unrevoked and
+      // unexpired. Those were checked by an earlier read only, so an owner's
+      // revocation landing between that read and this claim used to let the
+      // acceptance through.
       const result = await database
         .update(invites)
         .set({ acceptedAt: at, acceptedByUserId: userId })
@@ -416,6 +421,8 @@ export function drizzleSharingBackend(database: Database): SharingBackend {
           and(
             eq(invites.code, code),
             or(isNull(invites.acceptedAt), eq(invites.acceptedByUserId, userId)),
+            isNull(invites.revokedAt),
+            gt(invites.expiresAt, at),
           ),
         );
       return affectedRows(result) > 0;

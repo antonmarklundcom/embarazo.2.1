@@ -154,6 +154,37 @@ export default function EmergenciaPage() {
         </a>
       </section>
 
+      {/* Violencia. Línea 137 (SOS Mujer) is the Ministerio de la Mujer's
+          national line for domestic and family violence: free from any phone,
+          24 h, coordinated with the Policía Nacional (mujer.gov.py/sos-mujer,
+          checked 2026-10-07). Curated in lib/seed/recomendados.json like 155,
+          so no number here that the repo does not already carry. Same calm
+          shape as the card above: a door left open, not an alarm. */}
+      <section
+        aria-labelledby="violencia"
+        className="rounded-card bg-pastel-lavanda/60 p-4"
+      >
+        <h2 id="violencia" className="text-base font-extrabold text-ink">
+          Si alguien te hace daño
+        </h2>
+        <p className="mt-1 text-sm leading-relaxed text-ink/90">
+          Si alguien te lastima, te amenaza o tenés miedo en tu casa, no estás
+          sola. Podés pedir orientación y ayuda.
+        </p>
+        <a
+          href="tel:137"
+          className="mt-3 flex min-h-[44px] items-center justify-between gap-3 rounded-tile bg-white px-4 py-3 text-ink shadow-soft transition active:scale-[0.99]"
+        >
+          <span>
+            <span className="block text-base font-extrabold">Línea 137 · SOS Mujer</span>
+            <span className="block text-sm text-ink/80">
+              Gratuita, las 24 horas, desde cualquier teléfono
+            </span>
+          </span>
+          <span className="text-sm font-extrabold text-petrol">Llamar</span>
+        </a>
+      </section>
+
       <p className="text-xs leading-relaxed text-muted">
         {t("emergency.disclaimer")}
       </p>

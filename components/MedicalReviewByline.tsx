@@ -13,24 +13,22 @@
 // 2026-10 — F22. The named byline used to come from one build-time variable,
 // `NEXT_PUBLIC_MEDICAL_REVIEWER`, on every screen that renders this — fifteen
 // of them — whether or not that person had read the screen. A name now comes
-// only from `lib/seed/approvals.json`: pass the `contentId` and the exact
-// `text` the page renders, and the byline names the reviewer who approved that
-// text, with the date. No `contentId`, no current approval, or text edited
-// since: the disclaimer. The variable no longer has any effect here.
-import { formatReviewDate } from "@/lib/content/approvals";
-import { shippedReviewFor } from "@/lib/seed/approvals";
+// only from `lib/seed/approvals.json`: the caller resolves the review for the
+// exact text it renders (`shippedReviewFor(contentId, text)`, ideally in a
+// server component) and passes it in. No review, a stale one, or none passed:
+// the disclaimer. The variable no longer has any effect here.
+//
+// The lookup stays out of this component on purpose: it is mounted on client
+// pages (contracciones, pataditas…) that otherwise ship no zod, and importing
+// the validated registry here added ~33 kB to their first load.
+import { formatReviewDate, type ShownReview } from "@/lib/content/approvals";
 
 export function MedicalReviewByline({
-  contentId,
-  text,
+  review = null,
 }: {
-  /** e.g. `guiaContentId(slug)`. Omit on screens no single approval covers. */
-  contentId?: string;
-  /** The clinical text this page renders, exactly; what the approval's hash pins. */
-  text?: string;
+  /** From `shippedReviewFor(contentId, text)`; omit where no approval applies. */
+  review?: ShownReview | null;
 } = {}) {
-  const review = contentId && text ? shippedReviewFor(contentId, text) : null;
-
   if (!review) {
     return (
       <p className="text-xs text-muted">

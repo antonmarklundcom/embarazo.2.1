@@ -58,6 +58,13 @@ describe("NEXT_PUBLIC_MEDICAL_REVIEWER grants nothing", () => {
     for (const root of ["app", "components", "lib"]) walk(join(process.cwd(), root));
     expect(offenders).toEqual([]);
   });
+
+  it("keeps the validated registry out of the byline component", () => {
+    // MedicalReviewByline is mounted on client pages that ship no zod; the
+    // caller resolves the review (on the server where it can) and passes it.
+    const source = readFileSync(join(process.cwd(), "components", "MedicalReviewByline.tsx"), "utf8");
+    expect(source).not.toMatch(/from "@\/lib\/seed\/approvals"/);
+  });
 });
 
 describe("insight templates are approved one by one", () => {

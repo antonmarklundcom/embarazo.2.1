@@ -5,6 +5,7 @@ import { getArticles } from "@/lib/wordpress";
 import { getArticleBySlug } from "@/lib/seed/articles";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { guiaContentId } from "@/lib/content/approvals";
+import { shippedReviewFor } from "@/lib/seed/approvals";
 import { readTimeLabel } from "@/lib/articles/readTime";
 import { relatedTool } from "@/lib/articles/relatedTool";
 import { RecordContentView } from "@/components/RecordContentView";
@@ -63,8 +64,9 @@ export default async function GuiaDetailPage({
           {article.title}
         </h1>
         <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-          {/* F22: names a reviewer only if this guía's exact HTML was approved. */}
-          <MedicalReviewByline contentId={guiaContentId(article.slug)} text={article.html} />
+          {/* F22: names a reviewer only if this guía's exact HTML was approved.
+              Resolved here, on the server, so the registry never ships to the client. */}
+          <MedicalReviewByline review={shippedReviewFor(guiaContentId(article.slug), article.html)} />
           <span className="text-xs text-muted">{readTimeLabel(article.html)}</span>
         </div>
       </header>

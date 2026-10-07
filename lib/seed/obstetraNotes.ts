@@ -1,4 +1,11 @@
 import { ObstetraNoteSchema, validateContentArray } from "../content/schemas";
+import {
+  obstetraContentId,
+  reviewFor,
+  type ApprovalRegistry,
+  type ShownReview,
+} from "../content/approvals";
+import { REVIEW_REGISTRY } from "./approvals";
 import { publishedOnly } from "./gate";
 import type { ObstetraNote } from "../types";
 import rawNotes from "./obstetraNotes.json";
@@ -11,11 +18,11 @@ import rawNotes from "./obstetraNotes.json";
 // the 24–28 curva de azúcar, dTpa at 27–36, estreptococo B at 35–37, the carné
 // perinatal — because that is the thing a translated global app cannot get right.
 //
-// **These 42 strings are drafts awaiting a signature.** The card renders only
-// when `NEXT_PUBLIC_MEDICAL_REVIEWER` is set (see `components/ObstetraCard.tsx`),
-// which is Z2's standing rule: never claim a review that has not happened. Until
-// the founder has a reviewer, nothing here reaches a user — and when she does,
-// signing off on these is part of what she is agreeing to.
+// **These 42 strings are drafts awaiting a signature.** A week's note renders
+// only when `lib/seed/approvals.json` holds a current approval of that exact
+// text (F22, `approvedObstetraNote` below), signed by the reviewer who gave it —
+// Z2's standing rule: never claim a review that has not happened. Until then
+// nothing here reaches a user, and approving one week unlocks only that week.
 
 const { valid, errors } = validateContentArray(
   "lib/seed/obstetraNotes.json",
@@ -33,7 +40,21 @@ export const PUBLISHED_OBSTETRA_NOTES: ObstetraNote[] = publishedOnly(valid);
 
 const BY_WEEK = new Map(PUBLISHED_OBSTETRA_NOTES.map((entry) => [entry.week, entry.note]));
 
-/** The note for a week, or `null` when there isn't one. */
+/** The note for a week, or `null` when there isn't one. Says nothing about review. */
 export function obstetraNote(week: number): string | null {
   return BY_WEEK.get(week) ?? null;
+}
+
+/**
+ * The note for a week together with the review that lets it render, or `null`
+ * when the week has no note or no current approval of its exact text.
+ */
+export function approvedObstetraNote(
+  week: number,
+  registry: ApprovalRegistry = REVIEW_REGISTRY,
+): { note: string; review: ShownReview } | null {
+  const note = obstetraNote(week);
+  if (!note) return null;
+  const review = reviewFor(registry, obstetraContentId(week), note);
+  return review ? { note, review } : null;
 }

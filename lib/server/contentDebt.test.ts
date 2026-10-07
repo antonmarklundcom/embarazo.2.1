@@ -7,6 +7,8 @@ import { PUBLISHED_NAMES } from "@/lib/seed/names";
 import { PUBLISHED_FOOD } from "@/lib/seed/food";
 import { PUBLISHED_PRICES } from "@/lib/seed/prices";
 import { PUBLISHED_EVENTS } from "@/lib/seed/events";
+import { approvedObstetraNote } from "@/lib/seed/obstetraNotes";
+import { PUBLISHED_INSIGHT_TEMPLATES, approvedInsightTemplate } from "@/lib/seed/insights";
 import { MAX_WEEK } from "@/lib/pregnancy";
 
 // §5 D4 — the review-debt page, checked against the app it reports on.
@@ -56,6 +58,20 @@ describe("the counts match what users actually see", () => {
 
   it("agrees with PUBLISHED_EVENTS", () => {
     expect(row("Eventos").published).toBe(PUBLISHED_EVENTS.length);
+  });
+
+  it("counts an obstetra note as published only when the card would render it (F22)", () => {
+    const approved = Array.from({ length: MAX_WEEK }, (_, i) => i + 1).filter(
+      (week) => approvedObstetraNote(week) !== null,
+    );
+    expect(row("Notas de la obstetra").published).toBe(approved.length);
+  });
+
+  it("counts an insight template as published only when the card would use it (F22)", () => {
+    const approved = PUBLISHED_INSIGHT_TEMPLATES.filter(
+      (template) => approvedInsightTemplate(template.id) !== null,
+    );
+    expect(row("Frases de patrones (F3)").published).toBe(approved.length);
   });
 
   it("adds up: published + hidden = total, everywhere", () => {

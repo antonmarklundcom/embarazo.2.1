@@ -1,21 +1,28 @@
 import { test, expect } from "@playwright/test";
 
+import approvals from "../lib/seed/approvals.json";
+import reviewers from "../lib/seed/reviewers.json";
 import { completeOnboarding } from "./helpers/onboarding";
 
-// BUILD-PLAN K9 / F3 — symptom insight.
+// BUILD-PLAN K9 / F3 — symptom insight; F22 (2026-10).
 //
-// Gated on `NEXT_PUBLIC_MEDICAL_REVIEWER`, which is inlined at build time, so
-// this spec asserts whichever side of the gate the build under test is on —
-// the same shape `e2e/obstetra-card.spec.ts` uses for C5.
+// The card uses a sentence template only with a reviewer's approval of that
+// template's exact text in lib/seed/approvals.json, and names that reviewer.
+// NEXT_PUBLIC_MEDICAL_REVIEWER no longer unlocks it: a build with the variable
+// set must pass this spec too. **The case worth guarding**: the app must never
+// volunteer an interpretation of somebody's symptoms with nobody's name on the
+// phrasing.
 //
-// **CI builds with it unset, and that is the case worth guarding**: the app
-// must never volunteer an interpretation of somebody's symptoms with nobody's
-// name on the phrasing. Run
-// `NEXT_PUBLIC_MEDICAL_REVIEWER="Dra. …" npm run build && npm run test:e2e`
-// to exercise the other side.
+// The seeded fortnight (nausea on the low-mood days) produces the "mood"
+// finding, so the card shows exactly when `insight:mood` is approved.
 
-const REVIEWER = process.env.NEXT_PUBLIC_MEDICAL_REVIEWER?.trim();
-const CONFIGURED = Boolean(REVIEWER) && !REVIEWER!.includes("___");
+const insightApprovals = (approvals as { contentId: string; reviewerId: string }[]).filter(
+  (entry) => entry.contentId.startsWith("insight:"),
+);
+const moodApproval = insightApprovals.find((entry) => entry.contentId === "insight:mood");
+const moodApprover = (reviewers as { id: string; name: string }[]).find(
+  (entry) => entry.id === moodApproval?.reviewerId,
+);
 
 /** Fourteen days of check-ins: nausea on every bad-mood day and almost nowhere else. */
 async function seedFourteenDays(page: import("@playwright/test").Page) {
@@ -56,7 +63,9 @@ async function seedFourteenDays(page: import("@playwright/test").Page) {
   });
 }
 
-test("the insight card follows the reviewer, not the data", async ({ page }) => {
+test("the insight card follows the template's approval, not the data or a setting", async ({
+  page,
+}) => {
   await completeOnboarding(page, { daysAgo: 140 });
   await page.goto("/herramientas/sintomas");
   await seedFourteenDays(page);
@@ -64,19 +73,26 @@ test("the insight card follows the reviewer, not the data", async ({ page }) => 
 
   const card = page.getByRole("region", { name: "Lo que venís anotando" });
 
-  if (CONFIGURED) {
+  if (moodApproval && moodApprover) {
     await expect(card).toBeVisible();
     await expect(card).toContainText("náuseas");
-    await expect(card).toContainText(REVIEWER!);
+    await expect(card).toContainText(moodApprover.name);
     // Never a diagnosis, and never a claim about cause.
     await expect(card).toContainText("No es un diagnóstico");
     await expect(card).not.toContainText("porque");
-  } else {
+  } else if (insightApprovals.length === 0) {
     // Not hidden with CSS, not rendered unsigned: absent. The app does not
     // volunteer an interpretation of somebody's symptoms with nobody's name on
     // the phrasing.
     await expect(card).toHaveCount(0);
     await expect(page.getByText("Lo que venís anotando")).toHaveCount(0);
+  }
+
+  // Whatever the build's variable says, no screen claims a review the registry
+  // does not record.
+  const configured = process.env.NEXT_PUBLIC_MEDICAL_REVIEWER?.trim();
+  if (configured && !moodApprover) {
+    await expect(page.getByText(configured)).toHaveCount(0);
   }
 });
 

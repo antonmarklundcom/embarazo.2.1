@@ -18,8 +18,20 @@ import {
   PriceEntrySchema,
   ExerciseSchema,
   RecommendationSchema,
+  ReviewerSchema,
+  ApprovalSchema,
   validateContentArray,
 } from "../lib/content/schemas.ts";
+import {
+  approvalProblems,
+  foodClinicalText,
+  foodContentId,
+  guiaContentId,
+  insightClinicalText,
+  insightContentId,
+  obstetraContentId,
+  type ReviewableItem,
+} from "../lib/content/approvals.ts";
 
 // G1 content ops (BUILD-PLAN.md): `npm run validate:content` runs the same
 // zod schemas that lib/seed/*.ts run at import time, over every hand-authored
@@ -267,6 +279,64 @@ const checks: Check[] = [];
       ),
     });
   }
+}
+
+// F22 — the review registry. Who may be named (reviewers.json), which exact
+// texts each of them approved (approvals.json), and whether every `reviewedBy`
+// a seed entry claims is backed by a current approval. A stale approval is a
+// warning, not an error: the item already renders as unreviewed, and
+// re-approving it is the clinician's job, not the build's.
+{
+  const reviewers = validateContentArray(
+    "lib/seed/reviewers.json",
+    readJson("lib/seed/reviewers.json") as unknown[],
+    ReviewerSchema,
+  );
+  const approvals = validateContentArray(
+    "lib/seed/approvals.json",
+    readJson("lib/seed/approvals.json") as unknown[],
+    ApprovalSchema,
+    (entry) => entry.contentId,
+  );
+  checks.push({ errors: [...reviewers.errors, ...approvals.errors] });
+
+  type Note = { week: number; note: string };
+  type Template = { id: string; line: string; hint: string };
+  type Food = {
+    id: string;
+    name: string;
+    verdict: string;
+    reason: string;
+    detail?: string;
+    reviewedBy?: string;
+  };
+  type Guide = { slug: string; html: string; reviewedBy?: string };
+  const items: ReviewableItem[] = [
+    ...(readJson("lib/seed/obstetraNotes.json") as Note[]).map((n) => ({
+      contentId: obstetraContentId(n.week),
+      text: n.note,
+    })),
+    ...(readJson("lib/seed/insights.json") as Template[]).map((t) => ({
+      contentId: insightContentId(t.id),
+      text: insightClinicalText(t),
+    })),
+    ...(readJson("lib/seed/food.json") as Food[]).map((f) => ({
+      contentId: foodContentId(f.id),
+      text: foodClinicalText(f),
+      claimedReviewer: f.reviewedBy,
+    })),
+    ...(readJson("lib/seed/articles.json") as Guide[]).map((a) => ({
+      contentId: guiaContentId(a.slug),
+      text: a.html,
+      claimedReviewer: a.reviewedBy,
+    })),
+  ];
+  const { errors, stale } = approvalProblems(
+    { reviewers: reviewers.valid, approvals: approvals.valid },
+    items,
+  );
+  checks.push({ errors });
+  for (const line of stale) console.warn(`  ! revisión vencida — ${line}`);
 }
 
 const allErrors = checks.flatMap((c) => c.errors);

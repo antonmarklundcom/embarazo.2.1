@@ -8,6 +8,15 @@ import {
   type CollectionDebt,
 } from "@/lib/content/reviewDebt";
 import { MAX_WEEK, MIN_WEEK } from "@/lib/pregnancy";
+import {
+  foodClinicalText,
+  foodContentId,
+  insightClinicalText,
+  insightContentId,
+  obstetraContentId,
+  reviewFor,
+} from "@/lib/content/approvals";
+import { REVIEW_REGISTRY } from "@/lib/seed/approvals";
 
 import directoryData from "@/lib/seed/directory.json";
 import placementsData from "@/lib/seed/placements.json";
@@ -48,7 +57,37 @@ import recomendadosData from "@/lib/seed/recomendados.json";
  * gate and no surface that can go dark. A debt row for it would read 0% forever
  * and teach a founder to skim the list.
  */
-export const NOT_A_COLLECTION = new Set(["articles.json", "comparisons.json"]);
+export const NOT_A_COLLECTION = new Set([
+  "articles.json",
+  "comparisons.json",
+  // F22 — the review registry itself, not content: who may be named and which
+  // exact texts each of them approved. Its effect shows up in the rows below.
+  "reviewers.json",
+  "approvals.json",
+]);
+
+/**
+ * F22 — the review gate for collections whose entries carry no `reviewedBy` of
+ * their own (obstetra notes, insight templates) or whose `reviewedBy` is only a
+ * claim (food). Each entry is counted as reviewed exactly when the app would
+ * render it as reviewed: a current approval of its text in
+ * `lib/seed/approvals.json`. Reported through the same `reviewedBy` field
+ * `summariseCollection` already reads, so the report cannot drift from the gate.
+ */
+function withApproval(
+  list: unknown[],
+  contentIdOf: (entry: Record<string, unknown>) => string,
+  textOf: (entry: Record<string, unknown>) => string,
+  claimOf?: (entry: Record<string, unknown>) => string | undefined,
+): unknown[] {
+  return list.map((raw) => {
+    const entry = (raw ?? {}) as Record<string, unknown>;
+    const review = reviewFor(REVIEW_REGISTRY, contentIdOf(entry), textOf(entry));
+    const claim = claimOf?.(entry);
+    const reviewed = review && (claimOf === undefined || claim === review.reviewerName);
+    return { ...entry, reviewedBy: reviewed ? review.reviewerName : undefined };
+  });
+}
 
 function entries(value: unknown, key?: string): unknown[] {
   if (Array.isArray(value)) return value;
@@ -99,7 +138,12 @@ export function collectionDebt(): CollectionDebt[] {
       label: "¿Puedo comer…?",
       surface: "/herramientas/comer",
       file: "lib/seed/food.json",
-      entries: entries(foodData),
+      entries: withApproval(
+        entries(foodData),
+        (entry) => foodContentId(String(entry.id)),
+        (entry) => foodClinicalText(entry as Parameters<typeof foodClinicalText>[0]),
+        (entry) => (typeof entry.reviewedBy === "string" ? entry.reviewedBy : undefined),
+      ),
       gates: "unreviewed",
     }),
     summariseCollection({
@@ -127,8 +171,12 @@ export function collectionDebt(): CollectionDebt[] {
       label: "Frases de patrones (F3)",
       surface: "/herramientas/sintomas",
       file: "lib/seed/insights.json",
-      entries: entries(insightsData),
-      gates: "placeholder",
+      entries: withApproval(
+        entries(insightsData),
+        (entry) => insightContentId(String(entry.id)),
+        (entry) => insightClinicalText({ line: String(entry.line), hint: String(entry.hint) }),
+      ),
+      gates: "both",
     }),
     summariseCollection({
       label: "Tamaños de manos y pies",
@@ -141,8 +189,12 @@ export function collectionDebt(): CollectionDebt[] {
       label: "Notas de la obstetra",
       surface: "/semana/[n]",
       file: "lib/seed/obstetraNotes.json",
-      entries: entries(obstetraNotesData),
-      gates: "placeholder",
+      entries: withApproval(
+        entries(obstetraNotesData),
+        (entry) => obstetraContentId(Number(entry.week)),
+        (entry) => String(entry.note),
+      ),
+      gates: "both",
     }),
     summariseCollection({
       label: "Para tu pareja / tu familia",

@@ -14,14 +14,17 @@
 // everywhere medical-adjacent content renders, that it is informational and
 // not reviewed by a professional (`components/MedicalReviewByline.tsx`)
 // instead of pretending nobody built the app until one signs on. That
-// disclaimer is unconditional now, so there is nothing left here to check —
-// `isPlaceholderReviewer` stays exported because the byline and the obstetra
-// card still use it to decide which of the two messages to show, and
-// `lib/seed/gate.ts`'s `reviewedOnly()` still hides any *specific* clinical
-// content (food-safety verdicts, the obstetra's weekly notes) that has not
-// been signed off — a general disclaimer does not make a wrong answer to
-// "is X safe to eat during pregnancy" safe to publish as reviewed. That gate
-// is untouched by this file and is not something a deployment build can skip.
+// disclaimer is unconditional now, so there is nothing left here to check.
+//
+// 2026-10 — F22. Specific clinical content (food-safety verdicts, the
+// obstetra's weekly notes, the symptom-insight sentences, a guía's byline)
+// renders as reviewed only with a current approval of its exact text in
+// `lib/seed/approvals.json` (`lib/content/approvals.ts`). An earlier version of
+// this comment said `reviewedOnly()` hid the obstetra notes; it never did —
+// they were unlocked all at once by `NEXT_PUBLIC_MEDICAL_REVIEWER`, which no
+// longer affects rendering at all. A general disclaimer does not make a wrong
+// answer to "is X safe to eat during pregnancy" safe to publish as reviewed,
+// and that gate is not something a deployment build can skip.
 
 import { hasDeletionChannel, supportChannels } from "./support";
 
@@ -44,9 +47,9 @@ export function isDeploymentBuild(env: LaunchCheckEnv): boolean {
 
 /**
  * True when `value` is not a real reviewer name — unset, blank, or one of the
- * placeholder markers left in `.env.example`. Still used at render time by
- * `MedicalReviewByline` and `ObstetraCard` to choose between the named byline
- * and the generic disclaimer; no longer used to block a build.
+ * placeholder markers left in `.env.example`. No longer used to render or to
+ * block a build (F22: attribution comes from `lib/seed/approvals.json`); kept
+ * exported for callers outside the app that still check the variable.
  */
 export function isPlaceholderReviewer(value: string | undefined): boolean {
   const reviewer = value?.trim() ?? "";

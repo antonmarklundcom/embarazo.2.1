@@ -3,6 +3,14 @@ import {
   validateContentArray,
   type InsightTemplate,
 } from "../content/schemas";
+import {
+  insightClinicalText,
+  insightContentId,
+  reviewFor,
+  type ApprovalRegistry,
+  type ShownReview,
+} from "../content/approvals";
+import { REVIEW_REGISTRY } from "./approvals";
 import { publishedOnly } from "./gate";
 import rawTemplates from "./insights.json";
 
@@ -53,6 +61,21 @@ export const INSIGHT_PLACEHOLDERS = [
 
 export function insightTemplate(id: string): InsightTemplate | undefined {
   return PUBLISHED_INSIGHT_TEMPLATES.find((template) => template.id === id);
+}
+
+/**
+ * F22 — the template with the review that lets it render, or `null` when it has
+ * no current approval of its exact `line` + `hint`. Approving one template
+ * unlocks only that template.
+ */
+export function approvedInsightTemplate(
+  id: string,
+  registry: ApprovalRegistry = REVIEW_REGISTRY,
+): { template: InsightTemplate; review: ShownReview } | null {
+  const template = insightTemplate(id);
+  if (!template) return null;
+  const review = reviewFor(registry, insightContentId(template.id), insightClinicalText(template));
+  return review ? { template, review } : null;
 }
 
 /**

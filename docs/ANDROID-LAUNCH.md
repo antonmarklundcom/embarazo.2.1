@@ -368,8 +368,9 @@ and belongs above the fold.
 1. **Decide personal vs organization. Request the D-U-N-S number if
    organization.** ← do this first, everything else waits on it
 2. Register the developer account, pay the $25, complete identity verification.
-3. Deploy the real site to the real domain (`NEXT_PUBLIC_APP_URL`), with a real
-   `NEXT_PUBLIC_MEDICAL_REVIEWER` — the build refuses to ship without it.
+3. Deploy the real site to the real domain (`NEXT_PUBLIC_APP_URL`). (A reviewer
+   is not a build requirement: clinical review is recorded per approved text in
+   `lib/seed/approvals.json` — F22 — and unreviewed screens show the disclaimer.)
 4. Publish the lawyer-reviewed `/privacidad` and `/terminos`.
 5. Package the TWA, upload to **internal testing** (up to 100 testers, no review
    wait) — this is your friends-and-family round.

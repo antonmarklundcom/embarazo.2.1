@@ -4640,3 +4640,34 @@ The plan lives in the site repo (`antonmarklundcom/embarazo`,
 - **The four "Ya nació" age-band pictures** (`public/assets/bebe/`, manifest
   `baby`) are placed, with the week-42 render as the character reference, so
   the baby on the baby home is the same baby as in the pregnancy.
+
+## 2026-10-07 — F22: clinical review is per approved text, not per deployment
+
+- **What changed.** `NEXT_PUBLIC_MEDICAL_REVIEWER` no longer affects
+  rendering. It used to put "Revisado por {name}" on fifteen screens and unlock
+  all 42 obstetra notes and every symptom-insight sentence at once, whether or
+  not that person had read them, and an approval never noticed later edits.
+  Review is now recorded per item and per version: `lib/seed/reviewers.json`
+  (who may be named) and `lib/seed/approvals.json` (which exact text each of
+  them approved, pinned by `contentHash`, with the date). Rules and hashing in
+  `lib/content/approvals.ts`; both files ship empty.
+- **What renders.** Obstetra notes and insight templates render only with a
+  current approval of their own text, signed by its approver; food needs its
+  `reviewedBy` claim backed by the claimant's current approval; a guía's byline
+  names a reviewer only for its approved HTML. Everything else shows the
+  existing disclaimer ("disclaimer model", above). Editing approved text makes
+  the approval stale: the item reverts to unreviewed and
+  `npm run validate:content` lists it with the hash it now expects.
+- **Validation.** `validate:content` fails on an approval for content that does
+  not exist, by an unregistered reviewer, and on any `reviewedBy` that is not a
+  registered reviewer with a current approval. That removed the eight
+  unrendered `"reviewedBy": "Equipo médico de Mi Bebé"` claims in
+  `articles.json`.
+- **F05 follow-up.** Obstetra notes 37 and 39 now use the completed-weeks term
+  wording adopted for `lib/weeks.ts` and `weeklyLines.json`; the wording test
+  covers the notes too. Still for the clinician, not changed here: the 5-1-1
+  advice in the display-week-37 note (36+x completed is preterm), and the
+  week-27 note's "dTpa entre las semanas 27 y 36" against current MSPBS
+  guidance (from week 20; DGVS alert 10 Feb 2025).
+- **Not yet:** the site imports no approvals; a versioned approvals contract for
+  `embarazo.com.py` waits until a first real approval exists.

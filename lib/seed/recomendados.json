@@ -44,6 +44,17 @@
     "isSponsored": false
   },
   {
+    "id": "rec-sos-mujer-137",
+    "kind": "recurso",
+    "title": "SOS Mujer · Línea 137",
+    "body": "Si vivís violencia en tu casa o en tu familia: orientación gratuita, las 24 horas, desde cualquier teléfono y en todo el país.",
+    "ctaLabel": "Ver más",
+    "url": "https://mujer.gov.py/sos-mujer/",
+    "stage": 0,
+    "priority": 16,
+    "isSponsored": false
+  },
+  {
     "id": "rec-pai-esquema-vacunacion",
     "kind": "recurso",
     "title": "Calendario de vacunación (PAI)",

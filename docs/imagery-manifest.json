@@ -10,7 +10,8 @@
   "download_status": "localized 2026-09-28",
   "review": "Founder to approve both sets in the Higgsfield gallery before localizing; medical reviewer optional (stylised, non-anatomical).",
   "site_set_in_repo": "2026-09-27, growth plan item 7: public/assets/semanas/bebe-<week>.webp currently holds the site's 42 opaque size illustrations (scripts/import-site-week-art.mjs), shown framed (lib/hero/weekArt.ts WEEK_ART_STYLE='framed'). Localizing this manifest's cutouts overwrites them; flip WEEK_ART_STYLE to 'cutout' in the same commit. The cloudfront download answered HTTP 200 from a cloud session on 2026-09-27.",
-  "regeneration_2026_09_28": "36 jobs + 5 filter failures (not charged) at 0.5 credits: 2 variants per week, one kept per week."
+  "regeneration_2026_09_28": "36 jobs + 5 filter failures (not charged) at 0.5 credits: 2 variants per week, one kept per week.",
+  "size_objects_2026_10_07": "5 new objects (mamon-grande, zapallo-grande, mandioca-grande, racimo-de-bananas, andai) so the to-scale comparison never shrinks week over week; gpt_image_2_5 sunburst medium 1k transparent, 0.5 credits each, ledger checked (13 x 0.5 incl. 8 site illustrations). 7 objects retired, files kept."
  },
  "images": [
   {
@@ -1004,7 +1005,8 @@
    "background": "transparent",
    "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50), natural soft colours for the produce. Subject: a grapefruit, drawn as the only subject, centred and filling most of the frame, isolated on a fully transparent background. No people, no hands, no text, no plate, no frame, no ground shadow. Avoid: photorealism, 3D, gradients.",
    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175637_643960fa-8296-48d7-98f2-cb9f1abe5bf3.png",
-   "job_id": "643960fa-8296-48d7-98f2-cb9f1abe5bf3"
+   "job_id": "643960fa-8296-48d7-98f2-cb9f1abe5bf3",
+   "retired": "2026-10-07: no week uses it since the size object stopped shrinking (lib/seed/comparisons.json); file kept, not fetched"
   },
   {
    "id": "mandioca",
@@ -1049,7 +1051,8 @@
    "background": "transparent",
    "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50), natural soft colours for the produce. Subject: a small green cabbage, drawn as the only subject, centred and filling most of the frame, isolated on a fully transparent background. No people, no hands, no text, no plate, no frame, no ground shadow. Avoid: photorealism, 3D, gradients.",
    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175636_710df213-706a-460a-a83e-589284258ca7.png",
-   "job_id": "710df213-706a-460a-a83e-589284258ca7"
+   "job_id": "710df213-706a-460a-a83e-589284258ca7",
+   "retired": "2026-10-07: no week uses it since the size object stopped shrinking (lib/seed/comparisons.json); file kept, not fetched"
   },
   {
    "id": "coliflor",
@@ -1064,7 +1067,8 @@
    "background": "transparent",
    "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50), natural soft colours for the produce. Subject: a cauliflower, drawn as the only subject, centred and filling most of the frame, isolated on a fully transparent background. No people, no hands, no text, no plate, no frame, no ground shadow. Avoid: photorealism, 3D, gradients.",
    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175729_7087732c-4e3f-416e-8176-b255e1ef8962.png",
-   "job_id": "7087732c-4e3f-416e-8176-b255e1ef8962"
+   "job_id": "7087732c-4e3f-416e-8176-b255e1ef8962",
+   "retired": "2026-10-07: no week uses it since the size object stopped shrinking (lib/seed/comparisons.json); file kept, not fetched"
   },
   {
    "id": "berenjena-grande",
@@ -1109,7 +1113,8 @@
    "background": "transparent",
    "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50), natural soft colours for the produce. Subject: a green cabbage, drawn as the only subject, centred and filling most of the frame, isolated on a fully transparent background. No people, no hands, no text, no plate, no frame, no ground shadow. Avoid: photorealism, 3D, gradients.",
    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175729_1f2001f5-f90d-4db3-9814-35e2fb43cc12.png",
-   "job_id": "1f2001f5-f90d-4db3-9814-35e2fb43cc12"
+   "job_id": "1f2001f5-f90d-4db3-9814-35e2fb43cc12",
+   "retired": "2026-10-07: no week uses it since the size object stopped shrinking (lib/seed/comparisons.json); file kept, not fetched"
   },
   {
    "id": "coco-con-su-cascara",
@@ -1139,7 +1144,8 @@
    "background": "transparent",
    "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50), natural soft colours for the produce. Subject: a head of lettuce, drawn as the only subject, centred and filling most of the frame, isolated on a fully transparent background. No people, no hands, no text, no plate, no frame, no ground shadow. Avoid: photorealism, 3D, gradients.",
    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175754_376e7dfe-27a0-4173-a21b-0940a43c718a.png",
-   "job_id": "376e7dfe-27a0-4173-a21b-0940a43c718a"
+   "job_id": "376e7dfe-27a0-4173-a21b-0940a43c718a",
+   "retired": "2026-10-07: no week uses it since the size object stopped shrinking (lib/seed/comparisons.json); file kept, not fetched"
   },
   {
    "id": "anana",
@@ -1169,7 +1175,8 @@
    "background": "transparent",
    "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50), natural soft colours for the produce. Subject: a small cantaloupe melon, drawn as the only subject, centred and filling most of the frame, isolated on a fully transparent background. No people, no hands, no text, no plate, no frame, no ground shadow. Avoid: photorealism, 3D, gradients.",
    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175753_a8217849-d9ea-41e8-96d2-0c87d7d65fd2.png",
-   "job_id": "a8217849-d9ea-41e8-96d2-0c87d7d65fd2"
+   "job_id": "a8217849-d9ea-41e8-96d2-0c87d7d65fd2",
+   "retired": "2026-10-07: no week uses it since the size object stopped shrinking (lib/seed/comparisons.json); file kept, not fetched"
   },
   {
    "id": "melon",
@@ -1184,7 +1191,8 @@
    "background": "transparent",
    "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50), natural soft colours for the produce. Subject: a melon, drawn as the only subject, centred and filling most of the frame, isolated on a fully transparent background. No people, no hands, no text, no plate, no frame, no ground shadow. Avoid: photorealism, 3D, gradients.",
    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175754_4b98e1b7-aa1c-43ec-9417-4cb8ac2a2200.png",
-   "job_id": "4b98e1b7-aa1c-43ec-9417-4cb8ac2a2200"
+   "job_id": "4b98e1b7-aa1c-43ec-9417-4cb8ac2a2200",
+   "retired": "2026-10-07: no week uses it since the size object stopped shrinking (lib/seed/comparisons.json); file kept, not fetched"
   },
   {
    "id": "lechuga-grande",
@@ -1290,6 +1298,91 @@
    "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50), natural soft colours for the produce. Subject: a large ripe watermelon with one slice cut open showing red flesh, drawn as the only subject, centred and filling most of the frame, isolated on a fully transparent background. No people, no hands, no text, no plate, no frame, no ground shadow. Avoid: photorealism, 3D, gradients.",
    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20260923_175831_5663c675-d8f4-43d2-9253-8021b4a8e8e4.png",
    "job_id": "5663c675-d8f4-43d2-9253-8021b4a8e8e4"
+  },
+  {
+   "id": "mamon-grande",
+   "file": "public/assets/comparaciones/mamon-grande.webp",
+   "subject_en": "a large papaya, whole",
+   "ratio": "1:1",
+   "px": 800,
+   "model": "gpt_image_2_5",
+   "variant": "sunburst",
+   "quality": "medium",
+   "resolution": "1k",
+   "background": "transparent",
+   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50), natural soft colours for the produce. Subject: a large papaya, whole, drawn as the only subject, centred and filling most of the frame, isolated on a fully transparent background. No people, no hands, no text, no plate, no frame, no ground shadow. Avoid: photorealism, 3D, gradients.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20261007_054625_1d26fa3c-de37-42cb-8c31-f3121776c321.png",
+   "job_id": "1d26fa3c-de37-42cb-8c31-f3121776c321",
+   "generated": "2026-10-07",
+   "credits": 0.5
+  },
+  {
+   "id": "zapallo-grande",
+   "file": "public/assets/comparaciones/zapallo-grande.webp",
+   "subject_en": "a large pumpkin, whole",
+   "ratio": "1:1",
+   "px": 800,
+   "model": "gpt_image_2_5",
+   "variant": "sunburst",
+   "quality": "medium",
+   "resolution": "1k",
+   "background": "transparent",
+   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50), natural soft colours for the produce. Subject: a large pumpkin, whole, drawn as the only subject, centred and filling most of the frame, isolated on a fully transparent background. No people, no hands, no text, no plate, no frame, no ground shadow. Avoid: photorealism, 3D, gradients.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20261007_054554_b7695848-5bac-47f1-8e25-e9dfe3075ba4.png",
+   "job_id": "b7695848-5bac-47f1-8e25-e9dfe3075ba4",
+   "generated": "2026-10-07",
+   "credits": 0.5
+  },
+  {
+   "id": "mandioca-grande",
+   "file": "public/assets/comparaciones/mandioca-grande.webp",
+   "subject_en": "a large, long cassava root with rough brown bark, one end cut to show the white flesh",
+   "ratio": "1:1",
+   "px": 800,
+   "model": "gpt_image_2_5",
+   "variant": "sunburst",
+   "quality": "medium",
+   "resolution": "1k",
+   "background": "transparent",
+   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50), natural soft colours for the produce. Subject: a large, long cassava root with rough brown bark, one end cut to show the white flesh, drawn as the only subject, centred and filling most of the frame, isolated on a fully transparent background. No people, no hands, no text, no plate, no frame, no ground shadow. Avoid: photorealism, 3D, gradients.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20261007_054556_e9d07827-fde0-434c-94c0-a541c8af4c19.png",
+   "job_id": "e9d07827-fde0-434c-94c0-a541c8af4c19",
+   "generated": "2026-10-07",
+   "credits": 0.5
+  },
+  {
+   "id": "racimo-de-bananas",
+   "file": "public/assets/comparaciones/racimo-de-bananas.webp",
+   "subject_en": "a bunch of ripe yellow bananas on one stem",
+   "ratio": "1:1",
+   "px": 800,
+   "model": "gpt_image_2_5",
+   "variant": "sunburst",
+   "quality": "medium",
+   "resolution": "1k",
+   "background": "transparent",
+   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50), natural soft colours for the produce. Subject: a bunch of ripe yellow bananas on one stem, drawn as the only subject, centred and filling most of the frame, isolated on a fully transparent background. No people, no hands, no text, no plate, no frame, no ground shadow. Avoid: photorealism, 3D, gradients.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20261007_054626_fc9fd69e-97b1-4d6f-8d1d-6d9c9f0d933d.png",
+   "job_id": "fc9fd69e-97b1-4d6f-8d1d-6d9c9f0d933d",
+   "generated": "2026-10-07",
+   "credits": 0.5
+  },
+  {
+   "id": "andai",
+   "file": "public/assets/comparaciones/andai.webp",
+   "subject_en": "a large andai squash, the long Paraguayan winter squash with smooth pale tan-orange skin and a long neck, shaped like a big butternut squash, whole",
+   "ratio": "1:1",
+   "px": 800,
+   "model": "gpt_image_2_5",
+   "variant": "sunburst",
+   "quality": "medium",
+   "resolution": "1k",
+   "background": "transparent",
+   "prompt": "Warm flat editorial illustration in a gentle children's picture-book style, soft organic shapes, subtle paper-grain texture, hand-drawn outline in deep petrol green (#2F5D50), natural soft colours for the produce. Subject: a large andai squash, the long Paraguayan winter squash with smooth pale tan-orange skin and a long neck, shaped like a big butternut squash, whole, drawn as the only subject, centred and filling most of the frame, isolated on a fully transparent background. No people, no hands, no text, no plate, no frame, no ground shadow. Avoid: photorealism, 3D, gradients.",
+   "url": "https://d8j0ntlcm91z4.cloudfront.net/user_349VrHjTFIpx9q71lpfpAXcLXvR/hf_20261007_054641_ffed1507-d485-4a0c-9ab6-8db71ffa9f7a.png",
+   "job_id": "ffed1507-d485-4a0c-9ab6-8db71ffa9f7a",
+   "generated": "2026-10-07",
+   "credits": 0.5
   }
  ],
  "baby_note": "Growth plan item 9 (G2, 'Ya nació'): one illustration per age band on the baby home (lib/baby/content.ts BABY_STAGES). Generated 2026-09-28 (GPT Image 2.5 Sunburst, medium 1k, 0.5 credits each, week-42 render as character reference) and placed as 960x720 WebP. 4:3, shown at most ~360 px wide; export 960x720 WebP. The screen renders a drawn fallback while a file is missing.",

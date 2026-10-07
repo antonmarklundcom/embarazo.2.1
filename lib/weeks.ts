@@ -211,7 +211,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 23,
-    sizeComparison: "un pomelo",
+    sizeComparison: "una berenjena grande",
     lengthCm: 28.9,
     weightG: 501,
     milestone:
@@ -238,7 +238,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 26,
-    sizeComparison: "un repollo pequeño",
+    sizeComparison: "una lechuga grande",
     lengthCm: 35.6,
     weightG: 760,
     milestone:
@@ -247,7 +247,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 27,
-    sizeComparison: "una coliflor",
+    sizeComparison: "una sandía pequeña",
     lengthCm: 36.6,
     weightG: 875,
     milestone:
@@ -256,7 +256,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 28,
-    sizeComparison: "una berenjena grande",
+    sizeComparison: "un zapallo pequeño",
     lengthCm: 37.6,
     weightG: 1005,
     milestone:
@@ -274,7 +274,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 30,
-    sizeComparison: "un repollo",
+    sizeComparison: "un ananá",
     lengthCm: 39.9,
     weightG: 1319,
     milestone:
@@ -292,7 +292,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 32,
-    sizeComparison: "una lechuga",
+    sizeComparison: "un mamón grande",
     lengthCm: 42.4,
     weightG: 1702,
     milestone:
@@ -301,7 +301,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 33,
-    sizeComparison: "un ananá",
+    sizeComparison: "un zapallo grande",
     lengthCm: 43.7,
     weightG: 1918,
     milestone:
@@ -310,7 +310,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 34,
-    sizeComparison: "un melón pequeño",
+    sizeComparison: "una mandioca grande",
     lengthCm: 45,
     weightG: 2146,
     milestone:
@@ -319,7 +319,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 35,
-    sizeComparison: "un melón",
+    sizeComparison: "un racimo de bananas",
     lengthCm: 46.2,
     weightG: 2383,
     milestone:
@@ -328,7 +328,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 36,
-    sizeComparison: "una lechuga grande",
+    sizeComparison: "un andaí",
     lengthCm: 47.4,
     weightG: 2622,
     milestone:
@@ -337,7 +337,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 37,
-    sizeComparison: "una sandía pequeña",
+    sizeComparison: "una sandía mediana",
     lengthCm: 48.6,
     weightG: 2859,
     milestone:
@@ -346,7 +346,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 38,
-    sizeComparison: "un zapallo pequeño",
+    sizeComparison: "una sandía",
     lengthCm: 49.8,
     weightG: 3083,
     milestone:
@@ -355,7 +355,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 39,
-    sizeComparison: "una sandía mediana",
+    sizeComparison: "una sandía grande",
     lengthCm: 50.7,
     weightG: 3288,
     milestone:
@@ -364,7 +364,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 40,
-    sizeComparison: "una sandía",
+    sizeComparison: "una sandía grande y madura",
     lengthCm: 51.2,
     weightG: 3462,
     milestone:
@@ -373,7 +373,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 41,
-    sizeComparison: "una sandía grande",
+    sizeComparison: "una sandía grande y madura",
     lengthCm: 51.7,
     weightG: 3597,
     milestone:

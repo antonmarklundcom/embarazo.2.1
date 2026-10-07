@@ -269,22 +269,13 @@ export const PerspectiveBandSchema = z
 export type PerspectiveBand = z.infer<typeof PerspectiveBandSchema>;
 
 /**
- * C5 — the "de la obstetra" card (feature map #14): one bylined note per week.
- *
- * The byline is `NEXT_PUBLIC_MEDICAL_REVIEWER`, so **every string here is a
- * draft awaiting a real reviewer's signature** and the card does not render at
- * all until one is configured (Z2's rule: never claim a medical review that has
- * not happened). The cap keeps a note to something a person reads standing up
- * with a phone in one hand.
- */
-/**
  * K9 / F3 — the sentences the symptom-insight card may say.
  *
  * A seed file rather than strings in a component **so a medical reviewer can
  * read every sentence the app will ever say about somebody's symptoms in one
  * sitting**, without reading TypeScript. Same separation C5 made between an
- * obstetra's note and the code that places it, and the same gate: the card does
- * not render at all without `NEXT_PUBLIC_MEDICAL_REVIEWER`.
+ * obstetra's note and the code that places it, and the same gate: a template
+ * renders only with its own approval in `lib/seed/approvals.json` (F22).
  *
  * `line` states what she logged; `hint` points at her control. Neither may
  * contain causal or diagnostic language — asserted in `lib/seed/insights.test.ts`,
@@ -299,11 +290,65 @@ export const InsightTemplateSchema = z
   .strict();
 export type InsightTemplate = z.infer<typeof InsightTemplateSchema>;
 
+/**
+ * C5 — the "de la obstetra" card (feature map #14): one bylined note per week.
+ *
+ * **Every string here is a draft awaiting a real reviewer's signature.** A note
+ * renders only with its own approval in `lib/seed/approvals.json`, and the card
+ * is signed by the reviewer who approved that exact text (F22; Z2's rule:
+ * never claim a medical review that has not happened). The cap keeps a note to
+ * something a person reads standing up with a phone in one hand.
+ */
 export const ObstetraNoteSchema = z.object({
   week: z.number().int().min(1).max(42),
   note: z.string().min(1).max(320),
 });
 export type ObstetraNote = z.infer<typeof ObstetraNoteSchema>;
+
+/**
+ * F22 — who may be named as a clinical reviewer (`lib/seed/reviewers.json`).
+ *
+ * A registry, not an approval: being listed here makes nobody's name appear
+ * anywhere. Only an entry in `approvals.json` does, and only on the exact text
+ * it approved. `registration` is the professional registry number, when the
+ * reviewer agrees to publish it.
+ */
+export const ReviewerSchema = z
+  .object({
+    id: idSchema,
+    name: z.string().min(3).max(80),
+    profession: z.string().min(3).max(80),
+    registration: z.string().min(1).max(40).optional(),
+  })
+  .strict();
+export type Reviewer = z.infer<typeof ReviewerSchema>;
+
+/**
+ * F22 — one clinician's approval of one piece of clinical text, at one version
+ * (`lib/seed/approvals.json`).
+ *
+ * `contentHash` is `contentHash()` in `lib/content/approvals.ts` over the text
+ * as it renders. Editing the text changes the hash, which turns the approval
+ * stale: the item falls back to "no review" until it is approved again. Nobody
+ * writes this entry on a clinician's behalf; it records a sign-off that
+ * happened, with its date.
+ */
+export const ApprovalSchema = z
+  .object({
+    contentId: z
+      .string()
+      .regex(
+        /^(obstetra:([1-9]|[1-3]\d|4[0-2])|insight:[a-z]+|food:[a-z0-9-]+|guia:[a-z0-9-]+)$/,
+        'contentId inválido: "obstetra:<semana>", "insight:<id>", "food:<id>" o "guia:<slug>"',
+      ),
+    reviewerId: idSchema,
+    reviewedAt: isoDateSchema,
+    contentHash: z
+      .string()
+      .regex(/^[0-9a-f]{64}$/, "contentHash tiene que ser un SHA-256 en hexadecimal (64 caracteres)"),
+  })
+  .strict();
+export type Approval = z.infer<typeof ApprovalSchema>;
 
 /**
  * E6 — the FAQ (feature map #29).

@@ -4,23 +4,23 @@ import { useLiveQuery } from "dexie-react-hooks";
 
 import { db, notDeleted } from "@/lib/db";
 import { findInsights } from "@/lib/insights/patterns";
-import { insightTemplate, renderInsight } from "@/lib/seed/insights";
-import { isPlaceholderReviewer } from "@/lib/launchChecks";
+import { approvedInsightTemplate, renderInsight } from "@/lib/seed/insights";
 
 // BUILD-PLAN K9 / F3 — one observation about what she has been logging.
 //
-// **The byline is the gate**, exactly as it is for C5's obstetra card, and for
-// a sharper reason: this block says something about a specific person's
+// **The signature is the gate**, exactly as it is for C5's obstetra card, and
+// for a sharper reason: this block says something about a specific person's
 // symptoms. Unsigned, it would be the app volunteering an interpretation of
-// somebody's body with nobody's name on the phrasing. With no configured
-// reviewer it does not render — not generically, not unsigned.
+// somebody's body with nobody's name on the phrasing. Without a reviewer's
+// approval of the exact template it would use, it does not render — not
+// generically, not unsigned. F22 (2026-10): that approval is per template and
+// per version in `lib/seed/approvals.json`; `NEXT_PUBLIC_MEDICAL_REVIEWER` no
+// longer unlocks anything.
 //
 // Everything below the gate is on-device arithmetic over rows she already has.
 // Nothing is fetched, nothing is sent, and the card renders nothing at all
 // until there is enough data for a finding to be honest (see
 // `lib/insights/patterns.ts` for the thresholds and why they are blunt).
-
-const REVIEWER = process.env.NEXT_PUBLIC_MEDICAL_REVIEWER;
 
 export function SymptomInsight() {
   const data = useLiveQuery(async () => {
@@ -34,7 +34,6 @@ export function SymptomInsight() {
     };
   }, []);
 
-  if (isPlaceholderReviewer(REVIEWER)) return null;
   if (!data) return null;
 
   const insights = findInsights(
@@ -54,10 +53,10 @@ export function SymptomInsight() {
   const first = insights[0];
   if (!first) return null;
 
-  const template = insightTemplate(first.templateId);
-  if (!template) return null;
+  const approved = approvedInsightTemplate(first.templateId);
+  if (!approved) return null;
 
-  const rendered = renderInsight(template, {
+  const rendered = renderInsight(approved.template, {
     symptom: first.symptom.toLowerCase(),
     withCount: first.withCount,
     withDays: first.withDays,
@@ -83,7 +82,8 @@ export function SymptomInsight() {
       <p className="mt-2 text-sm leading-relaxed text-muted">{rendered.hint}</p>
       <p className="mt-2 text-[11px] leading-relaxed text-muted">
         Esto sale de lo que vos anotaste en este teléfono. No es un diagnóstico
-        y no reemplaza la consulta. {REVIEWER}
+        y no reemplaza la consulta. Frase revisada por {approved.review.reviewerName},{" "}
+        {approved.review.profession}.
       </p>
     </section>
   );

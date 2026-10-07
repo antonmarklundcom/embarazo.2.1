@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 
 import {
   CLIENT_FLAG_KEYS,
@@ -137,9 +137,11 @@ describe("no un-audited write path to the flag table", () => {
         }
         if (!/\.(ts|tsx)$/.test(entry)) continue;
         if (/\.test\.tsx?$/.test(entry)) continue;
-        const relative = full.replace(process.cwd() + "/", "");
-        if (allowed.has(relative)) continue;
-        if (/\bappFlags\b/.test(readFileSync(full, "utf8"))) offenders.push(relative);
+        // `relative()` uses the platform separator, the same one `join()` put
+        // into `allowed` — a hand-built "/" made this fail on every Windows run.
+        const path = relative(process.cwd(), full);
+        if (allowed.has(path)) continue;
+        if (/\bappFlags\b/.test(readFileSync(full, "utf8"))) offenders.push(path);
       }
     };
     for (const root of ["app", "components", "lib"]) walk(join(process.cwd(), root));

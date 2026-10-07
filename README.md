@@ -58,7 +58,7 @@ node scripts/gen-icons.mjs  # regenera los iconos PWA en public/icons/
 # --- MÍNIMO VIABLE (lanzar con esto) ---
 NEXT_PUBLIC_APP_URL=                 # URL pública, ej. https://app.tudominio.com.py
 NEXT_PUBLIC_BUSINESS_WHATSAPP=       # +595... contacto de respaldo
-NEXT_PUBLIC_MEDICAL_REVIEWER=        # ej. "Dra. ___, gineco-obstetra"
+NEXT_PUBLIC_MEDICAL_REVIEWER=        # sin efecto desde F22: la revisión se registra por texto en lib/seed/approvals.json
 NEXT_PUBLIC_SITE_URL=                # sitio SEO; por defecto https://embarazo.com.py (canonicals, /conoce 301)
 
 # --- GOOGLE PLAY / TWA (opcional; sin esto assetlinks.json devuelve []) ---

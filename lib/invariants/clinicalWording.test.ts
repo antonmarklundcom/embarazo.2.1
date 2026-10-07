@@ -21,6 +21,10 @@ import articles from "@/lib/seed/articles.json";
 
 const lineOf = (week: number) => weeklyLines.find((l) => l.week === week)?.line ?? "";
 const weekOf = (week: number) => WEEKS.find((w) => w.week === week)!;
+// The obstetra notes are keyed by the same display week (ObstetraCard gets the
+// home screen's week). Gated drafts, but F22 means approving one publishes it,
+// so the same rule has to hold before any reviewer reads them.
+const noteOf = (week: number) => obstetraNotes.find((n) => n.week === week)?.note ?? "";
 
 describe("term is counted in completed weeks", () => {
   it("does not call display week 34 nearly ready", () => {
@@ -29,11 +33,12 @@ describe("term is counted in completed weeks", () => {
   });
 
   it("does not start early term at display week 37, nor full term at 39", () => {
-    for (const text of [weekOf(37).milestone, lineOf(37)]) {
+    for (const text of [weekOf(37).milestone, lineOf(37), noteOf(37)]) {
       expect(text).not.toMatch(/se considera a término/i);
+      expect(text).not.toMatch(/^a término temprano/i);
       expect(text).toMatch(/37 semanas completas/);
     }
-    for (const text of [weekOf(39).milestone, lineOf(39)]) {
+    for (const text of [weekOf(39).milestone, lineOf(39), noteOf(39)]) {
       expect(text).not.toMatch(/^(bebé )?a término completo/i);
       expect(text).toMatch(/se acerca/i);
     }

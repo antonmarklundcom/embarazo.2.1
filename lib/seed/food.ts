@@ -1,4 +1,6 @@
 import { FoodEntrySchema, validateContentArray, type FoodEntry } from "../content/schemas";
+import { foodClinicalText, foodContentId, reviewFor } from "../content/approvals";
+import { REVIEW_REGISTRY } from "./approvals";
 import { reviewedOnly } from "./gate";
 import rawFood from "./food.json";
 
@@ -21,4 +23,12 @@ if (errors.length > 0) {
 
 export const FOOD: FoodEntry[] = valid;
 
-export const PUBLISHED_FOOD: FoodEntry[] = reviewedOnly(FOOD);
+// F22: `reviewedBy` alone is a claim. An entry publishes only when that claim
+// is backed by a current approval of its exact verdict text in
+// `lib/seed/approvals.json`, so editing a reviewed verdict hides it again until
+// it is re-approved (`npm run validate:content` reports the mismatch).
+export const PUBLISHED_FOOD: FoodEntry[] = reviewedOnly(FOOD).filter(
+  (entry) =>
+    reviewFor(REVIEW_REGISTRY, foodContentId(entry.id), foodClinicalText(entry))?.reviewerName ===
+    entry.reviewedBy,
+);

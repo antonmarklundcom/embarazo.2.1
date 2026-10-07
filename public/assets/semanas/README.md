@@ -30,8 +30,10 @@ embryo yet, and the hero says so.
 
 `<slug>` comes from `lib/seed/comparisons.json`'s `imageSrc`, which is the
 authority. Run `node -e "console.log(require('./lib/seed/comparisons.json').map(r=>r.imageSrc).join('\n'))"`
-for the exact list; there are **28 objects for 40 weeks**, because "una sandía"
-serves several weeks and one file serves them all.
+for the exact list; there are **38 objects for 40 weeks** (weeks 40 and 41 share
+"una sandía grande y madura"; one file serves both). Since 2026-10-07 the drawn
+object never shrinks from one week to the next (`lib/seed/comparisons.test.ts`);
+seven older objects are retired in `docs/imagery-manifest.json` but kept on disk.
 
 ## How to convert
 

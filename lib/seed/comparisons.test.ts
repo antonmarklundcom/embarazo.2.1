@@ -55,13 +55,25 @@ describe("the two files describe the same object", () => {
 });
 
 describe("the measurements are plausible rather than merely present", () => {
-  it("grows over the pregnancy, allowing the deliberate dips", () => {
-    // Not monotonic on purpose — week 21 is "un pomelo" (14 cm) after week 20's
-    // "un mamón mediano" (25 cm), because the app switches to comparing a
-    // crown-heel length against rounder objects. What must hold is the trend.
+  it("grows over the pregnancy", () => {
     const early = COMPARISONS.filter((r) => r.week <= 12).map((r) => r.itemCm);
     const late = COMPARISONS.filter((r) => r.week >= 36).map((r) => r.itemCm);
     expect(Math.max(...early)).toBeLessThan(Math.min(...late));
+  });
+
+  it("never draws a smaller object than the week before (from week 5)", () => {
+    // 2026-10: the dips used to be deliberate (a 14 cm pomelo after a 25 cm
+    // mamón, a 15 cm repollo after a 30 cm coco). Drawn to scale beside a baby
+    // who only grows, that reads as the baby shrinking — the complaint users
+    // make about other apps ("parece que se achica"). Weeks 3–4 stay out: both
+    // seeds sit under the scale engine's floor, so their 0.1 cm differ draws
+    // the same.
+    const rows = [...COMPARISONS].sort((a, b) => a.week - b.week).filter((r) => r.week >= 5);
+    const shrinks = rows
+      .slice(1)
+      .filter((row, i) => row.itemCm < rows[i]!.itemCm)
+      .map((row) => `semana ${row.week}: ${row.item} (${row.itemCm} cm)`);
+    expect(shrinks).toEqual([]);
   });
 
   it("keeps the smallest items small enough to be worth a floor", () => {

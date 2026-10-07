@@ -4671,3 +4671,26 @@ The plan lives in the site repo (`antonmarklundcom/embarazo`,
   guidance (from week 20; DGVS alert 10 Feb 2025).
 - **Not yet:** the site imports no approvals; a versioned approvals contract for
   `embarazo.com.py` waits until a first real approval exists.
+
+## 2026-10-07 — the size object never shrinks
+
+- **What changed.** The comparison object is drawn to scale beside the baby
+  (`ComparisonFigure`), and the week's size story is the object (2026-09-28
+  entry). Its `itemCm` used to go backwards at weeks 23, 26, 30, 32 and 34: a
+  14 cm pomelo after a 25 cm mamón, a 15 cm repollo after a 30 cm coco. The
+  test called those dips deliberate (rounder objects against a crown-heel
+  length). Drawn next to a baby who only grows, a dip reads as the baby
+  shrinking, which is the complaint users leave on other apps ("parece que se
+  achica"; Amila Play reviews, Sep 2026). Weeks 23 and 26–41 are re-sequenced
+  so `itemCm` never decreases from week 5; weeks 3–4 sit under the scale floor.
+- **Objects.** Ten weeks reuse existing objects; five are new, all in the
+  2026-09-23 style and prompt template: un mamón grande (36 cm), un zapallo
+  grande (37), una mandioca grande (38), un racimo de bananas (39) and un andaí
+  (40, the squash for kiveve). Generated 2026-10-07 at Anton's request (gpt
+  image 2.5 sunburst, medium 1k, 0.5 credits each). Pomelo, repollo pequeño,
+  coliflor, repollo, lechuga, melón pequeño and melón are retired in the
+  manifest, files kept. Weeks 40 and 41 share "una sandía grande y madura"
+  (the baby's length is flat there too).
+- **Contract.** `contracts/weeks.v1.json` carries the new names; the site PR
+  imports them and replaces the 15 week illustrations and preview cards.
+  Deploy both together so app and site name the same object.

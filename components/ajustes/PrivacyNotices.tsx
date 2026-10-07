@@ -43,13 +43,15 @@ export function PrivacyNotices() {
             dispositivo.
           </li>
           <li>
-            • Tus registros de síntomas y ánimo, tus fotos de la panza, tu
-            calendario menstrual y la fecha de tu próximo control quedan
-            guardados solo en tu teléfono.
+            • Con cuenta, tus registros (síntomas, ánimo, peso, diario,
+            controles, calendario) se copian a tu cuenta para que no los
+            pierdas. Tus fotos, solo si activás «Copia de tus fotos»; las notas
+            con PIN, nunca.
           </li>
           <li>
-            • Lo único que viaja al servidor es tu trimestre y tu departamento,
-            para mostrarte recursos cercanos.
+            • Sin cuenta, al servidor solo llegan contadores anónimos (qué se
+            lee y en qué semana, sin nada que diga de quién) y, si activás
+            avisos, la suscripción de tu navegador.
           </li>
           <li>• No usamos cookies de seguimiento ni rastreadores.</li>
         </ul>

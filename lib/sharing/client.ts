@@ -1,6 +1,7 @@
 "use client";
 
 import { db, notDeleted } from "@/lib/db";
+import { accountHeaders, ensureAccountLink } from "@/lib/sync/client";
 import { getCurrentWeek } from "@/lib/pregnancy";
 import {
   buildSnapshot,
@@ -71,6 +72,14 @@ export interface SharedView {
  */
 export async function publishCompanionSnapshot(): Promise<boolean> {
   try {
+    // F01: this snapshot is built from the data on THIS phone. If that data
+    // belongs to another account than the one signed in (a shared phone, an
+    // account switch), publishing it would show one person's pregnancy to
+    // another account's family. Same rule as sync (A6), same answer: nothing
+    // is sent.
+    const link = await ensureAccountLink();
+    if (link.status !== "linked") return false;
+
     const profile = notDeleted(await db().profile.toArray())[0];
     const pregnancy = notDeleted(await db().pregnancy.toArray())[0];
 
@@ -91,7 +100,7 @@ export async function publishCompanionSnapshot(): Promise<boolean> {
 
     const res = await fetch(URL_PATH, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: accountHeaders(link.accountId),
       cache: "no-store",
       body: JSON.stringify({
         action: "publish",

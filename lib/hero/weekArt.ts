@@ -27,8 +27,19 @@ export function hasWeekArt(week: number): boolean {
   return Number.isInteger(week) && week >= first && week <= 42;
 }
 
+/**
+ * N6 — bump whenever the files behind `bebe-<week>.webp` change.
+ *
+ * The service worker serves these CacheFirst (`mibebe-semanas`, app/sw.ts) and
+ * never revalidates, so the same URL meant the same bytes forever: when the 42
+ * renders were replaced on 2026-09-28, a phone that had cached the previous
+ * set kept showing it (under the cutout layout). A new revision is a new cache
+ * key; the cache name itself stays, as AGENTS.md requires.
+ */
+export const WEEK_ART_REVISION = "2026-09-28";
+
 export function weekArtSrc(week: number): string {
-  return `/assets/semanas/bebe-${week}.webp`;
+  return `/assets/semanas/bebe-${week}.webp?v=${WEEK_ART_REVISION}`;
 }
 
 /**

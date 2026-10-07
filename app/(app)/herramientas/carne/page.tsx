@@ -68,8 +68,9 @@ export default function CarnePage() {
       <section className="rounded-card border border-sage/30 bg-sage/5 p-4">
         <PrivacyLine />
         <p className="mt-1 text-xs leading-relaxed text-muted">
-          Las fotos y tus datos quedan solo en tu teléfono. La copia no
-          reemplaza al carné de papel: llevalo igual a tus controles.
+          Las fotos se guardan en tu teléfono y solo se suben si activás «Copia
+          de tus fotos»; tus datos, si tenés cuenta, también van a tu copia.
+          Esto no reemplaza al carné de papel: llevalo igual a tus controles.
         </p>
       </section>
 

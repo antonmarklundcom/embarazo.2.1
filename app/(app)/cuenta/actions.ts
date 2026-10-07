@@ -13,7 +13,13 @@ import {
   signOut,
 } from "@/lib/server/auth";
 import { PROVIDER_IDS } from "@/lib/auth/config";
-import { EmailSchema, PasswordSchema } from "@/lib/auth/password";
+import {
+  EmailSchema,
+  NewPasswordSchema,
+  PASSWORD_TOO_LONG_MESSAGE,
+  PasswordSchema,
+  fitsBcrypt,
+} from "@/lib/auth/password";
 import {
   CONSENT_COOKIE,
   CONSENT_TTL_MS,
@@ -58,11 +64,24 @@ const StartSignInSchema = z
   })
   .strict();
 
-/** PR-20 — email + password, shared shape for both signup and login. */
+/** PR-20 — email + password, the sign-in shape. */
 const CredentialsFormSchema = z
   .object({
     email: EmailSchema,
     password: PasswordSchema,
+    consent: z.literal("on"),
+    from: FromSchema,
+  })
+  .strict();
+
+/**
+ * F17 — sign-up sets a password, so it must fit bcrypt's 72 bytes. Sign-in
+ * keeps the older, wider shape above so existing long passwords still work.
+ */
+const RegisterFormSchema = z
+  .object({
+    email: EmailSchema,
+    password: NewPasswordSchema,
     consent: z.literal("on"),
     from: FromSchema,
   })
@@ -158,13 +177,17 @@ export async function registerWithPassword(
     };
   }
 
-  const parsed = CredentialsFormSchema.safeParse({
+  const parsed = RegisterFormSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
     consent: formData.get("consent") ?? undefined,
     from: formData.get("from") ?? undefined,
   });
   if (!parsed.success) {
+    const password = formData.get("password");
+    if (typeof password === "string" && password.length >= 8 && !fitsBcrypt(password)) {
+      return { error: PASSWORD_TOO_LONG_MESSAGE };
+    }
     return {
       error:
         "Revisá tu correo, tu contraseña (mínimo 8 caracteres) y marcá la casilla de consentimiento.",

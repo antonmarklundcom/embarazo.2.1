@@ -16,12 +16,30 @@
 // not the transparent cutouts the U7 layout composites — `lib/hero/weekArt.ts`
 // is the switch that tells the hero which kind is on disk.
 
-import { copyFileSync, mkdirSync, readdirSync, statSync } from "node:fs";
+//
+// F11 (2026-10 review): the app now ships its own transparent cutouts and
+// `WEEK_ART_STYLE` is "cutout". Run as it was, this script would overwrite them
+// with the site's opaque illustrations while the hero still composited them as
+// cutouts. It now refuses unless the style says "framed", or `--replace-cutouts`
+// is passed by someone who will also switch the style and bump
+// `WEEK_ART_REVISION` (so cached phones fetch the new files) in the same commit.
+
+import { copyFileSync, mkdirSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const site = resolve(process.argv[2] ?? join(ROOT, "..", "embarazo"));
+const args = process.argv.slice(2);
+const style = /WEEK_ART_STYLE:[^=]*=\s*"(\w+)"/.exec(readFileSync(join(ROOT, "lib", "hero", "weekArt.ts"), "utf8"))?.[1];
+if (style !== "framed" && !args.includes("--replace-cutouts")) {
+  console.error(
+    `lib/hero/weekArt.ts dice WEEK_ART_STYLE = "${style}": las imágenes de public/assets/semanas/ son recortes de la app. ` +
+      "Este script las reemplazaría por las ilustraciones del sitio. Si es lo que querés, pasá --replace-cutouts, " +
+      'cambiá WEEK_ART_STYLE a "framed" y subí WEEK_ART_REVISION en el mismo commit.',
+  );
+  process.exit(1);
+}
+const site = resolve(args.find((arg) => !arg.startsWith("--")) ?? join(ROOT, "..", "embarazo"));
 const srcDir = join(site, "assets", "img");
 const outDir = join(ROOT, "public", "assets", "semanas");
 

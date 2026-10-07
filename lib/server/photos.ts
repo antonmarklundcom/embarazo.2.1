@@ -133,3 +133,23 @@ export async function deleteAllPhotoRows(
 ): Promise<void> {
   await backend.deleteAllRows(userId);
 }
+
+/** F03 — a row's state: null (never recorded), live, or a tombstone. */
+export async function photoRow(
+  backend: PhotosBackend,
+  userId: string,
+  store: PhotoStore,
+  recordId: string,
+): Promise<{ objectKey: string; deletedAt: number | null } | null> {
+  return backend.findRow(userId, store, recordId);
+}
+
+/** Drop one row — only once its object is confirmed gone. */
+export async function forgetPhotoRow(
+  backend: PhotosBackend,
+  userId: string,
+  store: PhotoStore,
+  recordId: string,
+): Promise<void> {
+  await backend.deleteRow(userId, store, recordId);
+}

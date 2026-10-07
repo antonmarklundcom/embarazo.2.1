@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { clearOnboardingDraft } from "@/lib/onboarding/draftStorage";
 import { APP_NAME } from "@/lib/brand";
-import { exportBackup, backupFileName, importBackup } from "@/lib/backup";
+import { BackupError, exportBackup, backupFileName, importBackup } from "@/lib/backup";
 import { syncNow } from "@/lib/sync/client";
 
 // W4: "Copia de seguridad" (Phase 0 hardening — data never leaves the device),
@@ -74,9 +74,14 @@ export function BackupSettings() {
       setConfirmRestoreFile(null);
       // Force a full reload so every screen re-reads the restored data.
       window.location.href = "/";
-    } catch {
+    } catch (error) {
+      // A refused file says why (a newer version, a damaged photo); anything
+      // else is the generic answer. Either way nothing on the phone changed:
+      // `importBackup` validates the whole file before it clears anything.
       setBackupErr(
-        `No pudimos restaurar ese archivo. Verificá que sea una copia de seguridad de ${APP_NAME}.`,
+        error instanceof BackupError
+          ? error.message
+          : `No pudimos restaurar ese archivo. Verificá que sea una copia de seguridad de ${APP_NAME}.`,
       );
       setRestoring(false);
     }

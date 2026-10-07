@@ -5,6 +5,7 @@ import {
   deleteAccountData,
   type AccountDeleteExecutor,
 } from "./account";
+import { ERASED_AI_USER } from "./aiBaby";
 import { schema } from "./schema";
 
 // BUILD-PLAN A5: "deletion leaves zero rows for that user, verified by a test".
@@ -56,7 +57,18 @@ function memoryDb() {
     return before - tables[table]!.length;
   }
 
+  /** F02: the order the plan touched things in, for the revoke-first test. */
+  const calls: string[] = [];
+
   const executor: AccountDeleteExecutor = {
+    async markDeleting(userId) {
+      calls.push("markDeleting");
+      const user = tables.users!.find((u) => u.id === userId);
+      if (user) {
+        user.deletedAt ??= new Date(0);
+        user.sessionVersion = ((user.sessionVersion as number | undefined) ?? 0) + 1;
+      }
+    },
     async ownedPregnancyIds(userId) {
       return tables.pregnancies!
         .filter((p) => p.ownerUserId === userId)
@@ -67,6 +79,7 @@ function memoryDb() {
       return (user?.email as string | undefined) ?? null;
     },
     async deleteSyncRecords(userId) {
+      calls.push("deleteSyncRecords");
       return removeWhere("syncRecords", (r) => r.userId === userId);
     },
     async deleteAccounts(userId) {
@@ -77,7 +90,10 @@ function memoryDb() {
     },
     async deleteVerificationTokens(email) {
       if (!email) return 0;
-      return removeWhere("verificationTokens", (r) => r.identifier === email);
+      return removeWhere(
+        "verificationTokens",
+        (r) => r.identifier === email || r.identifier === `verify:${email}`,
+      );
     },
     async pushEndpointsOf(userId) {
       return tables.pushSubscriptions!
@@ -92,8 +108,15 @@ function memoryDb() {
     async deletePushSubscriptions(userId) {
       return removeWhere("pushSubscriptions", (r) => r.userId === userId);
     },
-    async deleteAiGenerations(userId) {
-      return removeWhere("aiGenerations", (r) => r.userId === userId);
+    async anonymiseAiGenerations(userId) {
+      let changed = 0;
+      for (const row of tables.aiGenerations!) {
+        if (row.userId === userId) {
+          row.userId = ERASED_AI_USER;
+          changed += 1;
+        }
+      }
+      return changed;
     },
     async deleteMemberships(userId, pregnancyIds) {
       return removeWhere(
@@ -151,7 +174,7 @@ function memoryDb() {
     },
   };
 
-  return { tables, executor, deletedObjects };
+  return { tables, executor, deletedObjects, calls };
 }
 
 const VICTIM = "user-a";
@@ -170,7 +193,10 @@ function seed(db: ReturnType<typeof memoryDb>) {
   tables.sessions!.push({ userId: VICTIM }, { userId: BYSTANDER });
   tables.verificationTokens!.push(
     { identifier: "a@example.com" },
+    // F19: the confirmation namespace. It used to survive the erasure.
+    { identifier: "verify:a@example.com" },
     { identifier: "b@example.com" },
+    { identifier: "verify:b@example.com" },
   );
 
   for (let i = 0; i < 37; i += 1) {
@@ -243,7 +269,10 @@ function seed(db: ReturnType<typeof memoryDb>) {
     },
   );
 
-  tables.aiGenerations!.push({ userId: VICTIM }, { userId: BYSTANDER });
+  tables.aiGenerations!.push(
+    { id: "g1", userId: VICTIM, status: "succeeded", costUsdMicros: 40_000 },
+    { id: "g2", userId: BYSTANDER, status: "succeeded", costUsdMicros: 40_000 },
+  );
 
   tables.contentStats!.push({ week: 12, contentId: "guia", day: "2026-08-12" });
   // K20. The victim's approved question is the interesting one: it is public
@@ -331,6 +360,71 @@ describe("K4 — account deletion leaves zero blobs", () => {
   });
 });
 
+describe("F02 — sessions are revoked before anything is deleted", () => {
+  it("marks the account first, so no other device can keep writing", async () => {
+    const db = memoryDb();
+    seed(db);
+
+    await deleteAccountData(db.executor, VICTIM);
+
+    expect(db.calls[0]).toBe("markDeleting");
+    expect(db.calls.indexOf("markDeleting")).toBeLessThan(
+      db.calls.indexOf("deleteSyncRecords"),
+    );
+  });
+
+  it("sweeps records a late request wrote while the first pass ran", async () => {
+    const db = memoryDb();
+    seed(db);
+    const original = db.executor.deleteUser;
+    db.executor.deleteUser = async (userId) => {
+      // A sync push that had already passed its session check commits now.
+      db.tables.syncRecords!.push({ userId, store: "weightEntries" });
+      return original(userId);
+    };
+
+    await deleteAccountData(db.executor, VICTIM);
+
+    expect(db.tables.syncRecords!.some((r) => r.userId === VICTIM)).toBe(false);
+  });
+});
+
+describe("F19 — every token namespace goes", () => {
+  it("deletes the confirmation token as well as the reset token", async () => {
+    const db = memoryDb();
+    seed(db);
+
+    await deleteAccountData(db.executor, VICTIM);
+
+    expect(db.tables.verificationTokens!.map((r) => r.identifier)).toEqual([
+      "b@example.com",
+      "verify:b@example.com",
+    ]);
+  });
+});
+
+describe("F16 — erasure removes the person, not the money", () => {
+  it("keeps the generation's cost with no owner, so the month's spend does not drop", async () => {
+    const db = memoryDb();
+    seed(db);
+    const spend = () =>
+      db.tables.aiGenerations!.reduce((sum, r) => sum + Number(r.costUsdMicros ?? 0), 0);
+    const before = spend();
+
+    const counts = await deleteAccountData(db.executor, VICTIM);
+
+    expect(spend()).toBe(before);
+    expect(counts.aiGenerations).toBe(1);
+    expect(db.tables.aiGenerations!.map((r) => r.userId).sort()).toEqual(
+      [BYSTANDER, ERASED_AI_USER].sort(),
+    );
+  });
+
+  it("is a decision on record, not a retained table", () => {
+    expect(TABLE_DISPOSITION.aiGenerations).toMatch(/^anonymised/);
+  });
+});
+
 describe("deleteAccountData", () => {
   it("leaves zero rows for the deleted user", async () => {
     const db = memoryDb();
@@ -358,7 +452,7 @@ describe("deleteAccountData", () => {
     expect(counts.users).toBe(1);
     expect(counts.pregnancies).toBe(1);
     expect(counts.pushSubscriptions).toBe(1);
-    expect(counts.verificationTokens).toBe(1);
+    expect(counts.verificationTokens).toBe(2);
     expect(counts.pushReminders).toBe(1);
   });
 
@@ -382,7 +476,7 @@ describe("deleteAccountData", () => {
     expect(db.tables.users![0]!.id).toBe(BYSTANDER);
     expect(db.tables.syncRecords).toHaveLength(1);
     expect(db.tables.pregnancies).toHaveLength(1);
-    expect(db.tables.aiGenerations).toHaveLength(1);
+    expect(db.tables.aiGenerations!.filter((r) => r.userId === BYSTANDER)).toHaveLength(1);
     // The bystander's own invite to their own pregnancy survives.
     expect(db.tables.invites!.map((i) => i.code)).toEqual(["3"]);
   });

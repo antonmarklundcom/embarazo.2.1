@@ -117,6 +117,9 @@ export async function scheduleReminders(
 // Dispatch
 // ---------------------------------------------------------------------------
 
+/** N5: how long a reminder that keeps failing is retried before it is dropped. */
+export const GIVE_UP_AFTER_MS = 24 * 60 * 60 * 1000;
+
 export interface DispatchResult {
   due: number;
   sent: number;
@@ -155,6 +158,11 @@ export async function dispatchDueReminders(
       continue;
     }
 
+    // N5: claim before sending. Two runs overlapping (a slow run and the next
+    // cron tick) used to send the same poke twice. The claim is the "sent"
+    // stamp, written conditionally; a failed send gives it back below.
+    if (!(await backend.claim(row.id, now))) continue;
+
     const outcome = await send(row.endpoint, keys, now);
 
     if (outcome === "gone") {
@@ -166,10 +174,15 @@ export async function dispatchDueReminders(
     }
 
     if (outcome === "sent") {
-      await backend.markSent(row.id, now);
       sent += 1;
     } else {
       failed += 1;
+      // N5: a failure used to stay due forever. Enough of them (a VAPID key
+      // rotation makes every old subscription answer 403) filled the
+      // unordered LIMIT and starved every healthy reminder behind them. Now a
+      // failure is retried by later runs for a day, then given up: it keeps
+      // its stamp and is pruned with the sent ones.
+      if (now - row.fireAt < GIVE_UP_AFTER_MS) await backend.release(row.id);
     }
   }
 

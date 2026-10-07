@@ -13,6 +13,7 @@ import {
 } from "@/lib/ai/babyImage";
 import { downscaleImage } from "@/lib/images";
 import { db } from "@/lib/db";
+import { base64ToBlob } from "@/lib/dataUrl";
 
 // BUILD-PLAN F1 — "así podría ser tu bebé".
 //
@@ -130,8 +131,9 @@ export default function BebeIaPage() {
 
   async function save() {
     if (!image) return;
-    const res = await fetch(`data:${image.mimeType};base64,${image.data}`);
-    const blob = await res.blob();
+    // Decoded locally: the enforced CSP (connect-src) refuses fetch("data:…"),
+    // which made "Guardar" fail silently (lib/dataUrl.ts).
+    const blob = base64ToBlob(image.data, image.mimeType);
     // Saved into the belly-photo diary, which never syncs (§4.4). A generated
     // picture of a baby is exactly as private as a bump photo.
     await db().photoEntries.add({ week: 0, blob, createdAt: Date.now() });

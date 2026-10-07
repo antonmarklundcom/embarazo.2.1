@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:db": "vitest run --config vitest.db.config.mts",
+    "test:mysql": "vitest run --config vitest.mysql.config.mts",
     "validate:content": "node --experimental-strip-types scripts/validate-content.mts",
     "test:e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
@@ -25,6 +26,7 @@
     "prebuild": "node --experimental-strip-types scripts/build-article-index.mts",
     "gen:article-index": "node --experimental-strip-types scripts/build-article-index.mts",
     "gen:guarani-review": "node --experimental-strip-types scripts/gen-guarani-review.mts",
+    "export:weeks": "node --experimental-strip-types scripts/export-weeks.mts",
     "smoke:live": "node scripts/smoke-live.mjs"
   },
   "dependencies": {

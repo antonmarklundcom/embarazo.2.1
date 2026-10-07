@@ -57,7 +57,8 @@ export function AccountCard({
 
       <p className="mt-3 text-xs leading-relaxed text-muted">
         Tus datos de salud se copian a nuestro servidor para que no los pierdas.
-        Tus fotos no: siguen solo en este teléfono.
+        Tus fotos, solo si activás «Copia de tus fotos». Las notas con PIN no
+        se suben.
       </p>
 
       <SignOutButton action={signOutAction} />

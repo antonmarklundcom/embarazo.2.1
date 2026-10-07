@@ -7,7 +7,7 @@
 // non-negotiable, and it is why every entry point below swallows its errors
 // into `syncState.lastError` rather than throwing at a caller.
 
-import { db, type ConflictRow, type SyncStateRow } from "@/lib/db";
+import { db, syncBookkeeping, type ConflictRow, type SyncStateRow } from "@/lib/db";
 import {
   mergeIncoming,
   toPayload,
@@ -103,8 +103,13 @@ function toEnvelope(store: SyncedStore, row: LocalRow): SyncRecordInput {
   return {
     store,
     recordId: row.uid,
-    updatedAt: row.updatedAt,
-    deletedAt: row.deletedAt ?? null,
+    // N3: the v5 upgrade backfilled `updatedAt: 0` for rows with no
+    // `createdAt` (weights, kicks, contractions, checklist, cycle settings,
+    // clinical). The server takes positive timestamps only, so such a row was
+    // refused on every sync. 1 keeps its meaning — older than anything — and
+    // `markClean` still compares against the row's own value.
+    updatedAt: row.updatedAt > 0 ? row.updatedAt : 1,
+    deletedAt: row.deletedAt ? row.deletedAt : null,
     payload: toPayload(store, row),
   };
 }
@@ -119,15 +124,18 @@ async function markClean(
   recordId: string,
   pushedUpdatedAt: number,
 ): Promise<void> {
-  const table = db().table(store);
-  const row = (await table.where("uid").equals(recordId).first()) as
-    | LocalRow
-    | undefined;
-  if (!row || row.id === undefined) return;
-  if (row.updatedAt !== pushedUpdatedAt) return;
-  // Pass `updatedAt` explicitly so the stamping hook leaves it alone; this is
-  // bookkeeping, not a user edit.
-  await table.update(row.id, { dirty: 0, updatedAt: row.updatedAt });
+  // N7: inside `syncBookkeeping` so the stamping hook leaves `updatedAt`
+  // alone. Passing it explicitly was not enough — Dexie drops a key whose
+  // value did not change, so the hook used to stamp "now" on every push.
+  await syncBookkeeping([store], async () => {
+    const table = db().table(store);
+    const row = (await table.where("uid").equals(recordId).first()) as
+      | LocalRow
+      | undefined;
+    if (!row || row.id === undefined) return;
+    if (row.updatedAt !== pushedUpdatedAt) return;
+    await table.update(row.id, { dirty: 0 });
+  });
 }
 
 async function push(): Promise<number> {
@@ -137,9 +145,10 @@ async function push(): Promise<number> {
   let pushed = 0;
   for (let i = 0; i < dirty.length; i += MAX_PUSH_RECORDS) {
     const batch = dirty.slice(i, i + MAX_PUSH_RECORDS);
+    const accountId = (await readSyncState())?.accountId;
     const res = await fetch(SYNC_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: accountId ? accountHeaders(accountId) : { "Content-Type": "application/json" },
       body: JSON.stringify({
         records: batch.map(({ store, row }) => toEnvelope(store, row)),
       }),
@@ -211,36 +220,40 @@ async function applyIncoming(
   incoming: SyncEnvelope,
 ): Promise<{ applied: boolean; conflict: boolean }> {
   const store = incoming.store;
-  const table = db().table(store);
 
-  const local = (await table.where("uid").equals(incoming.recordId).first()) as
-    | LocalRow
-    | undefined;
+  // One bookkeeping transaction for read, merge and write: applying a remote
+  // record is not a local change and must not become one (N7 — `put` over a
+  // clean row used to come out dirty, so every pulled record was echoed back
+  // and then re-stamped). Reading inside the same transaction also means a
+  // user edit cannot land between the merge decision and the write.
+  return syncBookkeeping([store, "conflicts"], async () => {
+    const table = db().table(store);
+    const local = (await table.where("uid").equals(incoming.recordId).first()) as
+      | LocalRow
+      | undefined;
 
-  const merged = mergeIncoming(store, incoming, local);
-  if (!merged.apply || !merged.row) {
-    return { applied: false, conflict: false };
-  }
+    const merged = mergeIncoming(store, incoming, local);
+    if (!merged.apply || !merged.row) {
+      return { applied: false, conflict: false };
+    }
 
-  if (merged.conflict) {
-    const conflict: ConflictRow = {
-      store: merged.conflict.store,
-      recordId: merged.conflict.recordId,
-      detectedAt: Date.now(),
-      localUpdatedAt: merged.conflict.localUpdatedAt,
-      remoteUpdatedAt: merged.conflict.remoteUpdatedAt,
-      localPayload: merged.conflict.localPayload,
-      resolved: 0,
-    };
-    await db().conflicts.add(conflict);
-  }
+    if (merged.conflict) {
+      const conflict: ConflictRow = {
+        store: merged.conflict.store,
+        recordId: merged.conflict.recordId,
+        detectedAt: Date.now(),
+        localUpdatedAt: merged.conflict.localUpdatedAt,
+        remoteUpdatedAt: merged.conflict.remoteUpdatedAt,
+        localPayload: merged.conflict.localPayload,
+        resolved: 0,
+      };
+      await db().conflicts.add(conflict);
+    }
 
-  // `put` carries dirty: 0 and the remote `updatedAt` explicitly, so the
-  // stamping hooks in lib/db.ts leave both alone — applying a remote record is
-  // not a local change and must not become one.
-  await table.put(merged.row as never);
+    await table.put(merged.row as never);
 
-  return { applied: true, conflict: merged.conflict !== null };
+    return { applied: true, conflict: merged.conflict !== null };
+  });
 }
 
 async function pull(): Promise<{ pulled: number; conflicts: number }> {
@@ -339,6 +352,60 @@ async function fetchAccountId(): Promise<string> {
   return ((await res.json()) as PullResponse).accountId;
 }
 
+// ---------------------------------------------------------------------------
+// F01 — the account link, for every path that sends this phone's data
+// ---------------------------------------------------------------------------
+
+/** Header carrying the account this device's data is linked to (F01). */
+export const ACCOUNT_HEADER = "X-Mibebe-Account";
+
+export type AccountLink =
+  /** Signed in, and this phone's data belongs to that account (or now does). */
+  | { status: "linked"; accountId: string }
+  /** Signed in to a DIFFERENT account than this phone's data. Send nothing. */
+  | { status: "mismatch" }
+  /** No session, or no account system: nothing can cross accounts. */
+  | { status: "no-session" }
+  /** Could not ask. Callers treat it as "not now". */
+  | { status: "offline" };
+
+/**
+ * A6's rule — `decideAccountLink` — for callers other than sync.
+ *
+ * Ordinary sync refused to push one account's records into another, but photo
+ * backup, the companion snapshot and push schedules read the same local data
+ * and posted it with whatever session cookie was current (F01). Every one of
+ * them now asks this first, and sends the linked id in `ACCOUNT_HEADER` so the
+ * server can refuse a request whose cookie changed after the check.
+ *
+ * "adopt" (never linked) links here exactly as `syncNow` would, so the first
+ * sync and the first photo upload after sign-in agree on the owner.
+ */
+export async function ensureAccountLink(): Promise<AccountLink> {
+  if (typeof window === "undefined") return { status: "no-session" };
+  let accountId: string;
+  try {
+    accountId = await fetchAccountId();
+  } catch (err) {
+    if (err instanceof SyncHttpError && (err.status === 401 || err.status === 404)) {
+      return { status: "no-session" };
+    }
+    return { status: "offline" };
+  }
+  const decision = decideAccountLink((await readSyncState())?.accountId, accountId);
+  if (decision === "refuse") {
+    await writeSyncState({ lastError: ACCOUNT_MISMATCH_MESSAGE }).catch(() => {});
+    return { status: "mismatch" };
+  }
+  if (decision === "adopt") await writeSyncState({ accountId });
+  return { status: "linked", accountId };
+}
+
+/** Headers for a JSON request that sends this phone's data as `accountId`. */
+export function accountHeaders(accountId: string): Record<string, string> {
+  return { "Content-Type": "application/json", [ACCOUNT_HEADER]: accountId };
+}
+
 /**
  * Push then pull, once.
  *
@@ -382,8 +449,21 @@ export async function syncNow(): Promise<SyncSummary> {
     // device and starting over.
     if (decision === "adopt") await writeSyncState({ accountId });
 
-    const pushed = await push();
+    // N3: a push that fails (a server error, a record it will not take) must
+    // not also stop this phone from receiving everything else. Pull anyway,
+    // then report the push failure.
+    let pushed = 0;
+    let pushError: unknown = null;
+    try {
+      pushed = await push();
+    } catch (err) {
+      if (err instanceof SyncHttpError && (err.status === 401 || err.status === 404)) {
+        throw err;
+      }
+      pushError = err;
+    }
     const { pulled, conflicts } = await pull();
+    if (pushError) throw pushError;
 
     if (decision === "adopt") {
       await writeSyncState({ accountId, linkedAt: Date.now() });

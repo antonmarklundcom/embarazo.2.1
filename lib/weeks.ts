@@ -1,5 +1,5 @@
 import type { WeekInfo } from "./types";
-import { getTrimester } from "./pregnancy";
+import { getTrimester } from "./pregnancy.ts";
 
 // Weeks 1–42 with real, Paraguay-specific content in es-PY voseo (build spec §5).
 // Size comparisons use everyday Paraguayan items and progress realistically.
@@ -270,7 +270,7 @@ const RAW_WEEKS: RawWeek[] = [
     weightG: 1153,
     milestone:
       "Los músculos y los pulmones siguen madurando. Sus pataditas son cada vez más firmes.",
-    tip: "Si notás menos movimiento de lo habitual, recostate de costado, tomá algo fresco y contá las pataditas. Si siguen pocas, contactá a tu médico/a, hospital o sanatorio.",
+    tip: "Si notás menos movimiento de lo habitual, no esperes: contactá hoy a tu médico/a, hospital o sanatorio, o andá a la guardia. Contar pataditas o escuchar latidos en casa no lo descarta.",
   },
   {
     week: 30,
@@ -314,7 +314,7 @@ const RAW_WEEKS: RawWeek[] = [
     lengthCm: 45,
     weightG: 2146,
     milestone:
-      "Los pulmones están casi listos. Si naciera ahora, tendría muy buenas chances con apoyo médico.",
+      "Los pulmones y el sistema nervioso siguen madurando; nacer en esta etapa todavía implica prematuridad.",
     tip: "Andá teniendo lista la documentación para inscribir al bebé después del nacimiento. Mirá la guía sobre el Registro Civil.",
   },
   {
@@ -332,7 +332,7 @@ const RAW_WEEKS: RawWeek[] = [
     lengthCm: 47.4,
     weightG: 2622,
     milestone:
-      "Se considera casi a término. La mayoría ya está cabeza abajo, lista para nacer.",
+      "Sigue acumulando reservas y madurando; aún no llegó al término. La mayoría ya está cabeza abajo.",
     tip: "Confirmá con tu hospital o sanatorio el camino y el contacto para el día del parto. Tené un plan B de cómo llegar.",
   },
   {
@@ -341,7 +341,7 @@ const RAW_WEEKS: RawWeek[] = [
     lengthCm: 48.6,
     weightG: 2859,
     milestone:
-      "A partir de ahora se considera a término temprano. El bebé practica respirar y agarrar con la mano.",
+      "Se acerca al término, que empieza a las 37 semanas completas del carné. El bebé practica respirar y agarrar con la mano.",
     tip: "Conocé las señales de parto: contracciones regulares y cada vez más seguidas, pérdida del tapón mucoso o de líquido.",
   },
   {
@@ -359,7 +359,7 @@ const RAW_WEEKS: RawWeek[] = [
     lengthCm: 50.7,
     weightG: 3288,
     milestone:
-      "Bebé a término completo. Los pulmones y el cerebro siguen afinándose hasta el último día.",
+      "Se acerca al término completo, que empieza a las 39 semanas completas. Los pulmones y el cerebro siguen afinándose.",
     tip: "Ante contracciones regulares, pérdida de líquido o sangrado, contactá a tu hospital o sanatorio. Confiá en lo que sentís.",
   },
   {
@@ -368,7 +368,7 @@ const RAW_WEEKS: RawWeek[] = [
     lengthCm: 51.2,
     weightG: 3462,
     milestone:
-      "Llegó tu fecha probable de parto. Recordá que es una estimación: muchos bebés nacen unos días antes o después.",
+      "Se acerca tu fecha probable de parto. Recordá que es una estimación: muchos bebés nacen unos días antes o después.",
     tip: "Si pasás la fecha sin señales de parto, tu médico/a va a controlarte más seguido. Es algo común y esperable.",
   },
   {

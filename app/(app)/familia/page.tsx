@@ -150,8 +150,9 @@ export default function FamiliaPage() {
           <p className="mt-1 text-sm leading-relaxed text-muted">
             Es lo que conecta tu teléfono con el de ellos. Van a ver tu semana,
             tu fecha probable de parto y tu próximo control.{" "}
-            <strong>No van a ver</strong> tus notas, tus síntomas, tu peso ni
-            tus fotos, y podés sacarles el acceso cuando quieras.
+            <strong>No van a ver</strong> tus notas, tus síntomas ni tus fotos.
+            Tu peso y tus pataditas, solo tu pareja y solo si vos lo activás.
+            Podés sacarles el acceso cuando quieras.
           </p>
           {auth.providers.length > 0 || auth.credentialsAvailable ? (
             <div className="mt-3">
@@ -229,8 +230,8 @@ export default function FamiliaPage() {
         </h2>
         <p className="mt-1 text-sm leading-relaxed text-muted">
           Van a ver tu semana, tu fecha probable de parto y tu próximo control.
-          <strong> No van a ver</strong> tus notas, tus síntomas, tu peso ni tus
-          fotos.
+          <strong> No van a ver</strong> tus notas, tus síntomas ni tus fotos.
+          Tu peso y tus pataditas, solo tu pareja y solo si vos lo activás.
         </p>
 
         <div className="mt-3 flex gap-2">

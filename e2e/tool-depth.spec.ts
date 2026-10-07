@@ -64,8 +64,10 @@ async function seedKickSessions(
 test("the 5-1-1 hint appears with a matching hour and stays absent with a thin one", async ({
   page,
 }) => {
-  // Past 37 weeks so the hint is not suppressed by gestational age.
-  await completeOnboarding(page, { daysAgo: 255 });
+  // 37+3 completed: term, so a regular hour is the 5-1-1 hint. (This said
+  // 255 days — 36+3, display week 37, still preterm — and passed only because
+  // the screen used the display week: F05.)
+  await completeOnboarding(page, { daysAgo: 262 });
   await page.goto("/herramientas/contracciones");
 
   const now = Date.now();
@@ -97,6 +99,26 @@ test("the 5-1-1 hint appears with a matching hour and stays absent with a thin o
     { startedAt: now2 - 10 * 60 * 1000, durationSec: 40, intervalSec: 600 },
   ]);
   await page.goto("/herramientas/contracciones");
+  await expect(page.getByText("es momento de llamar a tu hospital o sanatorio")).toHaveCount(0);
+});
+
+test("F05: at 36+3 — display week 37 — a regular hour is the preterm alert, not the labour hint", async ({
+  page,
+}) => {
+  await completeOnboarding(page, { daysAgo: 255 });
+  await page.goto("/herramientas/contracciones");
+  const now = Date.now();
+  await seedContractions(
+    page,
+    Array.from({ length: 7 }, (_, i) => ({
+      startedAt: now - (6 - i) * 5 * 60 * 1000,
+      durationSec: 60,
+      intervalSec: i === 0 ? 0 : 300,
+    })),
+  );
+  await page.reload();
+
+  await expect(page.getByText("Contracciones regulares antes de las 37 semanas")).toBeVisible();
   await expect(page.getByText("es momento de llamar a tu hospital o sanatorio")).toHaveCount(0);
 });
 

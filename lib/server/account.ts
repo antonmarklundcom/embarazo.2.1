@@ -1,9 +1,11 @@
 import "server-only";
 
-import { and, eq, inArray, or } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, lt, or, sql } from "drizzle-orm";
 
 import type { Database } from "./db";
 import { deleteObject } from "./photoStorage";
+import { verificationIdentifier } from "./emailVerification";
+import { ERASED_AI_USER } from "./aiBaby";
 import {
   accounts,
   aiGenerations,
@@ -88,7 +90,13 @@ export const TABLE_DISPOSITION = {
   // endpoints rather than by a userId column. Missing them would leave the
   // server poking a deleted account's phone on a schedule nobody can cancel.
   pushReminders: "deleted",
-  aiGenerations: "deleted",
+  // F16. ANONYMISED, not deleted: the rows are also the AI spend ledger the
+  // global monthly ceiling sums. Deleting them un-spent money that was spent
+  // and let generate → erase → sign up again walk past the ceiling. The owner
+  // is replaced with `ERASED_AI_USER`; what is left is "one generation, this
+  // month, this model, this cost" — nothing that says whose it was. The table
+  // never held a prompt or a photo (§10).
+  aiGenerations: "anonymised (spend ledger kept, owner removed)",
 
   // Carries no identity at all (ARCHITECTURE.md §4.5) — keyed
   // (week, contentId, day), so there is nothing here that belongs to anyone.
@@ -145,10 +153,24 @@ export interface DeletionCounts {
  * Drizzle in production and against a Map in the tests.
  */
 export interface AccountDeleteExecutor {
+  /**
+   * F02 — the first write, before any row is deleted: stamp `users.deletedAt`
+   * and bump `sessionVersion`. From this moment every token for the account,
+   * on every device, stops resolving (lib/server/auth.ts treats a deleting
+   * account as gone), so no other device can keep writing into an account
+   * that is being erased. Idempotent.
+   */
+  markDeleting(userId: string): Promise<void>;
   /** Ids of pregnancies this user owns. */
   ownedPregnancyIds(userId: string): Promise<string[]>;
   /** The account's email, needed to clear `verificationTokens`. */
   emailOf(userId: string): Promise<string | null>;
+  /**
+   * Every token row for this address, in every namespace: the password reset
+   * (`<email>`) AND the email confirmation (`verify:<email>`). F19: only the
+   * first was deleted, so a confirmation token — the address in clear text —
+   * outlived the account.
+   */
   /** Delete rows and return how many went. */
   deleteSyncRecords(userId: string): Promise<number>;
   deleteAccounts(userId: string): Promise<number>;
@@ -158,7 +180,8 @@ export interface AccountDeleteExecutor {
   pushEndpointsOf(userId: string): Promise<string[]>;
   deletePushReminders(endpoints: string[]): Promise<number>;
   deletePushSubscriptions(userId: string): Promise<number>;
-  deleteAiGenerations(userId: string): Promise<number>;
+  /** F16: hand this user's generations to `ERASED_AI_USER`; return how many. */
+  anonymiseAiGenerations(userId: string): Promise<number>;
   /** Memberships held BY the user, plus every membership OF their pregnancies. */
   deleteMemberships(userId: string, pregnancyIds: string[]): Promise<number>;
   /** Invites they created, invites to their pregnancies, invites they accepted. */
@@ -189,26 +212,30 @@ export interface AccountDeleteExecutor {
 /**
  * Delete everything belonging to one user.
  *
- * Order matters only for readability — there are no foreign keys in this
- * schema — but the user row goes last so an interrupted deletion leaves an
- * account that can sign in and try again, rather than orphaned health data
- * with no owner to ask for its removal.
+ * First the account is marked as deleting (F02), which revokes every session
+ * at once. Then the rows go — order matters only for readability, there are no
+ * foreign keys — with the user row last, so an interrupted deletion leaves a
+ * marked row that `finishPendingDeletions` (and any later sign-in attempt for
+ * the address) completes, rather than orphaned health data with no owner.
+ * Finally a second pass catches anything a request that was already past its
+ * session check wrote while the first pass ran.
  */
 export async function deleteAccountData(
   executor: AccountDeleteExecutor,
   userId: string,
 ): Promise<DeletionCounts> {
+  await executor.markDeleting(userId);
   const pregnancyIds = await executor.ownedPregnancyIds(userId);
   const email = await executor.emailOf(userId);
   // Read the endpoints before the subscriptions are deleted — afterwards
   // there is nothing left to look them up by.
   const endpoints = await executor.pushEndpointsOf(userId);
 
-  return {
+  const counts: DeletionCounts = {
     syncRecords: await executor.deleteSyncRecords(userId),
     pushReminders: await executor.deletePushReminders(endpoints),
     pushSubscriptions: await executor.deletePushSubscriptions(userId),
-    aiGenerations: await executor.deleteAiGenerations(userId),
+    aiGenerations: await executor.anonymiseAiGenerations(userId),
     invites: await executor.deleteInvites(userId, pregnancyIds),
     pregnancyMembers: await executor.deleteMemberships(userId, pregnancyIds),
     companionSnapshots: await executor.deleteCompanionSnapshots(pregnancyIds),
@@ -222,6 +249,18 @@ export async function deleteAccountData(
     verificationTokens: await executor.deleteVerificationTokens(email),
     users: await executor.deleteUser(userId),
   };
+
+  // Late writes: a request that passed its session check before the mark
+  // can still commit after the first pass. The sessions are revoked, so this
+  // window is a single request long; one more pass closes it.
+  counts.syncRecords! += await executor.deleteSyncRecords(userId);
+  counts.photoBlobs! += await executor.deletePhotoBlobs(userId);
+  counts.aiGenerations! += await executor.anonymiseAiGenerations(userId);
+  const latePregnancies = await executor.ownedPregnancyIds(userId);
+  counts.pregnancyMembers! += await executor.deleteMemberships(userId, latePregnancies);
+  counts.pregnancies! += await executor.deletePregnancies(latePregnancies);
+
+  return counts;
 }
 
 // ---------------------------------------------------------------------------
@@ -239,6 +278,16 @@ export function drizzleAccountExecutor(
   database: Database,
 ): AccountDeleteExecutor {
   return {
+    async markDeleting(userId) {
+      await database
+        .update(users)
+        .set({
+          deletedAt: sql`coalesce(${users.deletedAt}, now(3))`,
+          sessionVersion: sql`${users.sessionVersion} + 1`,
+        })
+        .where(eq(users.id, userId));
+    },
+
     async ownedPregnancyIds(userId) {
       const rows = await database
         .select({ id: pregnancies.id })
@@ -279,7 +328,12 @@ export function drizzleAccountExecutor(
       return affected(
         await database
           .delete(verificationTokens)
-          .where(eq(verificationTokens.identifier, email)),
+          .where(
+            inArray(verificationTokens.identifier, [
+              email,
+              verificationIdentifier(email),
+            ]),
+          ),
       );
     },
 
@@ -308,10 +362,11 @@ export function drizzleAccountExecutor(
       );
     },
 
-    async deleteAiGenerations(userId) {
+    async anonymiseAiGenerations(userId) {
       return affected(
         await database
-          .delete(aiGenerations)
+          .update(aiGenerations)
+          .set({ userId: ERASED_AI_USER })
           .where(eq(aiGenerations.userId, userId)),
       );
     },
@@ -349,19 +404,39 @@ export function drizzleAccountExecutor(
 
     async deletePhotoBlobs(userId) {
       const rows = await database
-        .select({ objectKey: photoBlobs.objectKey })
+        .select({
+          store: photoBlobs.store,
+          recordId: photoBlobs.recordId,
+          objectKey: photoBlobs.objectKey,
+        })
         .from(photoBlobs)
         .where(eq(photoBlobs.userId, userId));
 
       // Objects first. An orphaned row is recoverable; an orphaned object with
       // nothing pointing at it is not.
+      //
+      // F03: and a row goes only when ITS object is confirmed gone. The result
+      // of `deleteObject` used to be ignored and every row deleted, so a
+      // provider error left bytes in the bucket with no key left to retry. A
+      // kept row outlives the user row on purpose: it is the durable record
+      // `runMaintenance` (lib/server/maintenance.ts) retries until the
+      // provider confirms.
+      let deleted = 0;
       for (const row of rows) {
-        await deleteObject(userId, row.objectKey);
+        if (!(await deleteObject(userId, row.objectKey))) continue;
+        deleted += affected(
+          await database
+            .delete(photoBlobs)
+            .where(
+              and(
+                eq(photoBlobs.userId, userId),
+                eq(photoBlobs.store, row.store),
+                eq(photoBlobs.recordId, row.recordId),
+              ),
+            ),
+        );
       }
-
-      return affected(
-        await database.delete(photoBlobs).where(eq(photoBlobs.userId, userId)),
-      );
+      return deleted;
     },
 
     async deleteCommunityQuestions(userId) {
@@ -411,4 +486,37 @@ export function drizzleAccountExecutor(
       );
     },
   };
+}
+
+// ---------------------------------------------------------------------------
+// Interrupted deletions
+// ---------------------------------------------------------------------------
+
+/**
+ * Finish deletions that were started and not completed (a crash, a timeout, a
+ * provider error mid-plan). Called by the scheduled dispatcher and before a
+ * sign-in or sign-up for an address whose account is still marked.
+ *
+ * Bounded per call so a scheduler tick stays short; anything left waits for
+ * the next one. Returns how many accounts were completed.
+ */
+export async function finishPendingDeletions(
+  database: Database,
+  options: { email?: string; limit?: number; olderThanMs?: number } = {},
+): Promise<number> {
+  const { email, limit = 5, olderThanMs = 0 } = options;
+  const conditions = [isNotNull(users.deletedAt)];
+  if (email) conditions.push(eq(users.email, email));
+  if (olderThanMs > 0) {
+    conditions.push(lt(users.deletedAt, new Date(Date.now() - olderThanMs)));
+  }
+  const pending = await database
+    .select({ id: users.id })
+    .from(users)
+    .where(and(...conditions))
+    .limit(limit);
+  for (const row of pending) {
+    await deleteAccountData(drizzleAccountExecutor(database), row.id);
+  }
+  return pending.length;
 }

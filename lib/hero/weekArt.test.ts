@@ -10,10 +10,14 @@ import { WEEK_ART_STYLE, hasWeekArt, weekArtAlt, weekArtSrc } from "./weekArt";
 // (the fallback hides it, so nothing else would notice).
 
 describe("week art", () => {
+  it("N6: every URL carries the art revision, so a replaced render is a new cache key", () => {
+    expect(weekArtSrc(20)).toMatch(/^\/assets\/semanas\/bebe-20\.webp\?v=\d{4}-\d{2}-\d{2}$/);
+  });
+
   it("has a file on disk for every week the switch claims", () => {
     for (let week = 1; week <= 42; week++) {
       if (!hasWeekArt(week)) continue;
-      const file = join(process.cwd(), "public", weekArtSrc(week));
+      const file = join(process.cwd(), "public", weekArtSrc(week).split("?")[0]!);
       expect(existsSync(file), file).toBe(true);
     }
   });

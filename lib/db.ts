@@ -202,6 +202,12 @@ export interface PhotoBackupMeta {
   uid: string;
   /** When this device last confirmed the upload. Absent means "not yet". */
   uploadedAt?: number;
+  /**
+   * F03/N2 — when this device learned the backup copy was deleted on another
+   * device. Not indexed (no schema change). Such a photo stays on this phone
+   * but is not uploaded again: a deletion is never undone by a second device.
+   */
+  remoteDeletedAt?: number;
 }
 
 export interface KickSession extends Partial<SyncMeta> {
@@ -560,10 +566,18 @@ export class MiBebeDB extends Dexie {
    * sites writing to these tables, and a rule that lives in a helper is a rule
    * every future call site can forget. A hook cannot be forgotten.
    *
-   * The stamping only fills fields the caller left undefined, which is what
-   * lets the sync engine write `dirty: 0` and a server-authored `updatedAt`
-   * when it applies a remote record — no global "I am syncing" flag to get
-   * out of step with an await.
+   * The stamping only fills fields the caller left undefined. That is NOT
+   * enough for the sync engine's own writes, and relying on it was a bug (N7):
+   * Dexie hands the updating hook only the keys whose values CHANGED, so
+   * `update(id, { dirty: 0, updatedAt: sameAsStored })` arrives as `{ dirty: 0 }`
+   * and the hook re-stamped `updatedAt` to now, and a pulled record `put` over
+   * a clean row arrived without `dirty` and was marked dirty again. Every push
+   * moved the local `updatedAt` past the server's, every pull echoed back, and
+   * a genuinely newer edit made offline on another phone then lost
+   * last-write-wins here and never appeared. The engine's writes now run in a
+   * transaction opened by `syncBookkeeping()`, which these hooks leave alone;
+   * the transaction (not a global flag) carries the mark, so an await cannot
+   * get it out of step with a user edit.
    */
   /**
    * Stamp a stable `uid` on every photo, wherever it is created.
@@ -585,15 +599,17 @@ export class MiBebeDB extends Dexie {
     for (const store of SYNCED_STORES) {
       const table = this.table(store) as Table<Record<string, unknown>, number>;
 
-      table.hook("creating", (_primKey, obj) => {
+      table.hook("creating", (_primKey, obj, transaction) => {
         if (obj.uid === undefined) obj.uid = recordIdFor(store, obj, newRecordId);
+        if (isSyncBookkeeping(transaction)) return;
         if (obj.updatedAt === undefined) obj.updatedAt = Date.now();
         if (obj.deletedAt === undefined) obj.deletedAt = null;
         if (obj.dirty === undefined) obj.dirty = 1;
         if (obj.dirty === 1) notifyLocalChange();
       });
 
-      table.hook("updating", (mods) => {
+      table.hook("updating", (mods, _primKey, _obj, transaction) => {
+        if (isSyncBookkeeping(transaction)) return undefined;
         const changes = mods as Record<string, unknown>;
         const extra: Record<string, unknown> = {};
         if (!("updatedAt" in changes)) extra.updatedAt = Date.now();
@@ -603,6 +619,38 @@ export class MiBebeDB extends Dexie {
       });
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// N7 — sync-engine writes are bookkeeping, not edits
+// ---------------------------------------------------------------------------
+
+const bookkeepingTransactions = new WeakSet<object>();
+
+function isSyncBookkeeping(transaction: unknown): boolean {
+  return (
+    typeof transaction === "object" &&
+    transaction !== null &&
+    bookkeepingTransactions.has(transaction)
+  );
+}
+
+/**
+ * Run the sync engine's own writes (applying a pulled record, clearing `dirty`
+ * after a push) so the stamping hooks leave every field exactly as written.
+ *
+ * Only for writes that describe what the SERVER already holds. Anything the
+ * user did must go through ordinary writes, which the hooks stamp.
+ */
+export async function syncBookkeeping<T>(
+  tables: string[],
+  work: () => Promise<T>,
+): Promise<T> {
+  return db().transaction("rw", tables, async () => {
+    const transaction = Dexie.currentTransaction;
+    if (transaction) bookkeepingTransactions.add(transaction);
+    return work();
+  });
 }
 
 // Lazily instantiate so this module is safe to import in server components.

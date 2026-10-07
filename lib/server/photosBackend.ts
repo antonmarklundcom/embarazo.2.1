@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 
 import type { Database } from "./db";
 import { photoBlobs } from "./schema";
@@ -42,6 +42,14 @@ export interface PhotosBackend {
   }): Promise<void>;
   /** The live object key for one photo, or null. */
   findObjectKey(userId: string, store: string, recordId: string): Promise<string | null>;
+  /** The row's state, or null when there is none (F03). */
+  findRow(
+    userId: string,
+    store: string,
+    recordId: string,
+  ): Promise<{ objectKey: string; deletedAt: number | null } | null>;
+  /** Drop one row (after its object is confirmed gone). */
+  deleteRow(userId: string, store: string, recordId: string): Promise<void>;
   markDeleted(
     userId: string,
     store: string,
@@ -73,20 +81,57 @@ function toStored(row: typeof photoBlobs.$inferSelect): StoredPhotoRow {
 export function drizzlePhotosBackend(database: Database): PhotosBackend {
   return {
     async upsert(row) {
+      // F03 — the last-write-wins this file's header always promised, now in
+      // SQL. A row is replaced only while it is live, or when the incoming
+      // write is newer than its tombstone. A `confirm` that arrives after the
+      // photo was deleted (a slow upload, an offline phone) carries the photo's
+      // creation time, which is older than the deletion, so it no longer
+      // resurrects the record. `deletedAt` is assigned LAST: MySQL evaluates
+      // these left to right, and every condition must read the stored value.
+      const wins = sql`(${photoBlobs.deletedAt} is null or values(${photoBlobs.updatedAt}) > ${photoBlobs.deletedAt})`;
+      const pick = (column: typeof photoBlobs.objectKey | typeof photoBlobs.contentType | typeof photoBlobs.bytes | typeof photoBlobs.payload | typeof photoBlobs.updatedAt | typeof photoBlobs.serverUpdatedAt | typeof photoBlobs.deletedAt) =>
+        sql`if(${wins}, values(${column}), ${column})`;
       await database
         .insert(photoBlobs)
         .values(row)
         .onDuplicateKeyUpdate({
           set: {
-            objectKey: row.objectKey,
-            contentType: row.contentType,
-            bytes: row.bytes,
-            payload: row.payload,
-            updatedAt: row.updatedAt,
-            deletedAt: row.deletedAt,
-            serverUpdatedAt: row.serverUpdatedAt,
+            objectKey: pick(photoBlobs.objectKey),
+            contentType: pick(photoBlobs.contentType),
+            bytes: pick(photoBlobs.bytes),
+            payload: pick(photoBlobs.payload),
+            updatedAt: pick(photoBlobs.updatedAt),
+            serverUpdatedAt: pick(photoBlobs.serverUpdatedAt),
+            deletedAt: pick(photoBlobs.deletedAt),
           },
         });
+    },
+
+    async findRow(userId, store, recordId) {
+      const rows = await database
+        .select({ objectKey: photoBlobs.objectKey, deletedAt: photoBlobs.deletedAt })
+        .from(photoBlobs)
+        .where(
+          and(
+            eq(photoBlobs.userId, userId),
+            eq(photoBlobs.store, store),
+            eq(photoBlobs.recordId, recordId),
+          ),
+        )
+        .limit(1);
+      return rows[0] ?? null;
+    },
+
+    async deleteRow(userId, store, recordId) {
+      await database
+        .delete(photoBlobs)
+        .where(
+          and(
+            eq(photoBlobs.userId, userId),
+            eq(photoBlobs.store, store),
+            eq(photoBlobs.recordId, recordId),
+          ),
+        );
     },
 
     async findObjectKey(userId, store, recordId) {

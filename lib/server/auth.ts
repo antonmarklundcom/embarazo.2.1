@@ -19,6 +19,7 @@ import {
 } from "@/lib/auth/config";
 import { syncAdminRoleFromAllowlist } from "./admin";
 import { sendVerificationFor } from "./emailVerification";
+import { finishPendingDeletions } from "./account";
 import {
   CONSENT_COOKIE,
   CONSENT_VERSION,
@@ -49,23 +50,36 @@ import { AUTH_RATE_LIMIT, clientKeyFromHeaders, isRateLimited } from "@/lib/rate
 // account linking by email and the A5 deletion story work unchanged.
 
 /**
- * The account's current session version, or null when it cannot be read.
+ * What the database says about the account behind a token.
  *
- * Null — no database, a missing row, a query that threw — leaves the session
- * alone rather than signing everybody out. A revocation feature that logs the
- * whole userbase out during a database hiccup is worse than one that is late.
+ * - `live`: the row exists and is not being deleted; `version` is its
+ *   session version.
+ * - `gone`: no row, or a row marked for deletion. The token is spent. (F02:
+ *   this used to be folded into "unknown", so a token for an erased account
+ *   kept resolving to its id on every other device — and kept writing health
+ *   records and minting upload URLs for an account that no longer existed.)
+ * - `unknown`: no database, or the query threw. The session is left alone
+ *   rather than signing everybody out: a revocation feature that logs the
+ *   whole userbase out during a database hiccup is worse than one that is
+ *   late, and every route that writes needs the same database anyway.
  */
-async function currentSessionVersion(userId: string): Promise<number | null> {
-  if (!isDatabaseConfigured()) return null;
+type AccountState =
+  | { kind: "live"; version: number }
+  | { kind: "gone" }
+  | { kind: "unknown" };
+
+async function accountState(userId: string): Promise<AccountState> {
+  if (!isDatabaseConfigured()) return { kind: "unknown" };
   try {
     const [row] = await db()
-      .select({ sessionVersion: users.sessionVersion })
+      .select({ sessionVersion: users.sessionVersion, deletedAt: users.deletedAt })
       .from(users)
       .where(eq(users.id, userId))
       .limit(1);
-    return row?.sessionVersion ?? null;
+    if (!row || row.deletedAt) return { kind: "gone" };
+    return { kind: "live", version: row.sessionVersion };
   } catch {
-    return null;
+    return { kind: "unknown" };
   }
 }
 
@@ -77,6 +91,14 @@ declare module "@auth/core/jwt" {
 }
 
 declare module "next-auth" {
+  interface User {
+    /**
+     * N4 — the session version read in the SAME row read as the password hash
+     * (credentials) or by the adapter (OAuth). Stamped into the token instead
+     * of a second read after bcrypt, which a revocation could land between.
+     */
+    sessionVersion?: number;
+  }
   interface Session {
     user: {
       id: string;
@@ -204,12 +226,24 @@ function buildConfig(): NextAuthConfig {
         const hash = row?.passwordHash ?? DUMMY_HASH_FOR_TIMING;
         const matches = await verifyPassword(password.data, hash);
         if (!row?.passwordHash || !matches) return null;
+        // F02: an account marked for deletion signs in to nothing — and the
+        // attempt is a good moment to finish the erasure that was interrupted.
+        if (row.deletedAt) {
+          await finishPendingDeletions(db(), { email: row.email ?? undefined }).catch(
+            () => 0,
+          );
+          return null;
+        }
 
         return {
           id: row.id,
           name: row.name,
           email: row.email,
           image: row.image,
+          // N4: the version this password was checked against. A reset or an
+          // OAuth revocation that commits while bcrypt runs bumps the column,
+          // and this stamp is then already stale on the next request.
+          sessionVersion: row.sessionVersion,
         };
       },
     }),
@@ -248,6 +282,12 @@ function buildConfig(): NextAuthConfig {
         // password somebody else set on this address is gone before the
         // owner's data can land in that row. See `revokeUnverifiedPassword`.
         if (account && account.provider !== "credentials" && user?.email) {
+          // F02: an interrupted erasure for this address is finished first, so
+          // the adapter cannot link the sign-in to a row that is being
+          // deleted; the person gets a fresh account instead.
+          if (isDatabaseConfigured()) {
+            await finishPendingDeletions(db(), { email: user.email }).catch(() => 0);
+          }
           await revokeUnverifiedPassword(user.email);
         }
         return true;
@@ -272,19 +312,34 @@ function buildConfig(): NextAuthConfig {
           // on a request that already has a session is the smaller cost, and it
           // is the only thing standing between a stolen phone and a support
           // ticket nobody can answer.
-          token.sessionVersion = await currentSessionVersion(user.id);
+          //
+          // N4: stamp the version that came with `user` when there is one. The
+          // credentials provider reads it in the same row read as the hash,
+          // BEFORE the ~300 ms bcrypt compare; re-reading it here, after the
+          // compare, stamped the post-revocation version into a token issued
+          // for a password that had just been revoked or reset.
+          if (typeof user.sessionVersion === "number") {
+            token.sessionVersion = user.sessionVersion;
+          } else {
+            const state = await accountState(user.id);
+            token.sessionVersion = state.kind === "live" ? state.version : null;
+          }
         }
         return token;
       },
       async session({ session, token }) {
         if (!token.sub) return session;
 
-        // A token whose stamp no longer matches the account is spent. Returning
-        // a session with no user id is how this strategy says "signed out":
-        // every caller already treats a missing id that way (`getSession()` is
-        // null-checked everywhere), so revocation needs no new branch anywhere.
-        const current = await currentSessionVersion(token.sub);
-        if (current !== null && token.sessionVersion !== current) {
+        // A token whose stamp no longer matches the account is spent, and so is
+        // one whose account is gone or being deleted. Returning a session with
+        // no user id is how this strategy says "signed out": every caller
+        // already treats a missing id that way (`getSession()` is null-checked
+        // everywhere), so revocation needs no new branch anywhere.
+        const state = await accountState(token.sub);
+        if (
+          state.kind === "gone" ||
+          (state.kind === "live" && token.sessionVersion !== state.version)
+        ) {
           return { ...session, user: { ...session.user, id: "" } };
         }
 
@@ -477,11 +532,17 @@ export async function registerCredentialsUser(
   if (!isDatabaseConfigured()) return { ok: false, error: "not-configured" };
 
   const existing = await db()
-    .select({ id: users.id })
+    .select({ id: users.id, deletedAt: users.deletedAt })
     .from(users)
     .where(eq(users.email, email))
     .limit(1);
-  if (existing.length > 0) return { ok: false, error: "email-taken" };
+  if (existing[0]?.deletedAt) {
+    // F02: the address belongs to an erasure that never finished. Finish it,
+    // then the address is free.
+    await finishPendingDeletions(db(), { email });
+  } else if (existing.length > 0) {
+    return { ok: false, error: "email-taken" };
+  }
 
   await db()
     .insert(users)

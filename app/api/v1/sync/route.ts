@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { refuseCrossSite, refuseOtherAccount } from "@/lib/server/requestGuard";
 
 import { getSession, isAuthAvailable } from "@/lib/server/auth";
 import { dbOrNull } from "@/lib/server/db";
@@ -9,7 +10,8 @@ import { clientKeyFromHeaders, isRateLimited } from "@/lib/rateLimit";
 import {
   PULL_ALLOWED_PARAMS,
   PullQuerySchema,
-  PushRequestSchema,
+  PushBatchSchema,
+  partitionRecords,
 } from "@/lib/sync/protocol";
 
 // BUILD-PLAN A3 — /api/v1/sync.
@@ -51,6 +53,9 @@ async function context(req: NextRequest) {
   const session = await getSession();
   const userId = session?.user?.id;
   if (!userId) return { error: unauthorized() } as const;
+  // F01: the device said which account its data belongs to; refuse another.
+  const otherAccount = refuseOtherAccount(req, userId);
+  if (otherAccount) return { error: otherAccount } as const;
 
   const database = dbOrNull();
   if (!database) return { error: notConfigured() } as const;
@@ -59,6 +64,9 @@ async function context(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // F08: only this app's own pages, and only JSON.
+  const crossSite = refuseCrossSite(req);
+  if (crossSite) return crossSite;
   const ctx = await context(req);
   if ("error" in ctx) return ctx.error;
 
@@ -72,13 +80,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const parsed = PushRequestSchema.safeParse(body);
+  const parsed = PushBatchSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "registros inválidos", detail: parsed.error.issues[0]?.message },
       { status: 400, headers: HEADERS },
     );
   }
+  // N3: one record the server will not take is rejected on its own; the rest
+  // of the batch is stored.
+  const { valid, rejected } = partitionRecords(parsed.data.records);
 
   // I1/U6: read alongside the write so a support-forced resync reaches the
   // device on the very next request it makes, in either direction.
@@ -87,12 +98,15 @@ export async function POST(req: NextRequest) {
   const result = await pushRecords(
     drizzleBackend(ctx.database),
     ctx.userId,
-    parsed.data.records,
+    valid,
     Date.now(),
     state?.syncEpoch,
   );
 
-  return NextResponse.json(result, { headers: HEADERS });
+  return NextResponse.json(
+    { ...result, results: [...result.results, ...rejected] },
+    { headers: HEADERS },
+  );
 }
 
 export async function GET(req: NextRequest) {

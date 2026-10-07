@@ -18,9 +18,8 @@ import {
   isPinSet,
   setPin as savePin,
   clearPin,
-  unlock,
-  isUnlocked,
 } from "@/lib/crypto";
+import { encryptedNoteCount, removePinSafely } from "@/lib/journal/pinRemoval";
 import { PushSettings } from "@/components/PushSettings";
 import { PrivacyLine } from "@/components/PrivacyLine";
 import { FamiliaSettings } from "@/components/FamiliaSettings";
@@ -89,8 +88,11 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
   const [pinInput, setPinInput] = useState("");
   const [pinMsg, setPinMsg] = useState("");
 
+  const [encryptedNotes, setEncryptedNotes] = useState(0);
+
   useEffect(() => {
     setPinExists(isPinSet());
+    void encryptedNoteCount().then(setEncryptedNotes);
   }, []);
 
   async function handleSetPin() {
@@ -108,20 +110,29 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
   }
 
   async function handleClearPin() {
-    // Try to unlock first so we could decrypt notes if needed; for the MVP we
-    // simply remove the PIN. Existing encrypted notes stay encrypted until
-    // re-saved, which is acceptable and documented.
-    if (!isUnlocked()) {
-      const ok = await unlock(pinInput);
-      if (!ok) {
-        setPinMsg("PIN incorrecto.");
-        return;
-      }
+    // F04: removing the key material without decrypting first made every
+    // encrypted note unreadable forever. `removePinSafely` decrypts and
+    // rewrites all of them, and only then removes the PIN; on any failure the
+    // PIN and the notes stay exactly as they were.
+    const outcome = await removePinSafely(pinInput);
+    if (!outcome.ok) {
+      setPinMsg(
+        outcome.reason === "wrong-pin"
+          ? "PIN incorrecto."
+          : outcome.reason === "changed"
+            ? "Tus notas cambiaron mientras desactivábamos el PIN. Probá de nuevo."
+            : "No pudimos abrir todas tus notas con este PIN, así que lo dejamos activo. Tus notas no cambiaron.",
+      );
+      return;
     }
-    clearPin();
     setPinExists(false);
     setPinInput("");
-    setPinMsg("PIN desactivado.");
+    setEncryptedNotes(0);
+    setPinMsg(
+      outcome.decrypted > 0
+        ? `PIN desactivado. ${outcome.decrypted === 1 ? "Tu nota quedó" : `Tus ${outcome.decrypted} notas quedaron`} sin cifrar.`
+        : "PIN desactivado.",
+    );
   }
 
   async function handleWipe() {
@@ -256,9 +267,12 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
         <section className="rounded-card bg-white p-4 shadow-soft">
           <h2 className="text-base font-extrabold text-ink">PIN opcional</h2>
           <p className="mt-1 text-sm text-muted">
-            Si activás un PIN, las notas de tu diario se cifran en este teléfono
-            antes de guardarse. Se sincronizan cifradas: ni nosotros podemos
-            leerlas. {pinExists ? "Tenés un PIN activo." : "No tenés PIN."}
+            Si activás un PIN, el texto de las notas de tu diario se cifra en
+            este teléfono antes de guardarse. Ese texto cifrado no se sube al
+            servidor: queda en este teléfono y en las copias de seguridad que
+            descargues. El resto de cada entrada (semana, ánimo, síntomas) se
+            respalda como siempre si tenés cuenta.{" "}
+            {pinExists ? "Tenés un PIN activo." : "No tenés PIN."}
           </p>
           <input
             type="password"
@@ -288,6 +302,13 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
             >
               Desactivar PIN
             </button>
+          )}
+          {pinExists && encryptedNotes > 0 && (
+            <p className="mt-2 text-xs leading-relaxed text-muted">
+              Si lo desactivás, primero desciframos tus notas en este teléfono y
+              quedan como texto normal. Con cuenta, desde ese momento se
+              respaldan como el resto de tus registros.
+            </p>
           )}
           {pinMsg && <p className="mt-2 text-sm text-muted">{pinMsg}</p>}
           {/* K18 — what it protects against, said plainly. The old line ("no es

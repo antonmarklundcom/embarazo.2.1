@@ -72,10 +72,11 @@ export default function PrivacidadPage() {
           la panza y las del carné perinatal se quedan en tu teléfono, salvo
           que actives «Copia de tus fotos» en Ajustes. Si la activás, se
           guardan a tu nombre y solo vos las podés abrir; si la apagás,
-          borramos las copias en ese momento. Tu pareja y tu familia no las ven
-          salvo que además enciendas «fotos de la panza» en Familia. Las notas
-          del diario que protegiste con PIN viajan cifradas y sin la clave para
-          abrirlas — nuestro servidor no puede leerlas.
+          borramos las copias del servidor (si no hay conexión, en cuanto
+          vuelva). Tu pareja y tu familia no las ven. Las notas del diario que
+          protegiste con PIN <strong>no se suben</strong>: quedan cifradas solo
+          en este teléfono, así que no vuelven en otro aparato aunque tengas
+          cuenta.
         </p>
       </section>
 
@@ -85,7 +86,9 @@ export default function PrivacidadPage() {
           Tus datos de salud sincronizados solo los ve tu cuenta. Si en algún
           momento das acceso a tu pareja o familia (función de embarazo
           compartido), esa persona ve la semana, la fecha probable de parto y
-          el próximo control — nunca tus notas del diario ni tus fotos. El
+          el próximo control — nunca tus notas del diario, tus síntomas ni tus
+          fotos. Tu último peso y tu último conteo de pataditas los ve solo tu
+          pareja, y solo si vos lo activás en Familia. El
           equipo de {APP_NAME} no lee el contenido de tus registros de salud para
           darte soporte: cuando necesitamos ayudarte con tu cuenta vemos datos
           de cuenta (si iniciaste sesión, cuántos registros tenés) pero no lo
@@ -142,11 +145,13 @@ export default function PrivacidadPage() {
       <section className="space-y-2">
         <h2 className="text-base font-extrabold text-ink">Qué más viaja a un servidor, con o sin cuenta</h2>
         <p className="text-sm leading-relaxed text-muted">
-          Para mostrarte recursos y contactos cercanos (sanatorios, ecografía,
-          farmacias, eventos), la app consulta nuestro servidor enviando
-          únicamente tu <strong>trimestre</strong> y tu <strong>departamento</strong>
-          — nunca tu nombre, tu fecha exacta, tus síntomas ni ningún otro dato
-          de salud. Cuando tocás un botón de WhatsApp hacia un sanatorio o
+          Para mostrarte recursos y contactos (sanatorios, ecografía,
+          farmacias, eventos), la app se los pide a nuestro servidor{" "}
+          <strong>sin enviar ningún dato tuyo</strong>: ni tu semana ni tu
+          departamento. Para saber qué se lee más, contamos de forma anónima
+          qué contenido se abre y en qué semana de embarazo está quien lo lee,
+          sumado por día, sin tu nombre, tu cuenta ni tu dispositivo. Cuando
+          tocás un botón de WhatsApp hacia un sanatorio o
           negocio, te redirigimos a wa.me; si configuramos atribución de
           clics, solo registramos qué recurso tocaste, nunca tu identidad.
         </p>

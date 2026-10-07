@@ -1,6 +1,7 @@
 import { test, expect, type BrowserContext } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
+import { serveIdentity } from "./helpers/identity";
 import { serveClientFlags } from "./helpers/flags";
 
 // BUILD-PLAN K2 — the companion experience.
@@ -94,7 +95,13 @@ async function serve(
  * are unavailable. Stubbing this before onboarding would remove the button the
  * helper clicks.
  */
-async function pretendSignedIn(context: BrowserContext) {
+async function pretendSignedIn(
+  context: BrowserContext,
+  account: string | { current: string } = "u1",
+) {
+  // F01: a signed-in session also answers the identity probe the snapshot
+  // publish now asks before sending this phone's data.
+  await serveIdentity(context, account);
   await context.route(
     (url) => url.pathname === "/api/v1/auth-status",
     (route) =>
@@ -390,13 +397,15 @@ test("the owner's toggles start off and publish what she chose", async ({
 
   const peso = page.getByRole("switch", { name: /Tu peso/ });
   const pataditas = page.getByRole("switch", { name: /Las pataditas/ });
-  const fotos = page.getByRole("switch", { name: /fotos de la panza/ });
+  // F09: there is no photo switch — nobody but her can see her photos, so a
+  // switch for it would be consent to nothing. The stored preference still
+  // publishes as false.
+  await expect(page.getByRole("switch", { name: /fotos/i })).toHaveCount(0);
 
   // Sharing her weight has to be something she did, not something she failed
   // to prevent.
   await expect(peso).toHaveAttribute("aria-checked", "false");
   await expect(pataditas).toHaveAttribute("aria-checked", "false");
-  await expect(fotos).toHaveAttribute("aria-checked", "false");
 
   await peso.click();
   await expect(peso).toHaveAttribute("aria-checked", "true");
@@ -457,6 +466,31 @@ test("a publish before K3 was ever touched shares nothing", async ({ browser }) 
       kickAt: null,
     });
   }
+
+  await context.close();
+});
+
+// F01 — the snapshot is built from THIS phone's data. Once another account
+// signs in on the phone, opening /familia must not publish the previous
+// person's week, due date and baby name into the new account's family.
+test("F01: after an account switch, /familia publishes nothing", async ({ browser }) => {
+  const server = fakeSharing([]);
+  const context = await browser.newContext();
+  await serve(context, server);
+  const account = { current: "u1" };
+  const page = await context.newPage();
+
+  await completeOnboarding(page);
+  await pretendSignedIn(context, account);
+  await page.goto("/familia");
+  // Linked to u1 on first contact (A6 "adopt"), so u1's own publish goes out.
+  await expect.poll(() => server.posts.filter((p) => p.action === "publish").length).toBeGreaterThan(0);
+
+  account.current = "u2";
+  const before = server.posts.filter((p) => p.action === "publish").length;
+  await page.goto("/familia");
+  await page.waitForTimeout(1500);
+  expect(server.posts.filter((p) => p.action === "publish").length).toBe(before);
 
   await context.close();
 });

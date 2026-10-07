@@ -180,7 +180,7 @@ export default function ResumenPage() {
         <PrivacyLine />
         <p className="mt-1 text-xs leading-relaxed text-muted">
           Este resumen organiza tus datos para que se los muestres a tu médico/a.
-          Queda solo en tu teléfono y solo se comparte cuando vos lo mostrás o
+          Se arma en tu teléfono y solo se comparte cuando vos lo mostrás o
           imprimís. No es un diagnóstico.
         </p>
       </div>

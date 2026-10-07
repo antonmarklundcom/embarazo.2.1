@@ -32,6 +32,34 @@ export const PasswordSchema = z
   // DoS one, but there is no reason to accept more than this ever needs).
   .max(200);
 
+/**
+ * F17 — bcrypt reads the first 72 BYTES of its input and ignores the rest, so
+ * two different accepted passwords sharing those bytes opened the same
+ * account, and changing only the tail of a long password changed nothing.
+ * UTF-8 bytes, not characters: "ñ", accents and emoji take two to four.
+ */
+export const BCRYPT_MAX_BYTES = 72;
+
+export function fitsBcrypt(password: unknown): boolean {
+  return (
+    typeof password === "string" &&
+    new TextEncoder().encode(password).length <= BCRYPT_MAX_BYTES
+  );
+}
+
+export const PASSWORD_TOO_LONG_MESSAGE =
+  "Esa contraseña es demasiado larga. Usá hasta 72 letras o números sin tilde (la ñ, las tildes y los emojis ocupan más).";
+
+/**
+ * For a password being SET (sign-up, reset). Sign-in keeps `PasswordSchema`:
+ * an account created before this rule may have a longer password, and it must
+ * keep working — bcrypt compares only the first 72 bytes, exactly as it did
+ * when the hash was made.
+ */
+export const NewPasswordSchema = PasswordSchema.refine(fitsBcrypt, {
+  message: PASSWORD_TOO_LONG_MESSAGE,
+});
+
 /** bcrypt cost factor. 12 is the current OWASP-recommended floor. */
 const SALT_ROUNDS = 12;
 

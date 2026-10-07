@@ -293,7 +293,8 @@ function ContactCard({
           )}
         </div>
         <p className="text-xs text-muted">
-          Se guarda solo en tu teléfono, como todos tus datos.
+          Se guarda en tu teléfono y, si tenés cuenta, también en tu copia,
+          como el resto de tus datos.
         </p>
       </div>
     </section>

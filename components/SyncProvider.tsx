@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 import { startSync } from "@/lib/sync/client";
+import { startPhotoSync } from "@/lib/photos/client";
 
 /**
  * BUILD-PLAN A3 — mounts the sync engine.
@@ -17,5 +18,9 @@ import { startSync } from "@/lib/sync/client";
  */
 export function SyncProvider() {
   useEffect(() => startSync(), []);
+  // F10: photo backup runs by itself too — on open and on reconnect — so a new
+  // phone restores and an offline photo uploads without touching the switch.
+  // It asks for nothing when backup is off and no deletion is owed.
+  useEffect(() => startPhotoSync(), []);
   return null;
 }

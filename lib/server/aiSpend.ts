@@ -6,7 +6,7 @@ import type { Database } from "./db";
 import { aiGenerations } from "./schema";
 import { aiBabyMonthlyQuota, aiBabySpendCeilingMicros } from "@/lib/ai/quota";
 import type { AiEnv } from "@/lib/ai/babyImage";
-import { quotaMonthOf } from "./aiBaby";
+import { ERASED_AI_USER, quotaMonthOf } from "./aiBaby";
 
 // BUILD-PLAN I4 — AI usage & spend, metadata only.
 //
@@ -88,7 +88,9 @@ export function summariseMonth(
 
     spendMicros += row.costUsdMicros ?? 0;
 
-    if (row.status !== "failed") {
+    // F16: erased accounts' rows still count as spend, but they are nobody
+    // now — not one "user" at an impossible quota.
+    if (row.status !== "failed" && row.userId !== ERASED_AI_USER) {
       perUser.set(row.userId, (perUser.get(row.userId) ?? 0) + 1);
     }
   }

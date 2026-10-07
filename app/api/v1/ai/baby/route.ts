@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { refuseCrossSite } from "@/lib/server/requestGuard";
 import { z } from "zod";
 
 import { getSession, isAuthAvailable } from "@/lib/server/auth";
@@ -114,6 +115,9 @@ export async function POST(req: NextRequest) {
   // The kill switch, first. With AI_BABY_ENABLED unset the route does not
   // exist — no 403, no "próximamente", nothing to probe.
   if (!isConfigured() || !isAuthAvailable()) return unavailable();
+  // F08: only this app's own pages, and only JSON.
+  const crossSite = refuseCrossSite(req);
+  if (crossSite) return crossSite;
 
   const database = dbOrNull();
   if (!database) return unavailable();

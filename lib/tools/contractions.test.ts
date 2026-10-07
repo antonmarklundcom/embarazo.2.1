@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { getCompletedGestation } from "@/lib/pregnancy";
+
 import { assess511, MIN_WEEK_FOR_HINT, type ContractionSample } from "./contractions";
 
 // BUILD-PLAN D7. `assess511` only ever runs on-device data; these tests are
@@ -72,21 +74,33 @@ describe("assess511", () => {
     // the screen showed her nothing at all.
     const entries = series(7, 5 * 60, 60);
     expect(
-      assess511(entries, NOW, { weekAtNow: MIN_WEEK_FOR_HINT - 1 }),
+      assess511(entries, NOW, { completedWeeks: MIN_WEEK_FOR_HINT - 1 }),
     ).toEqual({ pattern: "preterm" });
-    expect(assess511(entries, NOW, { weekAtNow: 30 })).toEqual({ pattern: "preterm" });
+    expect(assess511(entries, NOW, { completedWeeks: 30 })).toEqual({ pattern: "preterm" });
     expect(
-      assess511(entries, NOW, { weekAtNow: MIN_WEEK_FOR_HINT }),
+      assess511(entries, NOW, { completedWeeks: MIN_WEEK_FOR_HINT }),
     ).toEqual({ pattern: "5-1-1" });
     // An unknown week is treated as term, never as a reason for silence.
     expect(assess511(entries, NOW, {})).toEqual({ pattern: "5-1-1" });
   });
 
+  it("F05: decides term by completed weeks, so 36+6 is still preterm", () => {
+    const entries = series(7, 5 * 60, 60);
+    const DAY = 24 * 60 * 60 * 1000;
+    const at = (weeks: number, days: number) =>
+      getCompletedGestation(NOW - (weeks * 7 + days) * DAY, NOW).weeks;
+    // 36+0 and 36+6 are display week 37 — the value this used to be given.
+    expect(assess511(entries, NOW, { completedWeeks: at(36, 0) })).toEqual({ pattern: "preterm" });
+    expect(assess511(entries, NOW, { completedWeeks: at(36, 6) })).toEqual({ pattern: "preterm" });
+    expect(assess511(entries, NOW, { completedWeeks: at(37, 0) })).toEqual({ pattern: "5-1-1" });
+    expect(assess511(entries, NOW, { completedWeeks: at(35, 6) })).toEqual({ pattern: "preterm" });
+  });
+
   it("stays silent before term when the pattern is not regular", () => {
     // Same detection as at term — the week changes the verdict, not the bar.
-    expect(assess511(series(5, 5 * 60, 60), NOW, { weekAtNow: 32 })).toBeNull();
-    expect(assess511(series(7, 12 * 60, 60), NOW, { weekAtNow: 32 })).toBeNull();
-    expect(assess511(series(7, 5 * 60, 20), NOW, { weekAtNow: 32 })).toBeNull();
+    expect(assess511(series(5, 5 * 60, 60), NOW, { completedWeeks: 32 })).toBeNull();
+    expect(assess511(series(7, 12 * 60, 60), NOW, { completedWeeks: 32 })).toBeNull();
+    expect(assess511(series(7, 5 * 60, 20), NOW, { completedWeeks: 32 })).toBeNull();
   });
 
   it("says nothing with no entries at all", () => {

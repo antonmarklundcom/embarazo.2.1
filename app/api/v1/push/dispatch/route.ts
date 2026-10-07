@@ -7,6 +7,7 @@ import {
   pruneSentReminders,
 } from "@/lib/server/push";
 import { drizzlePushBackend } from "@/lib/server/pushBackend";
+import { runMaintenance } from "@/lib/server/maintenance";
 
 // BUILD-PLAN B5 — the thing a scheduler calls.
 //
@@ -59,10 +60,12 @@ export async function POST(req: NextRequest) {
   const now = Date.now();
   const result = await dispatchDueReminders(backend, now);
   await pruneSentReminders(backend, now - PRUNE_AFTER_MS);
+  // F02/F19 housekeeping; a failure here must not fail the dispatch.
+  const maintenance = await runMaintenance(database, now).catch(() => null);
 
   // Counts only — how many were due, sent, expired, failed. Nothing here
   // identifies a device or says what any notification was about.
-  return NextResponse.json(result, {
+  return NextResponse.json({ ...result, maintenance }, {
     headers: { "Cache-Control": "no-store" },
   });
 }

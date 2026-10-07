@@ -80,7 +80,8 @@ export default function FotosPage() {
       <section className="rounded-card border border-sage/30 bg-sage/5 p-4">
         <PrivacyLine />
         <p className="mt-1 text-xs leading-relaxed text-muted">
-          Tus fotos quedan solo en tu teléfono. Nunca se suben a internet.
+          Tus fotos se guardan en tu teléfono. Solo se suben si activás «Copia
+          de tus fotos» en Ajustes, y ni tu pareja ni tu familia las ven.
         </p>
       </section>
 

@@ -1,6 +1,7 @@
 import { test, expect, type BrowserContext } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
+import { serveIdentity } from "./helpers/identity";
 
 // BUILD-PLAN K4 — opt-in photo backup.
 //
@@ -32,6 +33,10 @@ function fakePhotoServer() {
     puts: [] as string[],
     posts: [] as Record<string, unknown>[],
     deletedAll: 0,
+    /** F03: answer the opt-out the way the server does when the bucket fails. */
+    failDeleteAll: false,
+    /** F01: which account the session is (the identity probe's answer). */
+    account: { current: "u1" },
   };
 }
 
@@ -41,6 +46,9 @@ async function serve(
   context: BrowserContext,
   server: ReturnType<typeof fakePhotoServer>,
 ) {
+  // F01: the photo client asks which account the session is before it lists,
+  // uploads or deletes anything — a signed-in session always answers.
+  await serveIdentity(context, server.account);
   // The stand-in bucket. A presigned PUT goes straight here — never through
   // /api/v1/photos — which is the property the ordering assertions rely on.
   await context.route(`${BUCKET}/**`, async (route) => {
@@ -130,6 +138,13 @@ async function serve(
     }
 
     // delete-all
+    if (server.failDeleteAll) {
+      return route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: false, deleted: 0, pending: server.photos.length }),
+      });
+    }
     server.deletedAll += 1;
     server.photos = [];
     return route.fulfill({
@@ -175,7 +190,9 @@ test("the opt-in is absent when it could not work, and the diary still works", a
   await page.goto("/ajustes");
   // An opt-in for something that cannot happen is a broken switch, not a
   // choice.
-  await expect(page.getByText("Copia de tus fotos")).toHaveCount(0);
+  // (The card, by its heading: the privacy summary names the option in
+  // passing since F09, and saying it is opt-in is true everywhere.)
+  await expect(page.getByRole("heading", { name: "Copia de tus fotos" })).toHaveCount(0);
 
   await addBumpPhoto(page);
 
@@ -292,7 +309,10 @@ test("turning it off deletes the server copies and stops uploading", async ({
   await toggle.click();
   await expect.poll(() => server.photos.length).toBe(1);
 
+  // "Off" deletes every copy, so it asks first (F10/N2: it used to be the only
+  // "retry" control a new phone had).
   await toggle.click();
+  await page.getByRole("button", { name: "Sí, apagar y borrar las copias" }).click();
   await expect(page.getByText("Apagado. Borramos las copias del servidor.")).toBeVisible();
   expect(server.deletedAll).toBe(1);
   expect(server.photos).toEqual([]);
@@ -341,6 +361,98 @@ test("deleting a photo tells the server before the row is gone", async ({
   // does not.
   await expect.poll(() => server.photos[0]?.deletedAt).not.toBeNull();
   expect(server.photos[0]!.payload).toBeNull();
+
+  await context.close();
+});
+
+// ---------------------------------------------------------------------------
+// 2026-10 review — F10, F01, F03
+// ---------------------------------------------------------------------------
+
+test("F10: with backup on, opening the app restores new photos without touching anything", async ({
+  browser,
+}) => {
+  const server = fakePhotoServer();
+  const context = await browser.newContext();
+  await serve(context, server);
+  const page = await context.newPage();
+
+  await completeOnboarding(page);
+  await page.goto("/ajustes");
+  await page.getByRole("switch", { name: "Guardar mis fotos en mi cuenta" }).click();
+  await expect(page.getByRole("status")).toBeVisible();
+
+  // Another device of hers backs up a photo meanwhile.
+  server.photos.push({
+    store: "photoEntries",
+    recordId: "from-the-other-phone",
+    contentType: "image/png",
+    bytes: 70,
+    payload: { week: 30, createdAt: Date.now() },
+    deletedAt: null,
+  });
+
+  // She just opens the diary later. No switch, no button.
+  await page.goto("/herramientas/fotos");
+  await expect(
+    page.getByRole("button", { name: "Ver foto de la semana 30" }),
+  ).toBeVisible({ timeout: 15_000 });
+
+  await context.close();
+});
+
+test("F01: on a phone whose data belongs to another account, photos go nowhere", async ({
+  browser,
+}) => {
+  const server = fakePhotoServer();
+  const context = await browser.newContext();
+  await serve(context, server);
+  const page = await context.newPage();
+
+  await completeOnboarding(page);
+  await page.goto("/ajustes");
+  await page.getByRole("switch", { name: "Guardar mis fotos en mi cuenta" }).click();
+  await expect(page.getByRole("status")).toBeVisible();
+
+  // Somebody else signs in on this phone.
+  server.account.current = "u2";
+  await page.goto("/ajustes");
+  await expect(page.getByText("son de otra cuenta")).toBeVisible();
+
+  await addBumpPhoto(page);
+  await page.waitForTimeout(1500);
+  expect(server.puts).toHaveLength(0);
+  expect(server.posts.filter((p) => p.action === "upload-url")).toHaveLength(0);
+
+  await context.close();
+});
+
+test("F03: an opt-out the server could not finish says so, and is retried", async ({
+  browser,
+}) => {
+  const server = fakePhotoServer();
+  const context = await browser.newContext();
+  await serve(context, server);
+  const page = await context.newPage();
+
+  await completeOnboarding(page);
+  await addBumpPhoto(page);
+  await page.goto("/ajustes");
+  const toggle = page.getByRole("switch", { name: "Guardar mis fotos en mi cuenta" });
+  await toggle.click();
+  await expect.poll(() => server.photos.length).toBe(1);
+
+  server.failDeleteAll = true;
+  await toggle.click();
+  await page.getByRole("button", { name: "Sí, apagar y borrar las copias" }).click();
+  await expect(page.getByText("Todavía no pudimos borrar todas las copias")).toBeVisible();
+  expect(server.photos).toHaveLength(1);
+
+  // The bucket recovers; the next app open finishes the job.
+  server.failDeleteAll = false;
+  await page.goto("/");
+  await expect.poll(() => server.deletedAll, { timeout: 15_000 }).toBe(1);
+  expect(server.photos).toEqual([]);
 
   await context.close();
 });

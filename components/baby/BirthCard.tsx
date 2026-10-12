@@ -45,9 +45,14 @@ export function BirthCard({
       return;
     }
     setBusy(true);
-    const ok = await recordBirth(date);
-    setBusy(false);
-    if (!ok) setError("No pudimos guardar la fecha. Probá de nuevo.");
+    try {
+      const ok = await recordBirth(date);
+      if (!ok) setError("No pudimos guardar la fecha. Probá de nuevo.");
+    } catch {
+      setError("No pudimos guardar la fecha. Probá de nuevo.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (

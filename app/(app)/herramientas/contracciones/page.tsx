@@ -52,13 +52,20 @@ function fmtSec(sec: number): string {
 
 export default function ContraccionesPage() {
   const profile = useProfile();
-  const [runningStart, setRunningStart] = useState<number | null>(null);
   const [, setTick] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
   const entries = useLiveQuery(
-    () => db().contractionEntries.orderBy("startedAt").reverse().limit(20).toArray(),
+    () => db().contractionEntries.orderBy("startedAt").reverse()
+      .filter((entry) => !entry.deletedAt && !entry.inProgress).limit(20).toArray(),
     [],
   );
+  const active = useLiveQuery(async () =>
+    (await db().contractionEntries.orderBy("startedAt").reverse()
+      .filter((entry) => !entry.deletedAt && entry.inProgress === true).first()) ?? null,
+  []);
+  const runningStart = active?.startedAt ?? null;
 
   // Re-render every second while timing.
   useEffect(() => {
@@ -67,25 +74,57 @@ export default function ContraccionesPage() {
     return () => clearInterval(id);
   }, [runningStart]);
 
+  async function start() {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const instance = db();
+      await instance.transaction("rw", instance.contractionEntries, async () => {
+        // A transaction also prevents a double tap/two tabs creating two timers.
+        const existing = await instance.contractionEntries
+          .filter((entry) => !entry.deletedAt && entry.inProgress === true).first();
+        if (existing) return;
+        const startedAt = Date.now();
+        const last = await instance.contractionEntries.orderBy("startedAt").reverse()
+          .filter((entry) => !entry.deletedAt && !entry.inProgress).first();
+        await instance.contractionEntries.add({
+          startedAt,
+          durationSec: 0,
+          intervalSec: last ? Math.max(0, Math.round((startedAt - last.startedAt) / 1000)) : 0,
+          inProgress: true,
+        });
+      });
+    } catch {
+      setError("No pudimos guardar el cronómetro. Probá de nuevo.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function stop() {
-    if (runningStart === null) return;
-    const now = Date.now();
-    const durationSec = Math.round((now - runningStart) / 1000);
-    // Interval = gap from the previous contraction's start to this one's start.
-    const last = await db().contractionEntries.orderBy("startedAt").last();
-    const intervalSec = last
-      ? Math.round((runningStart - last.startedAt) / 1000)
-      : 0;
-    await db().contractionEntries.add({
-      startedAt: runningStart,
-      durationSec,
-      intervalSec,
-    });
-    setRunningStart(null);
+    if (!active?.id || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const instance = db();
+      await instance.transaction("rw", instance.contractionEntries, async () => {
+        const row = await instance.contractionEntries.get(active.id!);
+        if (!row || row.deletedAt || !row.inProgress) return;
+        await instance.contractionEntries.update(row.id!, {
+          durationSec: Math.max(0, Math.round((Date.now() - row.startedAt) / 1000)),
+          inProgress: false,
+        });
+      });
+    } catch {
+      setError("No pudimos guardar la duración. El cronómetro sigue disponible; probá de nuevo.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   const elapsed =
-    runningStart !== null ? Math.round((Date.now() - runningStart) / 1000) : 0;
+    runningStart !== null ? Math.max(0, Math.round((Date.now() - runningStart) / 1000)) : 0;
 
   const now = Date.now();
   const completed =
@@ -118,8 +157,9 @@ export default function ContraccionesPage() {
         {runningStart === null ? (
           <button
             type="button"
-            onClick={() => setRunningStart(Date.now())}
-            className="flex h-40 w-40 items-center justify-center rounded-full bg-terracotta text-lg font-medium text-white transition active:scale-[0.97]"
+            onClick={start}
+            disabled={busy || active === undefined}
+            className="flex h-40 w-40 items-center justify-center rounded-full bg-terracotta text-lg font-medium text-white transition active:scale-[0.97] disabled:opacity-60"
           >
             Empezar
           </button>
@@ -127,12 +167,17 @@ export default function ContraccionesPage() {
           <button
             type="button"
             onClick={stop}
-            className="flex h-40 w-40 flex-col items-center justify-center rounded-full bg-petrol text-white transition active:scale-[0.97]"
+            disabled={busy}
+            className="flex h-40 w-40 flex-col items-center justify-center rounded-full bg-petrol text-white transition active:scale-[0.97] disabled:opacity-60"
           >
             <span className="text-3xl font-black">{fmtSec(elapsed)}</span>
             <span className="mt-1 text-sm text-white/80">Parar</span>
           </button>
         )}
+        <p className="text-center text-xs text-muted">
+          El cronómetro se guarda. Podés salir de esta pantalla y volver para pararlo.
+        </p>
+        {error && <p role="alert" className="text-sm text-terracotta">{error}</p>}
       </div>
 
       {/* The verdict sits directly under the timer, above the contact button

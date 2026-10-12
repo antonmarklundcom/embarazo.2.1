@@ -99,5 +99,8 @@ describe("the Hoy card and the undo", () => {
     expect(parseDateInput("2026-09-27")).toBe(new Date(2026, 8, 27).getTime());
     expect(parseDateInput("")).toBeNaN();
     expect(parseDateInput("27/09/2026")).toBeNaN();
+    expect(parseDateInput("2026-02-30")).toBeNaN();
+    expect(parseDateInput("2026-13-01")).toBeNaN();
+    expect(parseDateInput("2028-02-29")).toBe(at(2028, 2, 29, 0));
   });
 });

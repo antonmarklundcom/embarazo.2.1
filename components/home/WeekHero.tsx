@@ -7,8 +7,11 @@ import Link from "next/link";
 import { primaryBabyName } from "@/lib/babies";
 import { babyAtWeekLabel as roleBabyAtWeekLabel } from "@/lib/roleCopy";
 import type { BabyIdentity, Role } from "@/lib/db";
-import { sizeLine } from "@/lib/weeks";
-import { comparisonFor } from "@/lib/seed/comparisons";
+import { sizeLine, getWeek, formatLength, formatWeight } from "@/lib/weeks";
+import { measurementNote } from "@/lib/hero/scale";
+import { useShowComparison } from "@/lib/hero/preferences";
+import { ComparisonChoice } from "@/components/hero/ComparisonChoice";
+import { comparisonFor, comparisonCaption } from "@/lib/seed/comparisons";
 import { useImageFailed } from "@/lib/hooks/useImageFailed";
 
 import { HeroSubject } from "@/components/hero/HeroSubject";
@@ -61,6 +64,9 @@ export function WeekHero({
   role: Role;
 }) {
   const dashOffset = RING_CIRCUMFERENCE * (1 - progress);
+  const showFruit = useShowComparison();
+  const info = getWeek(week);
+  const measures = [info.lengthCm ? "≈ " + formatLength(info.lengthCm) : null, info.weightG ? "≈ " + formatWeight(info.weightG) : null].filter(Boolean).join(" · ");
 
   return (
     <div className="rounded-card bg-white p-5 text-center shadow-soft">
@@ -109,7 +115,7 @@ export function WeekHero({
         {/* 2026-09-28: the week's size, told by a Paraguayan fruit or
             vegetable rather than by the baby drawing (the same character
             every week). Decorative: the size line below says it in words. */}
-        <SizeBadge week={week} />
+        {showFruit && <SizeBadge week={week} />}
       </Link>
 
       {/* B3: `week+day` is the default display, in carné notation ("24+3").
@@ -126,8 +132,12 @@ export function WeekHero({
         {completedLabel ?? `Semana ${week}`}
       </p>
       <p className="mt-0.5 text-xs font-bold text-muted">
-        {sizeLine(sizeComparison)}
+        {showFruit ? (comparisonCaption(week) ?? sizeLine(sizeComparison)) : (week <= 3 ? sizeLine(sizeComparison) : "Medidas aproximadas de tu bebé")}
       </p>
+      {measures && <p className="mt-2 text-lg font-black text-ink">{measures}</p>}
+      {info.lengthCm && <p className="mt-1 text-[11px] font-semibold text-muted">Longitud {measurementNote(week)}</p>}
+      {showFruit && comparisonFor(week) && <p className="mt-1 text-[10px] leading-relaxed text-muted">Referencia ilustrativa, sin escala. Las frutas varían.</p>}
+      <div className="mt-3"><ComparisonChoice /></div>
       {/* U7: the way into the theme sheet, on the card it changes. */}
       <div className="mt-2">
         <ThemeChip />

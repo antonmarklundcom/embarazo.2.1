@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { getCompletedGestation } from "@/lib/pregnancy";
 
-import { assess511, MIN_WEEK_FOR_HINT, type ContractionSample } from "./contractions";
+import { assess511, CONTRACTIONS_511_HINT, MIN_WEEK_FOR_HINT, type ContractionSample } from "./contractions";
 
 // BUILD-PLAN D7. `assess511` only ever runs on-device data; these tests are
 // what makes "silence, not reassurance" true for the edge cases rather than
@@ -24,9 +24,29 @@ function series(
 }
 
 describe("assess511", () => {
-  it("detects a textbook 5-1-1 hour", () => {
+  it("detects a recent frequent pattern without claiming an hour was observed", () => {
     const entries = series(7, 5 * 60, 60);
     expect(assess511(entries, NOW)).toEqual({ pattern: "5-1-1" });
+    expect(CONTRACTIONS_511_HINT.es).not.toContain("desde hace una hora");
+    expect(CONTRACTIONS_511_HINT.es).toContain("No esperes");
+  });
+
+  it("does not promote persisted unfinished rows to completed samples", () => {
+    const entries = series(6, 5 * 60, 60).map((entry) => ({ ...entry, inProgress: true }));
+    expect(assess511(entries, NOW)).toBeNull();
+  });
+
+  it("still prompts contact for six frequent contractions after only 25 minutes", () => {
+    const entries = series(6, 5 * 60, 60);
+    expect(entries.at(-1)!.startedAt - entries[0]!.startedAt).toBe(25 * 60 * 1000);
+    expect(assess511(entries, NOW, { completedWeeks: 38 })).toEqual({ pattern: "5-1-1" });
+    expect(assess511(entries, NOW, { completedWeeks: 30 })).toEqual({ pattern: "preterm" });
+  });
+
+  it("does not count the persisted active contraction twice", () => {
+    const finished = series(4, 5 * 60, 60);
+    const active = { startedAt: NOW, durationSec: 0, inProgress: true };
+    expect(assess511([...finished, active], NOW, { inProgressStartedAt: NOW })).toBeNull();
   });
 
   it("says nothing with fewer than 6 contractions", () => {

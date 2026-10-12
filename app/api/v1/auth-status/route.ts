@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { availableProviders, getSession, isAuthAvailable } from "@/lib/server/auth";
+import { requiresAccount } from "@/lib/auth/access";
 import {
   CHEAP_READ_LIMIT,
   clientKeyFromHeaders,
@@ -22,13 +23,13 @@ import {
 //    the client half of Auth.js into every page's bundle for one boolean
 //    (G3 has a First Load JS budget to defend).
 //
-// So: one route, two booleans-worth of information.
+// One route reports configured login methods, session and local ownership identity.
 //
 // **What it discloses.** Which providers a deployment has configured — already
 // visible on `/cuenta` to anyone who opens it — and whether *the caller's own*
-// cookie is a live session. It returns no name, no email, no avatar and no user
-// id: a signed-in caller learns nothing they did not already send. Nothing here
-// is health data, and nothing is retained.
+// cookie is a live session. The accountId is exclusively the caller's own id,
+// allowing the gate to refuse another account's local records. It returns no
+// name, email, avatar or health data and never accepts a user id as input.
 //
 // It takes no parameters, like every other route under /api/v1 since J3, and a
 // request carrying one is rejected rather than ignored.
@@ -71,6 +72,8 @@ export async function GET(req: NextRequest) {
       // reported alongside but separately from the OAuth `providers` list.
       credentialsAvailable: isAuthAvailable(),
       signedIn: Boolean(session?.user?.id),
+      accountRequired: requiresAccount(process.env),
+      accountId: session?.user?.id ?? null,
     },
     { headers: HEADERS },
   );

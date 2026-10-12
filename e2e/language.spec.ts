@@ -31,6 +31,7 @@ test("the language toggle works with the network off", async ({ page, context })
   await expect(page.getByRole("link", { name: "Hoy" })).toBeVisible();
 
   await page.goto("/ajustes");
+  await expect(page.getByRole("button", { name: "Guaraní" })).toBeVisible();
   await context.setOffline(true);
 
   await page.getByRole("button", { name: "Guaraní" }).click();

@@ -1,4 +1,7 @@
 import { db, type SyncStateRow } from "./db";
+import { preserveLegacyPhotoDeletionOwner } from "./sync/photoDeletions";
+import { pauseSyncForDeviceWipe, resumeSyncAfterFailedWipe } from "./sync/client";
+import { pausePhotoSyncForDeviceWipe, resumePhotoSyncAfterFailedWipe } from "./photos/client";
 import {
   exportPinMaterial,
   importPinMaterial,
@@ -239,6 +242,11 @@ export async function importBackup(file: File): Promise<void> {
   for (const name of PHOTO_TABLES) rows[name] = decodePhotos(rows[name]);
 
   const instance = db();
+  const previousPin = exportPinMaterial();
+  await Promise.all([pauseSyncForDeviceWipe(), pausePhotoSyncForDeviceWipe()]);
+  let pinChanged = false;
+  try {
+  preserveLegacyPhotoDeletionOwner((await instance.syncState.get("default"))?.accountId);
   await instance.transaction(
     "rw",
     [
@@ -280,12 +288,20 @@ export async function importBackup(file: File): Promise<void> {
           await instance.table(name).bulkAdd(rows[name] as never[]);
         }
       }
+      // localStorage failures abort this IndexedDB transaction, preserving the
+      // old rows. The PIN helper restores either partially changed key.
+      importPinMaterial(backup.pin);
+      pinChanged = true;
     },
   );
 
-  // After the rows land, adopt the backup's PIN material so encrypted notes in
-  // it can be unlocked with the PIN they were written under. A v1 file (or one
-  // taken with no PIN) clears whatever this device had — its notes are
-  // plaintext, and leaving a stale PIN in place would lock a lock with no door.
-  importPinMaterial(backup.pin);
+  } catch (error) {
+    // A database commit can fail after its callback completed. Restore the old
+    // PIN material as well, so the retained records stay readable.
+    if (pinChanged) importPinMaterial(previousPin);
+    throw error;
+  } finally {
+    resumeSyncAfterFailedWipe();
+    resumePhotoSyncAfterFailedWipe();
+  }
 }

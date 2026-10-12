@@ -1,102 +1,80 @@
 import "server-only";
-
 import { APP_NAME } from "@/lib/brand";
 
-// Transactional email, via Resend's HTTP API.
-//
-// First outbound email in this codebase, so this file sets the precedent. Three
-// decisions worth writing down:
-//
-//  1. **Plain `fetch`, no SDK.** Resend's official client is a thin wrapper over
-//     this one endpoint; a dependency in `package.json` — reviewed, updated,
-//     audited forever — is not worth one POST. Same reasoning as
-//     `lib/server/aiBaby.ts` calling Gemini's REST endpoint directly.
-//
-//  2. **Absent by design.** With `RESEND_API_KEY` unset there is no mail
-//     transport and this no-ops, exactly like `lib/server/db.ts` with no
-//     `DATABASE_URL` and `SHEETS_WEBHOOK_URL` with no webhook. Nothing throws at
-//     import time and nothing reads a secret until a send is actually
-//     attempted. Callers branch on `isEmailConfigured()` when the *absence* of
-//     mail changes what the user should be told.
-//
-//  3. **Awaited, not fire-and-forget.** The attribution ping in
-//     `/api/v1/go/[id]` is fire-and-forget because the redirect is the feature
-//     and the ping is bookkeeping. Here the email IS the feature: a password
-//     reset whose mail silently failed is a user locked out being told to check
-//     an inbox that will never receive anything. So a failed send throws, and
-//     `requestPasswordReset` turns that into a visible "no pudimos enviar el
-//     correo" rather than a false success.
-//
-// Nothing in this file logs the API key, the message body or the reset URL. The
-// URL contains a live credential (the raw token), so it is passed through and
-// never printed — see `error()` below, which deliberately reports only status.
-
+// Awaited transactional delivery over HTTPS, with no SDK or client secrets.
+// Unset EMAIL_PROVIDER preserves Resend. Cloudflare is an explicit alternative;
+// failures never trigger a second-provider retry that could duplicate mail.
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
-
-/**
- * The envelope sender. Root domain, not the app subdomain: the app lives on
- * `app.embarazo.com.py` while mail is sent from `embarazo.com.py`, which is
- * where the SPF/DKIM/DMARC records are verified. Overridable by env so moving
- * domains is a deployment change and not a code change.
- */
 const DEFAULT_FROM = "no-reply@embarazo.com.py";
+type MailConfig = { provider: "resend"; key: string; from: string }
+  | { provider: "cloudflare"; key: string; from: string; accountId: string };
 
-function apiKey(): string | undefined {
-  const key = process.env.RESEND_API_KEY?.trim();
-  return key ? key : undefined;
+function mailConfig(): MailConfig | null {
+  const provider = process.env.EMAIL_PROVIDER?.trim().toLowerCase() || "resend";
+  if (provider === "resend") {
+    const key = process.env.RESEND_API_KEY?.trim();
+    if (!key || /[\r\n]/.test(key)) return null;
+    const address = process.env.RESEND_FROM_EMAIL?.trim() || DEFAULT_FROM;
+    return { provider, key, from: APP_NAME + " <" + address + ">" };
+  }
+  if (provider !== "cloudflare") return null;
+  const key = process.env.CLOUDFLARE_EMAIL_API_TOKEN?.trim();
+  const accountId = process.env.CLOUDFLARE_EMAIL_ACCOUNT_ID?.trim();
+  const from = process.env.CLOUDFLARE_EMAIL_FROM?.trim() || DEFAULT_FROM;
+  // Account id is a path component. Reject malformed ids rather than sending a
+  // credential to a surprising endpoint. Cloudflare expects a plain sender.
+  if (!key || /[\r\n]/.test(key) || !accountId || !/^[a-f0-9]{32}$/i.test(accountId)
+    || !/^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(from)) return null;
+  return { provider, key, from, accountId };
 }
 
-function fromAddress(): string {
-  const configured = process.env.RESEND_FROM_EMAIL?.trim();
-  return `${APP_NAME} <${configured || DEFAULT_FROM}>`;
+/** Transport is configured; domain entitlement/delivery still requires live verification. */
+export function isEmailConfigured(): boolean { return mailConfig() !== null; }
+interface Message { to: string; subject: string; text: string; html: string; }
+
+function recipientIn(value: unknown, recipient: string): boolean {
+  return Array.isArray(value) && value.some(address => typeof address === "string"
+    && address.trim().toLowerCase() === recipient.trim().toLowerCase());
 }
 
-/** True when an email could actually be delivered from this process. */
-export function isEmailConfigured(): boolean {
-  return apiKey() !== undefined;
+/** HTTP 200 can contain a permanent bounce; only this recipient's success counts. */
+function cloudflareAccepted(body: unknown, recipient: string): boolean {
+  if (!body || typeof body !== "object") return false;
+  const response = body as Record<string, unknown>;
+  if (response.success !== true || !Array.isArray(response.errors) || response.errors.length > 0) return false;
+  if (!response.result || typeof response.result !== "object") return false;
+  const result = response.result as Record<string, unknown>;
+  if (![result.delivered,result.queued,result.permanent_bounces].every(Array.isArray)) return false;
+  return !recipientIn(result.permanent_bounces, recipient)
+    && (recipientIn(result.delivered, recipient) || recipientIn(result.queued, recipient));
 }
 
-interface Message {
-  to: string;
-  subject: string;
-  text: string;
-  html: string;
-}
-
-/**
- * POST one message. Throws on any non-2xx so the caller can tell the user the
- * truth; the thrown message carries the HTTP status and nothing else — Resend's
- * error bodies echo request fields, and this request's fields include a live
- * reset URL that must not reach a log aggregator.
- */
 async function send(message: Message): Promise<void> {
-  const key = apiKey();
-  // Absent by design: no transport configured, nothing to do, no complaint.
-  // Callers that need to *tell* the user this check `isEmailConfigured()`.
-  if (!key) return;
-
-  const res = await fetch(RESEND_ENDPOINT, {
-    method: "POST",
-    headers: {
-      // Header, not query string: query strings land in access logs and proxy
-      // caches, and this is a live credential.
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: fromAddress(),
-      to: [message.to],
-      subject: message.subject,
-      text: message.text,
-      html: message.html,
-    }),
-    // A mail API that has stopped answering must not hold a server action open
-    // until the platform kills the request.
-    signal: AbortSignal.timeout(10_000),
-  });
-
-  if (!res.ok) {
-    throw new Error(`Resend rejected the message (HTTP ${res.status}).`);
+  const config = mailConfig();
+  // Callers handle absence through isEmailConfigured(); preserve the old no-op.
+  if (!config) return;
+  const endpoint = config.provider === "resend" ? RESEND_ENDPOINT
+    : "https://api.cloudflare.com/client/v4/accounts/" + config.accountId + "/email/sending/send";
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: { Authorization: "Bearer " + config.key, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: config.from, to: config.provider === "resend" ? [message.to] : message.to,
+        subject: message.subject, text: message.text, html: message.html }),
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch {
+    // Neither thrown network errors nor provider bodies reach logs: they can
+    // echo the reset credential, email address, message, or bearer token.
+    throw new Error("Email transport unavailable.");
+  }
+  if (!response.ok) throw new Error("Email provider rejected the message (HTTP " + response.status + ").");
+  if (config.provider === "cloudflare") {
+    let body: unknown;
+    try { body = await response.json(); }
+    catch { throw new Error("Email provider returned an invalid delivery response."); }
+    if (!cloudflareAccepted(body,message.to)) throw new Error("Email provider did not accept delivery.");
   }
 }
 
@@ -116,8 +94,8 @@ function escapeHtml(value: string): string {
  * a real anchor. The URL appears in full in the text part on purpose — a user
  * who cannot click can still copy it.
  *
- * @throws when the message could not be handed to Resend. Silent (no-op) when
- *   no API key is configured.
+ * @throws when the message could not be handed to the configured provider. Silent (no-op) when
+ *   no valid transport is configured.
  */
 export async function sendPasswordResetEmail(
   to: string,
@@ -167,8 +145,8 @@ export async function sendPasswordResetEmail(
  * account already works, and confirming is what lets us reach her if she ever
  * forgets her password.
  *
- * @throws when the message could not be handed to Resend. Silent (no-op) when
- *   no API key is configured.
+ * @throws when the message could not be handed to the configured provider. Silent (no-op) when
+ *   no valid transport is configured.
  */
 export async function sendVerificationEmail(
   to: string,

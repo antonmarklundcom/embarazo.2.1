@@ -1,12 +1,7 @@
 import { PROVIDER_IDS, type ProviderId } from "./config";
 
-// BUILD-PLAN K1 — the client half of /api/v1/auth-status.
-//
-// `parseAuthStatus` is separate from the fetch so the interesting half is
-// testable: the app must degrade to "no accounts here" for *any* answer it does
-// not recognise — an offline first run, a 404 from a local-only build, an HTML
-// error page from a proxy. Guessing that accounts work when they do not would
-// strand a user on a sign-in button that goes nowhere.
+// Unrecognised responses fail closed: no session and account still required.
+// An offline returning user may separately open only their account-bound records.
 
 export const AUTH_STATUS_PATH = "/api/v1/auth-status";
 
@@ -15,13 +10,18 @@ export interface AuthStatus {
   /** PR-20 — true once email + password sign-in can complete (secret + db). */
   credentialsAvailable: boolean;
   signedIn: boolean;
+  accountRequired: boolean;
+  /** The caller's own identifier, used only to compare local-record ownership. */
+  accountId: string | null;
 }
 
-/** What we assume when we could not find out: a local-only, signed-out device. */
+/** Historical export name: an unavailable server never grants guest tracking. */
 export const LOCAL_ONLY: AuthStatus = {
   providers: [],
   credentialsAvailable: false,
   signedIn: false,
+  accountRequired: true,
+  accountId: null,
 };
 
 export function parseAuthStatus(body: unknown): AuthStatus {
@@ -30,6 +30,8 @@ export function parseAuthStatus(body: unknown): AuthStatus {
     providers?: unknown;
     credentialsAvailable?: unknown;
     signedIn?: unknown;
+    accountRequired?: unknown;
+    accountId?: unknown;
   };
   const providers = Array.isArray(raw.providers)
     ? raw.providers.filter((id): id is ProviderId =>
@@ -40,6 +42,8 @@ export function parseAuthStatus(body: unknown): AuthStatus {
     providers,
     credentialsAvailable: raw.credentialsAvailable === true,
     signedIn: raw.signedIn === true,
+    accountRequired: raw.accountRequired !== false,
+    accountId: raw.signedIn === true && typeof raw.accountId === "string" && raw.accountId.trim().length > 0 && raw.accountId.length <= 128 ? raw.accountId : null,
   };
 }
 
@@ -49,7 +53,7 @@ export async function fetchAuthStatus(): Promise<AuthStatus> {
     if (!res.ok) return LOCAL_ONLY;
     return parseAuthStatus(await res.json());
   } catch {
-    // Offline, or a build with no server. Both are supported states.
+    // Neither a network failure nor missing server authenticates a first-time user.
     return LOCAL_ONLY;
   }
 }

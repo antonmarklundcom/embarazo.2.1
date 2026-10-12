@@ -10,6 +10,8 @@ import { useHeroTheme, useShowComparison } from "@/lib/hero/preferences";
 import { bareInk, captionScrim, heroTheme, themeInk } from "@/lib/hero/themes";
 import { measurementNote, switchesMeasurementAt } from "@/lib/hero/scale";
 import { formatLength, formatWeight, sizeLine } from "@/lib/weeks";
+import { comparisonCaption, comparisonFor } from "@/lib/seed/comparisons";
+import { ComparisonChoice } from "./hero/ComparisonChoice";
 import { WEEK_ART_STYLE, hasWeekArt, weekArtAlt, weekArtSrc } from "@/lib/hero/weekArt";
 
 // Weekly "bebé a las N semanas" hero, v2 (U7).
@@ -26,7 +28,7 @@ import { WEEK_ART_STYLE, hasWeekArt, weekArtAlt, weekArtSrc } from "@/lib/hero/w
 //
 // **What is on disk today is the cutout set** (2026-09-28): transparent baby
 // renders for weeks 3–42, composited over the theme, with this week's
-// Paraguayan fruit or vegetable drawn to scale beside it (`ComparisonFigure`).
+// illustrative fruit reference (`ComparisonFigure`), clearly without scale.
 // The framed branch below stays for the site's opaque set; `lib/hero/weekArt.ts`
 // says which set is on disk.
 export function WeekHeroImage({
@@ -64,7 +66,7 @@ export function WeekHeroImage({
   // 2026-09-28: not used for the cutout set after all. Composited full-bleed
   // under the caption scrim the render went dark and hid the one thing that
   // tells the size, the fruit. The bare layout draws the render beside the
-  // fruit, to scale (`ComparisonFigure` → `WeekBabyFigure`), which is what
+  // fruit, without a scale claim (`ComparisonFigure` → `WeekBabyFigure`), which is what
   // the week page is for. Kept behind this constant, not deleted.
   const COMPOSITE_RENDER = false;
   const onRender = COMPOSITE_RENDER && !framed && hasArt && loaded;
@@ -90,16 +92,17 @@ export function WeekHeroImage({
         Semana {week}
       </p>
       <p className="mt-1 text-sm font-bold" style={{ color: ink.soft }}>
-        {sizeLine(sizeComparison)}
+        {showComparison ? (comparisonCaption(week) ?? sizeLine(sizeComparison)) : (week <= 3 ? sizeLine(sizeComparison) : "Medidas aproximadas de tu bebé")}
       </p>
       {measures && (
-        <p className="mt-0.5 text-xs font-bold" style={{ color: ink.soft }}>
+        <p className="mt-2 text-lg font-black" style={{ color: ink.soft }}>
           {measures}
           {lengthCm && (
-            <span className="font-semibold opacity-80"> · {measurementNote(week)}</span>
+            <span className="mt-1 block text-xs font-semibold opacity-80">Longitud {measurementNote(week)}</span>
           )}
         </p>
       )}
+      <div className="mt-3"><ComparisonChoice ink={onRender ? "light" : theme.ink} /></div>
       {switchesMeasurementAt(week) && (
         // The crown-rump → crown-heel switch. The number jumps because the
         // ruler changed, not because the baby doubled in a week, and
@@ -149,7 +152,7 @@ export function WeekHeroImage({
             <figure className="m-0 mt-4 flex justify-center">{probe}</figure>
           ) : hasSubject && (
             <div className="mt-4 flex justify-center">
-              {showComparison ? (
+              {showComparison && comparisonFor(week) ? (
                 <ComparisonFigure
                   week={week}
                   lengthCm={lengthCm}

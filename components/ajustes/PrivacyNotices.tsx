@@ -35,12 +35,12 @@ export function PrivacyNotices() {
         <h2 className="text-base font-extrabold text-ink">Tu privacidad</h2>
         <ul className="mt-2 space-y-1.5 text-sm text-ink">
           <li>
-            • Podés usar {APP_NAME} sin cuenta. Si no creás una, no tenemos tu
-            correo ni tu nombre.
+            • El seguimiento personal de {APP_NAME} necesita una cuenta. Google
+            nos permite identificarte con tu nombre, correo y foto de perfil.
           </li>
           <li>
-            • Sin cuenta, tus datos de salud se guardan solo en este
-            dispositivo.
+            • Tus registros se guardan en este dispositivo y los compatibles
+            se sincronizan con tu cuenta. No tienen cifrado de extremo a extremo.
           </li>
           <li>
             • Con cuenta, tus registros (síntomas, ánimo, peso, diario,
@@ -49,9 +49,8 @@ export function PrivacyNotices() {
             con PIN, nunca.
           </li>
           <li>
-            • Sin cuenta, al servidor solo llegan contadores anónimos (qué se
-            lee y en qué semana, sin nada que diga de quién) y, si activás
-            avisos, la suscripción de tu navegador.
+            • Las estadísticas de uso son agregadas. Si activás avisos,
+            guardamos la suscripción técnica de tu navegador.
           </li>
           <li>• No usamos cookies de seguimiento ni rastreadores.</li>
         </ul>

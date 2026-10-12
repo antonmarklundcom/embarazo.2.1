@@ -10,10 +10,10 @@ import { useProfile } from "@/lib/useProfile";
 // reasoning for each group.
 import {
   CompanionHome,
-  CreateAccountNudge,
   InstallCard,
   InviteFriend,
   MoodCheckIn,
+  NextAppointmentCard,
   Onboarding,
   PlaneandoHome,
   WeeklyLineCard,
@@ -58,6 +58,7 @@ import { WeekContentRail } from "@/components/home/WeekContentRail";
 import { WeekHero } from "@/components/home/WeekHero";
 import { NewWeekCard } from "@/components/home/NewWeekCard";
 import { BirthCard } from "@/components/baby/BirthCard";
+import { completeHandoff, readHandoff, rememberHandoff } from "@/lib/auth/access.client";
 import { BabyHome } from "@/components/baby/BabyHome";
 import { WeekStrip } from "@/components/home/WeekStrip";
 import { flush as flushFunnel, markOnboarded } from "@/lib/stats/funnel.client";
@@ -98,8 +99,12 @@ export default function InicioPage() {
     Partial<OnboardingAnswers> | undefined
   >(undefined);
   useEffect(() => {
-    const patch = siteParamsToAnswers(window.location.search, Date.now(), window.location.hash);
-    if (patch) setSiteAnswers(patch);
+    const saved = readHandoff();
+    const patch = siteParamsToAnswers(window.location.search, Date.now(), window.location.hash) ?? saved?.patch;
+    if (patch) {
+      rememberHandoff(saved?.returnTo);
+      setSiteAnswers(patch);
+    }
     const cleaned = withoutSiteParams(window.location.href);
     if (cleaned !== null) window.history.replaceState({}, "", cleaned);
   }, []);
@@ -128,11 +133,15 @@ export default function InicioPage() {
       // K1 — that device has no draft, so it was never mid-flow.
       current === "done"
         ? "done"
-        : !profile.hasProfile || hasOnboardingDraft()
+        : !profile.hasPersonalSetup || hasOnboardingDraft()
           ? "active"
           : "done",
     );
-  }, [profile.loading, profile.hasProfile]);
+  }, [profile.loading, profile.hasPersonalSetup]);
+
+  useEffect(() => {
+    if (flow === "done") completeHandoff();
+  }, [flow]);
 
   if (profile.loading || flow === "unknown") {
     return <HomeSkeleton />;
@@ -146,6 +155,7 @@ export default function InicioPage() {
           markOnboarded();
           void flushFunnel();
           setFlow("done");
+          completeHandoff();
         }}
         initialCode={inviteCode}
         initialSiteAnswers={siteAnswers}
@@ -277,6 +287,13 @@ export default function InicioPage() {
           two nobody scrolled to. */}
       {/* C2: the week's one-liner is the two-second answer, so it leads;
           the daily tip and check-in follow it. */}
+      <NextAppointmentCard
+        appointmentAt={profile.nextAppointment}
+        guests={ownerView?.members ?? []}
+        companionAppointmentAt={companionViewOf(shared.views)?.snapshot?.nextAppointmentAt ?? null}
+      />
+      <HomeShortcuts week={week} />
+      <HomeToolsGrid />
       <WeeklyLineCard week={week} />
       <DailyTipCard text={tip.text} />
       <MoodCheckIn role={profile.role} week={week} />
@@ -285,25 +302,15 @@ export default function InicioPage() {
           carries the week number and nothing else. "Contale a tu pareja" (the
           partner's paragraph for the week, text only) is offered to the mamá
           only — anyone else on this screen is the person it would go to. */}
-      <ShareCard
-        week={week}
-        label="Compartir mi semana"
-        offerInvite
-        offerPartner={isSelfCentered(profile.role)}
-        nickname={shareNickname(profile.babies)}
-      />
-
       {/* C8: one-tap access to emergencia · carné · preguntas, and the
           feedback path (map #18, #19). */}
-      <HomeShortcuts week={week} />
-
       {/* C2–C5: the cards that are about this week — one-liner, tamaños,
           perspectivas, la nota de la obstetra. */}
       <WeekContentRail week={week} role={profile.role} withLine={false} />
 
-      {/* K2/K7: ánimos, "Tu familia" and the next control — the three cards
-          `ownerView` gates. */}
+      {/* Family encouragement follows the practical tools. */}
       <HomeFamilySurfaces
+        showAppointment={false}
         ownerView={ownerView}
         nextAppointment={profile.nextAppointment}
         companionAppointmentAt={
@@ -311,8 +318,13 @@ export default function InicioPage() {
         }
       />
 
-      {/* Tool cards */}
-      <HomeToolsGrid />
+      <ShareCard
+        week={week}
+        label="Compartir mi semana"
+        offerInvite
+        offerPartner={isSelfCentered(profile.role)}
+        nickname={shareNickname(profile.babies)}
+      />
 
       {/* U11 — the "Recomendados" rail (replaces E4). Self-gates on
           useFlag("recomendados") and on having any items for this trimester,
@@ -332,13 +344,6 @@ export default function InicioPage() {
 
       {/* Derechos · recursos · temporada. */}
       <HomeParaguayCards trimester={trimester} />
-
-      {/* A real, visible nudge to create an account, once there is local
-          data actually worth protecting (lib/accountNudge.ts). Self-gates on
-          no session + auth available + profile old enough — renders nothing
-          otherwise. Sits with the other "you haven't done this yet" cards
-          below. */}
-      <CreateAccountNudge />
 
       {/* Install prompt (P1.1) — hides itself once installed/unavailable */}
       <InviteFriend />

@@ -152,7 +152,9 @@ function buildConfig(): NextAuthConfig {
       Google({
         clientId: process.env.AUTH_GOOGLE_ID,
         clientSecret: process.env.AUTH_GOOGLE_SECRET,
-        allowDangerousEmailAccountLinking: true,
+        // Existing users keep their original login method; email equality
+        // does not authorize merging identities that hold health records.
+        allowDangerousEmailAccountLinking: false,
       }),
     );
   }
@@ -162,7 +164,9 @@ function buildConfig(): NextAuthConfig {
       Facebook({
         clientId: process.env.AUTH_FACEBOOK_ID,
         clientSecret: process.env.AUTH_FACEBOOK_SECRET,
-        allowDangerousEmailAccountLinking: true,
+        // Existing users keep their original login method; email equality
+        // does not authorize merging identities that hold health records.
+        allowDangerousEmailAccountLinking: false,
       }),
     );
   }
@@ -277,10 +281,8 @@ function buildConfig(): NextAuthConfig {
        */
       async signIn({ user, account }) {
         if (!(await consentGiven())) return CONSENT_REQUIRED_URL;
-        // Runs before the adapter links a Google/Facebook sign-in to an
-        // existing row by email (`allowDangerousEmailAccountLinking`), so a
-        // password somebody else set on this address is gone before the
-        // owner's data can land in that row. See `revokeUnverifiedPassword`.
+        // Auth.js refuses automatic merging across login methods. Never revoke
+        // a legacy password on an OAuth attempt that will be refused.
         if (account && account.provider !== "credentials" && user?.email) {
           // F02: an interrupted erasure for this address is finished first, so
           // the adapter cannot link the sign-in to a row that is being
@@ -288,7 +290,6 @@ function buildConfig(): NextAuthConfig {
           if (isDatabaseConfigured()) {
             await finishPendingDeletions(db(), { email: user.email }).catch(() => 0);
           }
-          await revokeUnverifiedPassword(user.email);
         }
         return true;
       },
@@ -411,10 +412,11 @@ async function emailVerifiedAt(userId: string): Promise<Date | null> {
 }
 
 /**
- * Close the pre-hijack hole between password sign-up and OAuth linking.
+ * Legacy repair utility for explicitly revoking an unverified password.
  *
- * Password sign-up (PR-20) does not prove the address is yours, and Google/
- * Facebook sign-in links to any existing row with the same email. Together,
+ * Current OAuth login refuses automatic email-based account linking and does
+ * not call this utility. Under the former linking policy, password signup
+ * did not prove address ownership. Together with automatic email linking,
  * someone could register `her@gmail.com` with a password before she ever
  * signs up, wait for her to sign in with Google (landing in *his* row and
  * syncing her health data into it), then sign in with his password and read
@@ -571,9 +573,9 @@ export async function registerCredentialsUser(
   return { ok: true };
 }
 
-/** End the session and clear the cookie. Redirects on success. */
+/** End the session and clear the cookie. Redirects unless explicitly disabled. */
 export async function signOut(
-  options: { redirectTo?: string } = {},
+  options: { redirectTo?: string; redirect?: boolean } = {},
 ): Promise<void> {
   await instance().signOut(options);
 }

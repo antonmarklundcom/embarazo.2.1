@@ -96,5 +96,10 @@ export function canUndoBirth(recordedAt: number | undefined, now: number = Date.
 /** `<input type="date">` value → local midnight, or NaN. */
 export function parseDateInput(value: string): number {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return Number.NaN;
-  return new Date(`${value}T00:00:00`).getTime();
+  const date = new Date(`${value}T00:00:00`);
+  const [year, month, day] = value.split("-").map(Number);
+  // JavaScript normalises 30 February to March; a date correction must not.
+  return date.getFullYear() === year && date.getMonth() === month! - 1 && date.getDate() === day
+    ? date.getTime()
+    : Number.NaN;
 }

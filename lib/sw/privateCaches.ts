@@ -1,5 +1,7 @@
 "use client";
 
+import { clearHandoff, clearOfflineAccess } from "@/lib/auth/access.client";
+
 // K14 — the caches that must not survive a sign-out.
 //
 // The NetworkOnly rules in `app/sw.ts` stop new private responses being
@@ -45,6 +47,8 @@ export const PRIVATE_CACHE_NAMES = [
  * was unavailable would be a worse bug than the one being fixed.
  */
 export async function purgePrivateCaches(): Promise<void> {
+  clearOfflineAccess();
+  clearHandoff();
   try {
     if (typeof caches === "undefined") return;
     await Promise.all(

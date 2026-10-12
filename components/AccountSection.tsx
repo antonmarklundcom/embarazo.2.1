@@ -52,12 +52,11 @@ export async function AccountSection() {
           Tu cuenta
         </p>
         <h2 className="mt-1 text-[15px] font-extrabold text-ink">
-          Estás usando {APP_NAME} sin cuenta
+          Entrá con tu cuenta de {APP_NAME}
         </h2>
         <p className="mt-1 text-sm font-semibold leading-relaxed text-muted">
-          En esta versión no hay ingreso con cuenta. Todo funciona igual y tus
-          datos quedan en este teléfono — acordate de descargar tu copia de
-          seguridad más abajo.
+          El ingreso todavía no está configurado en esta vista previa. Tus
+          registros locales no se sincronizan; descargá una copia de seguridad.
         </p>
       </section>
     );
@@ -69,12 +68,11 @@ export async function AccountSection() {
         Tu cuenta
       </p>
       <h2 className="mt-1 text-[15px] font-extrabold text-ink">
-        Estás usando {APP_NAME} sin cuenta
+        Entrá con tu cuenta de {APP_NAME}
       </h2>
       <p className="mt-1 text-sm font-semibold leading-relaxed text-ink">
-        Así está perfecto: la app funciona completa. Si querés una copia de
-        seguridad automática y los mismos datos en otro aparato, podés crear una
-        cuenta — tus datos de ahora se suben en ese momento.
+        El seguimiento personal necesita una cuenta. Entrá con Google o con
+        el método de tu cuenta existente para continuar y sincronizar tus registros.
       </p>
       <Link
         href="/cuenta"

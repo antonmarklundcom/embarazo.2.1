@@ -96,7 +96,7 @@ Los avisos de Contracciones (patrón 5-1-1 y contracciones regulares antes de la
 
 | # | Dónde | Castellano | Guaraní | Corrección |
 |---|---|---|---|---|
-| 1 | Contracciones · patrón 5-1-1 | Tus contracciones llegan cada 5 minutos y duran cerca de 1 minuto, así desde hace una hora: es momento de llamar a tu hospital o sanatorio. | Ne contracción ou 5 minuto-gui 5 minuto-pe ha ipuku peteĩ minuto rupi, peteĩ hora guive: ko'ág̃a ehenói ne hospital térã sanatorio. | |
+| 1 | Contracciones · patrón 5-1-1 | En tus últimos registros, las contracciones llegan aproximadamente cada 5 minutos o menos y duran cerca de 1 minuto: es momento de llamar a tu hospital o sanatorio. No esperes a completar una hora si tenés dudas o una señal de alarma. | Ne contracción ou 5 minuto-gui 5 minuto-pe ha ipuku peteĩ minuto rupi: ko'ág̃a ehenói ne hospital térã sanatorio. | |
 | 2 | Contracciones · antes de las 37 semanas | Contracciones regulares antes de las 37 semanas: llamá a tu médico/a o andá a la guardia ahora. | Contracción ou jepive 37 semana mboyve: ehenói ne médico/a-pe térã tereho ko'ág̃a pe guardia-pe. | |
 | 3 | Pataditas · menos que tu ritmo | Sentiste menos que tu ritmo habitual — si te preocupa, consultá con tu médico/a, hospital o sanatorio, o andá a la guardia. | Nde memby omýi sa'ive jepivégui — oĩramo ndéve preocupación, eñeporandu ne médico/a, hospital térã sanatorio-pe, térã tereho pe guardia-pe. | |
 | 4 | Pataditas · 2 horas sin llegar a 10 | Si sentís menos movimientos de lo normal, no esperes: consultá hoy con tu médico/a o andá a la guardia. | Nde memby omýi sa'ive jepivégui, ani reha'arõ: eñeporandu ko árape ne médico/a-pe térã tereho pe guardia-pe. | |

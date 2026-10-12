@@ -24,6 +24,9 @@ import {
 import { ACCOUNT_MISMATCH_MESSAGE, decideAccountLink } from "./link";
 import { onLocalChange } from "./signal";
 import { SYNCED_STORES, type SyncedStore } from "./stores";
+import { SyncLifecycle } from "./lifecycle";
+import { assertLocalAccountOwner, LocalAccountChanged } from "./writeGuard";
+import { preserveLegacyPhotoDeletionOwner } from "./photoDeletions";
 
 const SYNC_URL = "/api/v1/sync";
 /** Wait this long after a local edit before pushing, so typing is not chatty. */
@@ -58,6 +61,16 @@ let running = false;
 let unavailable = false;
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 let started = false;
+const lifecycle = new SyncLifecycle();
+
+export async function pauseSyncForDeviceWipe(): Promise<void> {
+  if (debounceTimer) clearTimeout(debounceTimer);
+  await lifecycle.pause();
+}
+
+export function resumeSyncAfterFailedWipe(): void {
+  lifecycle.resume();
+}
 
 async function readSyncState(): Promise<SyncStateRow | undefined> {
   return db().syncState.get("default");
@@ -65,18 +78,38 @@ async function readSyncState(): Promise<SyncStateRow | undefined> {
 
 async function writeSyncState(
   patch: Partial<Omit<SyncStateRow, "key">>,
+  expectedAccountId: string | undefined,
 ): Promise<void> {
-  const current = await db().syncState.get("default");
-  await db().syncState.put({
-    key: "default",
-    lastPulledAt: patch.lastPulledAt ?? current?.lastPulledAt ?? 0,
-    lastSyncAt: patch.lastSyncAt ?? current?.lastSyncAt,
-    accountId: patch.accountId ?? current?.accountId,
-    linkedAt: patch.linkedAt ?? current?.linkedAt,
-    epoch: patch.epoch ?? current?.epoch,
-    // Deliberately NOT carried forward: an error is about the last attempt,
-    // and a stale one would keep a fixed problem on screen forever.
-    lastError: patch.lastError,
+  const instance = db();
+  await instance.transaction("rw", instance.syncState, async () => {
+    const current = await instance.syncState.get("default");
+    if (current?.accountId !== expectedAccountId) throw new LocalAccountChanged();
+    await instance.syncState.put({
+      key: "default",
+      lastPulledAt: patch.lastPulledAt ?? current?.lastPulledAt ?? 0,
+      lastSyncAt: patch.lastSyncAt ?? current?.lastSyncAt,
+      accountId: patch.accountId ?? current?.accountId,
+      linkedAt: patch.linkedAt ?? current?.linkedAt,
+      epoch: patch.epoch ?? current?.epoch,
+      lastError: patch.lastError,
+    });
+  });
+}
+
+/** Claim/verify the owner atomically; a stale probe cannot rebind a wiped device. */
+async function claimAccountLink(accountId: string, observedOwner: string | undefined) {
+  const instance = db();
+  return instance.transaction("rw", instance.syncState, async () => {
+    const current = await instance.syncState.get("default");
+    if (current?.accountId !== observedOwner && !(observedOwner === undefined && current?.accountId === accountId)) {
+      throw new LocalAccountChanged();
+    }
+    const decision = decideAccountLink(current?.accountId, accountId);
+    if (decision === "adopt") {
+      preserveLegacyPhotoDeletionOwner(undefined);
+      await instance.syncState.put({ ...current, key:"default", lastPulledAt:current?.lastPulledAt ?? 0, accountId });
+    }
+    return decision;
   });
 }
 
@@ -84,19 +117,17 @@ async function writeSyncState(
 // Push
 // ---------------------------------------------------------------------------
 
-async function collectDirty(): Promise<
-  { store: SyncedStore; row: LocalRow }[]
-> {
-  const out: { store: SyncedStore; row: LocalRow }[] = [];
-  for (const store of SYNCED_STORES) {
-    const rows = (await db()
-      .table(store)
-      .where("dirty")
-      .equals(1)
-      .toArray()) as LocalRow[];
-    for (const row of rows) out.push({ store, row });
-  }
-  return out;
+async function collectDirty(accountId: string): Promise<{store:SyncedStore; row:LocalRow}[]> {
+  const instance = db();
+  return instance.transaction("r", [...SYNCED_STORES, "syncState"], async () => {
+    await assertLocalAccountOwner(instance, accountId);
+    const out: {store:SyncedStore; row:LocalRow}[] = [];
+    for (const store of SYNCED_STORES) {
+      const rows = await instance.table(store).where("dirty").equals(1).toArray() as LocalRow[];
+      for (const row of rows) out.push({store,row});
+    }
+    return out;
+  });
 }
 
 function toEnvelope(store: SyncedStore, row: LocalRow): SyncRecordInput {
@@ -123,11 +154,13 @@ async function markClean(
   store: SyncedStore,
   recordId: string,
   pushedUpdatedAt: number,
+  accountId: string,
 ): Promise<void> {
   // N7: inside `syncBookkeeping` so the stamping hook leaves `updatedAt`
   // alone. Passing it explicitly was not enough — Dexie drops a key whose
   // value did not change, so the hook used to stamp "now" on every push.
-  await syncBookkeeping([store], async () => {
+  await syncBookkeeping([store, "syncState"], async () => {
+    await assertLocalAccountOwner(db(), accountId);
     const table = db().table(store);
     const row = (await table.where("uid").equals(recordId).first()) as
       | LocalRow
@@ -138,17 +171,18 @@ async function markClean(
   });
 }
 
-async function push(): Promise<number> {
-  const dirty = await collectDirty();
+async function push(accountId: string, signal: AbortSignal): Promise<number> {
+  const dirty = await collectDirty(accountId);
   if (dirty.length === 0) return 0;
 
   let pushed = 0;
   for (let i = 0; i < dirty.length; i += MAX_PUSH_RECORDS) {
     const batch = dirty.slice(i, i + MAX_PUSH_RECORDS);
-    const accountId = (await readSyncState())?.accountId;
+    signal.throwIfAborted();
     const res = await fetch(SYNC_URL, {
       method: "POST",
-      headers: accountId ? accountHeaders(accountId) : { "Content-Type": "application/json" },
+      headers: accountHeaders(accountId),
+      signal,
       body: JSON.stringify({
         records: batch.map(({ store, row }) => toEnvelope(store, row)),
       }),
@@ -156,19 +190,22 @@ async function push(): Promise<number> {
     if (!res.ok) throw httpError(res.status);
 
     const body = (await res.json()) as PushResponse;
-    await observeEpoch(body.epoch);
+    signal.throwIfAborted();
+    if (body.accountId !== accountId) throw httpError(409);
+    await observeEpoch(body.epoch, accountId);
     const sent = new Map(
       batch.map(({ store, row }) => [`${store} ${row.uid}`, row.updatedAt]),
     );
 
     for (const result of body.results) {
+      signal.throwIfAborted();
       // `stale` clears the flag too: the server holds something newer, the
       // pull below brings it, and re-pushing a loser forever is how a sync
       // engine burns a phone's battery.
       if (result.outcome === "rejected") continue;
       const updatedAt = sent.get(`${result.store} ${result.recordId}`);
       if (updatedAt === undefined) continue;
-      await markClean(result.store as SyncedStore, result.recordId, updatedAt);
+      await markClean(result.store as SyncedStore, result.recordId, updatedAt, accountId);
       pushed += 1;
     }
   }
@@ -194,7 +231,7 @@ async function push(): Promise<number> {
 // `undefined` is "unchanged", never "reset".
 
 /** True when the reset ran, i.e. the caller should pull from zero. */
-async function observeEpoch(epoch: number | undefined): Promise<boolean> {
+async function observeEpoch(epoch: number | undefined, accountId: string): Promise<boolean> {
   if (typeof epoch !== "number") return false;
 
   const state = await readSyncState();
@@ -208,7 +245,7 @@ async function observeEpoch(epoch: number | undefined): Promise<boolean> {
   await writeSyncState({
     epoch,
     lastPulledAt: firstSight ? (state?.lastPulledAt ?? 0) : 0,
-  });
+  }, accountId);
   return !firstSight;
 }
 
@@ -218,6 +255,7 @@ async function observeEpoch(epoch: number | undefined): Promise<boolean> {
 
 async function applyIncoming(
   incoming: SyncEnvelope,
+  accountId: string,
 ): Promise<{ applied: boolean; conflict: boolean }> {
   const store = incoming.store;
 
@@ -226,7 +264,8 @@ async function applyIncoming(
   // clean row used to come out dirty, so every pulled record was echoed back
   // and then re-stamped). Reading inside the same transaction also means a
   // user edit cannot land between the merge decision and the write.
-  return syncBookkeeping([store, "conflicts"], async () => {
+  return syncBookkeeping([store, "conflicts", "syncState"], async () => {
+    await assertLocalAccountOwner(db(), accountId);
     const table = db().table(store);
     const local = (await table.where("uid").equals(incoming.recordId).first()) as
       | LocalRow
@@ -256,7 +295,7 @@ async function applyIncoming(
   });
 }
 
-async function pull(): Promise<{ pulled: number; conflicts: number }> {
+async function pull(accountId: string, signal: AbortSignal): Promise<{ pulled: number; conflicts: number }> {
   const stored = (await readSyncState())?.lastPulledAt ?? 0;
   // Starts PULL_OVERLAP_MS behind what we have seen, not at it: a push stamped
   // earlier can commit after one stamped later, and a pull that landed in
@@ -281,15 +320,20 @@ async function pull(): Promise<{ pulled: number; conflicts: number }> {
     url.searchParams.set("since", String(since));
     if (cursor) url.searchParams.set("cursor", cursor);
 
-    const res = await fetch(url.toString());
+    signal.throwIfAborted();
+    const res = await fetch(url.toString(), { headers: accountHeaders(accountId), signal });
     if (!res.ok) throw httpError(res.status);
 
     const body = (await res.json()) as PullResponse;
+    signal.throwIfAborted();
+    // The cookie may have changed in another tab since the identity probe.
+    // Verify before epochs, cursors, conflicts or any health record changes.
+    if (body.accountId !== accountId) throw httpError(409);
 
     // Checked on the first page, before anything is applied: if the epoch
     // moved, this page was fetched from the wrong place and the walk starts
     // again from zero.
-    if (page === 0 && (await observeEpoch(body.epoch))) {
+    if (page === 0 && (await observeEpoch(body.epoch, accountId))) {
       since = 0;
       highWater = 0;
       cursor = undefined;
@@ -297,6 +341,7 @@ async function pull(): Promise<{ pulled: number; conflicts: number }> {
     }
 
     for (const record of body.records) {
+      signal.throwIfAborted();
       highWater = Math.max(highWater, record.serverUpdatedAt);
       const result = await applyIncoming({
         store: record.store,
@@ -304,7 +349,7 @@ async function pull(): Promise<{ pulled: number; conflicts: number }> {
         updatedAt: record.updatedAt,
         deletedAt: record.deletedAt ?? null,
         payload: record.payload ?? null,
-      });
+      }, accountId);
       if (result.applied) pulled += 1;
       if (result.conflict) conflicts += 1;
     }
@@ -313,7 +358,7 @@ async function pull(): Promise<{ pulled: number; conflicts: number }> {
     cursor = body.nextCursor;
   }
 
-  await writeSyncState({ lastPulledAt: highWater, lastSyncAt: Date.now() });
+  await writeSyncState({ lastPulledAt: highWater, lastSyncAt: Date.now() }, accountId);
   return { pulled, conflicts };
 }
 
@@ -343,13 +388,16 @@ function httpError(status: number): SyncHttpError {
  * Reusing the pull route rather than adding a `/whoami` keeps the API surface
  * (and its whitelist) exactly where A3 left it.
  */
-async function fetchAccountId(): Promise<string> {
+async function fetchAccountId(signal?: AbortSignal): Promise<string> {
   const url = new URL(SYNC_URL, window.location.origin);
   url.searchParams.set("since", String(Number.MAX_SAFE_INTEGER));
   url.searchParams.set("limit", "1");
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), { signal });
   if (!res.ok) throw httpError(res.status);
-  return ((await res.json()) as PullResponse).accountId;
+  const accountId = ((await res.json()) as PullResponse).accountId;
+  signal?.throwIfAborted();
+  if (typeof accountId !== "string" || !accountId) throw httpError(409);
+  return accountId;
 }
 
 // ---------------------------------------------------------------------------
@@ -383,22 +431,30 @@ export type AccountLink =
  */
 export async function ensureAccountLink(): Promise<AccountLink> {
   if (typeof window === "undefined") return { status: "no-session" };
-  let accountId: string;
+  const operation = lifecycle.begin();
+  if (!operation) return { status: "no-session" };
   try {
-    accountId = await fetchAccountId();
-  } catch (err) {
-    if (err instanceof SyncHttpError && (err.status === 401 || err.status === 404)) {
-      return { status: "no-session" };
+    const observedOwner = (await readSyncState())?.accountId;
+    let accountId: string;
+    try {
+      accountId = await fetchAccountId(operation.signal);
+    } catch (err) {
+      if (err instanceof SyncHttpError && (err.status === 401 || err.status === 404)) {
+        return { status: "no-session" };
+      }
+      return { status: "offline" };
     }
-    return { status: "offline" };
+    const decision = await claimAccountLink(accountId, observedOwner);
+    if (decision === "refuse") {
+      await writeSyncState({ lastError: ACCOUNT_MISMATCH_MESSAGE }, observedOwner).catch(() => {});
+      return { status: "mismatch" };
+    }
+    return { status: "linked", accountId };
+  } catch (err) {
+    return err instanceof LocalAccountChanged ? { status: "mismatch" } : { status: "offline" };
+  } finally {
+    operation.finish();
   }
-  const decision = decideAccountLink((await readSyncState())?.accountId, accountId);
-  if (decision === "refuse") {
-    await writeSyncState({ lastError: ACCOUNT_MISMATCH_MESSAGE }).catch(() => {});
-    return { status: "mismatch" };
-  }
-  if (decision === "adopt") await writeSyncState({ accountId });
-  return { status: "linked", accountId };
 }
 
 /** Headers for a JSON request that sends this phone's data as `accountId`. */
@@ -429,25 +485,28 @@ export async function syncNow(): Promise<SyncSummary> {
   if (running) return { ...idle, outcome: "busy" };
   if (navigator.onLine === false) return { ...idle, outcome: "offline" };
 
+  const operation = lifecycle.begin();
+  if (!operation) return { ...idle, outcome: "unavailable" };
+
   running = true;
+  let accountId: string | undefined;
+  let observedOwner: string | undefined;
   try {
-    const accountId = await fetchAccountId();
-    const decision = decideAccountLink(
-      (await readSyncState())?.accountId,
-      accountId,
-    );
+    observedOwner = (await readSyncState())?.accountId;
+    accountId = await fetchAccountId(operation.signal);
+    const decision = await claimAccountLink(accountId, observedOwner);
 
     if (decision === "refuse") {
       // Nothing is sent and nothing is fetched. The app keeps working against
       // the local data exactly as it did; only sync stops.
-      await writeSyncState({ lastError: ACCOUNT_MISMATCH_MESSAGE });
+      await writeSyncState({ lastError: ACCOUNT_MISMATCH_MESSAGE }, observedOwner);
       return { ...idle, outcome: "account-mismatch" };
     }
 
     // Claim the account BEFORE uploading. If the push is interrupted halfway,
     // the next attempt resumes the same link instead of seeing an unclaimed
     // device and starting over.
-    if (decision === "adopt") await writeSyncState({ accountId });
+    // claimAccountLink persisted ownership before any upload.
 
     // N3: a push that fails (a server error, a record it will not take) must
     // not also stop this phone from receiving everything else. Pull anyway,
@@ -455,21 +514,27 @@ export async function syncNow(): Promise<SyncSummary> {
     let pushed = 0;
     let pushError: unknown = null;
     try {
-      pushed = await push();
+      pushed = await push(accountId, operation.signal);
     } catch (err) {
-      if (err instanceof SyncHttpError && (err.status === 401 || err.status === 404)) {
+      if (err instanceof LocalAccountChanged || operation.signal.aborted || (err instanceof SyncHttpError && (err.status === 401 || err.status === 404 || err.status === 409))) {
         throw err;
       }
       pushError = err;
     }
-    const { pulled, conflicts } = await pull();
+    const { pulled, conflicts } = await pull(accountId, operation.signal);
     if (pushError) throw pushError;
 
     if (decision === "adopt") {
-      await writeSyncState({ accountId, linkedAt: Date.now() });
+      await writeSyncState({ accountId, linkedAt: Date.now() }, accountId);
     }
     return { outcome: "ok", pushed, pulled, conflicts };
   } catch (err) {
+    if (operation.signal.aborted) return { ...idle, outcome: "unavailable" };
+    if (err instanceof LocalAccountChanged) return { ...idle, outcome: "account-mismatch" };
+    if (err instanceof SyncHttpError && err.status === 409) {
+      await writeSyncState({ lastError: ACCOUNT_MISMATCH_MESSAGE }, accountId ?? observedOwner).catch(() => {});
+      return { ...idle, outcome: "account-mismatch" };
+    }
     if (err instanceof SyncHttpError && (err.status === 401 || err.status === 404)) {
       // No session, or no account system in this deployment. Both are normal
       // ("seguir sin cuenta"), not failures worth showing anybody.
@@ -478,10 +543,11 @@ export async function syncNow(): Promise<SyncSummary> {
     }
     await writeSyncState({
       lastError: err instanceof Error ? err.message : "error de sincronización",
-    }).catch(() => {});
+    }, accountId ?? observedOwner).catch(() => {});
     return { ...idle, outcome: "error" };
   } finally {
     running = false;
+    operation.finish();
   }
 }
 
@@ -556,4 +622,5 @@ export async function restoreConflict(id: number): Promise<void> {
 /** Test seam: forget that the server said "not for you". */
 export function resetSyncAvailability(): void {
   unavailable = false;
+  lifecycle.resume();
 }

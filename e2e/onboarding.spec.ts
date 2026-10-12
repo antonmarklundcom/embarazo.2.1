@@ -74,7 +74,8 @@ test("the old 'no te pedimos cuenta' promise is gone from the first screen", asy
   // screen that says otherwise while doing so is the contradiction the Fable
   // review found.
   await expect(page.getByText(/No te pedimos cuenta/i)).toHaveCount(0);
-  await expect(page.getByText(/sin cuenta/i).first()).toBeVisible();
+  await expect(page.getByText(/sin cuenta/i)).toHaveCount(0);
+  await expect(page.getByText(/Tu cuenta permite recuperar tus registros/)).toBeVisible();
 });
 
 test("the account step is reached, and offers a way past it", async ({ page }) => {
@@ -90,7 +91,7 @@ test("the account step is reached, and offers a way past it", async ({ page }) =
   await page.locator("#dep").selectOption({ index: 1 });
   await page.getByRole("button", { name: "Continuar" }).click();
 
-  await expect(page.getByRole("heading", { name: /sin cuenta|Guardá tu embarazo/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Vista de prueba|Guardá tu embarazo/ })).toBeVisible();
   // Never a dead end, in either configuration.
   await expect(page.getByRole("button", { name: "Seguir sin cuenta" })).toBeVisible();
 });
@@ -172,6 +173,8 @@ test("/api/v1/auth-status answers honestly and takes no parameters", async ({
     providers: [],
     signedIn: false,
     credentialsAvailable: false,
+    accountRequired: false,
+    accountId: null,
   });
   expect(res.headers()["cache-control"]).toBe("no-store");
 

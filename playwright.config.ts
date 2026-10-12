@@ -38,6 +38,9 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
     env: {
+      // Existing local-data suites run in an explicitly non-deployment preview.
+      // account-entry.spec.ts overrides the status response to test the new gate.
+      AUTH_REQUIRE_ACCOUNT: "false",
       // V1 — the enforced CSP names the object-storage origin in `connect-src`,
       // read from this variable (next.config.ts). `photo-backup.spec.ts` and
       // `csp.spec.ts` both stub a presigned PUT to this host, and a browser

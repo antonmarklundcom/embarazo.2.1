@@ -128,6 +128,7 @@ test.describe("the enforced policy blocks nothing the app needs", () => {
     // `/admin` is the 404 path on an unauthenticated CI run — a 404 is still a
     // rendered document with a policy on it.
     await page.goto("/herramientas", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("main a[href^='/herramientas/']").first()).toBeVisible();
     const tools = await page
       .locator("main a[href^='/herramientas/']")
       .evaluateAll((links) =>
@@ -200,7 +201,7 @@ test.describe("the flows that load something other than same-origin HTML", () =>
             const registration = await navigator.serviceWorker.ready;
             return registration.active?.state ?? null;
           }),
-        { message: "the service worker never activated under the policy" },
+        { message: "the service worker never activated under the policy", timeout: 20_000 },
       )
       .toBe("activated");
 

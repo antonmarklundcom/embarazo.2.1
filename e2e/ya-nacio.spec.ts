@@ -42,7 +42,7 @@ test("from week 37 she records the birth date, and can undo it from Ajustes", as
   const settings = page.getByRole("region", { name: "Fecha de nacimiento" });
   await expect(settings.getByLabel("Fecha de nacimiento")).toHaveValue(localInput(2));
   await settings.getByRole("button", { name: "Deshacer «Ya nació»" }).click();
-  await expect(settings).toHaveCount(0);
+  await expect(settings.getByRole("button", { name: "Registrar el nacimiento" })).toBeVisible();
 
   await page.goto("/");
   await expect(page.getByRole("region", { name: "¿Ya nació tu bebé?" })).toBeVisible();
@@ -78,4 +78,23 @@ test("the baby home: age, the four cards, alarm signs to /emergencia, and no mis
   expect(await alarm.count()).toBeGreaterThan(4);
   await alarm.first().click();
   await expect(page).toHaveURL(/\/emergencia$/);
+  await expect(page.getByRole("region", { name: "Señales de alarma después del parto" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Señales de alarma en tu bebé" })).toBeVisible();
+  await expect(page.getByText("Estoy embarazada de", { exact: false })).toHaveCount(0);
+  await expect(page.getByText("Mi bebé tiene 10 días.", { exact: false })).toBeVisible();
+});
+
+test("a mother can record a premature birth in Settings before the Hoy prompt appears", async ({ page }) => {
+  await completeOnboarding(page, { daysAgo: 210 });
+  await expect(page.getByRole("region", { name: "¿Ya nació tu bebé?" })).toHaveCount(0);
+  await page.goto("/ajustes");
+  const settings = page.getByRole("region", { name: "Fecha de nacimiento" });
+  await settings.getByRole("button", { name: "Registrar el nacimiento" }).click();
+  await settings.getByLabel("Fecha de nacimiento").fill(localInput(2));
+  await settings.getByRole("button", { name: "Guardar fecha de nacimiento" }).click();
+  await expect(settings.getByText("Fecha de nacimiento guardada.")).toBeVisible();
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Tu bebé tiene 2 días" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Tu bebé tiene 2 días" })).toBeVisible();
 });

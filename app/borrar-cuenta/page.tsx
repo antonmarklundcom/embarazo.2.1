@@ -170,19 +170,17 @@ export default function BorrarCuentaPage() {
           ))}
         </ul>
         <p className="mt-3 text-sm leading-relaxed text-ink/90">
-          Se borra del servidor: no nos queda una copia. Quedan solo dos
+          Se eliminan los registros activos del servidor. Las copias de recuperación y los registros técnicos dependen del alojamiento, según la política de privacidad. Quedan además dos
           constancias, sin tu nombre, sin tu correo y sin nada de tus datos de
           salud: el <strong>registro de acciones administrativas</strong> — que
           alguien de nuestro equipo hizo una acción y cuándo; sin eso no
           podríamos demostrar qué se hizo con tu pedido — y, si usaste la
           imagen de bebé con IA, <strong>cuántas se generaron ese mes y cuánto
-          costaron</strong>, sin nada que diga de quién eran. Tus fotos y las
-          imágenes nunca se guardaron.
+          costaron</strong>, sin nada que diga de quién eran. Las copias remotas de tus fotos y las imágenes asociadas se eliminan con la cuenta.
         </p>
         <p className="mt-3 rounded-tile bg-sand-bg px-3 py-2 text-sm leading-relaxed text-sand-text">
           <strong>Lo que está solo en tu teléfono se queda en tu teléfono.</strong>{" "}
-          Si usaste {APP_NAME} sin cuenta, nunca tuvimos nada tuyo que borrar: para
-          eliminar esos datos, borralos desde Ajustes en la app o desinstalala.
+          Borrar la cuenta del servidor y borrar el teléfono son acciones distintas. Marcá la opción de borrar este teléfono al eliminar la cuenta, o borrá los datos del sitio desde tu navegador. Desinstalar la PWA no siempre elimina los datos del sitio.
         </p>
       </section>
 

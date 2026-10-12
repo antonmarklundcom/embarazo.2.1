@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { COMMUNITY_QUESTIONS_ENABLED } from "@/lib/community/launch";
 import { CommunityQuestions } from "@/components/CommunityQuestions";
 import { FaqAccordion } from "@/components/FaqAccordion";
 import { APP_NAME } from "@/lib/brand";
@@ -25,8 +26,7 @@ export default function PreguntasPage() {
           Preguntas frecuentes
         </h1>
         <p className="text-sm text-muted">
-          Lo que más nos preguntan sobre tus datos, tu cuenta y la app — y las
-          preguntas que nos mandan las mamás, respondidas por el equipo.
+          Respuestas sobre tus datos, tu cuenta y cómo usar la app.
         </p>
       </header>
 
@@ -39,7 +39,7 @@ export default function PreguntasPage() {
           static FAQ, in git, precached with the app; below is what women
           actually asked, once an admin has answered it. Deliberately in that
           order: the static answers are the ones people came for. */}
-      <CommunityQuestions />
+      {COMMUNITY_QUESTIONS_ENABLED && <CommunityQuestions />}
 
       <p className="text-sm text-muted">
         Ver también la{" "}

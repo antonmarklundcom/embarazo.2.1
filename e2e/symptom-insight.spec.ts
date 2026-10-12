@@ -116,5 +116,5 @@ test("the symptom tool works unchanged with no insight to show", async ({
   await page.getByRole("button", { name: /Bien/ }).first().click();
   await page.getByRole("button", { name: "Náuseas", exact: true }).click();
   await page.getByRole("button", { name: /Guardar registro/ }).click();
-  await expect(page.getByText(/guardado/i)).toBeVisible();
+  await expect(page.getByText("Guardado en tu teléfono.", {exact:true})).toBeVisible();
 });

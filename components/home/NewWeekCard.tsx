@@ -104,7 +104,7 @@ export function NewWeekCard({
       <p className="mt-0.5 text-sm font-semibold text-ink/80">
         Cumpliste {week - 1} {week - 1 === 1 ? "semana" : "semanas"}
         {hasSizeComparison(sizeComparison)
-          ? ` y tu bebé ya es del tamaño de ${sizeComparison}.`
+          ? ". Tu bebé sigue creciendo: mirá sus medidas y la referencia de esta semana."
           : "."}
       </p>
 

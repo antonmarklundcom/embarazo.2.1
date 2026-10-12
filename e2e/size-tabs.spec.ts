@@ -11,8 +11,8 @@ const onboardAt = (page: import("@playwright/test").Page, daysAgo: number) =>
 test("switching tabs answers the same week three ways", async ({ page }) => {
   await onboardAt(page, 70);
 
-  const panel = page.locator("#size-tabpanel");
-  await expect(page.getByRole("tab", { name: "Tamaño" })).toHaveAttribute(
+  const panel = page.getByRole("region", { name: "Qué tan grande está" }).getByRole("tabpanel");
+  await expect(page.getByRole("tab", { name: "Bebé" })).toHaveAttribute(
     "aria-selected",
     "true",
   );

@@ -164,7 +164,7 @@ export default function FamiliaPage() {
           ) : (
             <p className="mt-3 rounded-tile bg-cream p-3 text-sm text-muted">
               Todavía no podés crear una cuenta desde este teléfono. El resto de
-              la app funciona igual, sin cuenta.
+              el seguimiento personal necesita una cuenta. Las guías y Emergencia siguen disponibles.
             </p>
           )}
         </section>

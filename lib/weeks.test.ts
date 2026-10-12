@@ -9,7 +9,7 @@ import { getWeek, hasSizeComparison, NO_EMBRYO_YET, sizeLine, WEEKS } from "./we
 describe("sizeLine", () => {
   it("prefixes a real comparison", () => {
     expect(sizeLine("una lenteja")).toBe("Del tamaño de una lenteja");
-    expect(sizeLine(getWeek(20).sizeComparison)).toBe("Del tamaño de una banana");
+    expect(sizeLine(getWeek(20).sizeComparison)).toBe("Del tamaño de un mango");
   });
 
   it("renders weeks 1–2 alone, without the prefix", () => {
@@ -30,11 +30,11 @@ describe("sizeLine", () => {
 });
 
 describe("hasSizeComparison", () => {
-  it("is false exactly for weeks 1–2", () => {
+  it("is false for weeks 1–3", () => {
     const without = WEEKS.filter((w) => !hasSizeComparison(w.sizeComparison)).map(
       (w) => w.week,
     );
-    expect(without).toEqual([1, 2]);
+    expect(without).toEqual([1, 2, 3]);
   });
 });
 

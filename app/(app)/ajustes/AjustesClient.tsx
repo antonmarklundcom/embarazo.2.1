@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { wipeAllData } from "@/lib/db";
-import { clearOnboardingDraft } from "@/lib/onboarding/draftStorage";
+import { signOut } from "next-auth/react";
+import { wipeSignedOutDevice } from "@/lib/sync/deviceWipe";
 import { CompanionReminderSettings } from "@/components/CompanionReminderSettings";
 import { PhotoBackupSettings } from "@/components/PhotoBackupSettings";
 import { ThemeSheet } from "@/components/hero/ThemeSheet";
@@ -17,7 +16,6 @@ import {
   MIN_PIN_LENGTH,
   isPinSet,
   setPin as savePin,
-  clearPin,
 } from "@/lib/crypto";
 import { encryptedNoteCount, removePinSafely } from "@/lib/journal/pinRemoval";
 import { PushSettings } from "@/components/PushSettings";
@@ -56,7 +54,6 @@ import { SituationSettings } from "@/components/ajustes/SituationSettings";
 // server component now (it reads the session), so this is a client component it
 // renders, with the server-rendered account block handed in as `account`.
 export function AjustesClient({ account }: { account: React.ReactNode }) {
-  const router = useRouter();
   const profile = useProfile();
   // K8. Fetched once here and passed down, rather than each component asking:
   // the push schedule is replaced wholesale on every publish, so the appointment
@@ -136,14 +133,9 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
   }
 
   async function handleWipe() {
-    await wipeAllData();
-    clearPin();
-    // K1: a draft that says "the profile is already saved" would resume the
-    // user into an onboarding whose remaining steps write no profile at all.
-    clearOnboardingDraft();
-    router.push("/");
-    // Force a full reload so the first-run gate re-evaluates cleanly.
-    if (typeof window !== "undefined") window.location.href = "/";
+    await wipeSignedOutDevice(() => signOut({ redirect: false }));
+    // A signed-out first-run gate cannot restore the account's cloud copy.
+    if (typeof window !== "undefined") window.location.href = "/cuenta";
   }
 
   return (

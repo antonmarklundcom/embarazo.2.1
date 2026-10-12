@@ -59,6 +59,8 @@ async function mockAuthStatus(
           providers: status.providers ?? [],
           credentialsAvailable: status.credentialsAvailable ?? false,
           signedIn: status.signedIn,
+          accountRequired: false,
+          accountId: status.signedIn ? "home-test-owner" : null,
         }),
       }),
   );
@@ -126,23 +128,14 @@ test("account nudge: absent for a brand-new profile", async ({ browser }) => {
   await expect(page.getByRole("heading", { name: NUDGE_HEADING })).toHaveCount(0);
 });
 
-test("account nudge: appears for a local-only user with an old-enough profile", async ({
-  browser,
-}) => {
-  const context = await browser.newContext();
-  await mockAuthStatus(context, { providers: ["google"], signedIn: false });
-  const page = await context.newPage();
+test("home has no late signup promotion after account-first entry", async ({browser}) => {
+  const context=await browser.newContext();
+  await mockAuthStatus(context,{providers:["google"],signedIn:false});
+  const page=await context.newPage();
   await completeOnboarding(page);
-  await ageProfile(page, 10); // past the 7-day threshold
+  await ageProfile(page,10);
   await page.reload();
-
-  const nudge = page.getByRole("heading", { name: NUDGE_HEADING });
-  await expect(nudge).toBeVisible();
-
-  // Dismissing it hides it for this session without deleting the mechanism —
-  // it is a snooze (lib/accountNudge.ts), not a permanent "gone forever".
-  await page.getByRole("button", { name: "Ahora no" }).click();
-  await expect(nudge).toHaveCount(0);
-  await page.reload();
-  await expect(page.getByRole("heading", { name: NUDGE_HEADING })).toHaveCount(0);
+  await expect(page.getByRole("heading",{name:NUDGE_HEADING})).toHaveCount(0);
+  await expect(page.getByText("Tip de hoy")).toBeVisible();
+  await context.close();
 });

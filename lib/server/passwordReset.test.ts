@@ -496,9 +496,13 @@ describe("resetPassword() - expiry", () => {
   it("accepts a token with a second left on it", async () => {
     await requestPasswordReset(EMAIL, freshHeaders());
     const token = tokenFromLastMail();
-    tokenRow().expires = new Date(Date.now() + 1000);
-
-    expect(await resetPassword(token, NEW_PASSWORD)).toEqual({ ok: true });
+    // Fix only wall-clock time: real bcrypt still runs, and the token remains
+    // one second from expiry regardless of machine contention.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      tokenRow().expires = new Date(Date.now() + 1000);
+      expect(await resetPassword(token, NEW_PASSWORD)).toEqual({ ok: true });
+    } finally { vi.useRealTimers(); }
   });
 });
 

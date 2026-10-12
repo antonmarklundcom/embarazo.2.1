@@ -2,6 +2,14 @@
 
 import { db, notDeleted, PHOTO_BACKUP_STORES } from "@/lib/db";
 import { accountHeaders, ensureAccountLink } from "@/lib/sync/client";
+import { SyncLifecycle } from "@/lib/sync/lifecycle";
+import { assertLocalAccountOwner, LocalAccountChanged } from "@/lib/sync/writeGuard";
+import {
+  readPhotoDeleteQueue as readDeleteQueue,
+  writePhotoDeleteQueue as writeDeleteQueue,
+  readPhotoDeleteAllOwners,
+  writePhotoDeleteAllOwners,
+} from "@/lib/sync/photoDeletions";
 import {
   isAllowedContentType,
   isAllowedSize,
@@ -45,6 +53,15 @@ import {
 //   when the switch is touched or a photo is added.
 
 const URL_PATH = "/api/v1/photos";
+const lifecycle = new SyncLifecycle();
+
+export function pausePhotoSyncForDeviceWipe(): Promise<void> {
+  return lifecycle.pause();
+}
+
+export function resumePhotoSyncAfterFailedWipe(): void {
+  lifecycle.resume();
+}
 
 export type PhotoBackupOutcome =
   | "ok"
@@ -116,131 +133,107 @@ export type PhotoBackupChange =
  * deletion queued, and every later run retries it until the server confirms.
  */
 export async function setPhotoBackup(enabled: boolean): Promise<PhotoBackupChange> {
-  if (!(await writePreference(enabled))) return "failed";
-  if (enabled) return "done";
+  const operation = lifecycle.begin();
+  if (!operation) return "failed";
+  try {
+    if (!(await writePreference(enabled))) return "failed";
+    if (enabled) return "done";
 
-  const link = await ensureAccountLink();
-  // F01: the copies on the server belong to the account this phone's data is
-  // linked to. Signed in as somebody else, "delete-all" would erase THAT
-  // person's photos. The preference is stored; nothing is sent.
-  if (link.status === "mismatch") return "account-mismatch";
-
-  setDeleteAllPending(true);
-  if (link.status !== "linked") return "pending";
-  return (await flushDeleteAll(link.accountId)) ? "done" : "pending";
+    const originalAccount = (await db().syncState.get("default"))?.accountId;
+    // Durably record an already-linked account's obligation before any network
+    // request. Closing the app during the probe must not lose the opt-out.
+    if (originalAccount) writePhotoDeleteAllOwners([...readPhotoDeleteAllOwners(), originalAccount]);
+    const link = await ensureAccountLink();
+    operation.signal.throwIfAborted();
+    const accountId = originalAccount ?? (link.status === "linked" ? link.accountId : undefined);
+    // Without a link this device has never uploaded photos. Do not create an
+    // ownerless delete-all that could later be aimed at its first account.
+    if (!accountId) return pendingPhotoDeletions() > 0 ? "pending" : "done";
+    if (!originalAccount) writePhotoDeleteAllOwners([...readPhotoDeleteAllOwners(), accountId]);
+    // Signed in as B while holding A's data: retain A's obligation, send nothing.
+    if (link.status === "mismatch") return "account-mismatch";
+    if (link.status !== "linked") return "pending";
+    return (await flushDeleteAll(link.accountId, operation.signal)) ? "done" : "pending";
+  } catch {
+    return "failed";
+  } finally {
+    operation.finish();
+  }
 }
 
-async function clearUploadMarks(): Promise<void> {
-  for (const store of PHOTO_BACKUP_STORES) {
-    const table = db().table(store);
-    for (const row of await table.toArray()) {
-      if (
-        (row.uploadedAt !== undefined || row.remoteDeletedAt !== undefined) &&
-        row.id !== undefined
-      ) {
-        await table.update(row.id, { uploadedAt: undefined, remoteDeletedAt: undefined });
+async function clearUploadMarks(accountId: string): Promise<void> {
+  const instance = db();
+  await instance.transaction("rw", [...PHOTO_BACKUP_STORES, "syncState"], async () => {
+    await assertLocalAccountOwner(instance, accountId);
+    for (const store of PHOTO_BACKUP_STORES) {
+      const table = instance.table(store);
+      for (const row of await table.toArray()) {
+        if ((row.uploadedAt !== undefined || row.remoteDeletedAt !== undefined) && row.id !== undefined) {
+          await table.update(row.id, { uploadedAt: undefined, remoteDeletedAt: undefined });
+        }
       }
     }
-  }
+  });
 }
 
 // ---------------------------------------------------------------------------
 // F03 — deletions are queued until the server confirms them
 // ---------------------------------------------------------------------------
 
-/** `{ store, recordId }` pairs deleted on this phone, not yet confirmed. */
-const DELETE_QUEUE_KEY = "mibebe.photos.deleteQueue";
-/** Set while an opt-out's "delete every copy" is not yet confirmed. */
-const DELETE_ALL_KEY = "mibebe.photos.deleteAllPending";
-
-interface QueuedDelete {
-  store: PhotoStore;
-  recordId: string;
-}
-
-function readDeleteQueue(): QueuedDelete[] {
-  try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(DELETE_QUEUE_KEY) ?? "[]");
-    return Array.isArray(parsed)
-      ? parsed.filter(
-          (item): item is QueuedDelete =>
-            typeof item?.recordId === "string" &&
-            (PHOTO_BACKUP_STORES as readonly string[]).includes(item?.store),
-        )
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeDeleteQueue(queue: QueuedDelete[]): void {
-  try {
-    if (queue.length === 0) localStorage.removeItem(DELETE_QUEUE_KEY);
-    else localStorage.setItem(DELETE_QUEUE_KEY, JSON.stringify(queue));
-  } catch {
-    // Storage refused. The delete is still attempted now; only the retry is lost.
-  }
-}
-
-function deleteAllPending(): boolean {
-  try {
-    return localStorage.getItem(DELETE_ALL_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function setDeleteAllPending(pending: boolean): void {
-  try {
-    if (pending) localStorage.setItem(DELETE_ALL_KEY, "1");
-    else localStorage.removeItem(DELETE_ALL_KEY);
-  } catch {
-    // See writeDeleteQueue.
-  }
-}
-
 /** How many deletions this phone has not had confirmed yet (for Ajustes). */
 export function pendingPhotoDeletions(): number {
-  return readDeleteQueue().length + (deleteAllPending() ? 1 : 0);
+  return readDeleteQueue().length + readPhotoDeleteAllOwners().length;
 }
 
-async function flushDeleteAll(accountId: string): Promise<boolean> {
+async function flushDeleteAll(accountId: string, signal: AbortSignal): Promise<boolean> {
+  if (!readPhotoDeleteAllOwners().includes(accountId)) return false;
   try {
     const res = await fetch(URL_PATH, {
       method: "POST",
       headers: accountHeaders(accountId),
+      signal,
       body: JSON.stringify({ action: "delete-all" }),
     });
     if (!res.ok) return false;
   } catch {
     return false;
   }
-  setDeleteAllPending(false);
+  signal.throwIfAborted();
+  writePhotoDeleteAllOwners(readPhotoDeleteAllOwners().filter((owner) => owner !== accountId));
   // Every local photo is now un-uploaded again, so re-enabling backup uploads
   // them rather than believing a server copy that no longer exists.
-  await clearUploadMarks();
+  if ((await db().syncState.get("default"))?.accountId === accountId) await clearUploadMarks(accountId);
   return true;
 }
 
-async function flushDeletes(accountId: string): Promise<void> {
-  if (deleteAllPending()) await flushDeleteAll(accountId);
+async function flushDeletes(accountId: string, signal: AbortSignal): Promise<void> {
+  if (readPhotoDeleteAllOwners().includes(accountId)) await flushDeleteAll(accountId, signal);
 
-  const queue = readDeleteQueue();
+  // Jobs belonging to A remain queued while B is signed in. Legacy jobs with
+  // no provenance remain pending; a login is never evidence of their owner.
+  const queue = readDeleteQueue().filter((item) => item.accountId === accountId);
   if (queue.length === 0) return;
-  const remaining: QueuedDelete[] = [];
   for (const item of queue) {
+    signal.throwIfAborted();
     try {
       const res = await fetch(URL_PATH, {
         method: "POST",
         headers: accountHeaders(accountId),
+        signal,
         body: JSON.stringify({ action: "delete", store: item.store, recordId: item.recordId }),
       });
-      if (!res.ok) remaining.push(item);
+      signal.throwIfAborted();
+      if (res.ok) {
+        // Re-read after the request: another local delete may have been queued
+        // while it was in flight, and must not be lost with this acknowledgement.
+        writeDeleteQueue(readDeleteQueue().filter((entry) =>
+          entry.accountId !== accountId || entry.store !== item.store || entry.recordId !== item.recordId,
+        ));
+      }
     } catch {
-      remaining.push(item);
+      // Keep the original-account job until its own server confirms.
     }
   }
-  writeDeleteQueue(remaining);
 }
 
 /**
@@ -258,14 +251,28 @@ export async function deleteRemotePhoto(
   store: PhotoStore,
   recordId: string | undefined,
 ): Promise<void> {
-  if (!recordId) return;
-  if (!(await isPhotoBackupOn())) return;
-  const queue = readDeleteQueue();
-  if (!queue.some((item) => item.store === store && item.recordId === recordId)) {
-    writeDeleteQueue([...queue, { store, recordId }]);
+  const operation = lifecycle.begin();
+  if (!operation) return;
+  try {
+    if (!recordId) return;
+    if (!(await isPhotoBackupOn())) return;
+    const originalAccount = (await db().syncState.get("default"))?.accountId;
+    const enqueue = (accountId: string) => {
+      const queue = readDeleteQueue();
+      if (!queue.some((item) => item.accountId === accountId && item.store === store && item.recordId === recordId)) {
+        writeDeleteQueue([...queue, { store, recordId, accountId }]);
+      }
+    };
+    if (originalAccount) enqueue(originalAccount);
+    const link = await ensureAccountLink();
+    operation.signal.throwIfAborted();
+    const accountId = originalAccount ?? (link.status === "linked" ? link.accountId : undefined);
+    if (!accountId) return;
+    if (!originalAccount) enqueue(accountId);
+    if (link.status === "linked") await flushDeletes(link.accountId, operation.signal);
+  } finally {
+    operation.finish();
   }
-  const link = await ensureAccountLink();
-  if (link.status === "linked") await flushDeletes(link.accountId);
 }
 
 // ---------------------------------------------------------------------------
@@ -282,15 +289,14 @@ interface LocalPhoto {
   createdAt: number;
 }
 
-async function pendingPhotos(store: PhotoStore): Promise<LocalPhoto[]> {
-  const rows = (await db().table(store).toArray()) as LocalPhoto[];
-  return rows.filter(
-    (row) =>
-      row.uploadedAt === undefined &&
-      row.remoteDeletedAt === undefined &&
-      row.uid !== undefined &&
-      row.blob instanceof Blob,
-  );
+async function pendingPhotos(store: PhotoStore, accountId: string): Promise<LocalPhoto[]> {
+  const instance = db();
+  return instance.transaction("r", [store, "syncState"], async () => {
+    await assertLocalAccountOwner(instance, accountId);
+    const rows = await instance.table(store).toArray() as LocalPhoto[];
+    return rows.filter(row => row.uploadedAt === undefined && row.remoteDeletedAt === undefined
+      && row.uid !== undefined && row.blob instanceof Blob);
+  });
 }
 
 /**
@@ -309,10 +315,13 @@ function payloadFor(store: PhotoStore, row: LocalPhoto): Record<string, unknown>
 }
 
 /** The server says this record was deleted (410): remember, never re-upload. */
-async function markRemoteDeleted(store: PhotoStore, row: LocalPhoto): Promise<void> {
-  await db().table(store).update(row.id, {
-    uploadedAt: undefined,
-    remoteDeletedAt: Date.now(),
+async function markRemoteDeleted(store: PhotoStore, row: LocalPhoto, accountId: string): Promise<void> {
+  const instance = db();
+  await instance.transaction("rw", [store, "syncState"], async () => {
+    await assertLocalAccountOwner(instance, accountId);
+    const current = await instance.table(store).get(row.id);
+    if (current?.uid !== row.uid) return;
+    await instance.table(store).update(row.id, {uploadedAt:undefined, remoteDeletedAt:Date.now()});
   });
 }
 
@@ -320,6 +329,7 @@ async function uploadOne(
   store: PhotoStore,
   row: LocalPhoto,
   accountId: string,
+  signal: AbortSignal,
 ): Promise<boolean> {
   const contentType = row.blob.type || "image/jpeg";
   if (!isAllowedContentType(contentType)) return false;
@@ -328,6 +338,7 @@ async function uploadOne(
   const signed = await fetch(URL_PATH, {
     method: "POST",
     headers: accountHeaders(accountId),
+    signal,
     body: JSON.stringify({
       action: "upload-url",
       store,
@@ -337,7 +348,7 @@ async function uploadOne(
     }),
   });
   if (signed.status === 410) {
-    await markRemoteDeleted(store, row);
+    await markRemoteDeleted(store, row, accountId);
     return false;
   }
   if (!signed.ok) return false;
@@ -350,12 +361,14 @@ async function uploadOne(
     method: "PUT",
     headers: { "Content-Type": contentType },
     body: row.blob,
+    signal,
   });
   if (!put.ok) return false;
 
   const confirmed = await fetch(URL_PATH, {
     method: "POST",
     headers: accountHeaders(accountId),
+    signal,
     body: JSON.stringify({
       action: "confirm",
       store,
@@ -367,13 +380,20 @@ async function uploadOne(
     }),
   });
   if (confirmed.status === 410) {
-    await markRemoteDeleted(store, row);
+    await markRemoteDeleted(store, row, accountId);
     return false;
   }
   if (!confirmed.ok) return false;
 
-  await db().table(store).update(row.id, { uploadedAt: Date.now() });
-  return true;
+  signal.throwIfAborted();
+  const instance = db();
+  return instance.transaction("rw", [store, "syncState"], async () => {
+    await assertLocalAccountOwner(instance, accountId);
+    const current = await instance.table(store).get(row.id);
+    if (current?.uid !== row.uid) return false;
+    await instance.table(store).update(row.id, { uploadedAt: Date.now() });
+    return true;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -390,7 +410,7 @@ interface RemotePhoto {
   downloadUrl: string | null;
 }
 
-async function restoreOne(remote: RemotePhoto, queued: Set<string>): Promise<boolean> {
+async function restoreOne(remote: RemotePhoto, queued: Set<string>, signal: AbortSignal, accountId: string): Promise<boolean> {
   if (remote.deletedAt !== null || !remote.downloadUrl) return false;
   if (!isAllowedSize(remote.bytes)) return false;
   // F03: deleted here and not yet confirmed — never bring it back.
@@ -400,33 +420,31 @@ async function restoreOne(remote: RemotePhoto, queued: Set<string>): Promise<boo
   const existing = await table.where("uid").equals(remote.recordId).first();
   if (existing) return false;
 
-  const res = await fetch(remote.downloadUrl);
+  const res = await fetch(remote.downloadUrl, { signal });
   if (!res.ok) return false;
   const blob = await res.blob();
+  signal.throwIfAborted();
   // The bucket is ours, but the size cap is a rule about what this app stores,
   // not a guess about what the bucket returned.
   if (blob.size > MAX_PHOTO_BYTES) return false;
 
-  const createdAt = remote.payload?.createdAt ?? Date.now();
-  if (remote.store === "photoEntries") {
-    await db().photoEntries.add({
-      uid: remote.recordId,
-      week: remote.payload?.week ?? 0,
-      blob,
-      createdAt,
-      // Already on the server — restoring it must not schedule an upload of
-      // the thing we just downloaded.
-      uploadedAt: Date.now(),
-    });
-  } else {
-    await db().carnePhotos.add({
-      uid: remote.recordId,
-      blob,
-      createdAt,
-      uploadedAt: Date.now(),
-    });
-  }
-  return true;
+  const instance = db();
+  return instance.transaction("rw", [remote.store, "syncState"], async () => {
+    await assertLocalAccountOwner(instance, accountId);
+    // A local delete/opt-out may have happened while the blob was downloading.
+    if (readPhotoDeleteAllOwners().includes(accountId) || readDeleteQueue().some(item =>
+      (!item.accountId || item.accountId === accountId) && item.store === remote.store && item.recordId === remote.recordId)) return false;
+    const existingNow = await instance.table(remote.store).where("uid").equals(remote.recordId).first();
+    if (existingNow) return false;
+    const createdAt = remote.payload?.createdAt ?? Date.now();
+    if (remote.store === "photoEntries") {
+      await instance.photoEntries.add({ uid:remote.recordId, week:remote.payload?.week ?? 0,
+        blob, createdAt, uploadedAt:Date.now() });
+    } else {
+      await instance.carnePhotos.add({uid:remote.recordId, blob, createdAt, uploadedAt:Date.now()});
+    }
+    return true;
+  });
 }
 
 /**
@@ -437,21 +455,23 @@ async function restoreOne(remote: RemotePhoto, queued: Set<string>): Promise<boo
  * - the server has a tombstone: it was deleted on another device. Keep the
  *   photo on this phone, but never upload it again.
  */
-async function reconcile(remote: Map<string, RemotePhoto>): Promise<void> {
-  for (const store of PHOTO_BACKUP_STORES) {
-    const table = db().table(store);
-    for (const row of (await table.toArray()) as LocalPhoto[]) {
-      if (row.uid === undefined || row.id === undefined) continue;
-      const server = remote.get(`${store} ${row.uid}`);
-      if (server?.deletedAt != null) {
-        if (row.remoteDeletedAt === undefined) await markRemoteDeleted(store, row);
-        continue;
-      }
-      if (!server && row.uploadedAt !== undefined) {
-        await table.update(row.id, { uploadedAt: undefined });
+async function reconcile(remote: Map<string, RemotePhoto>, accountId: string): Promise<void> {
+  const instance = db();
+  await instance.transaction("rw", [...PHOTO_BACKUP_STORES, "syncState"], async () => {
+    await assertLocalAccountOwner(instance, accountId);
+    for (const store of PHOTO_BACKUP_STORES) {
+      const table = instance.table(store);
+      for (const row of (await table.toArray()) as LocalPhoto[]) {
+        if (row.uid === undefined || row.id === undefined) continue;
+        const server = remote.get(store + " " + row.uid);
+        if (server?.deletedAt != null) {
+          if (row.remoteDeletedAt === undefined) await table.update(row.id, {uploadedAt:undefined, remoteDeletedAt:Date.now()});
+        } else if (!server && row.uploadedAt !== undefined) {
+          await table.update(row.id, {uploadedAt:undefined});
+        }
       }
     }
-  }
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -473,24 +493,28 @@ let running = false;
  */
 export async function syncPhotos(): Promise<PhotoBackupSummary> {
   if (running) return { ...NOTHING, outcome: "ok" };
-  const on = await isPhotoBackupOn();
-  // Nothing to upload and nothing owed to the server: no request at all.
-  if (!on && pendingPhotoDeletions() === 0) return NOTHING;
+  const operation = lifecycle.begin();
+  if (!operation) return NOTHING;
 
   running = true;
   let uploaded = 0;
   let restored = 0;
 
   try {
+    const on = await isPhotoBackupOn();
+    // Nothing to upload and nothing owed to the server: no request at all.
+    if (!on && pendingPhotoDeletions() === 0) return NOTHING;
     const link = await ensureAccountLink();
+    operation.signal.throwIfAborted();
     if (link.status === "mismatch") return { ...NOTHING, outcome: "account-mismatch" };
     if (link.status === "no-session") return { ...NOTHING, outcome: "unavailable" };
     if (link.status === "offline") return { ...NOTHING, outcome: "offline" };
 
-    await flushDeletes(link.accountId);
+    await flushDeletes(link.accountId, operation.signal);
     if (!on) return NOTHING;
+    if (readPhotoDeleteAllOwners().includes(link.accountId)) return { ...NOTHING, outcome: "error" };
 
-    const listed = await fetch(URL_PATH, { headers: accountHeaders(link.accountId) });
+    const listed = await fetch(URL_PATH, { headers: accountHeaders(link.accountId), signal: operation.signal });
     if (listed.status === 404 || listed.status === 401) {
       return { ...NOTHING, outcome: "unavailable" };
     }
@@ -498,27 +522,34 @@ export async function syncPhotos(): Promise<PhotoBackupSummary> {
     if (!listed.ok) return { ...NOTHING, outcome: "error" };
 
     const body = (await listed.json()) as { photos: RemotePhoto[] };
+    operation.signal.throwIfAborted();
     const photos = body.photos ?? [];
-    const queued = new Set(readDeleteQueue().map((item) => `${item.store} ${item.recordId}`));
+    const queued = new Set(readDeleteQueue()
+      .filter((item) => !item.accountId || item.accountId === link.accountId)
+      .map((item) => `${item.store} ${item.recordId}`));
     for (const remote of photos) {
-      if (await restoreOne(remote, queued)) restored += 1;
+      operation.signal.throwIfAborted();
+      if (await restoreOne(remote, queued, operation.signal, link.accountId)) restored += 1;
     }
 
-    await reconcile(new Map(photos.map((p) => [`${p.store} ${p.recordId}`, p])));
+    await reconcile(new Map(photos.map((p) => [`${p.store} ${p.recordId}`, p])), link.accountId);
 
     let pending = 0;
     for (const store of PHOTO_BACKUP_STORES) {
-      for (const row of await pendingPhotos(store)) {
-        if (await uploadOne(store, row, link.accountId)) uploaded += 1;
+      for (const row of await pendingPhotos(store, link.accountId)) {
+        operation.signal.throwIfAborted();
+        if (await uploadOne(store, row, link.accountId, operation.signal)) uploaded += 1;
         else pending += 1;
       }
     }
 
     return { outcome: "ok", uploaded, restored, pending };
-  } catch {
+  } catch (err) {
+    if (err instanceof LocalAccountChanged) return { ...NOTHING, outcome: "account-mismatch" };
     return { outcome: "offline", uploaded, restored };
   } finally {
     running = false;
+    operation.finish();
   }
 }
 

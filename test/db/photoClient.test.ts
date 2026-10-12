@@ -1,12 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { db } from "@/lib/db";
+import { db, wipeAllData } from "@/lib/db";
+import { importBackup } from "@/lib/backup";
 import {
   deleteRemotePhoto,
   pendingPhotoDeletions,
   setPhotoBackup,
   startPhotoSync,
   syncPhotos,
+  resumePhotoSyncAfterFailedWipe,
 } from "@/lib/photos/client";
 import { resetSyncAvailability } from "@/lib/sync/client";
 import {
@@ -143,6 +145,7 @@ beforeEach(() => {
   bucketDeleteFails = false;
   requests = [];
   resetSyncAvailability();
+  resumePhotoSyncAfterFailedWipe();
   Object.defineProperty(globalThis, "localStorage", { value: new MemoryStorage(), configurable: true });
   vi.stubGlobal("location", { origin: "http://app.test" });
   vi.stubGlobal("addEventListener", () => {});
@@ -291,5 +294,111 @@ describe("F10 — it runs by itself", () => {
     await vi.waitFor(async () => expect(await db().photoEntries.count()).toBe(1), { timeout: 3000 });
     stop();
     expect((await db().photoEntries.toArray())[0]?.week).toBe(20);
+  });
+});
+
+describe("queued erasure keeps its original account", () => {
+  const A = ME;
+  const B = "account-other";
+  const uid = "44444444-4444-4444-8444-444444444444";
+
+  async function storedPhoto(account: string) {
+    await recordPhoto(backend, account, {
+      store: "photoEntries", recordId: uid,
+      objectKey: `fotos/${account}/photoEntries/${uid}`,
+      contentType: "image/jpeg", bytes: 6, payload: null, updatedAt: 1,
+    }, 1);
+  }
+
+  it("a pending delete-all survives a wipe without erasing B, and resumes for A", async () => {
+    await backupOn();
+    await storedPhoto(A);
+    await storedPhoto(B);
+    bucketDeleteFails = true;
+    expect(await setPhotoBackup(false)).toBe("pending");
+
+    await wipeAllData();
+    session = B;
+    bucketDeleteFails = false;
+    await syncPhotos();
+    expect(backend.rows.has(`${B}|photoEntries|${uid}`)).toBe(true);
+    expect(backend.rows.has(`${A}|photoEntries|${uid}`)).toBe(true);
+    expect(pendingPhotoDeletions()).toBe(1);
+
+    await wipeAllData();
+    session = A;
+    await syncPhotos();
+    expect(backend.rows.has(`${A}|photoEntries|${uid}`)).toBe(false);
+    expect(backend.rows.has(`${B}|photoEntries|${uid}`)).toBe(true);
+    expect(pendingPhotoDeletions()).toBe(0);
+  });
+
+  it("a pending individual deletion is not aimed at B's matching record id", async () => {
+    await backupOn();
+    await storedPhoto(A);
+    await storedPhoto(B);
+    bucketDeleteFails = true;
+    await deleteRemotePhoto("photoEntries", uid);
+    expect(pendingPhotoDeletions()).toBe(1);
+
+    await wipeAllData();
+    session = B;
+    bucketDeleteFails = false;
+    await syncPhotos();
+    expect(backend.rows.get(`${B}|photoEntries|${uid}`)?.deletedAt).toBeNull();
+    expect(pendingPhotoDeletions()).toBe(1);
+
+    await wipeAllData();
+    session = A;
+    await syncPhotos();
+    expect(pendingPhotoDeletions()).toBe(0);
+    expect(backend.rows.get(`${A}|photoEntries|${uid}`)?.deletedAt).not.toBeNull();
+  });
+
+  it("restoring B's backup preserves A's pending erasure", async () => {
+    await backupOn();
+    await storedPhoto(A);
+    await storedPhoto(B);
+    bucketDeleteFails = true;
+    await setPhotoBackup(false);
+
+    await importBackup(new File([JSON.stringify({
+      app: "mibebe", version: 3, account: B, tables: {},
+    })], "account-b.json"));
+    session = B;
+    bucketDeleteFails = false;
+    await syncPhotos();
+    expect(backend.rows.has(`${B}|photoEntries|${uid}`)).toBe(true);
+    expect(pendingPhotoDeletions()).toBe(1);
+  });
+
+  it("binds legacy jobs before the original account link is wiped", async () => {
+    await backupOn();
+    await storedPhoto(A);
+    await storedPhoto(B);
+    localStorage.setItem("mibebe.photos.deleteAllPending", "1");
+    await wipeAllData();
+    session = B;
+    await syncPhotos();
+    expect(backend.rows.has(`${B}|photoEntries|${uid}`)).toBe(true);
+    expect(pendingPhotoDeletions()).toBe(1);
+
+    await wipeAllData();
+    session = A;
+    await syncPhotos();
+    expect(backend.rows.has(`${A}|photoEntries|${uid}`)).toBe(false);
+  });
+
+  it("never assigns unknown legacy jobs to a newly adopted account, even after another wipe", async () => {
+    await storedPhoto(B);
+    localStorage.setItem("mibebe.photos.deleteAllPending", "1");
+    localStorage.setItem("mibebe.photos.deleteQueue", JSON.stringify([{ store: "photoEntries", recordId: uid }]));
+    session = B;
+    await syncPhotos();
+    await wipeAllData();
+    await syncPhotos();
+    expect(backend.rows.get(`${B}|photoEntries|${uid}`)?.deletedAt).toBeNull();
+    expect(pendingPhotoDeletions()).toBe(2);
+    expect(requests.filter((request) => request.includes("/api/v1/photos"))).toEqual([]);
   });
 });

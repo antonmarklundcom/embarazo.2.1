@@ -20,11 +20,13 @@ const DeleteAccountSchema = z
     // entirely, so the only value that can satisfy this is a deliberate
     // confirmation. Same shape as A2's consent gate.
     confirm: z.literal("borrar"),
+    expectedAccountId: z.string().min(1).max(128),
   })
   .strict();
 
 export interface DeleteAccountState {
   error?: string;
+  deleted?: boolean;
 }
 
 export async function deleteAccountAction(
@@ -33,6 +35,7 @@ export async function deleteAccountAction(
 ): Promise<DeleteAccountState> {
   const parsed = DeleteAccountSchema.safeParse({
     confirm: formData.get("confirm") ?? undefined,
+    expectedAccountId: formData.get("expectedAccountId") ?? undefined,
   });
   if (!parsed.success) {
     return { error: "No pudimos confirmar el pedido. Probá de nuevo." };
@@ -41,13 +44,17 @@ export async function deleteAccountAction(
   if (!isAuthAvailable()) {
     return {
       error:
-        "No hay cuentas en esta versión. Tus datos están solo en este teléfono — podés borrarlos con «Borrar todos mis datos».",
+        "El ingreso no está disponible ahora. Conectate y volvé a intentar; tus registros locales no se borraron.",
     };
   }
 
   const session = await getSession();
   const userId = session?.user?.id;
   if (!userId) return { error: "Tu sesión venció. Entrá de nuevo y reintentá." };
+
+  if (parsed.data.expectedAccountId !== userId) {
+    return { error: "Tu cuenta cambió. Volvé a entrar antes de borrar la cuenta." };
+  }
 
   const database = dbOrNull();
   if (!database) {
@@ -59,7 +66,8 @@ export async function deleteAccountAction(
   // Sign out last, and only after the rows are gone: a session that outlives
   // its user row would look to the app like a working account with no data,
   // which is exactly the "perdí mis datos" support ticket A7 exists to answer.
-  // Throws NEXT_REDIRECT — deliberately not caught.
-  await signOut({ redirectTo: "/ajustes?cuenta=borrada" });
-  return {};
+  // Return the acknowledged deletion before the client revokes its gated UI.
+  // A cookie-clearing failure must not claim that already-deleted data exists.
+  try { await signOut({ redirect: false }); } catch { /* Client verifies sign-out. */ }
+  return { deleted: true };
 }

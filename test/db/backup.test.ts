@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { db, wipeAllData } from "@/lib/db";
 import {
@@ -10,6 +10,7 @@ import {
   validateBackup,
 } from "@/lib/backup";
 import { exportPinMaterial, setPin } from "@/lib/crypto";
+import { resetSyncAvailability, syncNow } from "@/lib/sync/client";
 
 // F07 / N1 — the manual backup is the only recovery path a local-only user
 // has. These run the real export and import against fake IndexedDB.
@@ -149,6 +150,35 @@ describe("the account link travels with the data (A6)", () => {
 
     expect(await db().syncState.get("default")).toBeUndefined();
   });
+
+  it("stops the old account's in-flight writer before restoring a different account", async () => {
+    resetSyncAvailability();
+    vi.stubGlobal("location", { origin: "http://app.test" });
+    let started = false;
+    let stopped = false;
+    vi.stubGlobal("fetch", async (_input: string | URL, init?: RequestInit) => {
+      started = true;
+      return new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => { stopped = true; reject(new DOMException("aborted", "AbortError")); });
+      });
+    });
+    try {
+      await db().profile.add({ city: "Account A", createdAt: T });
+      await db().syncState.put({ key: "default", lastPulledAt: 0, accountId: "acc-a" });
+      const oldWriter = syncNow();
+      await vi.waitFor(() => expect(started).toBe(true));
+      await importBackup(new File([JSON.stringify({
+        app: "mibebe", version: 3, account: "acc-b", tables: { profile: [{ city: "Account B", createdAt: T }] },
+      })], "account-b.json"));
+      await oldWriter;
+      expect(stopped).toBe(true);
+      expect((await db().profile.toArray())[0]?.city).toBe("Account B");
+      expect((await db().syncState.get("default"))?.accountId).toBe("acc-b");
+    } finally {
+      vi.unstubAllGlobals();
+      resetSyncAvailability();
+    }
+  });
 });
 
 describe("older and incompatible files", () => {
@@ -201,4 +231,35 @@ describe("older and incompatible files", () => {
       validateBackup({ app: "mibebe", version: BACKUP_VERSION + 1, tables: {} }),
     ).toThrow(/versión más nueva/);
   });
+});
+
+
+describe("restore keeps the original data when PIN storage refuses a write", () => {
+  for (const failingKey of ["mibebe.pin.salt", "mibebe.pin.verifier"]) {
+    it("rolls back a failure on " + failingKey, async () => {
+      await setPin("123456");
+      await db().profile.add({ city: "Original", createdAt: 1 });
+      const originalPin = exportPinMaterial();
+      const backup = JSON.parse(await (await exportBackup()).text());
+      backup.tables.profile[0].city = "Replacement";
+      // Different valid PIN material guarantees both storage writes are tried.
+      await setPin("654321");
+      backup.pin = exportPinMaterial();
+      const { importPinMaterial, unlock } = await import("@/lib/crypto");
+      importPinMaterial(originalPin);
+      const storage = localStorage;
+      const originalSet = storage.setItem.bind(storage);
+      let failOnce = true;
+      vi.spyOn(storage, "setItem").mockImplementation((key, value) => {
+        if (key === failingKey && failOnce) { failOnce = false; throw new DOMException("Storage full", "QuotaExceededError"); }
+        originalSet(key, value);
+      });
+      await expect(importBackup(new File([JSON.stringify(backup)], "backup.json"))).rejects.toThrow();
+      expect((await db().profile.toArray())[0]?.city).toBe("Original");
+      expect(exportPinMaterial()).toEqual(originalPin);
+      expect(await unlock("123456")).toBe(true);
+      expect(await unlock("654321")).toBe(false);
+      vi.restoreAllMocks();
+    });
+  }
 });

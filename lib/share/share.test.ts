@@ -78,8 +78,8 @@ describe("what a shared image may carry", () => {
 
   it("carries the week's size, trimester and milestone", () => {
     const twenty = weekCardContent(20);
-    expect(twenty.size).toBe("una banana");
-    expect(shareWeekLine(twenty)).toBe("Semana 20 · una banana");
+    expect(twenty.size).toBe("Referencia de peso: un mango");
+    expect(shareWeekLine(twenty)).toBe("Semana 20 · Referencia de peso: un mango");
     expect(twenty.trimester).toBe(2);
     expect(twenty.milestone).toBe("Mitad del camino");
 
@@ -91,8 +91,8 @@ describe("what a shared image may carry", () => {
   it("has no size line for weeks 1–2, where there is no embryo to compare", () => {
     expect(weekCardContent(1).size).toBeNull();
     expect(weekCardContent(2).size).toBeNull();
-    expect(weekCardContent(3).size).toBe("una semilla de chía");
-    expect(shareWeekLine(weekCardContent(3))).toBe("Semana 3 · una semilla de chía");
+    expect(weekCardContent(3).size).toBe("Todavía microscópico");
+    expect(shareWeekLine(weekCardContent(3))).toBe("Semana 3 · Todavía microscópico");
     expect(shareWeekLine(weekCardContent(1))).toBe(weekCardContent(1).tagline);
   });
 
@@ -106,8 +106,11 @@ describe("what a shared image may carry", () => {
     expect(shareHeadline(weekCardContent(20))).toBe("¡Semana 20!");
   });
 
-  it("puts only the week and its size in the caption", () => {
-    expect(shareText(20)).toBe("¡Semana 20! Mi bebé ya es del tamaño de una banana 💛");
+  it("makes share text and PNG captions distinguish illustrative length from weight", () => {
+    expect(weekCardContent(15).size).toBe("Referencia de longitud: una manzana");
+    expect(shareText(3)).toBe("¡Semana 3! Todavía microscópico 💛");
+    expect(shareText(40)).toBe("¡Semana 40! Referencia de peso: una sandía. Comparación ilustrativa 💛");
+    expect(shareText(20)).toBe("¡Semana 20! Referencia de peso: un mango. Comparación ilustrativa 💛");
     for (const week of WEEKS) {
       expect(shareText(week)).toContain(String(week));
       for (const field of SHARE_FORBIDDEN_FIELDS) {
@@ -293,7 +296,7 @@ describe("drawWeekCard with the week's illustration (growth plan 11)", () => {
     expect(drawn).toEqual([art]);
     expect(paths.some((d) => d.startsWith("M62 150"))).toBe(false);
     expect(texts[1]).toBe("Mateo");
-    expect(texts.slice(2, -1).join(" ")).toBe("Semana 20 · una banana");
+    expect(texts.slice(2, -1).join(" ")).toBe("Semana 20 · Referencia de peso: un mango");
   });
 });
 

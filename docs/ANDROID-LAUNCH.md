@@ -19,9 +19,7 @@
 
 Mi Bebé is a Next.js PWA. It goes on Play as a **Trusted Web Activity (TWA)** —
 an Android app whose entire UI is the live site, running in Chrome without
-browser chrome. This is Google's officially supported path for PWAs, not a
-loophole, and a TWA is exempt from the "no thin webview wrappers" rule *as long
-as it behaves like an app*: works offline, installs, no visible URL bar.
+browser chrome. This is an Android approach for a verified web origin. It still needs to provide a useful app experience and comply with Play policies. Verify app links, installation and offline behavior.
 
 Consequences worth understanding before you start:
 
@@ -37,40 +35,13 @@ Consequences worth understanding before you start:
 
 ---
 
-## 1. The account decision — make this one first, it cannot be undone
+## 1. Publisher account — current check12 October 2026
 
-$25, one time, one account, forever. But **which kind of account changes your
-timeline by 3–6 weeks**, and you cannot convert a personal account to an
-organization account later.
+Register the actual publisher as an **organization**: Google requires organization accounts for health apps. For this release, Marklund Sales & Marketing AB can be the legal publisher while Mi Bebé remains the product brand. Verify D-U-N-S and matching legal identity/contact records. Paraguay is the audience; the publisher country must match the real verified entity. A later app transfer requires an eligible verified target developer account.
 
-| | Personal account | Organization account |
-|---|---|---|
-| Cost | $25 | $25 |
-| Needs a D-U-N-S number | no | **yes** (free from Dun & Bradstreet, allow 1–4 weeks) |
-| Closed testing before production | **12 testers, opted in, 14 continuous days** | **exempt** — publish straight to production |
-| Public developer name on the listing | your legal name | your company name |
-| Best if | you have no company | you have (or will have) a legal entity |
+The registration fee is US$25 once. Organization registration does not remove normal app review or the need for internal testing. For context, new personal accounts generally need 12 testers continuously opted in for 14 days before applying for production access; daily opening is not the stated rule. That is not a reason to use a personal account for this health app.
 
-The **12 testers × 14 days** rule applies to personal accounts created after
-13 November 2023 — which yours would be. The 14-day clock only starts once your
-closed-test release is approved *and* 12 testers are actually opted in, and
-testers must stay opted in throughout. Finding 12 real people who install and
-keep the app is the part that goes wrong, and it is not a formality: Google
-reviews tester engagement.
-
-**Recommendation: register as an organization**, using the legal entity you
-already need for sponsor invoicing (`REVIEW-AND-LAUNCH-PLAN.md` §4.6). It costs
-the same, it skips the 12-tester gate entirely, and the listing shows a company
-name instead of a personal one — which matters for a health app. Request the
-D-U-N-S number **today**, because it is the long pole: everything else can be
-done in a week, that cannot.
-
-If you go personal instead: it still works, just start the closed test the
-moment you have anything installable, and run the friends-and-family round
-*as* the closed test so the 14 days elapse in parallel with content work.
-
-Either way you also complete **developer identity verification** (legal name,
-address, phone, email — the address becomes publicly visible on the listing).
+See [current release procedure](PREGNANCY-RELEASE-2026-10-12.md) and Google's [developer policy](https://support.google.com/googleplay/android-developer/answer/18258653?hl=en), [fee](https://support.google.com/googleplay/android-developer/answer/6112435?hl=en), [testing requirement](https://support.google.com/googleplay/android-developer/answer/14151465?hl=en), and [transfer procedure](https://support.google.com/googleplay/android-developer/answer/6230247?hl=en). Recheck dated requirements when submitting.
 
 ---
 
@@ -176,84 +147,24 @@ These are forms, not code, and each one blocks publishing.
 **A wrong "no" here is a policy strike, and health apps get looked at.** Answer
 every row from this table, which is the app as it actually behaves.
 
-| Data type | Collected? | Linked to identity? | Shared? | Purpose | Optional? |
-|---|---|---|---|---|---|
-| **Name** | Yes | Yes | No | Account management, app functionality | Yes — "seguir sin cuenta" |
-| **Email address** | Yes | Yes | No | Account management | Yes — same |
-| **User IDs** | Yes | Yes | No | Account management, app functionality | Yes — same |
-| **Health info** | Yes | Yes | No | App functionality | Yes — same |
-| **Photos** | Yes | Yes | No | App functionality | **Yes — separate opt-in**, off by default (K4) |
-| **App interactions** | Yes | **No** | No | Analytics | No |
-| **Approximate location** | **No** | — | — | — | — |
-| **Contacts / SMS / call log / calendar** | **No** | — | — | — | — |
-| **Financial info** | **No** | — | — | — | — |
+Release facts updated 12 October 2026. This is preparation for the form; confirm the actual deployed configuration and Google's category definitions before submitting.
 
-Row by row, with the thing that makes each answer defensible:
+| Category | Actual behavior | Required / optional |
+|---|---|---|
+| Name, email, user ID | Google identity and account records; linked to the account | Account is required for personal tracking |
+| Health information | Pregnancy dates and compatible personal records sync to the account; PIN note text stays on its original device | Pregnancy setup requires gestation information; individual journal/weight/tool entries are voluntary |
+| Photos | Remote backup only with a separate opt-in and a configured storage provider; linked to the account | Optional; confirm whether enabled in production |
+| Approximate location | Profile department/city are sent inside synced profile JSON | Declare this collection when those fields are sent; no GPS permission does not mean no location collection |
+| App interactions | Aggregated content/sponsor/funnel counters; no account/device identifier in their application rows | Confirm analytics collection and server/provider logs |
+| Notification identifiers | Browser push subscription endpoint/settings when notifications are enabled | Separate opt-in |
+| User-entered contact information | Saved hospital/emergency names and numbers are included in profile synchronization; no general device address-book access | Categorize the actual saved/sent fields; no permission does not mean no contact data |
+| SMS, call log, system calendar, financial information | No general device access/collection for current tracking features | Confirm no added permission/service before release |
 
-- **Name · email · user id.** The minimum Google and Facebook will give
-  (ARCHITECTURE.md §4.7). No friend lists, no other scopes, ever. Present only
-  for a user who signed in; "seguir sin cuenta" collects none of it, which is
-  what makes the **optional** column a yes rather than a technicality.
-- **Health info — "linked to identity", and say so.** Synced records are keyed
-  to a user id, and pretending otherwise because the payload is opaque would be
-  a lie about the shape of the data rather than about its contents. What §4.3
-  buys is real and worth stating in the *privacy policy* (not this form, which
-  has no box for it): the server stores a typed envelope it never queries into
-  and never indexes, so it does not learn which symptom, which week, or which
-  note — even though it knows whose.
-- **Photos — a second, separate opt-in.** K4's backup is off unless she turns
-  it on, the bytes go to object storage via a short-lived presigned URL, and
-  turning it off deletes the server copies. Declare it as optional, because it
-  genuinely is.
-- **App interactions — collected, NOT linked.** This is `/api/v1/stats`, and it
-  is the one row where the architecture does the arguing for you: the table has
-  no identity column at all (A1), no session is ever read, no IP is retained,
-  and the finest timestamp is a calendar day. K5 put the pregnancy `week` back
-  on this counter (§5 D2, §7) — declare it under this row, not under Health
-  info, because the row is `(week, content_id, day, count)` with nothing to
-  join it to. `lib/stats/contentStats.test.ts` asserts the whole POST shape, so
-  this answer stays true by test rather than by memory.
-- **App interactions, second row — the sponsor click counter (K15).** Declare
-  it under the same row and for the same reason: `placementClicks` is
-  `(placement_id, day, clicks)`, there is no identity column, and
-  `recordClick` has no parameter to pass a user, a session or an IP into.
-  `lib/server/placementClicks.test.ts` asserts that shape, so this answer also
-  stays true by test rather than by memory. It does **not** move any other row
-  on this form — in particular it does not touch Approximate location, which
-  is the next bullet.
-- **App interactions, third row: the install funnel (growth plan 16–18).**
-  Declare it under the same row for the same reason. `funnelStats` is
-  `(metric, key, day, count)`: arrivals from the site by page type, a clinic QR
-  card's slug, onboarding finished (by that first visit's channel), first tool
-  opened, and opened again after 7+ days. "Once per install" is decided on the
-  phone, in its own localStorage, so the server never receives a device id to
-  deduplicate by. `recordFunnel` takes an event and a clock and nothing else,
-  and `lib/stats/funnel.test.ts` rejects every extra field. Collected, **not
-  linked**, Analytics, not optional: the same answers as the rows above. It does
-  not move Approximate location either: a clinic slug names a card, not where
-  the phone is.
-- **Approximate location — still no**, and this is J3's win that survives. See
-  below.
+Health data is linked to identity. HTTPS protects transit; the synchronized JSON is **not end-to-end encrypted**. A typed or 'opaque' server envelope does not make its content unreadable to the operator. Family summaries go to people the user invites; evaluate Google's user-initiated-transfer and service-provider exceptions rather than copying a universal 'not shared' answer. Google login needs only openid/email/profile.
 
-**What J3 removed, and what stays removed.** J3 stripped `department` from
-`/api/v1/directory` and `/api/v1/placements`, `trimester` + `department` from
-`/api/v1/go/[id]`'s attribution, and the `week` from `/api/v1/stats`. K5 put
-back **only the last one**. The first three stay gone, and not for the badge:
+Photo opt-out can queue deletion while offline; it completes when the original account can connect. Account deletion removes active account records and associated objects. Retention of infrastructure backups/security logs must be confirmed with the host and reflected in the privacy policy. Public community submissions remain disabled; do not declare a feature as collecting data merely because dormant code exists.
 
-- The directory and placement seeds are precached, tens of entries, filtered on
-  the device in a millisecond. A parameterless route caches under **one key**
-  for every user in the country, which is a better offline design than a
-  per-department cache would ever be. That is worth more than the badge was.
-- `/go`'s attribution is a fire-and-forget redirect to `wa.me`. Sending a
-  sponsor a trimester tells them a health fact about whoever just tapped, which
-  ARCHITECTURE.md §4.6 rules out independently of any Play form. **K15 counts
-  that tap and does not change this**: the count is of the listing id, per
-  calendar day, and a sponsor asking for clicks by department is answered from
-  the directory itself, where every listing already has one.
-
-So: **"Approximate location: not collected" is still an honest answer**, and it
-is the one row of this table that is honest by construction rather than by
-policy.
+Read the [current release checklist](PREGNANCY-RELEASE-2026-10-12.md) and verify all optional providers, actual transmission and Play form choices. Do not submit 'no data collected' or 'no approximate location' based only on the absence of GPS or identity columns in analytics.
 
 ### 3.1.1 The consequences that come with the honest answer
 

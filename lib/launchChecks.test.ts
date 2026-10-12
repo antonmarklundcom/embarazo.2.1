@@ -1,111 +1,55 @@
 import { describe, expect, it } from "vitest";
-import {
-  assertLaunchReady,
-  isDeploymentBuild,
-  isPlaceholderReviewer,
-  launchCheckErrors,
-} from "./launchChecks";
+import { assertLaunchReady, isDeploymentBuild, isPlaceholderReviewer, launchCheckErrors } from "./launchChecks";
 
-const REAL_REVIEWER = "Dra. Pérez, gineco-obstetra";
-/** A configured deletion channel, so tests that don't care about it pass. */
-const REAL_EMAIL = "hola@mibebe.com.py";
+const AUTH_ENV = {
+  DATABASE_URL: "mysql://example.invalid/test",
+  AUTH_SECRET: "test-secret",
+  AUTH_GOOGLE_ID: "test-client",
+  AUTH_GOOGLE_SECRET: "test-client-secret",
+};
+const APP_ENV = { ...AUTH_ENV, NEXT_PUBLIC_APP_URL: "https://mibebe.com.py", NEXT_PUBLIC_SUPPORT_EMAIL: "hola@mibebe.com.py" };
 
-describe("isDeploymentBuild", () => {
-  it("is false for a local or CI build with no app URL", () => {
+describe("deployment launch requirements", () => {
+  it("does not block local and CI builds without a configured app URL", () => {
     expect(isDeploymentBuild({})).toBe(false);
     expect(isDeploymentBuild({ NEXT_PUBLIC_APP_URL: "  " })).toBe(false);
-  });
-
-  it("is true once an app URL is configured", () => {
-    expect(isDeploymentBuild({ NEXT_PUBLIC_APP_URL: "https://mibebe.com.py" }))
-      .toBe(true);
-  });
-});
-
-describe("isPlaceholderReviewer", () => {
-  // No longer used to gate the build (DECISIONS.md "disclaimer model, not a
-  // named reviewer") — still used at render time by MedicalReviewByline and
-  // ObstetraCard to choose between the named byline and the generic
-  // disclaimer.
-  it("flags unset and blank", () => {
-    expect(isPlaceholderReviewer(undefined)).toBe(true);
-    expect(isPlaceholderReviewer("   ")).toBe(true);
-  });
-
-  it("flags the known placeholder shapes", () => {
-    expect(isPlaceholderReviewer("Dra. ___, gineco-obstetra")).toBe(true);
-    expect(isPlaceholderReviewer("placeholder")).toBe(true);
-    expect(isPlaceholderReviewer("TBD")).toBe(true);
-  });
-
-  it("accepts a real name", () => {
-    expect(isPlaceholderReviewer(REAL_REVIEWER)).toBe(false);
-  });
-});
-
-describe("launchCheckErrors", () => {
-  it("stays silent for non-deployment builds", () => {
     expect(launchCheckErrors({})).toEqual([]);
+    expect(isDeploymentBuild(APP_ENV)).toBe(true);
   });
-
-  it("passes a deployment build with a deletion channel and no reviewer set", () => {
-    // The reviewer is no longer a build gate — a deployment with nobody named
-    // as medical reviewer ships fine, with the disclaimer instead of a byline.
-    expect(
-      launchCheckErrors({
-        NEXT_PUBLIC_APP_URL: "https://mibebe.com.py",
-        NEXT_PUBLIC_SUPPORT_EMAIL: REAL_EMAIL,
-      }),
-    ).toEqual([]);
-  });
-
-  it("blocks a deployment build where nobody can be contacted", () => {
-    const errors = launchCheckErrors({
-      NEXT_PUBLIC_APP_URL: "https://mibebe.com.py",
-    });
+  it("requires configured Google login for an account-required release", () => {
+    const errors = launchCheckErrors({ NEXT_PUBLIC_APP_URL: APP_ENV.NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_SUPPORT_EMAIL: APP_ENV.NEXT_PUBLIC_SUPPORT_EMAIL });
     expect(errors).toHaveLength(1);
-    expect(errors[0]).toMatch(/borrar-cuenta/);
+    for (const name of Object.keys(AUTH_ENV)) expect(errors[0]).toContain(name);
+    expect(launchCheckErrors(APP_ENV)).toEqual([]);
   });
-
-  it("accepts WhatsApp alone as the deletion channel", () => {
-    // One way through is enough. Requiring both would be a rule invented here
-    // rather than one Play asks for.
-    expect(
-      launchCheckErrors({
-        NEXT_PUBLIC_APP_URL: "https://mibebe.com.py",
-        NEXT_PUBLIC_BUSINESS_WHATSAPP: "+595981123456",
-      }),
-    ).toEqual([]);
-  });
-
-  it("does not count a placeholder WhatsApp as a channel", () => {
-    // C8's dead number wearing a fallback's clothes must not satisfy this.
-    const errors = launchCheckErrors({
-      NEXT_PUBLIC_APP_URL: "https://mibebe.com.py",
-      NEXT_PUBLIC_BUSINESS_WHATSAPP: "+595000000000",
-    });
+  it("reports only the missing variable names, never secret values", () => {
+    const errors = launchCheckErrors({ ...APP_ENV, AUTH_GOOGLE_SECRET: " " });
     expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("AUTH_GOOGLE_SECRET");
+    expect(errors[0]).not.toContain("test-secret");
+    expect(errors[0]).not.toContain("test-client");
   });
-
-  it("stays silent for a local build with nothing configured at all", () => {
-    // A contributor running `npm run build` is not deploying.
-    expect(launchCheckErrors({})).toEqual([]);
+  it("rejects guest-mode release even when auth is otherwise configured", () => {
+    expect(launchCheckErrors({ ...APP_ENV, AUTH_REQUIRE_ACCOUNT: "false" })).toEqual([
+      expect.stringContaining("Remove AUTH_REQUIRE_ACCOUNT=false"),
+    ]);
+  });
+  it("requires a real deletion channel, with WhatsApp or email sufficient", () => {
+    const errors = launchCheckErrors({ ...AUTH_ENV, NEXT_PUBLIC_APP_URL: APP_ENV.NEXT_PUBLIC_APP_URL });
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("borrar-cuenta");
+    expect(launchCheckErrors({ ...AUTH_ENV, NEXT_PUBLIC_APP_URL: APP_ENV.NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_BUSINESS_WHATSAPP: "+595981123456" })).toEqual([]);
+    expect(launchCheckErrors({ ...AUTH_ENV, NEXT_PUBLIC_APP_URL: APP_ENV.NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_BUSINESS_WHATSAPP: "+595000000000" })).toHaveLength(1);
+  });
+  it("throws with actionable configuration problems and allows a ready release", () => {
+    expect(() => assertLaunchReady({ NEXT_PUBLIC_APP_URL: APP_ENV.NEXT_PUBLIC_APP_URL })).toThrow(/NEXT_PUBLIC_SUPPORT_EMAIL/);
+    expect(() => assertLaunchReady(APP_ENV)).not.toThrow();
   });
 });
 
-describe("assertLaunchReady", () => {
-  it("throws with the problem listed", () => {
-    expect(() =>
-      assertLaunchReady({ NEXT_PUBLIC_APP_URL: "https://mibebe.com.py" }),
-    ).toThrow(/NEXT_PUBLIC_SUPPORT_EMAIL/);
-  });
-
-  it("does not throw when ready", () => {
-    expect(() =>
-      assertLaunchReady({
-        NEXT_PUBLIC_APP_URL: "https://mibebe.com.py",
-        NEXT_PUBLIC_SUPPORT_EMAIL: REAL_EMAIL,
-      }),
-    ).not.toThrow();
+describe("legacy reviewer placeholder helper", () => {
+  it("detects unset, blank and known placeholders", () => {
+    for (const value of [undefined, "   ", "Dra. ___", "placeholder", "TBD"]) expect(isPlaceholderReviewer(value)).toBe(true);
+    expect(isPlaceholderReviewer("Dra. Pérez, gineco-obstetra")).toBe(false);
   });
 });

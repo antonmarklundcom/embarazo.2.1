@@ -1,5 +1,6 @@
 "use client";
 
+import { hasPersonalSetup } from "./onboarding/hasSetup";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, notDeleted } from "./db";
 import {
@@ -23,6 +24,7 @@ import type { PregnancyAnswers } from "./onboarding/personalisation";
 export interface ProfileState extends PregnancyAnswers {
   loading: boolean;
   hasProfile: boolean;
+  hasPersonalSetup: boolean;
   /** "embarazada" (default) or "planeando" — see build spec §3. */
   mode: AppMode;
   /** Relationship role (B1). Defaults to "mama" — see lib/roleCopy.ts. */
@@ -72,6 +74,7 @@ export function useProfile(): ProfileState {
     return {
       loading: true,
       hasProfile: false,
+      hasPersonalSetup: false,
       mode: "embarazada",
       babies: [],
       role: "mama",
@@ -84,6 +87,7 @@ export function useProfile(): ProfileState {
     return {
       loading: false,
       hasProfile: false,
+      hasPersonalSetup: false,
       mode: "embarazada",
       babies: [],
       role: "mama",
@@ -96,6 +100,7 @@ export function useProfile(): ProfileState {
   const base = {
     loading: false,
     hasProfile: true,
+    hasPersonalSetup: hasPersonalSetup(profile),
     mode,
     babies: profile.babies ?? [],
     role,

@@ -13,6 +13,7 @@ import {
   signOut,
 } from "@/lib/server/auth";
 import { PROVIDER_IDS } from "@/lib/auth/config";
+import { signInDestination } from "@/lib/auth/access";
 import {
   EmailSchema,
   NewPasswordSchema,
@@ -38,14 +39,11 @@ import { AUTH_RATE_LIMIT, clientKeyFromHeaders, isRateLimited } from "@/lib/rate
 /**
  * Where a completed sign-in lands, keyed by where it started (K1).
  *
- * A closed set of destinations rather than a `redirectTo` string, deliberately:
- * this action is a public POST endpoint, and a caller-supplied redirect target
- * is an open redirect waiting for somebody to forget to validate it. Onboarding
- * needs the user back on "/" so the flow can resume from its saved draft; every
- * other entry point still lands on /ajustes as it did before.
+ * All logins resume home first. The requested local tool is opened only after
+ * onboarding or profile restoration; signInDestination validates its target.
  */
 const SIGN_IN_DESTINATIONS = {
-  cuenta: "/ajustes",
+  cuenta: "/",
   onboarding: "/",
 } as const;
 
@@ -61,6 +59,7 @@ const StartSignInSchema = z
     // value that can ever satisfy this is a deliberate tick.
     consent: z.literal("on"),
     from: FromSchema,
+    returnTo: z.string().max(1200).optional(),
   })
   .strict();
 
@@ -71,6 +70,7 @@ const CredentialsFormSchema = z
     password: PasswordSchema,
     consent: z.literal("on"),
     from: FromSchema,
+    returnTo: z.string().max(1200).optional(),
   })
   .strict();
 
@@ -84,6 +84,7 @@ const RegisterFormSchema = z
     password: NewPasswordSchema,
     consent: z.literal("on"),
     from: FromSchema,
+    returnTo: z.string().max(1200).optional(),
   })
   .strict();
 
@@ -111,7 +112,7 @@ export async function startSignIn(
   if (!isAuthAvailable()) {
     return {
       error:
-        `Las cuentas no están disponibles en esta versión. Podés seguir usando ${APP_NAME} sin cuenta.`,
+        `No pudimos abrir tu cuenta de ${APP_NAME}. Probá de nuevo más tarde.`,
     };
   }
 
@@ -121,6 +122,7 @@ export async function startSignIn(
     // Absent means the default ("cuenta"). An unknown value is a rejection,
     // not a fallback — a caller sending one is not a user who mis-ticked a box.
     from: formData.get("from") ?? undefined,
+    returnTo: formData.get("returnTo") ?? undefined,
   });
 
   if (!parsed.success) {
@@ -141,7 +143,7 @@ export async function startSignIn(
 
   // Throws NEXT_REDIRECT on success — deliberately not wrapped in try/catch,
   // which would swallow the redirect and strand the user on this page.
-  await signIn(provider, { redirectTo: SIGN_IN_DESTINATIONS[from] });
+  await signIn(provider, { redirectTo: signInDestination(parsed.data.returnTo ?? SIGN_IN_DESTINATIONS[from]) });
   return {};
 }
 
@@ -150,10 +152,13 @@ export async function registerWithPassword(
   _previous: SignInState,
   formData: FormData,
 ): Promise<SignInState> {
+  if (process.env.AUTH_EMAIL_SIGNUP_ENABLED !== "true") {
+    return { error: "Para crear una cuenta nueva, continuá con Google." };
+  }
   if (!isAuthAvailable()) {
     return {
       error:
-        `Las cuentas no están disponibles en esta versión. Podés seguir usando ${APP_NAME} sin cuenta.`,
+        `No pudimos abrir tu cuenta de ${APP_NAME}. Probá de nuevo más tarde.`,
     };
   }
 
@@ -182,6 +187,7 @@ export async function registerWithPassword(
     password: formData.get("password"),
     consent: formData.get("consent") ?? undefined,
     from: formData.get("from") ?? undefined,
+    returnTo: formData.get("returnTo") ?? undefined,
   });
   if (!parsed.success) {
     const password = formData.get("password");
@@ -209,7 +215,7 @@ export async function registerWithPassword(
 
   // Throws NEXT_REDIRECT on success, same as startSignIn above.
   await signInWithCredentials(email, password, {
-    redirectTo: SIGN_IN_DESTINATIONS[from],
+    redirectTo: signInDestination(parsed.data.returnTo ?? SIGN_IN_DESTINATIONS[from]),
   });
   return {};
 }
@@ -222,7 +228,7 @@ export async function signInWithPasswordAction(
   if (!isAuthAvailable()) {
     return {
       error:
-        `Las cuentas no están disponibles en esta versión. Podés seguir usando ${APP_NAME} sin cuenta.`,
+        `No pudimos abrir tu cuenta de ${APP_NAME}. Probá de nuevo más tarde.`,
     };
   }
 
@@ -231,6 +237,7 @@ export async function signInWithPasswordAction(
     password: formData.get("password"),
     consent: formData.get("consent") ?? undefined,
     from: formData.get("from") ?? undefined,
+    returnTo: formData.get("returnTo") ?? undefined,
   });
   if (!parsed.success) {
     return {
@@ -245,12 +252,12 @@ export async function signInWithPasswordAction(
   // Throws NEXT_REDIRECT on success, or redirects to
   // /cuenta?error=CredentialsSignin when authorize() rejected it.
   await signInWithCredentials(email, password, {
-    redirectTo: SIGN_IN_DESTINATIONS[from],
+    redirectTo: signInDestination(parsed.data.returnTo ?? SIGN_IN_DESTINATIONS[from]),
   });
   return {};
 }
 
 export async function signOutAction(): Promise<void> {
   if (!isAuthAvailable()) return;
-  await signOut({ redirectTo: "/ajustes" });
+  await signOut({ redirectTo: "/cuenta" });
 }

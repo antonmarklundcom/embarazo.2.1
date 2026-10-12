@@ -30,7 +30,7 @@ describe("week art", () => {
 
   it("describes the picture, not the baby, while the framed set is on disk", () => {
     if (WEEK_ART_STYLE !== "framed") return;
-    expect(weekArtAlt(20)).toBe("El tamaño de tu bebé en la semana 20: una banana.");
+    expect(weekArtAlt(20)).toBe("El tamaño de tu bebé en la semana 20: un mango.");
     // Weeks 1–2 are calendars: there is no size to name.
     expect(weekArtAlt(1)).toBe("Un calendario: en la semana 1 todavía no hay embrión.");
     expect(weekArtAlt(42)).toMatch(/^El tamaño de tu bebé en la semana 42: /);

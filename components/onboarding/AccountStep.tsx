@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import Link from "next/link";
 
 import { startSignIn, type SignInState } from "@/app/(app)/cuenta/actions";
 import { PROVIDER_LABELS } from "@/lib/auth/config";
@@ -10,22 +11,14 @@ import type { AuthStatus } from "@/lib/auth/status";
 import { BackButton, MARKS, PrimaryButton } from "./controls";
 
 /**
- * Four states, and none of them is a dead end:
- *   • still asking the server   → a quiet placeholder, never a blocked flow
- *   • signed in already         → say so and move on
- *   • providers configured      → consent + the provider buttons
- *   • no providers (or offline) → say so plainly and continue without one
+ * Existing signed-in users continue; everyone else signs in first. The only
+ * guest path is an explicitly configured local-data test preview.
  *
  * The consent checkbox is the same load-bearing control A2 built on /cuenta,
  * for the same reason (ARCHITECTURE.md §8): the server refuses a sign-in whose
  * request carries no consent ticket, and only this form can mint one.
  *
- * K9-F5 adds `invited`, which changes the pitch and nothing else. For somebody
- * holding a code, an account is not a backup offer — it is the thing that
- * makes the code redeemable at all, because joining a pregnancy is a server
- * call made as somebody. "Seguir sin cuenta" therefore stops being the quiet
- * second path here and becomes an explicit "this will not do what you came
- * for": still offered, because a dead end is worse, but never sold.
+ * An invitation is redeemed by a signed-in person, with the same consent rule.
  */
 export function AccountStep({
   auth,
@@ -86,14 +79,17 @@ export function AccountStep({
           Tu cuenta
         </p>
         <h2 className="mt-1 text-lg font-black text-ink">
-          Por ahora, sin cuenta
+          {auth.accountRequired ? "Entrá para continuar" : "Vista de prueba"}
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-muted">
-          {invited
-            ? "En este momento no podemos crear tu cuenta — puede ser que estés sin internet. Sin cuenta no podemos usar tu código todavía, pero la app funciona igual y podés entrar más adelante desde Ajustes y usarlo ahí."
-            : "En esta versión no podemos crear tu cuenta — puede ser que estés sin internet, o que este servidor todavía no tenga el ingreso activo. La app funciona completa igual y podés crear tu cuenta más adelante desde Ajustes; tus datos de ahora se suben en ese momento."}
+          {auth.accountRequired
+            ? "Para guardar tu embarazo y usar un código de invitación necesitás una cuenta. Conectate y abrí el ingreso; las guías y las señales de alarma siguen disponibles."
+            : "Esta vista de prueba guarda los registros únicamente en este navegador."}
         </p>
-        <PrimaryButton onClick={onSkip} label="Seguir sin cuenta" />
+        {auth.accountRequired ? (
+          <Link href="/cuenta" className="mt-4 flex min-h-[48px] items-center justify-center rounded-full bg-petrol px-4 font-bold text-white">Ir al ingreso</Link>
+        ) : <PrimaryButton onClick={onSkip} label="Seguir sin cuenta" />}
+        <Link href="/guias" className="mt-3 block text-center text-sm font-bold text-petrol underline">Leer las guías</Link>
         <BackButton onClick={onBack} />
       </div>
     );
@@ -169,7 +165,7 @@ export function AccountStep({
           </ul>
         </section>
 
-        {auth.providers.map((id) => {
+        {[...auth.providers].sort((a, b) => Number(b === "google") - Number(a === "google")).map((id) => {
           const Mark = MARKS[id];
           return (
             <button
@@ -177,11 +173,11 @@ export function AccountStep({
               type="submit"
               name="provider"
               value={id}
-              disabled={pending}
+              disabled={pending || !consented}
               className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-full border border-line bg-white px-4 text-[15px] font-extrabold text-ink shadow-soft transition active:scale-[0.99] disabled:opacity-60"
             >
               <Mark />
-              {pending ? "Abriendo…" : `Crear cuenta con ${PROVIDER_LABELS[id]}`}
+              {pending ? "Abriendo…" : `Continuar con ${PROVIDER_LABELS[id]}`}
             </button>
           );
         })}
@@ -202,18 +198,14 @@ export function AccountStep({
         )}
       </form>
 
-      {/* Secondary, but never hidden: ARCHITECTURE.md §4.2 keeps this a
-          supported way to use the app. It stopped being the pitch, not the
-          path. For an invited user it is also honest about what it costs —
-          the code needs an account, so skipping means the app works but the
-          invitation waits. */}
-      <button
+      {auth.accountRequired === false && <button
         type="button"
         onClick={onSkip}
         className="min-h-[44px] w-full text-sm font-bold text-petrol underline"
       >
         {invited ? "Seguir sin cuenta (tu código queda para después)" : "Seguir sin cuenta"}
-      </button>
+      </button>}
+      <Link href="/guias" className="block min-h-[44px] py-3 text-center text-sm font-bold text-petrol underline">Leer las guías</Link>
       <BackButton onClick={onBack} />
     </div>
   );

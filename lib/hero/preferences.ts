@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 
 import { db, notDeleted } from "../db";
@@ -29,6 +30,9 @@ export function useHeroTheme(): ThemeId {
   return theme ?? DEFAULT_THEME;
 }
 
+const PREVIEW_COMPARISON_EVENT = "mibebe:comparison-preview-changed";
+let previewComparison = true;
+
 /**
  * Whether the fruit comparison is drawn.
  *
@@ -38,12 +42,18 @@ export function useHeroTheme(): ThemeId {
  * app does not make it for her by default.
  */
 export function useShowComparison(): boolean {
+  const [preview, setPreview] = useState(previewComparison);
+  useEffect(() => {
+    const refresh = () => setPreview(previewComparison);
+    window.addEventListener(PREVIEW_COMPARISON_EVENT, refresh);
+    return () => window.removeEventListener(PREVIEW_COMPARISON_EVENT, refresh);
+  }, []);
   const shown = useLiveQuery(async () => {
     const rows = notDeleted(await db().profile.toArray());
     const value = rows[0]?.showComparison;
-    return typeof value === "boolean" ? value : true;
+    return typeof value === "boolean" ? value : undefined;
   }, []);
-  return shown ?? true;
+  return shown ?? preview;
 }
 
 /**
@@ -64,6 +74,12 @@ export async function setHeroTheme(next: ThemeId): Promise<void> {
 export async function setShowComparison(next: boolean): Promise<void> {
   const rows = await db().profile.toArray();
   const first = rows[0];
-  if (!first?.id) return;
+  if (!first?.id) {
+    // Public week reading has no personal profile. Apply the viewing choice
+    // for this tab without creating incomplete health/onboarding records.
+    previewComparison = next;
+    try { window.dispatchEvent(new Event(PREVIEW_COMPARISON_EVENT)); } catch { /* No DOM in tests. */ }
+    return;
+  }
   await db().profile.update(first.id, { showComparison: next });
 }

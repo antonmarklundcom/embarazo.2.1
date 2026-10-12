@@ -83,7 +83,7 @@ export function ForgotPasswordCard({ available }: { available: boolean }) {
           </h2>
           <p className="mt-1 text-sm font-semibold leading-relaxed text-sand-text">
             En esta versión de {APP_NAME} no hay ingreso con cuenta, así que no
-            hay contraseña que recuperar. La app funciona completa sin cuenta.
+            hay contraseña que recuperar ahora. Si usás Google, entrá con Google desde Tu cuenta.
           </p>
         </section>
       ) : state.sent ? (

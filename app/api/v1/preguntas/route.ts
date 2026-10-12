@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { COMMUNITY_QUESTIONS_ENABLED } from "@/lib/community/launch";
 
 import {
   CHEAP_READ_LIMIT,
@@ -49,6 +50,8 @@ export async function GET(req: NextRequest) {
       { status: 400 },
     );
   }
+
+  if (!COMMUNITY_QUESTIONS_ENABLED) return NextResponse.json({ questions: [] }, { headers: { "Cache-Control": "no-store" } });
 
   const database = dbOrNull();
   // No database configured is the local-only mode ARCHITECTURE.md §4.2

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useActionState, useId, useState } from "react";
 
 import {
-  registerWithPassword,
   signInWithPasswordAction,
   startSignIn,
   type SignInState,
@@ -18,15 +17,8 @@ import { APP_NAME } from "@/lib/brand";
 // radius 16 with a `line` border, brand-green overline, 900-weight title,
 // terracotta as the single primary accent. No new hex values.
 //
-// Two things about the layout are requirements rather than taste:
-//   1. The consent checkbox is a real control the user acts on, in its own
-//      block above the buttons — not a "by continuing you agree" line under
-//      them (ARCHITECTURE.md §8). PR-20 moved it outside every individual
-//      `<form>` so the same tick gates Google/Facebook AND email + password;
-//      each form carries it forward as a hidden field.
-//   2. "Seguir sin cuenta" is a full-width button of its own with its own
-//      explanation, not a grey footnote. It is a supported way to use the app
-//      (ARCHITECTURE.md §4.2), so it has to look like one.
+// Consent is explicit and checked server-side too. Personal tracking requires
+// an account; public guides and emergency information stay available to everyone.
 
 function GoogleMark() {
   return (
@@ -67,22 +59,19 @@ const MARKS: Record<ProviderId, () => React.ReactElement> = {
   facebook: FacebookMark,
 };
 
-/** PR-20 — the email + password block, toggling between signup and login. */
+/** Existing password accounts keep their login and recovery path. */
 function CredentialsForms({
   consented,
   errorId,
   pendingOAuth,
+  returnTo,
 }: {
   consented: boolean;
   errorId: string;
   /** True while an OAuth submit is in flight, so both paths disable together. */
   pendingOAuth: boolean;
+  returnTo: string;
 }) {
-  const [mode, setMode] = useState<"register" | "login">("register");
-  const [registerState, registerAction, registerPending] = useActionState<
-    SignInState,
-    FormData
-  >(registerWithPassword, {});
   const [loginState, loginAction, loginPending] = useActionState<
     SignInState,
     FormData
@@ -90,38 +79,12 @@ function CredentialsForms({
 
   const emailId = useId();
   const passwordId = useId();
-  const pending = pendingOAuth || registerPending || loginPending;
-  const state = mode === "register" ? registerState : loginState;
-  const action = mode === "register" ? registerAction : loginAction;
+  const pending = pendingOAuth || loginPending;
 
   return (
     <div className="space-y-2">
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setMode("register")}
-          className={`flex-1 rounded-full border px-3 py-2 text-[13px] font-extrabold transition ${
-            mode === "register"
-              ? "border-petrol bg-petrol text-white"
-              : "border-line bg-white text-muted"
-          }`}
-        >
-          Crear cuenta
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode("login")}
-          className={`flex-1 rounded-full border px-3 py-2 text-[13px] font-extrabold transition ${
-            mode === "login"
-              ? "border-petrol bg-petrol text-white"
-              : "border-line bg-white text-muted"
-          }`}
-        >
-          Ya tengo cuenta
-        </button>
-      </div>
-
-      <form action={action} className="space-y-2">
+      <form action={loginAction} className="space-y-2">
+        <input type="hidden" name="returnTo" value={returnTo} />
         <input type="hidden" name="consent" value={consented ? "on" : ""} />
         <div>
           <label htmlFor={emailId} className="sr-only">
@@ -145,51 +108,37 @@ function CredentialsForms({
             id={passwordId}
             name="password"
             type="password"
-            autoComplete={
-              mode === "register" ? "new-password" : "current-password"
-            }
-            minLength={mode === "register" ? 8 : undefined}
+            autoComplete="current-password"
             required
-            placeholder={
-              mode === "register" ? "Mínimo 8 caracteres" : "Tu contraseña"
-            }
+            placeholder="Tu contraseña"
             className="min-h-[48px] w-full rounded-full border border-line bg-white px-4 text-[15px] font-semibold text-ink placeholder:text-muted/70"
           />
         </div>
         <button
           type="submit"
-          disabled={pending}
-          aria-describedby={state.error ? errorId : undefined}
+          disabled={pending || !consented}
+          aria-describedby={loginState.error ? errorId : undefined}
           className="flex min-h-[48px] w-full items-center justify-center gap-3 rounded-full border border-line bg-white px-4 text-[15px] font-extrabold text-ink shadow-soft transition active:scale-[0.99] disabled:opacity-60"
         >
-          {pending
-            ? "Un momento…"
-            : mode === "register"
-              ? "Crear cuenta con correo"
-              : "Entrar con correo"}
+          {pending ? "Un momento…" : "Entrar con correo"}
         </button>
       </form>
 
-      {state.error && (
+      {loginState.error && (
         <p
           id={errorId}
           role="alert"
           className="rounded-tile border border-terracotta/30 bg-terracotta/5 px-3 py-2 text-sm font-semibold text-terracotta"
         >
-          {state.error}
+          {loginState.error}
         </p>
       )}
 
-      {/* The recovery path. Only on the login tab: offering it while somebody
-          is creating an account is noise, and this is the screen a locked-out
-          user lands on, so the link has to be here rather than buried. */}
-      {mode === "login" && (
-        <p className="px-1 text-xs text-muted">
-          <Link href="/cuenta/olvide" className="font-bold underline">
-            ¿Olvidaste tu contraseña?
-          </Link>
-        </p>
-      )}
+      <p className="px-1 text-xs text-muted">
+        <Link href="/cuenta/olvide" className="font-bold underline">
+          ¿Olvidaste tu contraseña?
+        </Link>
+      </p>
     </div>
   );
 }
@@ -198,12 +147,14 @@ export function SignInCard({
   providers,
   credentialsAvailable,
   initialError,
+  returnTo = "/",
 }: {
   providers: ProviderId[];
   /** PR-20 — true once email + password sign-in can complete (secret + db). */
   credentialsAvailable: boolean;
   /** Set when the sign-in callback bounced the user back (e.g. no consent). */
   initialError?: string;
+  returnTo?: string;
 }) {
   const [state, formAction, pending] = useActionState<SignInState, FormData>(
     startSignIn,
@@ -224,12 +175,11 @@ export function SignInCard({
           Tu cuenta
         </p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-ink">
-          Guardá tu embarazo
+          Tu embarazo, acompañado
         </h1>
         <p className="mt-2 text-[15px] font-semibold leading-relaxed text-muted">
-          Con una cuenta, tus datos se copian a nuestro servidor y los recuperás
-          si cambiás de teléfono o lo perdés. Sin cuenta, todo sigue funcionando
-          — pero vive solo en este aparato.
+          Entrá para guardar tus controles, seguir tu semana y tener tus registros
+          a mano cuando cambiás de teléfono.
         </p>
       </header>
 
@@ -240,7 +190,7 @@ export function SignInCard({
         <ul className="mt-2 space-y-1.5 text-sm font-semibold text-ink">
           <li>• Copia de seguridad automática de tu embarazo.</li>
           <li>• Los mismos datos en el celular y en la compu.</li>
-          <li>• Compartir con tu pareja o tu familia (próximamente).</li>
+          <li>• Compartir con tu pareja o tu familia lo que vos elijas.</li>
         </ul>
         <p className="mt-3 text-xs leading-relaxed text-muted">
           De Google recibimos solo tu nombre, tu correo y tu foto de perfil.
@@ -252,11 +202,11 @@ export function SignInCard({
       {!hasAnySignIn ? (
         <section className="rounded-card border border-line bg-pastel-arena p-4">
           <h2 className="text-[15px] font-extrabold text-sand-text">
-            Las cuentas todavía no están activas
+            Estamos preparando el ingreso
           </h2>
           <p className="mt-1 text-sm font-semibold leading-relaxed text-sand-text">
-            En esta versión de {APP_NAME} no hay ingreso con cuenta. La app funciona
-            completa igual: seguí sin cuenta y tus datos quedan en tu teléfono.
+            El ingreso de {APP_NAME} no está disponible ahora. Volvé a intentarlo
+            más tarde. Podés leer las guías y acceder a las señales de alarma.
           </p>
         </section>
       ) : (
@@ -315,12 +265,13 @@ export function SignInCard({
 
             {providers.length > 0 && (
               <form action={formAction} className="space-y-2">
+                <input type="hidden" name="returnTo" value={returnTo} />
                 <input
                   type="hidden"
                   name="consent"
                   value={consented ? "on" : ""}
                 />
-                {providers.map((id) => {
+                {[...providers].sort((a, b) => Number(b === "google") - Number(a === "google")).map((id) => {
                   const Mark = MARKS[id];
                   return (
                     <button
@@ -328,9 +279,9 @@ export function SignInCard({
                       type="submit"
                       name="provider"
                       value={id}
-                      disabled={pending}
+                      disabled={pending || !consented}
                       aria-describedby={error ? errorId : undefined}
-                      className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-full border border-line bg-white px-4 text-[15px] font-extrabold text-ink shadow-soft transition active:scale-[0.99] disabled:opacity-60"
+                      className={`flex min-h-[52px] w-full items-center justify-center gap-3 rounded-full border px-4 text-[15px] font-extrabold shadow-soft transition active:scale-[0.99] disabled:opacity-60 ${id === "google" ? "border-petrol bg-petrol text-white" : "border-line bg-white text-ink"}`}
                     >
                       <Mark />
                       {pending ? "Abriendo…" : `Continuar con ${PROVIDER_LABELS[id]}`}
@@ -349,20 +300,16 @@ export function SignInCard({
               </form>
             )}
 
-            {providers.length > 0 && credentialsAvailable && (
-              <div className="flex items-center gap-3 py-1">
-                <span className="h-px flex-1 bg-line" />
-                <span className="text-xs font-bold text-muted">o con tu correo</span>
-                <span className="h-px flex-1 bg-line" />
-              </div>
-            )}
-
             {credentialsAvailable && (
-              <CredentialsForms
-                consented={consented}
-                errorId={credentialsErrorId}
-                pendingOAuth={pending}
-              />
+              <details className="rounded-tile border border-line p-3">
+                <summary className="min-h-[44px] py-2 text-sm font-bold text-petrol">Ya tengo una cuenta con correo</summary>
+                <CredentialsForms
+                  consented={consented}
+                  errorId={credentialsErrorId}
+                  pendingOAuth={pending}
+                  returnTo={returnTo}
+                />
+              </details>
             )}
 
             {!consented && (
@@ -374,21 +321,19 @@ export function SignInCard({
         </div>
       )}
 
-      {/* "Seguir sin cuenta" — a supported path, given the same weight. */}
       <section className="rounded-card border border-line bg-white p-4 shadow-soft">
         <h2 className="text-[15px] font-extrabold text-ink">
-          ¿No querés cuenta?
+          Información para vos, siempre a mano
         </h2>
         <p className="mt-1 text-sm font-semibold leading-relaxed text-muted">
-          No hace falta. Las semanas, las guías, las herramientas, el directorio
-          y tu diario funcionan igual sin cuenta y sin internet. Podés crear una
-          más adelante y tus datos de ahora se suben en ese momento.
+          Las guías y las señales de alarma se pueden consultar antes de entrar.
+          Para guardar y sincronizar tus registros necesitás una cuenta.
         </p>
         <Link
-          href="/"
+          href="/guias"
           className="mt-3 flex min-h-[52px] w-full items-center justify-center rounded-full bg-petrol px-4 text-[15px] font-extrabold text-white transition active:scale-[0.99]"
         >
-          Seguir sin cuenta
+          Leer las guías
         </Link>
       </section>
     </div>

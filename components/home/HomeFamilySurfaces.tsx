@@ -17,10 +17,12 @@ import {
 } from "./dynamicSections";
 
 export function HomeFamilySurfaces({
+  showAppointment = true,
   ownerView,
   nextAppointment,
   companionAppointmentAt,
 }: {
+  showAppointment?: boolean;
   ownerView: SharedView | null;
   nextAppointment: number | undefined;
   companionAppointmentAt: number | null;
@@ -51,11 +53,11 @@ export function HomeFamilySurfaces({
           <AppointmentBanner>, which was a second card saying the same things
           (and linking to /ajustes as well). See NextAppointmentCard's comment:
           urgency is now a tone on this card. */}
-      <NextAppointmentCard
+      {showAppointment && <NextAppointmentCard
         appointmentAt={nextAppointment}
         guests={ownerView?.members ?? []}
         companionAppointmentAt={companionAppointmentAt}
-      />
+      />}
     </>
   );
 }

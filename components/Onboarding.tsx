@@ -54,10 +54,9 @@ import { RoleStep } from "./onboarding/RoleStep";
 // layout:
 //
 //  1. **The device row is written when the departamento step is left**, before
-//     the account step can navigate the browser to Google. A user who never
-//     comes back still has a working, fully answered app on her phone; the
-//     remaining steps only add to it. This also means the account she creates
-//     next has local data to adopt (A6), instead of an empty pregnancy.
+//     the account step can navigate the browser to Google. The account gate
+//     admits verified users first; only a local-data test preview may create
+//     these rows without a session.
 //  2. **The step and every answer are persisted to localStorage** on each
 //     change (`lib/onboarding/progress.ts`), so the OAuth round trip — which is
 //     a full page load initiated by somebody else's server — resumes exactly
@@ -68,9 +67,8 @@ import { RoleStep } from "./onboarding/RoleStep";
 //     link was being asked for the first day of his last menstruation, and
 //     then for a department, before the app would show him anything.
 //
-// "Seguir sin cuenta" is still here and still reaches the whole app
-// (ARCHITECTURE.md §4.2). It is a secondary link under the account button now
-// rather than a peer card — the pitch changed, the path did not.
+// Personal tracking requires an account; public guides and emergency help
+// stay open. Only explicitly configured local test previews can skip sign-in.
 //
 // This file is the machine, the persistence and the chrome. Each step's screen
 // lives in `components/onboarding/` — K9-F5 split a 1,039-line file so that
@@ -534,11 +532,9 @@ export function Onboarding({
 
       <div className="mt-6 rounded-card border border-sage/30 bg-sage/5 p-4">
         <p className="text-xs leading-relaxed text-muted">
-          Con cuenta, tu embarazo se guarda en nuestro servidor y lo recuperás
-          si cambiás de teléfono. Sin cuenta, todo queda solo en este aparato.
-          En los dos casos podés borrar todo cuando quieras desde Ajustes, y tus
-          notas nunca se comparten con tu familia, y tus fotos tampoco salvo
-          que vos lo enciendas.
+          Tu cuenta permite recuperar tus registros cuando cambiás de teléfono.
+          Podés borrar tu cuenta y sus datos desde Ajustes. Tus notas no se
+          comparten con tu familia. Tus fotos solo se respaldan si activás su copia.
         </p>
       </div>
 

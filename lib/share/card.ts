@@ -28,7 +28,8 @@
 
 import { APP_NAME } from "@/lib/brand";
 import { getTrimester } from "@/lib/pregnancy";
-import { getWeek, hasSizeComparison } from "@/lib/weeks";
+import { getWeek, MICROSCOPIC } from "@/lib/weeks";
+import { comparisonCaption } from "@/lib/seed/comparisons";
 
 /** Instagram-story-ish portrait; also fine as a WhatsApp status. */
 export const CARD_WIDTH = 1080;
@@ -49,9 +50,8 @@ export interface ShareCardContent {
   /** 1, 2 or 3 — derived from `week` (`lib/pregnancy.getTrimester`). */
   trimester: 1 | 2 | 3;
   /**
-   * "una banana" — `lib/weeks.ts`'s size comparison for the week, drawn as
-   * "Semana 20 · una banana" (`shareWeekLine`). `null` for weeks 1–2, where
-   * there is nothing to compare yet; the drawing puts the tagline in that slot.
+   * Illustrative length/weight reference. No fruit dimension or exact match
+   * is asserted. Week 3 stays microscopic; weeks 1–2 have no embryo to compare.
    */
   size: string | null;
   /** A fixed label for a handful of special weeks ("Mitad del camino"), else `null`. */
@@ -125,7 +125,7 @@ function weekFacts(
   return {
     week,
     trimester: getTrimester(week),
-    size: hasSizeComparison(sizeComparison) ? sizeComparison : null,
+    size: sizeComparison === MICROSCOPIC ? "Todavía microscópico" : comparisonCaption(week),
     milestone: SHARE_MILESTONES[week] ?? null,
   };
 }
@@ -196,16 +196,12 @@ export function shareFileName(week: number, kind: "semana" | "panza"): string {
   return `mi-bebe-${kind}-${week}.png`;
 }
 
-/**
- * The caption offered with the image. Same rule: the week and what the week
- * implies, nothing else. "Mi bebé ya es del tamaño de una banana" is the line
- * that gets replies — friends answer the fruit, not the number. Weeks 1–2 have
- * no size to offer, so their caption is the week alone.
- */
+/** Share the week and an explicitly illustrative reference, no private data. */
 export function shareText(week: number): string {
   const { sizeComparison } = getWeek(week);
-  if (!hasSizeComparison(sizeComparison)) return `¡Semana ${week}! 💛`;
-  return `¡Semana ${week}! Mi bebé ya es del tamaño de ${sizeComparison} 💛`;
+  if (sizeComparison === MICROSCOPIC) return `¡Semana ${week}! Todavía microscópico 💛`;
+  const reference = comparisonCaption(week);
+  return reference ? `¡Semana ${week}! ${reference}. Comparación ilustrativa 💛` : `¡Semana ${week}! 💛`;
 }
 
 /**

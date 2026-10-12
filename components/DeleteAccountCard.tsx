@@ -1,67 +1,39 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import {
   deleteAccountAction,
   type DeleteAccountState,
 } from "@/app/(app)/ajustes/actions";
-import { wipeAllData } from "@/lib/db";
-import { clearOnboardingDraft } from "@/lib/onboarding/draftStorage";
-import { clearPin } from "@/lib/crypto";
-import { purgePrivateCaches } from "@/lib/sw/privateCaches";
+import { AccountDeletionError, deleteSignedInAccount } from "@/lib/sync/accountDeletion";
 
-// BUILD-PLAN A5 — "Borrar mi cuenta", two taps from Ajustes: one to open the
-// confirmation, one to confirm. No separate page, no settings sub-menu.
-//
-// ARCHITECTURE.md §8 requires the device wipe to be offered *in the same
-// flow*, not as a second chore the user has to remember. It is a checkbox
-// here, and it runs BEFORE the server call: if the network drops halfway, a
-// user who asked for their phone to be wiped has had their phone wiped, which
-// is the failure that leaves them least exposed.
+// Complete the server deletion before local cleanup can revoke the account gate.
 
 export function DeleteAccountCard() {
   const [open, setOpen] = useState(false);
   const [wipeDevice, setWipeDevice] = useState(true);
   const [wiping, setWiping] = useState(false);
-  const [state, formAction, pending] = useActionState<
-    DeleteAccountState,
-    FormData
-  >(deleteAccountAction, {});
-
-  // K14: set once the pre-submit work is done, so the `requestSubmit()` below
-  // does not re-enter this handler and start over.
-  const preparedRef = useRef(false);
-
+  const [state, setState] = useState<DeleteAccountState>({});
+  const busy = useRef(false);
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    if (preparedRef.current) return;
     event.preventDefault();
-    const form = event.currentTarget;
+    if (busy.current) return;
+    const data = new FormData(event.currentTarget);
+    busy.current = true;
     setWiping(true);
-
-    // K14: unconditional, and first. The device-wipe checkbox is about *her*
-    // data; the service worker's cached copies of /familia and
-    // /api/v1/sharing are ours, and leaving them readable offline after the
-    // account is gone is the same failure K14 exists to fix. There is no
-    // version of "delete my account" where they should survive.
-    await purgePrivateCaches();
-
-    if (wipeDevice) {
-      try {
-        await wipeAllData();
-        // K1: see AjustesClient.handleWipe — a stale draft would resume
-        // onboarding into a state that never writes a profile row.
-        clearOnboardingDraft();
-        clearPin();
-      } catch {
-        // A browser that refuses to drop IndexedDB must not block the server
-        // deletion — that is the half the user cannot do themselves.
-      }
+    setState({});
+    try {
+      const result = await deleteSignedInAccount(async (expectedAccountId) => {
+        data.set("expectedAccountId", expectedAccountId);
+        return deleteAccountAction({}, data);
+      }, wipeDevice);
+      window.location.replace("/cuenta?cuenta=borrada" + (result.cleanupFailed ? "&limpieza=pendiente" : !wipeDevice ? "&local=conservado" : ""));
+    } catch (error) {
+      setState({error: error instanceof AccountDeletionError ? error.message : "No pudimos completar el borrado. Probá de nuevo."});
+      busy.current = false;
+      setWiping(false);
     }
-
-    setWiping(false);
-    preparedRef.current = true;
-    form.requestSubmit();
   }
 
   return (
@@ -72,7 +44,7 @@ export function DeleteAccountCard() {
       <p className="mt-1 text-sm leading-relaxed text-muted">
         Borramos del servidor todo lo tuyo: tus registros sincronizados, tu
         embarazo, las personas invitadas, las notificaciones y las imágenes
-        generadas. No queda una copia nuestra y no se puede deshacer.
+        generadas. Esta acción elimina los datos activos de la cuenta y no se puede deshacer.
       </p>
 
       {state.error && (
@@ -91,7 +63,6 @@ export function DeleteAccountCard() {
         </button>
       ) : (
         <form
-          action={formAction}
           onSubmit={handleSubmit}
           className="mt-3 space-y-3"
         >
@@ -106,25 +77,26 @@ export function DeleteAccountCard() {
             />
             <span>
               Borrar también los datos de este teléfono (incluidas tus fotos,
-              que nunca salieron de acá).
+              aunque hayas activado su copia remota).
             </span>
           </label>
 
+          {!wipeDevice && <p className="text-sm text-muted">Exportá una copia antes de confirmar. Los registros que conserves seguirán vinculados a la cuenta eliminada y no se abrirán con otra cuenta.</p>}
           <p className="text-sm font-extrabold text-ink">
             ¿Seguro? Esta acción es definitiva.
           </p>
           <div className="flex gap-2">
             <button
               type="submit"
-              disabled={pending || wiping}
+              disabled={wiping}
               className="min-h-[44px] flex-1 rounded-tile bg-terracotta px-4 py-2.5 text-sm font-extrabold text-white disabled:opacity-60"
             >
-              {pending || wiping ? "Borrando…" : "Sí, borrar mi cuenta"}
+              {wiping ? "Borrando…" : "Sí, borrar mi cuenta"}
             </button>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              disabled={pending || wiping}
+              disabled={wiping}
               className="min-h-[44px] flex-1 rounded-tile bg-white px-4 py-2.5 text-sm font-extrabold text-petrol shadow-soft"
             >
               Cancelar

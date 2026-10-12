@@ -66,7 +66,17 @@ export function launchCheckErrors(env: LaunchCheckEnv): string[] {
   if (!isDeploymentBuild(env)) return [];
 
   const errors: string[] = [];
+  if (env.AUTH_REQUIRE_ACCOUNT === "false") {
+    errors.push("A configured deployment must require an account. Remove AUTH_REQUIRE_ACCOUNT=false; it is for local test previews only.");
+  }
 
+  // An account-required release with an unconfigured provider strands every
+  // new user at the front door. These names are reported without their values.
+  const requiredAuth = ["DATABASE_URL", "AUTH_SECRET", "AUTH_GOOGLE_ID", "AUTH_GOOGLE_SECRET"];
+  const missingAuth = requiredAuth.filter((name) => !env[name]?.trim());
+  if (missingAuth.length > 0) {
+    errors.push(`Google login is required for this deployment. Configure ${missingAuth.join(", ")} in the hosting environment before building; use the Google OAuth client for the deployed app origin.`);
+  }
   // `/borrar-cuenta` is the publicly reachable deletion page Google Play
   // requires (`docs/ANDROID-LAUNCH.md` §3.3). It tells a person to contact us,
   // so a deployment where nobody can be contacted ships a promise with nothing

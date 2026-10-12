@@ -179,3 +179,84 @@ describe("N3 — one bad record does not stop sync", () => {
     expect((await db().weightEntries.where("uid").equals("w1").first())?.kg).toBe(60);
   });
 });
+
+describe("the account cannot change during a sync", () => {
+  it("carries the probed account on every real pull", async () => {
+    const server = globalThis.fetch;
+    const headers: (string | null)[] = [];
+    vi.stubGlobal("fetch", async (input: string | URL, init?: RequestInit) => {
+      const url = new URL(String(input), "http://app.test");
+      if (!init?.method && url.searchParams.get("since") !== String(Number.MAX_SAFE_INTEGER)) {
+        headers.push(new Headers(init?.headers).get("x-mibebe-account"));
+      }
+      return server(input, init);
+    });
+    expect((await syncNow()).outcome).toBe("ok");
+    expect(headers).toEqual([USER]);
+  });
+
+  it("refuses another account's response before records, epoch or cursor changes", async () => {
+    await db().profile.add({ city: "Original", updatedAt: 10, createdAt: 1 });
+    await db().syncState.put({ key: "default", accountId: USER, lastPulledAt: 500, epoch: 3 });
+    const server = globalThis.fetch;
+    vi.stubGlobal("fetch", async (input: string | URL, init?: RequestInit) => {
+      const url = new URL(String(input), "http://app.test");
+      if (init?.method === "POST" || url.searchParams.get("since") === String(Number.MAX_SAFE_INTEGER)) return server(input, init);
+      return Response.json({ accountId: "other-user", epoch: 99, records: [{
+        store: "profile", recordId: "singleton", updatedAt: Date.now(),
+        serverUpdatedAt: 999, deletedAt: null, payload: { city: "Other person's pregnancy" },
+      }] });
+    });
+
+    expect((await syncNow()).outcome).toBe("account-mismatch");
+    expect((await db().profile.toArray())[0]?.city).toBe("Original");
+    expect(await db().conflicts.count()).toBe(0);
+    expect(await db().syncState.get("default")).toMatchObject({ accountId: USER, lastPulledAt: 500, epoch: 3 });
+  });
+
+  it("does not pull after the server refuses a push for a changed session", async () => {
+    await db().weightEntries.add({ date: 1, kg: 60 } as never);
+    const server = globalThis.fetch;
+    let realPulls = 0;
+    vi.stubGlobal("fetch", async (input: string | URL, init?: RequestInit) => {
+      const url = new URL(String(input), "http://app.test");
+      if (init?.method === "POST") return Response.json({ error: "otra cuenta" }, { status: 409 });
+      if (url.searchParams.get("since") !== String(Number.MAX_SAFE_INTEGER)) realPulls += 1;
+      return server(input, init);
+    });
+    expect((await syncNow()).outcome).toBe("account-mismatch");
+    expect(realPulls).toBe(0);
+    expect((await db().weightEntries.toArray())[0]?.dirty).toBe(1);
+  });
+
+  it("does not mark local edits clean when a push response names another account", async () => {
+    await db().weightEntries.add({ date: 1, kg: 60 } as never);
+    const server = globalThis.fetch;
+    vi.stubGlobal("fetch", async (input: string | URL, init?: RequestInit) => {
+      const result = await server(input, init);
+      if (init?.method !== "POST") return result;
+      return Response.json({ ...(await result.json()), accountId: "other-user" });
+    });
+    expect((await syncNow()).outcome).toBe("account-mismatch");
+    expect((await db().weightEntries.toArray())[0]?.dirty).toBe(1);
+  });
+
+  it("checks identity again on later pull pages", async () => {
+    const server = globalThis.fetch;
+    vi.stubGlobal("fetch", async (input: string | URL, init?: RequestInit) => {
+      const url = new URL(String(input), "http://app.test");
+      if (url.searchParams.get("since") === String(Number.MAX_SAFE_INTEGER)) return server(input, init);
+      if (url.searchParams.has("cursor")) return Response.json({ accountId: "other-user", records: [{
+        store: "journalEntries", recordId: "other-note", updatedAt: 10,
+        serverUpdatedAt: 10, deletedAt: null, payload: { note: "Another person's note" },
+      }] });
+      return Response.json({ accountId: USER, nextCursor: "next-page", records: [{
+        store: "weightEntries", recordId: "mine", updatedAt: 5,
+        serverUpdatedAt: 5, deletedAt: null, payload: { date: 1, kg: 60 },
+      }] });
+    });
+    expect((await syncNow()).outcome).toBe("account-mismatch");
+    expect(await db().journalEntries.count()).toBe(0);
+    expect((await db().weightEntries.toArray())[0]?.kg).toBe(60);
+  });
+});

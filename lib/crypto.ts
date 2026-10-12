@@ -120,11 +120,7 @@ export async function setPin(pin: string): Promise<void> {
     key,
     utf8Bytes("mibebe-verifier"),
   );
-  localStorage.setItem(PIN_SALT_KEY, toB64(salt.buffer));
-  localStorage.setItem(
-    PIN_VERIFIER_KEY,
-    `${toB64(iv.buffer)}:${toB64(verifier)}`,
-  );
+  importPinMaterial({ salt: toB64(salt.buffer), verifier: `${toB64(iv.buffer)}:${toB64(verifier)}` });
   sessionKey = key;
 }
 
@@ -156,9 +152,7 @@ export function lock(): void {
 
 /** Remove the PIN entirely (notes should be decrypted by the caller first). */
 export function clearPin(): void {
-  localStorage.removeItem(PIN_SALT_KEY);
-  localStorage.removeItem(PIN_VERIFIER_KEY);
-  sessionKey = null;
+  importPinMaterial(null);
 }
 
 /**
@@ -192,14 +186,29 @@ export function exportPinMaterial(): PinMaterial | null {
  * a PIN, so the restored (plaintext) notes stay readable.
  */
 export function importPinMaterial(material: PinMaterial | null): void {
-  sessionKey = null;
-  if (!material?.salt || !material?.verifier) {
-    localStorage.removeItem(PIN_SALT_KEY);
-    localStorage.removeItem(PIN_VERIFIER_KEY);
-    return;
+  // Snapshot before touching either key. Storage may be disabled or full; a
+  // failed write must not leave a new salt paired with an old verifier.
+  const previousSalt = localStorage.getItem(PIN_SALT_KEY);
+  const previousVerifier = localStorage.getItem(PIN_VERIFIER_KEY);
+  const restore = (key: string, value: string | null) => {
+    if (localStorage.getItem(key) === value) return;
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  };
+  try {
+    if (!material?.salt || !material?.verifier) {
+      localStorage.removeItem(PIN_SALT_KEY);
+      localStorage.removeItem(PIN_VERIFIER_KEY);
+    } else {
+      localStorage.setItem(PIN_SALT_KEY, material.salt);
+      localStorage.setItem(PIN_VERIFIER_KEY, material.verifier);
+    }
+  } catch (error) {
+    restore(PIN_SALT_KEY, previousSalt);
+    restore(PIN_VERIFIER_KEY, previousVerifier);
+    throw error;
   }
-  localStorage.setItem(PIN_SALT_KEY, material.salt);
-  localStorage.setItem(PIN_VERIFIER_KEY, material.verifier);
+  sessionKey = null;
 }
 
 export async function encryptNote(plaintext: string): Promise<string> {

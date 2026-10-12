@@ -17,11 +17,20 @@ import {
 import { Bilingual } from "@/components/Bilingual";
 import { useT } from "@/lib/i18n/useLocale";
 import { waLink } from "@/lib/whatsapp";
+import { BABY_ALARM_SIGNS } from "@/lib/baby/content";
+import {
+  AFTER_BIRTH_CALL_STEPS,
+  MATERNAL_NEWBORN_ALARM_SOURCE,
+  POSTPARTUM_ALARM_SIGNS,
+  postpartumCallContext,
+} from "@/lib/baby/emergency";
 
 // Emergency mode: everything works offline and all contacts are local-only.
 export default function EmergenciaPage() {
   const profile = useProfile();
   const t = useT();
+  const afterBirth = profile.birthDate !== undefined;
+  const birthContext = afterBirth ? postpartumCallContext(profile.birthDate!) : null;
 
   return (
     <div className="space-y-5">
@@ -29,7 +38,11 @@ export default function EmergenciaPage() {
         <h1 className="text-2xl font-black tracking-tight text-ink">
           {t("emergency.title")}
         </h1>
-        <Bilingual as="p" className="mt-1 text-sm text-muted" text={EMERGENCY_INTRO} />
+        {afterBirth ? (
+          <p className="mt-1 text-sm text-muted">
+            Ante una señal de alarma en vos o en tu bebé, llamá o andá al servicio de salud más cercano.
+          </p>
+        ) : <Bilingual as="p" className="mt-1 text-sm text-muted" text={EMERGENCY_INTRO} />}
       </header>
 
       {/* National numbers — big tap targets */}
@@ -76,7 +89,14 @@ export default function EmergenciaPage() {
         <h2 className="text-base font-extrabold text-ink">
           {t("emergency.whenYouCall")}
         </h2>
-        {profile.hasPregnancy && profile.completed && (
+        {birthContext && (
+          <div className="mt-2 space-y-2 rounded-tile bg-sage/10 p-3 text-sm text-ink">
+            <p className="font-bold">Explicá a quién le pasa:</p>
+            <p>Si necesitás atención para vos: &ldquo;{birthContext.mother}&rdquo;</p>
+            <p>Si necesitás atención para tu bebé: &ldquo;{birthContext.baby}&rdquo;</p>
+          </div>
+        )}
+        {!afterBirth && profile.hasPregnancy && profile.completed && (
           <p className="mt-2 rounded-tile bg-sage/10 p-3 text-sm text-ink">
             &ldquo;Estoy embarazada de{" "}
             <strong>{formatCompletedGestation(profile.completed)}</strong>
@@ -85,7 +105,7 @@ export default function EmergenciaPage() {
         )}
         <ClinicalLine />
         <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-relaxed text-ink/90">
-          {CALL_SCRIPT_STEPS.map((step) => (
+          {afterBirth ? AFTER_BIRTH_CALL_STEPS.map((step) => <li key={step}>{step}</li>) : CALL_SCRIPT_STEPS.map((step) => (
             <li key={step.es}>
               <Bilingual text={step} />
             </li>
@@ -94,7 +114,18 @@ export default function EmergenciaPage() {
       </section>
 
       {/* Alarm signs */}
-      <section className="rounded-card border border-terracotta/20 bg-terracotta/5 p-4">
+      {afterBirth ? (
+        <>
+          <BirthAlarmSection title="Señales de alarma después del parto" signs={POSTPARTUM_ALARM_SIGNS} />
+          <BirthAlarmSection title="Señales de alarma en tu bebé" signs={BABY_ALARM_SIGNS} />
+          <p className="text-xs leading-relaxed text-muted">
+            Información general basada en las{" "}
+            <a href={MATERNAL_NEWBORN_ALARM_SOURCE} className="underline" target="_blank" rel="noopener noreferrer">
+              orientaciones del MSPBS para madres y recién nacidos (2025)
+            </a>. Si algo te preocupa aunque no aparezca en esta lista, consultá.
+          </p>
+        </>
+      ) : <section className="rounded-card border border-terracotta/20 bg-terracotta/5 p-4">
         <Bilingual
           as="div"
           className="text-base font-extrabold text-ink"
@@ -122,7 +153,7 @@ export default function EmergenciaPage() {
         >
           {t("emergency.readFullGuide")}
         </Link>
-      </section>
+      </section>}
 
       {/* Salud mental. Línea 155 is the MSPBS national mental-health line
           (free, 24 h), the same number already curated in
@@ -189,6 +220,20 @@ export default function EmergenciaPage() {
         {t("emergency.disclaimer")}
       </p>
     </div>
+  );
+}
+
+function BirthAlarmSection({ title, signs }: { title: string; signs: readonly string[] }) {
+  return (
+    <section aria-label={title} className="rounded-card border border-terracotta/20 bg-terracotta/5 p-4">
+      <h2 className="text-base font-extrabold text-ink">{title}</h2>
+      <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-relaxed text-ink/90">
+        {signs.map((sign) => <li key={sign}>{sign}</li>)}
+      </ul>
+      <p className="mt-3 rounded-tile bg-terracotta/10 p-3 text-sm font-semibold text-ink">
+        Buscá atención ahora. No esperes al próximo control ni a una respuesta por WhatsApp.
+      </p>
+    </section>
   );
 }
 

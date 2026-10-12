@@ -12,12 +12,9 @@ import {
 } from "@/lib/baby/age";
 import { clearBirth, recordBirth } from "@/lib/baby/record";
 
-// Growth plan item 9 ("Ya nació", G1) — the birth date, once recorded on Hoy.
-//
-// Renders nothing until then: the question itself belongs to Hoy (from week
-// 37), and a birth-date field in Ajustes during the pregnancy would be a
-// question she is not ready to answer. The date can always be corrected;
-// "Deshacer" (for a mistaken tap) lasts 30 days from the first "Sí".
+// Birth entry also lives here for premature deliveries: the automatic Hoy
+// card waits until week 37, but a mother whose baby was born earlier needs
+// the same supported date range and postpartum home immediately.
 export function BirthSettings({
   mode,
   lmpDate,
@@ -32,14 +29,17 @@ export function BirthSettings({
   const [value, setValue] = useState("");
   const [msg, setMsg] = useState("");
   const [warn, setWarn] = useState("");
+  const [recording, setRecording] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    setValue(toDateInput(birthDate));
+    setValue(toDateInput(birthDate ?? Date.now()));
   }, [birthDate]);
 
-  if (mode !== "embarazada" || birthDate === undefined || lmpDate === undefined) return null;
+  if (mode !== "embarazada" || lmpDate === undefined) return null;
 
   const { min, max } = birthDateBounds(lmpDate);
+  if (birthDate === undefined && min > max) return null;
 
   async function save() {
     setMsg("");
@@ -49,19 +49,59 @@ export function BirthSettings({
       setWarn("Elegí una fecha entre la semana 22 del embarazo y hoy.");
       return;
     }
-    await recordBirth(date);
-    setMsg("Fecha de nacimiento guardada.");
-    setTimeout(() => setMsg(""), 2500);
+    setBusy(true);
+    try {
+      if (!(await recordBirth(date))) {
+        setWarn("No pudimos guardar la fecha. Revisá la fecha de tu embarazo y probá de nuevo.");
+        return;
+      }
+      setRecording(false);
+      setMsg("Fecha de nacimiento guardada.");
+      setTimeout(() => setMsg(""), 2500);
+    } catch {
+      setWarn("No pudimos guardar la fecha. Probá de nuevo.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function undo() {
-    await clearBirth();
+    setBusy(true);
+    setWarn("");
+    try {
+      await clearBirth();
+      setRecording(false);
+      setMsg("");
+    } catch {
+      setWarn("No pudimos deshacer el cambio. Probá de nuevo.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (birthDate === undefined && !recording) {
+    return (
+      <section aria-label="Fecha de nacimiento" className="rounded-card bg-white p-4 shadow-soft">
+        <h2 className="text-base font-extrabold text-ink">¿Tu bebé ya nació?</h2>
+        <p className="mt-1 text-sm text-muted">
+          También podés registrar un nacimiento antes de término. La app cambia al acompañamiento
+          de tu bebé y conserva tus registros del embarazo.
+        </p>
+        <button type="button" onClick={() => setRecording(true)}
+          className="mt-3 min-h-[44px] w-full rounded-tile bg-petrol px-4 py-2.5 text-sm font-medium text-white">
+          Registrar el nacimiento
+        </button>
+        {warn && <p role="alert" className="mt-2 text-sm text-terracotta">{warn}</p>}
+      </section>
+    );
   }
 
   return (
     <section aria-label="Fecha de nacimiento" className="rounded-card bg-white p-4 shadow-soft">
       <h2 className="text-base font-extrabold text-ink">Fecha de nacimiento</h2>
-      <p className="mt-1 text-sm text-muted">El día que nació tu bebé. Podés corregirla.</p>
+      <p className="mt-1 text-sm text-muted">
+        {birthDate === undefined ? "Elegí el día que nació tu bebé. Al guardar, Hoy muestra su edad y sus cuidados." : "El día que nació tu bebé. Podés corregirla."}
+      </p>
       <input
         type="date"
         aria-label="Fecha de nacimiento"
@@ -74,10 +114,17 @@ export function BirthSettings({
       <button
         type="button"
         onClick={save}
-        className="mt-3 min-h-[44px] w-full rounded-tile bg-petrol px-4 py-2.5 text-sm font-medium text-white transition active:scale-[0.98]"
+        disabled={busy}
+        className="mt-3 min-h-[44px] w-full rounded-tile bg-petrol px-4 py-2.5 text-sm font-medium text-white transition active:scale-[0.98] disabled:opacity-60"
       >
         Guardar fecha de nacimiento
       </button>
+      {birthDate === undefined && (
+        <button type="button" onClick={() => setRecording(false)} disabled={busy}
+          className="mt-2 min-h-[44px] w-full rounded-tile bg-cream px-4 py-2.5 text-sm font-medium text-petrol">
+          Cancelar
+        </button>
+      )}
       {warn && (
         <p role="alert" className="mt-2 text-sm font-semibold text-terracotta">
           {warn}
@@ -92,7 +139,8 @@ export function BirthSettings({
           <button
             type="button"
             onClick={undo}
-            className="mt-2 min-h-[44px] w-full rounded-tile bg-cream px-4 py-2.5 text-sm font-medium text-petrol"
+            disabled={busy}
+            className="mt-2 min-h-[44px] w-full rounded-tile bg-cream px-4 py-2.5 text-sm font-medium text-petrol disabled:opacity-60"
           >
             Deshacer «Ya nació»
           </button>

@@ -1,63 +1,40 @@
 import { test, expect } from "@playwright/test";
-
 import { completeOnboarding } from "./helpers/onboarding";
 
-// BUILD-PLAN A2. CI runs with AUTH_SECRET / AUTH_GOOGLE_* / DATABASE_URL all
-// unset, which is exactly the configuration ARCHITECTURE.md §4.2 protects:
-// local-only mode. So these tests assert the half of A2 that must hold there —
-// "seguir sin cuenta" is a working path and not a dead end, and nothing about
-// accounts breaks a screen or sets a cookie.
-//
-// The signed-in half needs a real Google client and is verified against a
-// configured deployment, not here.
-
-
-test("/cuenta always offers a working way back into the app", async ({
-  page,
-}) => {
-  await completeOnboarding(page);
+// Local-data feature suites explicitly opt out through Playwright's preview
+// environment. Production account entry is tested in account-entry.spec.ts.
+test("/cuenta offers public reading and no anonymous personal-tracking entry", async ({ page }) => {
   await page.goto("/cuenta");
-
-  const seguir = page.getByRole("link", { name: "Seguir sin cuenta" });
-  await expect(seguir).toBeVisible();
-
-  await seguir.click();
-  await expect(page).toHaveURL(/\/$/);
-  // Not a dead end: the app itself is on the other side of that button.
-  await expect(page.getByText("Tip de hoy")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Seguir sin cuenta" })).toHaveCount(0);
+  const guides = page.getByRole("link", { name: "Leer las guías" });
+  await expect(guides).toBeVisible();
+  await guides.click();
+  await expect(page).toHaveURL(/\/guias$/);
 });
 
-test("ajustes shows the account block and stays fully usable without one", async ({
-  page,
-}) => {
+test("explicit local test preview keeps data tools available without a configured provider", async ({ page }) => {
   await completeOnboarding(page);
   await page.goto("/ajustes");
-
-  await expect(page.getByText("Estás usando Mi Bebé sin cuenta")).toBeVisible();
-
-  // Every local-only feature still works on the same screen.
-  await expect(
-    page.getByRole("button", { name: "Descargar mis datos" }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Descargar mis datos" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Activar PIN" })).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Borrar todos mis datos" }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Borrar datos de este teléfono" })).toBeVisible();
 });
 
-test("local-only mode sets no session cookie and exposes no auth endpoint", async ({
-  page,
-  request,
-}) => {
+test("unconfigured local test preview sets no session cookie and exposes no auth endpoint", async ({ page, request }) => {
   await completeOnboarding(page);
-  await page.goto("/ajustes");
-
   const cookies = await page.context().cookies();
-  expect(
-    cookies.filter((c) => c.name.includes("authjs") || c.name.includes("next-auth")),
-  ).toEqual([]);
+  expect(cookies.filter((cookie) => cookie.name.includes("authjs") || cookie.name.includes("next-auth"))).toEqual([]);
+  expect((await request.get("/api/auth/providers")).status()).toBe(404);
+});
 
-  // Auth.js is not mounted when it cannot work — 404, not a 500.
-  const res = await request.get("/api/auth/providers");
-  expect(res.status()).toBe(404);
+
+test("account deletion confirmation remains public when tracking requires login",async({page,context})=>{
+  await context.route("**/api/v1/auth-status",route=>route.fulfill({json:{signedIn:false,accountId:null,accountRequired:true,providers:[]}}));
+  await page.goto("/cuenta?cuenta=borrada&limpieza=pendiente");
+  await expect(page.getByRole("heading",{name:"Tu cuenta fue borrada"})).toBeVisible();
+  await expect(page.getByText(/no pudimos confirmar la limpieza/)).toBeVisible();
+  await expect(page.getByRole("link",{name:"Leer las guías"})).toBeVisible();
+  await page.goto("/ajustes?cuenta=borrada");
+  await expect(page).toHaveURL(/\/cuenta\?cuenta=borrada/);
+  await expect(page.getByRole("heading",{name:"Tu cuenta fue borrada"})).toBeVisible();
 });

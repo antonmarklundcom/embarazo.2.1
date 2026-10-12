@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { fetchAuthStatus } from "@/lib/auth/status";
+import { AUTH_STATUS_PATH, parseAuthStatus } from "@/lib/auth/status";
 
 // K18 — the line that told ten screens the same thing, and was wrong on all of
 // them once the user signed in.
@@ -45,13 +45,15 @@ const SHIELD = (
 );
 
 export function PrivacyLine({ className = "" }: { className?: string }) {
-  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [signedIn, setSignedIn] = useState<boolean | "offline" | null>(null);
 
   useEffect(() => {
     let alive = true;
-    void fetchAuthStatus().then((status) => {
+    void fetch(AUTH_STATUS_PATH, { cache: "no-store" }).then(async response => {
+      if (!response.ok) throw new Error("unavailable");
+      const status = parseAuthStatus(await response.json());
       if (alive) setSignedIn(status.signedIn);
-    });
+    }).catch(() => { if (alive) setSignedIn("offline"); });
     return () => {
       alive = false;
     };
@@ -62,9 +64,11 @@ export function PrivacyLine({ className = "" }: { className?: string }) {
   return (
     <p className={`flex items-center gap-1.5 text-xs text-muted ${className}`}>
       {SHIELD}
-      {signedIn
+      {signedIn === "offline"
+        ? "Guardado en este dispositivo. La sincronización necesita conexión; tus fotos solo si activaste su copia."
+        : signedIn
         ? "Se guarda en tu teléfono y se copia a tu cuenta. Tus fotos, solo si activás la copia."
-        : "Sin cuenta: tus datos quedan en este teléfono."}
+        : "Guardado en este dispositivo. Entrá con tu cuenta para sincronizar los registros compatibles."}
     </p>
   );
 }

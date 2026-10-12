@@ -56,10 +56,7 @@ test("the fruit toggle hides the comparison, and stays hidden", async ({
   await completeOnboarding(page);
 
   await page.goto("/semana/24");
-  // The <figure> is the drawing. Targeted as an element rather than by its
-  // text, because the hero's own caption ("Del tamaño de una mandioca") names
-  // the same item and is NOT what this toggle hides — the words stay, the
-  // picture goes.
+  // The same persisted preference drives the fruit drawing and Frutas/Medidas.
   const figure = page.locator("figure");
   await expect(figure).toHaveCount(1);
 
@@ -73,8 +70,8 @@ test("the fruit toggle hides the comparison, and stays hidden", async ({
 
   await page.getByRole("button", { name: "Listo" }).click();
   await expect(figure).toHaveCount(0);
-  // The label is a fact about the week, not part of the drawing, so it stays.
-  await expect(page.getByText("Del tamaño de una mandioca")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Medidas", exact: true }).first()).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText("≈ 30 cm · ≈ 600 g").first()).toBeVisible();
 
   await page.reload();
   await expect(page.locator("figure")).toHaveCount(0);
@@ -104,13 +101,13 @@ test("the week page shows the baby beside this week's Paraguayan fruit, both loa
 }) => {
   // 2026-09-28: the cutout renders (`public/assets/semanas/`) and the size
   // comparisons (`public/assets/comparaciones/`) are on disk. The size is told
-  // by the fruit or vegetable, drawn to scale beside the baby.
+  // by familiar fruit references; illustrations explicitly have no scale.
   await completeOnboarding(page);
 
   const cases: Array<[number, string]> = [
     [8, "poroto"],
-    [20, "banana"],
-    [42, "sandia-grande-y-madura"],
+    [20, "mango"],
+    [42, "sandia"],
   ];
   for (const [week, item] of cases) {
     await page.goto(`/semana/${week}`);
@@ -133,9 +130,9 @@ test("the week page shows the baby beside this week's Paraguayan fruit, both loa
 });
 
 test("Hoy shows this week's fruit on the ring", async ({ page }) => {
-  // 136 days: 19+3, week 20, a banana.
+  // 136 days: 19+3, week 20, a mango.
   await completeOnboarding(page, { daysAgo: 136 });
-  const badge = page.locator('img[src="/assets/comparaciones/banana.webp"]');
+  const badge = page.locator('img[src="/assets/comparaciones/mango.webp"]');
   await expect(badge).toBeVisible();
   await expect.poll(() => badge.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
 });
@@ -158,7 +155,34 @@ test.describe("with the week image unavailable", () => {
 
     // The week number stands in for the render, and every caption still reads.
     await expect(page.getByText("SEMANA 24 · 2.º TRIMESTRE")).toBeVisible();
-    await expect(page.getByText("Del tamaño de una mandioca")).toBeVisible();
+    await expect(page.getByText("Referencia de peso: un coco").first()).toBeVisible();
     await expect(page.locator('img[src^="/assets/semanas/bebe-24.webp"]')).toBeHidden();
   });
+});
+
+// The direct choice persists to the next page and a future launch.
+test("Medidas keeps clinical numbers and survives navigation and reload", async ({page}) => {
+  await completeOnboarding(page);
+  await page.getByRole("button",{name:"Medidas",exact:true}).first().click();
+  await expect(page.getByRole("button",{name:"Medidas",exact:true}).first()).toHaveAttribute("aria-pressed","true");
+  await page.goto("/semana/40");
+  await expect(page.getByRole("button",{name:"Medidas",exact:true}).first()).toHaveAttribute("aria-pressed","true");
+  await expect(page.getByText("≈ 51,2 cm · ≈ 3,5 kg").first()).toBeVisible();
+  await expect(page.getByText("Referencia de peso: una sandía")).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("button",{name:"Medidas",exact:true}).first()).toHaveAttribute("aria-pressed","true");
+  await page.getByRole("button",{name:"Frutas",exact:true}).first().click();
+  await expect(page.getByText("Referencia de peso: una sandía").first()).toBeVisible();
+  await expect(page.getByText("Ilustración sin escala. Las frutas varían en tamaño y peso.")).toBeVisible();
+});
+
+
+test("public week readers can choose measures without creating a tracking profile",async({page,context})=>{
+  await context.route("**/api/v1/auth-status",route=>route.fulfill({json:{signedIn:false,accountId:null,accountRequired:true,providers:[]}}));
+  await page.goto("/semana/40");
+  await expect(page.getByText("Referencia de peso: una sandía").first()).toBeVisible();
+  await page.getByRole("button",{name:"Medidas",exact:true}).first().click();
+  await expect(page.getByRole("button",{name:"Medidas",exact:true}).first()).toHaveAttribute("aria-pressed","true");
+  await expect(page.getByText("Referencia de peso: una sandía")).toHaveCount(0);
+  await expect(page.getByText("≈ 51,2 cm · ≈ 3,5 kg").first()).toBeVisible();
 });

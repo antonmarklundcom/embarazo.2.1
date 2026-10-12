@@ -6,6 +6,7 @@ import type { SyncMeta } from "./sync/merge";
 import type { Locale } from "./i18n/dict";
 import type { ThemeId } from "./hero/themes";
 import { notifyLocalChange } from "./sync/signal";
+import { preserveLegacyPhotoDeletionOwner } from "./sync/photoDeletions";
 import {
   SYNCED_STORES,
   type SyncedStore,
@@ -222,6 +223,8 @@ export interface ContractionEntry extends Partial<SyncMeta> {
   startedAt: number;
   durationSec: number;
   intervalSec: number;
+  /** An unfinished timer, saved immediately so it survives navigation/reload. */
+  inProgress?: boolean;
 }
 
 export interface WeightEntry extends Partial<SyncMeta> {
@@ -690,11 +693,26 @@ export function notDeleted<T extends { deletedAt?: number | null }>(
 }
 
 /** Wipe ALL local data (build spec §5 — "Borrar todos mis datos"). */
-export async function wipeAllData(): Promise<void> {
+export async function wipeAllData(options?: { expectedAccountId?: string }): Promise<void> {
   if (typeof window === "undefined") return;
   const instance = _db ?? new MiBebeDB();
-  await instance.delete();
-  _db = null;
+  // Deletion jobs outlive the phone's data. Preserve their ORIGINAL owner
+  // before removing the link, so signing into B can never erase A's photos.
+  if (options) {
+    // Compare and clear in one write transaction. A restore in another tab
+    // cannot swap the owner between the check and this account's cleanup.
+    await instance.transaction("rw", instance.tables, async () => {
+      const owner = (await instance.syncState.get("default"))?.accountId;
+      if (owner !== options.expectedAccountId) throw new Error("local-account-changed");
+      preserveLegacyPhotoDeletionOwner(owner);
+      for (const table of instance.tables) await table.clear();
+    });
+    _db = instance;
+  } else {
+    preserveLegacyPhotoDeletionOwner((await instance.syncState.get("default"))?.accountId);
+    await instance.delete();
+    _db = null;
+  }
   // "Preparar mi control" keeps her own questions in localStorage
   // (`lib/controlPrep.ts`). They are hers, written in her words, so they go
   // with everything else.

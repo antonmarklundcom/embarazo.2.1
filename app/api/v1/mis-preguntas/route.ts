@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { COMMUNITY_QUESTIONS_ENABLED } from "@/lib/community/launch";
 import { refuseCrossSite } from "@/lib/server/requestGuard";
 import { z } from "zod";
 
@@ -48,6 +49,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!COMMUNITY_QUESTIONS_ENABLED) return NextResponse.json({ error: "El envío de preguntas no está disponible." }, { status: 503, headers: HEADERS });
   // F08: only this app's own pages, and only JSON.
   const crossSite = refuseCrossSite(req);
   if (crossSite) return crossSite;

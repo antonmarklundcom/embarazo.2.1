@@ -1,5 +1,5 @@
-// BUILD-PLAN D7 — the contractions timer's pure half: is the pattern
-// 5-1-1 ("every 5 minutes, lasting 1 minute, for 1 hour")? A pregnant woman at
+// BUILD-PLAN D7 — the contractions timer's pure half: is there a recent
+// pattern of frequent contractions lasting roughly a minute? A pregnant woman at
 // 3 a.m. who has just noticed this is not the moment to make her read a
 // definition — the function decides, the screen only ever shows a hint or
 // nothing.
@@ -27,6 +27,8 @@ export interface ContractionSample {
   startedAt: number;
   /** 0 (or absent) for a contraction still in progress. */
   durationSec: number;
+  /** Unfinished rows are persisted on start, but never treated as completed. */
+  inProgress?: boolean;
 }
 
 export interface Assess511Options {
@@ -48,7 +50,8 @@ export interface Assess511Options {
 
 export interface Assess511Result {
   /**
-   * `"5-1-1"` — term (≥ 37 weeks, or week unknown): time to call the sanatorio.
+   * `"5-1-1"` is the legacy marker for the recent pattern, not a claim that
+   * it lasted an hour. At term (≥ 37 weeks, or unknown), call the sanatorio.
    * `"preterm"` — the same regular pattern before 37 weeks: an alarm sign, and
    * the screen renders it as one (`CONTRACTIONS_PRETERM_ALERT`).
    */
@@ -87,9 +90,10 @@ export function assess511(
   now: number,
   options: Assess511Options = {},
 ): Assess511Result | null {
+  const completed = entries.filter((entry) => !entry.inProgress);
   const samples: ContractionSample[] = options.inProgressStartedAt
-    ? [...entries, { startedAt: options.inProgressStartedAt, durationSec: 0 }]
-    : entries;
+    ? [...completed, { startedAt: options.inProgressStartedAt, durationSec: 0 }]
+    : completed;
 
   const recent = samples
     .filter((e) => e.startedAt <= now && now - e.startedAt <= WINDOW_MS)
@@ -121,8 +125,8 @@ export function assess511(
  * to call, not a diagnosis.
  */
 export const CONTRACTIONS_511_HINT: BilingualText = {
-  es: "Tus contracciones llegan cada 5 minutos y duran cerca de 1 minuto, así desde hace una hora: es momento de llamar a tu hospital o sanatorio.",
-  gn: "Ne contracción ou 5 minuto-gui 5 minuto-pe ha ipuku peteĩ minuto rupi, peteĩ hora guive: ko'ág̃a ehenói ne hospital térã sanatorio.",
+  es: "En tus últimos registros, las contracciones llegan aproximadamente cada 5 minutos o menos y duran cerca de 1 minuto: es momento de llamar a tu hospital o sanatorio. No esperes a completar una hora si tenés dudas o una señal de alarma.",
+  gn: "Ne contracción ou 5 minuto-gui 5 minuto-pe ha ipuku peteĩ minuto rupi: ko'ág̃a ehenói ne hospital térã sanatorio.",
 };
 
 /**

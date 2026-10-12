@@ -138,7 +138,7 @@ export function VerifyEmailCard({
           </h2>
           <p className="mt-1 text-sm font-semibold leading-relaxed text-sand-text">
             En esta versión de {APP_NAME} no hay ingreso con cuenta, así que no
-            hay correo que confirmar. La app funciona completa sin cuenta.
+            hay correo que confirmar ahora. Si usás Google, entrá con Google desde Tu cuenta.
           </p>
         </section>
         <Link href="/ajustes" className={PRIMARY_CLASS}>

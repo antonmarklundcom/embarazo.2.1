@@ -40,9 +40,12 @@ describe("the answers match what the app does", () => {
     // The answer has to carry both halves, because either one alone is a
     // misleading version of the truth.
     const text = answer("faq-notas-fotos");
-    expect(text).toContain("no se sincronizan");
+    expect(text).toContain("salvo que actives");
+    expect(text).toContain("protegidas con pin");
+    expect(text).toContain("solo en este dispositivo");
     expect(text).toContain("copia de tus fotos");
-    expect(text).toContain("borramos las copias");
+    expect(text).toContain("borrar sus copias remotas");
+    expect(text).toContain("pendiente");
   });
 
   it("describes the companion view as E1 actually built it", () => {
@@ -53,9 +56,12 @@ describe("the answers match what the app does", () => {
     expect(text).toContain("nunca tus notas");
   });
 
-  it("does not promise a backup that does not exist without an account", () => {
+  it("distinguishes account recovery from local-only PIN notes and photos", () => {
     const text = answer("faq-borro-la-app");
-    expect(text).toContain("no hay forma de recuperarlo");
+    expect(text).toContain("no borra tu cuenta");
+    expect(text).toContain("sincronizarse");
+    expect(text).toContain("notas con pin");
+    expect(text).toContain("no se recuperan");
     expect(text).toContain("copia de seguridad");
   });
 

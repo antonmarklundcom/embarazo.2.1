@@ -5,6 +5,7 @@ import { AccountCard } from "@/components/AccountCard";
 import { SignInCard } from "@/components/SignInCard";
 import { APP_NAME } from "@/lib/brand";
 import { availableProviders, getSession, isAuthAvailable } from "@/lib/server/auth";
+import { safeReturnTo, signInDestination } from "@/lib/auth/access";
 
 // BUILD-PLAN A2 — the branded sign-in screen (ARCHITECTURE.md §6).
 //
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Tu cuenta",
-  description: `Creá una cuenta para guardar tu embarazo, o seguí usando ${APP_NAME} sin cuenta.`,
+  description: `Entrá a ${APP_NAME} con Google para guardar y acompañar tu embarazo.`,
 };
 
 /**
@@ -27,15 +28,15 @@ function errorMessage(code: string | undefined): string | undefined {
     case "consentimiento":
       return "Necesitamos tu permiso explícito antes de crear la cuenta. Marcá la casilla y probá de nuevo.";
     case "OAuthAccountNotLinked":
-      return "Ese correo ya tiene una cuenta creada con otro método. Entrá con el método que usaste la primera vez.";
+      return "Ese correo ya tiene una cuenta creada con otro método. Entrá con el método que usaste la primera vez. Si usabas correo, podés recuperar tu contraseña abajo.";
     case "AccessDenied":
-      return "No pudimos completar el ingreso. Probá de nuevo o seguí sin cuenta.";
+      return "No pudimos completar el ingreso. Probá de nuevo.";
     case "CredentialsSignin":
       return "Correo o contraseña incorrectos.";
     case "Configuration":
-      return `El ingreso con cuenta no está bien configurado en este servidor. Podés seguir usando ${APP_NAME} sin cuenta.`;
+      return `El ingreso de ${APP_NAME} no está disponible ahora. Probá de nuevo más tarde.`;
     default:
-      return "No pudimos completar el ingreso. Probá de nuevo o seguí sin cuenta.";
+      return "No pudimos completar el ingreso. Probá de nuevo.";
   }
 }
 
@@ -45,7 +46,9 @@ export default async function CuentaPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const session = await getSession();
-  const raw = (await searchParams).error;
+  const params = await searchParams;
+  const raw = params.error;
+  const destination = safeReturnTo(Array.isArray(params.returnTo) ? params.returnTo[0] : params.returnTo);
   const error = errorMessage(Array.isArray(raw) ? raw[0] : raw);
 
   if (session) {
@@ -61,7 +64,7 @@ export default async function CuentaPage({
         </header>
         <AccountCard session={session} showDeletionNote />
         <Link
-          href="/"
+          href={signInDestination(destination)}
           className="flex min-h-[52px] w-full items-center justify-center rounded-full bg-petrol px-4 text-[15px] font-extrabold text-white transition active:scale-[0.99]"
         >
           Ir a Inicio
@@ -70,11 +73,21 @@ export default async function CuentaPage({
     );
   }
 
+  const deleted = params.cuenta === "borrada";
   return (
+    <div className="space-y-4">
+      {deleted && <section role="status" className="rounded-card border border-sage/30 bg-sage/5 p-4">
+        <h1 className="font-extrabold text-ink">Tu cuenta fue borrada</h1>
+        <p className="mt-1 text-sm text-muted">El seguimiento personal necesita una cuenta. Las guías y la información de emergencia siguen disponibles.</p>
+        {params.limpieza === "pendiente" && <p className="mt-2 text-sm font-semibold text-terracotta">El borrado de la cuenta se completó, pero no pudimos confirmar la limpieza de este teléfono. Cerrá la sesión y borrá los datos del sitio en tu navegador si también querés quitarlos.</p>}
+        {params.local === "conservado" && <p className="mt-2 text-sm text-muted">Conservaste los registros de este teléfono, vinculados a la cuenta eliminada. No se van a mezclar con otra cuenta.</p>}
+      </section>}
     <SignInCard
       providers={availableProviders()}
       credentialsAvailable={isAuthAvailable()}
       initialError={error}
+      returnTo={destination}
     />
+    </div>
   );
 }

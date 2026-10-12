@@ -1,4 +1,4 @@
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { hashPassword } from "@/lib/auth/password";
 import { AUTH_RATE_LIMIT } from "@/lib/rateLimit";
@@ -30,7 +30,7 @@ const hoisted = vi.hoisted(() => ({
     | {
         providers: Array<{
           id?: string;
-          options?: { authorize?: (...args: never[]) => unknown };
+          options?: { authorize?: (...args: never[]) => unknown; allowDangerousEmailAccountLinking?: boolean };
         }>;
         callbacks?: {
           session?: (args: {
@@ -145,6 +145,11 @@ const REAL_PASSWORD = "correct horse battery staple";
 let realHash: string;
 
 beforeAll(async () => {
+  vi.stubEnv("AUTH_GOOGLE_ID", "test-client");
+  vi.stubEnv("AUTH_GOOGLE_SECRET", "test-client-secret");
+  vi.stubEnv("AUTH_FACEBOOK_ENABLED", "true");
+  vi.stubEnv("AUTH_FACEBOOK_ID", "test-facebook");
+  vi.stubEnv("AUTH_FACEBOOK_SECRET", "test-facebook-secret");
   realHash = await hashPassword(REAL_PASSWORD);
 
   const auth = await import("./auth");
@@ -164,7 +169,9 @@ beforeAll(async () => {
     throw new Error("Credentials provider was not captured — test setup is broken.");
   }
   authorize = credentialsProvider.options.authorize as typeof authorize;
-});
+}, 20_000);
+
+afterAll(() => { vi.unstubAllEnvs(); });
 
 afterEach(() => {
   dbState.selectResults.length = 0;
@@ -403,9 +410,9 @@ describe("authorize() — R0-3's rate limit", () => {
   });
 });
 
-// Pre-hijack: a password registered on someone else's address must not
-// survive that address's owner signing in with Google/Facebook.
-describe("revokeUnverifiedPassword() — OAuth sign-in over a password row", () => {
+// Legacy repair utility: a password registered on someone else's address must not
+// remain during an explicit owner-directed repair.
+describe("revokeUnverifiedPassword() — legacy explicit repair", () => {
   it("clears the password and bumps the session version", async () => {
     await revokeUnverifiedPassword("victima@example.com");
     expect(dbState.updates).toHaveLength(1);
@@ -511,5 +518,16 @@ describe("jwt callback and authorize() — N4: the version checked is the versio
       requestFrom("10.0.7.2"),
     );
     expect(result).toBeNull();
+  });
+});
+
+// Exercise the actual configured provider options captured from buildConfig.
+describe("OAuth ownership", () => {
+  it("never automatically merges Google or Facebook into a different login method", () => {
+    for (const id of ["google", "facebook"]) {
+      const provider = hoisted.capturedConfig?.providers.find((item) => item.id === id);
+      expect(provider, `${id} is configured in this regression`).toBeDefined();
+      expect(provider?.options?.allowDangerousEmailAccountLinking).toBe(false);
+    }
   });
 });

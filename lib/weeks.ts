@@ -2,7 +2,8 @@ import type { WeekInfo } from "./types";
 import { getTrimester } from "./pregnancy.ts";
 
 // Weeks 1–42 with real, Paraguay-specific content in es-PY voseo (build spec §5).
-// Size comparisons use everyday Paraguayan items and progress realistically.
+// Fruit/seed references are illustrative. From week 20 they suggest weight,
+// rather than pretending a curled baby or a fruit matches head-to-heel length.
 // Lengths/weights are approximate gestational averages (crown-rump up to ~week 20,
 // then crown-heel), shown only once the embryo/fetus is measurable.
 //
@@ -15,6 +16,7 @@ type RawWeek = Omit<WeekInfo, "trimester">;
  * "Del tamaño de todavía no hay embrión". `sizeLine` below is how they know.
  */
 export const NO_EMBRYO_YET = "todavía no hay embrión";
+export const MICROSCOPIC = "todavía microscópico";
 
 const RAW_WEEKS: RawWeek[] = [
   {
@@ -33,7 +35,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 3,
-    sizeComparison: "una semilla de chía",
+    sizeComparison: MICROSCOPIC,
     lengthCm: 0.01,
     milestone:
       "Si hubo fecundación, el óvulo se transforma en un grupito de células que viaja hacia el útero. Todo es microscópico todavía.",
@@ -121,7 +123,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 13,
-    sizeComparison: "un durazno",
+    sizeComparison: "un limón",
     lengthCm: 7.4,
     weightG: 23,
     milestone:
@@ -130,7 +132,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 14,
-    sizeComparison: "un limón",
+    sizeComparison: "un durazno",
     lengthCm: 8.7,
     weightG: 43,
     milestone:
@@ -139,7 +141,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 15,
-    sizeComparison: "una mandarina",
+    sizeComparison: "una manzana",
     lengthCm: 10.1,
     weightG: 70,
     milestone:
@@ -148,7 +150,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 16,
-    sizeComparison: "una palta pequeña",
+    sizeComparison: "una palta",
     lengthCm: 11.6,
     weightG: 100,
     milestone:
@@ -157,7 +159,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 17,
-    sizeComparison: "una granada",
+    sizeComparison: "una pera",
     lengthCm: 13,
     weightG: 140,
     milestone:
@@ -166,7 +168,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 18,
-    sizeComparison: "un mamón pequeño",
+    sizeComparison: "un mango",
     lengthCm: 14.2,
     weightG: 190,
     milestone:
@@ -184,7 +186,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 20,
-    sizeComparison: "una banana",
+    sizeComparison: "un mango",
     lengthCm: 25.6,
     weightG: 300,
     milestone:
@@ -193,7 +195,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 21,
-    sizeComparison: "una mazorca de choclo",
+    sizeComparison: "un mango",
     lengthCm: 26.7,
     weightG: 360,
     milestone:
@@ -202,7 +204,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 22,
-    sizeComparison: "un mamón mediano",
+    sizeComparison: "un pomelo",
     lengthCm: 27.8,
     weightG: 430,
     milestone:
@@ -211,7 +213,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 23,
-    sizeComparison: "una berenjena grande",
+    sizeComparison: "un pomelo",
     lengthCm: 28.9,
     weightG: 501,
     milestone:
@@ -220,7 +222,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 24,
-    sizeComparison: "una mandioca",
+    sizeComparison: "un coco",
     lengthCm: 30,
     weightG: 600,
     milestone:
@@ -238,7 +240,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 26,
-    sizeComparison: "una lechuga grande",
+    sizeComparison: "un coco",
     lengthCm: 35.6,
     weightG: 760,
     milestone:
@@ -247,7 +249,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 27,
-    sizeComparison: "una sandía pequeña",
+    sizeComparison: "un melón pequeño",
     lengthCm: 36.6,
     weightG: 875,
     milestone:
@@ -256,7 +258,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 28,
-    sizeComparison: "un zapallo pequeño",
+    sizeComparison: "un melón pequeño",
     lengthCm: 37.6,
     weightG: 1005,
     milestone:
@@ -265,7 +267,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 29,
-    sizeComparison: "un coco grande",
+    sizeComparison: "un melón",
     lengthCm: 38.6,
     weightG: 1153,
     milestone:
@@ -274,7 +276,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 30,
-    sizeComparison: "un ananá",
+    sizeComparison: "un melón",
     lengthCm: 39.9,
     weightG: 1319,
     milestone:
@@ -283,7 +285,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 31,
-    sizeComparison: "un coco con su cáscara",
+    sizeComparison: "un ananá",
     lengthCm: 41.1,
     weightG: 1502,
     milestone:
@@ -292,7 +294,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 32,
-    sizeComparison: "un mamón grande",
+    sizeComparison: "un ananá",
     lengthCm: 42.4,
     weightG: 1702,
     milestone:
@@ -301,7 +303,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 33,
-    sizeComparison: "un zapallo grande",
+    sizeComparison: "un ananá",
     lengthCm: 43.7,
     weightG: 1918,
     milestone:
@@ -310,7 +312,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 34,
-    sizeComparison: "una mandioca grande",
+    sizeComparison: "un melón grande",
     lengthCm: 45,
     weightG: 2146,
     milestone:
@@ -319,7 +321,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 35,
-    sizeComparison: "un racimo de bananas",
+    sizeComparison: "un melón grande",
     lengthCm: 46.2,
     weightG: 2383,
     milestone:
@@ -328,7 +330,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 36,
-    sizeComparison: "un andaí",
+    sizeComparison: "una sandía pequeña",
     lengthCm: 47.4,
     weightG: 2622,
     milestone:
@@ -337,7 +339,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 37,
-    sizeComparison: "una sandía mediana",
+    sizeComparison: "una sandía pequeña",
     lengthCm: 48.6,
     weightG: 2859,
     milestone:
@@ -355,7 +357,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 39,
-    sizeComparison: "una sandía grande",
+    sizeComparison: "una sandía",
     lengthCm: 50.7,
     weightG: 3288,
     milestone:
@@ -364,7 +366,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 40,
-    sizeComparison: "una sandía grande y madura",
+    sizeComparison: "una sandía",
     lengthCm: 51.2,
     weightG: 3462,
     milestone:
@@ -373,7 +375,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 41,
-    sizeComparison: "una sandía grande y madura",
+    sizeComparison: "una sandía",
     lengthCm: 51.7,
     weightG: 3597,
     milestone:
@@ -382,7 +384,7 @@ const RAW_WEEKS: RawWeek[] = [
   },
   {
     week: 42,
-    sizeComparison: "una sandía grande y madura",
+    sizeComparison: "una sandía",
     lengthCm: 51.7,
     weightG: 3685,
     milestone:
@@ -404,7 +406,7 @@ export function getWeek(week: number): WeekInfo {
 
 /** Whether a week's `sizeComparison` is a size at all (false for weeks 1–2). */
 export function hasSizeComparison(sizeComparison: string): boolean {
-  return sizeComparison !== NO_EMBRYO_YET;
+  return sizeComparison !== NO_EMBRYO_YET && sizeComparison !== MICROSCOPIC;
 }
 
 /**

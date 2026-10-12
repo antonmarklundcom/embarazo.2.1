@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { APP_NAME, APP_TITLE } from "@/lib/brand";
 import { Providers } from "@/components/Providers";
@@ -8,11 +8,15 @@ import { HtmlLang } from "@/components/HtmlLang";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { SyncProvider } from "@/components/SyncProvider";
 
-const nunito = Nunito_Sans({
-  subsets: ["latin"],
-  weight: ["400", "600", "700", "800", "900"],
+// Self-hosted (latin subset, variable 400–900, SIL OFL — see app/fonts/OFL.txt)
+// so the production build never fetches from Google Fonts: Hostinger's build
+// server failed in next/font/google's download step.
+const nunito = localFont({
+  src: "./fonts/NunitoSans-latin-variable.woff2",
+  weight: "400 900",
   variable: "--font-nunito",
   display: "swap",
+  fallback: ["system-ui", "sans-serif"],
 });
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mibebe.app";

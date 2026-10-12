@@ -58,7 +58,7 @@ import { WeekContentRail } from "@/components/home/WeekContentRail";
 import { WeekHero } from "@/components/home/WeekHero";
 import { NewWeekCard } from "@/components/home/NewWeekCard";
 import { BirthCard } from "@/components/baby/BirthCard";
-import { completeHandoff, readHandoff } from "@/lib/auth/access.client";
+import { completeHandoff, readHandoff, rememberHandoff } from "@/lib/auth/access.client";
 import { BabyHome } from "@/components/baby/BabyHome";
 import { WeekStrip } from "@/components/home/WeekStrip";
 import { flush as flushFunnel, markOnboarded } from "@/lib/stats/funnel.client";
@@ -101,7 +101,10 @@ export default function InicioPage() {
   useEffect(() => {
     const saved = readHandoff();
     const patch = siteParamsToAnswers(window.location.search, Date.now(), window.location.hash) ?? saved?.patch;
-    if (patch) setSiteAnswers(patch);
+    if (patch) {
+      rememberHandoff(saved?.returnTo);
+      setSiteAnswers(patch);
+    }
     const cleaned = withoutSiteParams(window.location.href);
     if (cleaned !== null) window.history.replaceState({}, "", cleaned);
   }, []);

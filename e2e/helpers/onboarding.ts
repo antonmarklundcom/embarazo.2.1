@@ -91,11 +91,21 @@ export async function completeOnboarding(
   await page.getByRole("button", { name: "Continuar" }).click();
 
   // The account step. Secondary, but never hidden.
-  await page.getByRole("button", { name: "Seguir sin cuenta" }).click();
+  await expect(page.getByRole("heading", {name:/Vista de prueba|Listo, ya entraste|Guardá tu embarazo y compartilo/})).toBeVisible();
+  const previewContinue = page.getByRole("button", { name: "Seguir sin cuenta", exact: true });
+  if (await previewContinue.count()) await previewContinue.click();
+  else await page.getByRole("button", { name: mode === "embarazada" ? "Continuar" : "Empezar", exact: true }).click();
 
   if (mode === "embarazada") {
+    await expect(page.locator("#babyName")).toBeVisible();
     if (babyName) await page.locator("#babyName").fill(babyName);
     await page.getByRole("button", { name: "Continuar" }).click();
+    // Signed-in mothers can invite family before answering the weekly notice.
+    // Wait for a distinct screen before tapping another shared button label.
+    const weeklyNotice = page.getByRole("heading", { name: "¿Te aviso cuando empieza tu semana nueva?" });
+    const finishInvite = page.getByRole("button", { name: "Empezar", exact: true });
+    await expect(weeklyNotice.or(finishInvite)).toBeVisible();
+    if (await finishInvite.isVisible()) await finishInvite.click();
     // Growth plan item 8 — the weekly-notice question is last. The shared
     // walk-through declines it; install-push specs answer it themselves.
     await expect(

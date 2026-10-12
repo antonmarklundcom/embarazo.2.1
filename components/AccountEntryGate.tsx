@@ -38,6 +38,10 @@ export function AccountEntryGate({ children }: { children: React.ReactNode }) {
       setState({ pathname, mode: "checking", accountId: null });
       return;
     }
+    // Wait for the initial ownership read before mounting private children.
+    // Otherwise its undefined -> null update remounts forms after they read
+    // and strip calculator fields, or while a photo input is saving.
+    if (owner === undefined) return;
     let active = true;
     let sequence = 0;
     let controller: AbortController | undefined;

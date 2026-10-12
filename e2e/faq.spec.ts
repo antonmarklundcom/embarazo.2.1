@@ -34,6 +34,6 @@ test("the privacy policy explains sync, PIN recovery and public deletion", async
   await expect(page.getByText(/tus registros sincronizados no tienen cifrado de extremo a extremo/)).toBeVisible();
   await expect(page.getByText(/Las notas protegidas con PIN se cifran en tu navegador y no se sincronizan/)).toBeVisible();
   await expect(page.getByText(/No compartimos el diario, síntomas ni fotos con los invitados/)).toBeVisible();
-  await page.getByRole("link",{name:"esta página pública",exact:true}).click();
+  await page.getByRole("link",{name:"borrar tu cuenta",exact:true}).click();
   await expect(page).toHaveURL(/\/borrar-cuenta$/);
 });

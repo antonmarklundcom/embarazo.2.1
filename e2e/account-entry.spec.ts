@@ -173,3 +173,13 @@ test("a contact-only imported profile does not bypass personal setup",async({pag
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole("button",{name:/^Estoy embarazada\b/})).toBeVisible();
 });
+
+test("a signed-in calculator arrival keeps its date through ownership setup",async({page,context})=>{
+  await serveAccount(context,{current:"owner"});
+  const fum=new Date(Date.now()-70*86400000).toISOString().slice(0,10);
+  await page.goto('/#fum='+fum);
+  await page.getByRole("button",{name:/^Estoy embarazada\b/}).click();
+  await page.getByRole("button",{name:"Mamá"}).click();
+  await expect(page.locator("#lmp")).toHaveValue(fum);
+  expect(new URL(page.url()).hash).toBe("");
+});

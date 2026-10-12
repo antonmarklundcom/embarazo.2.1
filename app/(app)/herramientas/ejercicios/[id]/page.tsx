@@ -10,6 +10,9 @@ import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 // images are runtime-cached by the service worker (not precached): unlike the
 // 42 week renders, this collection can grow without inflating the app's
 // offline-install budget.
+// Only published exercises have routes; unknown IDs return a real 404.
+export const dynamicParams = false;
+
 export async function generateStaticParams() {
   return PUBLISHED_EJERCICIOS.map((exercise) => ({ id: exercise.id }));
 }

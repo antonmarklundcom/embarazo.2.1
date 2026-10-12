@@ -67,6 +67,9 @@ async function serve(
   context: BrowserContext,
   server: ReturnType<typeof fakeServer>,
 ) {
+  await context.route("**/api/v1/auth-status", route => route.fulfill({
+    json: {providers:["google"],signedIn:true,accountId:server.accountId,accountRequired:true},
+  }));
   await context.route("**/api/v1/sync**", async (route) => {
     const request = route.request();
     if (request.method() === "POST") {
@@ -116,6 +119,7 @@ test("an offline edit reaches a second device on reconnect", async ({
   // worker's precache list, and this test is about writing offline, not about
   // the precache manifest (e2e/offline.spec.ts covers that).
   await a.goto("/herramientas/peso");
+  await expect(a.locator("#kg")).toBeVisible();
   await contextA.setOffline(true);
   await a.locator("#kg").fill("61.5");
   await a.getByRole("button", { name: /Guardar/ }).click();
@@ -307,14 +311,12 @@ test("data is not uploaded into a different account", async ({ browser }) => {
   // runners while passing on every developer machine.
   await a.waitForLoadState("networkidle");
   await a.goto("/herramientas/peso");
-  await a.locator("#kg").fill("70");
-  await a.getByRole("button", { name: /Guardar/ }).click();
+  await expect(a.getByRole("heading", { name: "Este teléfono tiene datos de otra cuenta" })).toBeVisible();
+  await expect(a.locator("#kg")).toHaveCount(0);
   await reconnect(a);
-  await a.waitForTimeout(1000);
 
-  // The new entry stayed on the device. Nothing was written for user-b.
+  // B cannot access or edit A's records, and nothing is uploaded into B.
   expect(server.rows.size).toBe(rowsUnderA);
-  await expect(a.getByText("70 kg").first()).toBeVisible();
 
   await contextA.close();
 });

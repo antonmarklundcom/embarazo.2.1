@@ -8,6 +8,7 @@ test("the toolbox is a grid and every tile leads somewhere", async ({ page }) =>
   await page.goto("/herramientas");
 
   const tiles = page.locator("main a[href^='/']");
+  await expect(tiles.first()).toBeVisible();
   const count = await tiles.count();
   expect(count).toBeGreaterThanOrEqual(11);
 

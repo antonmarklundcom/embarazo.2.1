@@ -41,7 +41,10 @@ export async function saveNextAppointment(
 
   await db().profile.update(first.id, { nextAppointment: value });
 
-  await refreshReminders(companionAppointmentAt);
-  // Returns false offline or without an account. Both are ordinary.
-  await publishCompanionSnapshot();
+  // The local save is complete. Worker installation and network recovery
+  // must never hold the editor open or hide its saved confirmation.
+  void Promise.allSettled([
+    refreshReminders(companionAppointmentAt),
+    publishCompanionSnapshot(),
+  ]);
 }

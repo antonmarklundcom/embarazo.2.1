@@ -174,7 +174,7 @@ export function AccountStep({
               name="provider"
               value={id}
               disabled={pending || !consented}
-              className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-full border border-line bg-white px-4 text-[15px] font-extrabold text-ink shadow-soft transition active:scale-[0.99] disabled:opacity-60"
+              className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-full border border-line bg-white px-4 text-[15px] font-extrabold text-ink shadow-soft transition enabled:cursor-pointer enabled:hover:border-petrol enabled:hover:bg-petrol/5 enabled:hover:shadow-md enabled:active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-petrol disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none motion-reduce:scale-100"
             >
               <Mark />
               {pending ? "Abriendo…" : `Continuar con ${PROVIDER_LABELS[id]}`}
@@ -201,7 +201,7 @@ export function AccountStep({
       {auth.accountRequired === false && <button
         type="button"
         onClick={onSkip}
-        className="min-h-[44px] w-full text-sm font-bold text-petrol underline"
+        className="min-h-[44px] w-full cursor-pointer rounded-tile text-sm font-bold text-petrol underline underline-offset-4 transition-colors hover:bg-petrol/5 hover:decoration-2 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-petrol motion-reduce:transition-none"
       >
         {invited ? "Seguir sin cuenta (tu código queda para después)" : "Seguir sin cuenta"}
       </button>}

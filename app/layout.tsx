@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito_Sans } from "next/font/google";
+import "./fonts.css";
 import "./globals.css";
 import { APP_NAME, APP_TITLE } from "@/lib/brand";
 import { Providers } from "@/components/Providers";
@@ -7,13 +7,6 @@ import { UpdateToast } from "@/components/UpdateToast";
 import { HtmlLang } from "@/components/HtmlLang";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { SyncProvider } from "@/components/SyncProvider";
-
-const nunito = Nunito_Sans({
-  subsets: ["latin"],
-  weight: ["400", "600", "700", "800", "900"],
-  variable: "--font-nunito",
-  display: "swap",
-});
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mibebe.app";
 
@@ -82,7 +75,10 @@ export default function RootLayout({
     // K19: the SSR default. `<HtmlLang />` below patches this to "gn" once the
     // profile row is read — the locale lives in IndexedDB, so no server render
     // can know it (see lib/i18n/dict.ts on why there are no locale routes).
-    <html lang="es-PY" className={nunito.variable}>
+    <html lang="es-PY">
+      <head>
+        <link rel="preload" href="/fonts/nunito-sans-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+      </head>
       <body className="bg-cream text-ink antialiased">
         <Providers>
           {children}

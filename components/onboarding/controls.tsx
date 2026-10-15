@@ -22,7 +22,7 @@ export function PrimaryButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="mt-4 min-h-[44px] w-full rounded-tile bg-petrol px-4 py-2.5 text-sm font-medium text-white transition active:scale-[0.98] disabled:opacity-40"
+      className="mt-4 min-h-[44px] w-full rounded-tile bg-petrol px-4 py-2.5 text-sm font-medium text-white transition enabled:cursor-pointer enabled:hover:bg-petrol/90 enabled:hover:shadow-md enabled:active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-petrol disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none motion-reduce:scale-100"
     >
       {label}
     </button>
@@ -34,7 +34,7 @@ export function BackButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="mt-2 min-h-[44px] w-full text-sm text-muted"
+      className="mt-2 min-h-[44px] w-full cursor-pointer rounded-tile text-sm text-muted transition-colors hover:bg-petrol/5 hover:text-petrol hover:underline hover:underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-petrol motion-reduce:transition-none"
     >
       Volver
     </button>

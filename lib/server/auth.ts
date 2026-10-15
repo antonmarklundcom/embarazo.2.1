@@ -20,6 +20,7 @@ import {
 import { syncAdminRoleFromAllowlist } from "./admin";
 import { sendVerificationFor } from "./emailVerification";
 import { finishPendingDeletions } from "./account";
+import { logAuthFailure } from "./authDiagnostics";
 import {
   CONSENT_COOKIE,
   CONSENT_VERSION,
@@ -257,6 +258,7 @@ function buildConfig(): NextAuthConfig {
     // Hostinger terminates TLS in front of the Node process, so the forwarded
     // host header is the only truth about the public origin.
     trustHost: true,
+    logger: { error: logAuthFailure },
     adapter: isDatabaseConfigured()
       ? DrizzleAdapter(db(), {
           usersTable: users,

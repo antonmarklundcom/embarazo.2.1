@@ -175,22 +175,25 @@ export function SignInCard({
           Tu cuenta
         </p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-ink">
-          Tu embarazo, acompañado
+          Tu embarazo, organizado en un solo lugar
         </h1>
         <p className="mt-2 text-[15px] font-semibold leading-relaxed text-muted">
-          Entrá para guardar tus controles, seguir tu semana y tener tus registros
-          a mano cuando cambiás de teléfono.
+          Creá tu cuenta y empezá tu seguimiento: tu semana, tus controles y tus
+          registros, juntos y a mano.
         </p>
       </header>
 
       <section className="rounded-card border border-line bg-white p-4 shadow-soft">
         <h2 className="text-[15px] font-extrabold text-ink">
-          Con cuenta tenés
+          Todo lo que sumás con tu cuenta
         </h2>
         <ul className="mt-2 space-y-1.5 text-sm font-semibold text-ink">
-          <li>• Copia de seguridad automática de tu embarazo.</li>
-          <li>• Los mismos datos en el celular y en la compu.</li>
-          <li>• Compartir con tu pareja o tu familia lo que vos elijas.</li>
+          <li>• Tu semana de embarazo y lo que viene en cada etapa.</li>
+          <li>• Tus controles y preguntas para la próxima consulta, organizados.</li>
+          <li>• Un registro de tus síntomas, ánimo y peso para ver tus cambios.</li>
+          <li>• Tu diario y tus checklists para preparar la llegada de tu bebé.</li>
+          <li>• Tus registros sincronizados, también si cambiás de teléfono.</li>
+          <li>• Compartir con tu pareja o tu familia solo lo que vos elijas.</li>
         </ul>
         <p className="mt-3 text-xs leading-relaxed text-muted">
           De Google recibimos solo tu nombre, tu correo y tu foto de perfil.
@@ -280,11 +283,12 @@ export function SignInCard({
                       name="provider"
                       value={id}
                       disabled={pending || !consented}
+                      aria-busy={pending}
                       aria-describedby={error ? errorId : undefined}
-                      className={`flex min-h-[52px] w-full items-center justify-center gap-3 rounded-full border px-4 text-[15px] font-extrabold shadow-soft transition active:scale-[0.99] disabled:opacity-60 ${id === "google" ? "border-petrol bg-petrol text-white" : "border-line bg-white text-ink"}`}
+                      className={`flex min-h-[52px] w-full items-center justify-center gap-3 rounded-full border px-4 text-[15px] font-extrabold shadow-soft transition enabled:cursor-pointer enabled:hover:shadow-md enabled:active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-petrol disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none motion-reduce:scale-100 ${id === "google" ? "border-petrol bg-petrol text-white enabled:hover:bg-petrol/90" : "border-line bg-white text-ink enabled:hover:border-petrol enabled:hover:bg-petrol/5"}`}
                     >
-                      <Mark />
-                      {pending ? "Abriendo…" : `Continuar con ${PROVIDER_LABELS[id]}`}
+                      {pending ? <span aria-hidden="true" className="h-4 w-4 rounded-full border-2 border-current border-r-transparent motion-safe:animate-spin" /> : <Mark />}
+                      {pending ? "Abriendo el ingreso…" : `Empezar con ${PROVIDER_LABELS[id]}`}
                     </button>
                   );
                 })}
@@ -314,7 +318,7 @@ export function SignInCard({
 
             {!consented && (
               <p className="px-1 text-xs text-muted">
-                Marcá la casilla de arriba para poder continuar.
+                {error ? "Para volver a intentarlo, marcá otra vez la casilla de consentimiento." : "Marcá la casilla de arriba para poder continuar."}
               </p>
             )}
           </section>
@@ -323,15 +327,16 @@ export function SignInCard({
 
       <section className="rounded-card border border-line bg-white p-4 shadow-soft">
         <h2 className="text-[15px] font-extrabold text-ink">
-          Información para vos, siempre a mano
+          Las guías son solo el comienzo
         </h2>
         <p className="mt-1 text-sm font-semibold leading-relaxed text-muted">
-          Las guías y las señales de alarma se pueden consultar antes de entrar.
-          Para guardar y sincronizar tus registros necesitás una cuenta.
+          Sin cuenta podés consultar información general. Para llevar tu seguimiento,
+          organizar tus controles y guardar y sincronizar tus registros, creá tu cuenta.
+          Las señales de alarma siguen disponibles sin iniciar sesión.
         </p>
         <Link
           href="/guias"
-          className="mt-3 flex min-h-[52px] w-full items-center justify-center rounded-full bg-petrol px-4 text-[15px] font-extrabold text-white transition active:scale-[0.99]"
+          className="mt-2 inline-flex min-h-[44px] items-center rounded px-1 text-sm font-bold text-petrol underline underline-offset-4 transition-colors hover:bg-petrol/5 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-petrol motion-reduce:transition-none"
         >
           Leer las guías
         </Link>

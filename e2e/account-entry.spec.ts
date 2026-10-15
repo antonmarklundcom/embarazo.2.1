@@ -33,7 +33,10 @@ test("new users sign in before personal onboarding and have no guest-entry butto
   await serveAccount(context, { current: null });
   await page.goto("/");
   await expect(page).toHaveURL(/\/cuenta\?returnTo=/);
-  await expect(page.getByRole("heading", { name: "Tu embarazo, acompañado" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tu embarazo, organizado en un solo lugar" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Todo lo que sumás con tu cuenta" })).toBeVisible();
+  await expect(page.getByText("• Un registro de tus síntomas, ánimo y peso para ver tus cambios.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Las guías son solo el comienzo" })).toBeVisible();
   await expect(page.getByRole("button", { name: /^Estoy embarazada\b/ })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Seguir sin cuenta" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Leer las guías" })).toBeVisible();

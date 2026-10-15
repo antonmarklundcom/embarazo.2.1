@@ -102,7 +102,7 @@ export function AccountStep({
           Tu cuenta
         </p>
         <h2 className="mt-1 text-lg font-black text-ink">
-          {invited ? "Entrá para usar tu código" : "Guardá tu embarazo y compartilo"}
+          {invited ? "Entrá para usar tu código" : "Tu embarazo, organizado en un solo lugar"}
         </h2>
         <ul className="mt-3 space-y-1.5 text-sm font-semibold text-ink">
           {invited ? (
@@ -113,9 +113,10 @@ export function AccountStep({
             </>
           ) : (
             <>
-              <li>• Copia de seguridad: cambiás de teléfono y está todo ahí.</li>
-              <li>• Tu pareja y tu familia pueden acompañarte desde su celular.</li>
-              <li>• Avisos de tu próximo control, si los querés.</li>
+              <li>• Tu semana, tus controles y tus preguntas para la próxima consulta.</li>
+              <li>• Tus registros de síntomas, ánimo y peso, tu diario y tus checklists.</li>
+              <li>• Recuperá los registros sincronizados si cambiás de teléfono.</li>
+              <li>• Elegí qué compartir con tu pareja o tu familia.</li>
             </>
           )}
         </ul>
@@ -174,17 +175,18 @@ export function AccountStep({
               name="provider"
               value={id}
               disabled={pending || !consented}
-              className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-full border border-line bg-white px-4 text-[15px] font-extrabold text-ink shadow-soft transition enabled:cursor-pointer enabled:hover:border-petrol enabled:hover:bg-petrol/5 enabled:hover:shadow-md enabled:active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-petrol disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none motion-reduce:scale-100"
+              aria-busy={pending}
+              className={`flex min-h-[52px] w-full items-center justify-center gap-3 rounded-full border px-4 text-[15px] font-extrabold shadow-soft transition enabled:cursor-pointer enabled:hover:shadow-md enabled:active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-petrol disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none motion-reduce:scale-100 ${id === "google" ? "border-petrol bg-petrol text-white enabled:hover:bg-petrol/90" : "border-line bg-white text-ink enabled:hover:border-petrol enabled:hover:bg-petrol/5"}`}
             >
-              <Mark />
-              {pending ? "Abriendo…" : `Continuar con ${PROVIDER_LABELS[id]}`}
+              {pending ? <span aria-hidden="true" className="h-4 w-4 rounded-full border-2 border-current border-r-transparent motion-safe:animate-spin" /> : <Mark />}
+              {pending ? "Abriendo el ingreso…" : `Empezar con ${PROVIDER_LABELS[id]}`}
             </button>
           );
         })}
 
         {!consented && (
           <p className="px-1 text-xs text-muted">
-            Marcá la casilla de arriba para poder crear tu cuenta.
+            {state.error ? "Para volver a intentarlo, marcá otra vez la casilla de consentimiento." : "Marcá la casilla de arriba para poder crear tu cuenta."}
           </p>
         )}
 

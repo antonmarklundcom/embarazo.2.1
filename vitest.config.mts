@@ -16,6 +16,7 @@ import path from "node:path";
 // `lib/server/*` testable at all — so they are covered by the whole suite
 // passing, not by inspection.
 export default defineConfig({
+  oxc: { jsx: { runtime: "automatic" } },
   test: {
     environment: "node",
     include: ["**/*.test.ts"],

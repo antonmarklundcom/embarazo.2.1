@@ -1,6 +1,14 @@
 # Transactional email setup
 
-Implemented locally, 12 October 2026. No provider, DNS, billing, or deployment settings were changed as part of this code change.
+## Live infrastructure check — 15 October 2026
+
+Cloudflare DNS and Email Routing are active while both websites remain hosted at Hostinger. Public root routing MX/SPF/DKIM and the separate cf-bounce sending records were verified. The owner confirmed the support-alias forwarding test reached Inbox; an earlier direct outbound test reached Spam. Those two infrastructure messages do not establish a dependable delivery rate or application verification/reset acceptance.
+
+A dedicated account token with Email Sending Write only was created with owner approval. The owner saved the four Cloudflare environment variables privately in Hostinger; masked key presence was confirmed on 15 October. Preserve all existing Google/auth/database variables. Never put the sending token in public variables, Git, logs, or chat, and never install the short-lived Wrangler OAuth token as an application credential.
+
+The owner-triggered rebuild completed at 20:28:22 UTC on 15 October but rebuilt old commit 390cbbaa. The Cloudflare adapter is in newer main 209fe9f. Hostinger's Git connection now points to this repository's main branch with auto-deployment enabled. Publish the font fix, merge the reviewed release PR, then verify the new deployed revision before testing real confirmation/reset messages. Rebuilding the old commit does not activate the new adapter.
+
+The font fix bundles Nunito Sans under public/fonts and loads app/fonts.css, avoiding Hostinger's next/font Google loader failure. It changes no auth, database, schema, or email-provider behavior. Owner resource IDs and dated live evidence remain in the local operations manual. No new email signup or registration-only route policy is enabled by this release patch.
 
 Mi Bebé uses server-side HTTPS for email confirmation and password-reset messages. Google sign-in does not depend on this transport. Existing installations keep Resend when EMAIL_PROVIDER is empty. Set EMAIL_PROVIDER=cloudflare only when Cloudflare Email Sending is available for the account and its sending domain is configured. Email Routing by itself does not provide this outbound integration.
 

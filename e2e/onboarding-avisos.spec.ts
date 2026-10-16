@@ -47,7 +47,7 @@ test("'Ahora no' finishes onboarding without asking the browser", async ({ page 
   expect(await asks(page)).toBe(0);
 });
 
-test("'Sí' asks for permission once, and onboarding finishes whatever the answer", async ({ page }) => {
+test("'Sí' asks once and explains denial before she chooses to continue", async ({ page }) => {
   await countPermissionAsks(page);
   await completeOnboarding(page, { stopBeforeAvisos: true });
 
@@ -57,9 +57,56 @@ test("'Sí' asks for permission once, and onboarding finishes whatever the answe
   expect(await asks(page)).toBe(0);
 
   await page.getByRole("button", { name: "Sí, avisame" }).click();
+  await expect(page.getByRole("status")).toContainText("Tu navegador bloqueó");
+  await expect(heading).toBeVisible();
+  await page.getByRole("button", { name: "Continuar", exact: true }).click();
   await expect(page.getByText("Tip de hoy")).toBeVisible({ timeout: 15_000 });
   expect(await asks(page)).toBe(1);
 });
+
+test("an unconfigured service never claims activation or asks permission", async ({ page }) => {
+  await page.addInitScript(() => {
+    const original = window.fetch.bind(window);
+    window.fetch = (input, init) => String(input).endsWith("/api/v1/push")
+      ? Promise.resolve(new Response("{}", { status: 404 })) : original(input, init);
+    Notification.requestPermission = async () => { throw new Error("Must not ask without configuration"); };
+  });
+  await completeOnboarding(page, { stopBeforeAvisos: true });
+  await page.getByRole("button", { name: "Sí, avisame" }).click();
+  await expect(page.getByRole("status")).toContainText("todavía no están disponibles");
+  await page.getByRole("button", { name: "Continuar", exact: true }).click();
+  await expect(page.getByText("Tip de hoy")).toBeVisible();
+});
+
+for (const saved of [true, false]) {
+  test(`weekly opt-in reports ${saved ? "confirmed activation" : "pending server save"}`, async ({ page }) => {
+    await page.addInitScript(({ saved }) => {
+      const subscription = { endpoint: "https://fcm.googleapis.com/fixture-only", toJSON: () => ({ keys: { p256dh: "fixture", auth: "fixture" } }) };
+      Object.defineProperty(Notification, "permission", { get: () => "granted", configurable: true });
+      Notification.requestPermission = async () => "granted";
+      PushManager.prototype.getSubscription = async () => null;
+      PushManager.prototype.subscribe = async () => subscription as unknown as PushSubscription;
+      const original = window.fetch.bind(window);
+      window.fetch = (input, init) => {
+        if (String(input).endsWith("/api/v1/push")) {
+          if (init?.method === "POST") {
+            const body = JSON.parse(String(init.body));
+            sessionStorage.setItem("weeklyCategories", JSON.stringify(body.categories));
+            return Promise.resolve(new Response("{}", { status: saved ? 200 : 503 }));
+          }
+          return Promise.resolve(new Response(JSON.stringify({ publicKey: "BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" }), { status: 200 }));
+        }
+        return original(input, init);
+      };
+    }, { saved });
+    await completeOnboarding(page, { stopBeforeAvisos: true });
+    await page.getByRole("button", { name: "Sí, avisame" }).click();
+    await expect(page.getByRole("status")).toContainText(saved ? "Listo: activaste" : "Todavía no pudimos confirmar");
+    expect(await page.evaluate(() => sessionStorage.getItem("weeklyCategories"))).toBe('["consejos"]');
+    await page.getByRole("button", { name: "Continuar", exact: true }).click();
+    await expect(page.getByText("Tip de hoy")).toBeVisible();
+  });
+}
 
 test.describe("on an iPhone without the app installed", () => {
   test.use({

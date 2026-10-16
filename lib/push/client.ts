@@ -85,16 +85,31 @@ function writeLocalCategories(categories: PushCategory[]): void {
 
 async function existingSubscription(): Promise<PushSubscription | null> {
   if (!supported()) return null;
-  const registration = await navigator.serviceWorker.ready;
-  return registration.pushManager.getSubscription();
+  const registration = await readyRegistration();
+  return registration ? registration.pushManager.getSubscription() : null;
 }
+
+async function readyRegistration(): Promise<ServiceWorkerRegistration | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), 6000); }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+let preparedPublicKey: string | null = null;
 
 async function serverPublicKey(): Promise<string | null> {
   try {
     const res = await fetch("/api/v1/push");
     if (!res.ok) return null;
     const body = (await res.json()) as { publicKey?: string };
-    return body.publicKey ?? null;
+    preparedPublicKey = typeof body.publicKey === "string" ? body.publicKey : null;
+    return preparedPublicKey;
   } catch {
     return null;
   }
@@ -147,18 +162,21 @@ function urlBase64ToBytes(base64: string): ArrayBuffer {
 export async function enablePush(
   categories: PushCategory[] = readLocalCategories(),
   companionAppointmentAt: number | null = null,
+  weeklyOnly = false,
 ): Promise<PushStatus> {
   if (!supported()) return "unsupported";
 
-  const publicKey = await serverPublicKey();
+  const publicKey = preparedPublicKey ?? await serverPublicKey();
   if (!publicKey) return "unconfigured";
 
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return permission === "denied" ? "denied" : "off";
 
-  const registration = await navigator.serviceWorker.ready;
+  const registration = await readyRegistration();
+  if (!registration) return "off";
+  const existing = await registration.pushManager.getSubscription();
   const subscription =
-    (await registration.pushManager.getSubscription()) ??
+    existing ??
     (await registration.pushManager.subscribe({
       // Required by every browser: a push that shows nothing is not allowed.
       // Ours always shows something — the SW composes it locally.
@@ -166,8 +184,12 @@ export async function enablePush(
       applicationServerKey: urlBase64ToBytes(publicKey),
     }));
 
-  writeLocalCategories(categories);
-  await syncSubscription(subscription, categories, companionAppointmentAt);
+  const selected = weeklyOnly
+    ? normaliseCategories([...(existing ? readLocalCategories() : []), "consejos"])
+    : categories;
+  writeLocalCategories(selected);
+  if (weeklyOnly && existing) await refreshWeeklyTips();
+  else await syncSubscription(subscription, selected, companionAppointmentAt);
   return "on";
 }
 
@@ -349,16 +371,7 @@ async function consejosTimes(now: number = Date.now()): Promise<number[]> {
  * request the Ajustes toggle makes.
  */
 export async function enableWeekStartNotice(): Promise<PushStatus> {
-  const categories = readLocalCategories();
-  const next = categories.includes("consejos")
-    ? categories
-    : normaliseCategories([...categories, "consejos"]);
-  if (await existingSubscription()) {
-    writeLocalCategories(next);
-    await refreshWeeklyTips();
-    return "on";
-  }
-  return enablePush(next);
+  return enablePush(["consejos"], null, true);
 }
 
 /** How long before an appointment to poke. */

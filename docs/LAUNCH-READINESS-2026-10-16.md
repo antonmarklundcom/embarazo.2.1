@@ -9,6 +9,20 @@ Branch `codex/launch-readiness-20261016`, from main `a77eece` (PR146, design and
 3. **Onboarding clarity.** After the first question each step shows *Paso N de M* with a progressbar, counted over the steps this person will actually see. The large welcome heading and the account note now appear on the first screen and next to the account step only. Finishing setup marks the starting week as seen, so the first Hoy does not show a *Semana nueva* card for a turnover she has not had (later weeks show it as before). Steps, answers, storage and calculations are unchanged.
 4. **Returning-user sign-in copy.** *Ya tengo una cuenta* and a returning device open `/cuenta?ingreso=1&vuelvo=1`: *Volvé a tu embarazo*, *Entrar con Google*, and a line saying the health-data permission is asked at every sign-in. Consent stays unchecked and required; server actions, the Auth.js callback and `returnTo` validation are untouched.
 
+## Validation on this branch
+
+TypeScript and full ESLint pass. The full unit run passed **1746/1746** with two workers and no auth timeouts; the database suite passed 122/122, content validation 19 files, and the production build passed on Next 15.5.28. After the last test-only commit, the touched unit areas passed 146/146 and lint passed again.
+
+Browser runs: the first targeted run passed **58/60**. Both failures were new tests with wrong assumptions:
+- The headless shell refuses notifications, so that test now runs in full Chromium in its own file.
+- The local preview has no sign-in provider, so the consent check moved to the component test.
+
+A rerun hit two timing failures that had passed in the first run:
+- A 5 s wait was shorter than the push client's own 6 s service-worker bound; it now waits 15 s.
+- A pre-existing welcome test raced Dexie's store creation.
+
+After those fixes, a serial rerun passed 12/12 and the final parallel targeted run passed **60/60**. That run covered push-test, push-test-sw, onboarding-progress, new-week, welcome, onboarding, onboarding-avisos, account-entry, home, sw-idb, offline, security-headers and design-shell. All logs are kept in the external evidence folder, failures included.
+
 ## Dependency audit triage (11 findings: 5 moderate, 6 high)
 
 | Chain | Severity | Reachable? | Action |

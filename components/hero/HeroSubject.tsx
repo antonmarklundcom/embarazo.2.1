@@ -1,23 +1,18 @@
 "use client";
 
 import { useImageFailed } from "@/lib/hooks/useImageFailed";
+import { RealisticPicture } from "@/components/RealisticPicture";
 
 import { ThemeBackdrop } from "./ThemeBackdrop";
 import { useHeroTheme } from "@/lib/hero/preferences";
 import { fallbackInk, heroTheme } from "@/lib/hero/themes";
 import { hasWeekArt, weekArtAlt, weekArtSrc } from "@/lib/hero/weekArt";
 
-// U7 — the baby on the chosen background, sized by whatever frames it.
-//
-// Extracted so the home screen's circular ring hero and any future frame show
-// the same subject on the same theme without either one re-deriving "which
-// image, which fallback, which background". The home hero is the LCP element,
-// which is why `fetchPriority="high"` lives here rather than being remembered
-// at each call site.
-//
-// `object-cover` here, unlike the big card's `object-contain`: this fills a
-// circle cut out of the ring, and a contained image inside a circle leaves
-// four corners of empty theme.
+// The home ring's subject shares the weekly renderer and chosen theme.
+// Current cream-backed studio art resolves through responsive AVIF/WebP mapping;
+// the legacy WEEK_ART_STYLE="cutout" value remains for layout compatibility.
+// The ring clips the image to a circle, so object-cover fills its existing frame.
+// Preserve high priority here because this is the home screen's LCP image.
 export function HeroSubject({
   week,
   alt,
@@ -31,20 +26,19 @@ export function HeroSubject({
   const themeId = useHeroTheme();
   const numberInk = fallbackInk(heroTheme(themeId));
 
-  // Which weeks have a file is `lib/hero/weekArt.ts`'s call: with the cutout
-  // renders, weeks 1–2 have no embryo and show the theme alone; the site's
-  // framed set has a calendar for them. `object-cover` suits both — the framed
-  // pictures are square, so the circle only trims their empty corners.
+  // weekArt owns availability: weeks 1–2 have no embryo and show the theme.
+  // The original revision-bearing URL remains the fallback if no mapped asset
+  // exists; the historical framed set keeps its calendar behavior.
   const hasSubject = hasWeekArt(week);
 
   return (
     <span className="relative block h-full w-full">
       <ThemeBackdrop theme={themeId} />
       {hasSubject && !imgError ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          ref={ref}
-          src={weekArtSrc(week)}
+        <RealisticPicture
+          imageRef={ref}
+          canonicalSrc={weekArtSrc(week)}
+          sizes="208px"
           alt={weekArtAlt(week) ?? alt}
           className="relative block h-full w-full object-cover"
           style={{ objectPosition: "center 18%" }}

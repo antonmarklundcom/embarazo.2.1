@@ -1,24 +1,18 @@
 import { getWeek, hasSizeComparison } from "@/lib/weeks";
 
-// What sits at `/assets/semanas/bebe-<week>.webp` today, and how to show it.
+// Canonical weekly paths remain stable for publication and offline fallbacks.
+// Current art (2026-10-16) is stage-specific realistic 3D illustration on a
+// cream studio background, with responsive AVIF/WebP aliases selected by
+// RealisticPicture. Provenance remains in docs/imagery-manifest.json.
 //
-// Two kinds of art can live behind that one filename contract:
+// The "cutout" enum value is retained for the established baby/comparison
+// layout and week availability; it no longer promises a transparent image or
+// the same anatomy every week. WeekBabyFigure uses a rounded tile and the home
+// hero clips a circle. Theme preferences and clinical measurements are separate.
 //
-// - "framed": the site's 42 size illustrations (embarazo.com.py, copied by
-//   `scripts/import-site-week-art.mjs`). Square, OPAQUE (a flat pastel ground
-//   is part of each picture), and a fruit or a calendar rather than the baby.
-//   Composited over a theme they would read as a coloured square pasted on
-//   her ñandutí, so they are shown as a framed picture in the card instead.
-// - "cutout": the transparent baby renders `docs/imagery-manifest.json`
-//   describes (weeks 3–42), composited over the theme — the layout U7 built.
-//
-// Swapping in the cutouts is `npm run localize:images` plus flipping this one
-// constant; no other file needs to know which set is on disk.
-//
-// 2026-09-28: the cutouts are on disk (weeks 16, 18, 26 and 28–42 regenerated
-// that day, see the manifest). The week's SIZE is told by the comparison
-// object beside the baby (`public/assets/comparaciones/`), not by the baby
-// drawing, which is the same character every week.
+// The historical "framed" branch remains compatible with the site's opaque
+// fruit/calendar set imported by scripts/import-site-week-art.mjs. It includes
+// calendars for weeks 1–2; the current baby set starts at week 3.
 export const WEEK_ART_STYLE: "framed" | "cutout" = "cutout";
 
 /** Weeks that have a file. The site set covers 1–42 (1–2 are calendars). */
@@ -36,7 +30,7 @@ export function hasWeekArt(week: number): boolean {
  * set kept showing it (under the cutout layout). A new revision is a new cache
  * key; the cache name itself stays, as AGENTS.md requires.
  */
-export const WEEK_ART_REVISION = "2026-09-28";
+export const WEEK_ART_REVISION = "2026-10-16-realistic";
 
 export function weekArtSrc(week: number): string {
   return `/assets/semanas/bebe-${week}.webp?v=${WEEK_ART_REVISION}`;

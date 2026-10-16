@@ -47,14 +47,14 @@ export function FamilyCard({ members }: { members: FamilyMember[] }) {
     // labelling by it would give this landmark a name that moves.
     <section
       aria-label="Tu familia"
-      className="rounded-card border border-line bg-white p-4"
+      className="rounded-card bg-pastel-celeste/45 p-6 sm:p-7"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">
             Tu familia
           </p>
-          <h3 className="mt-1 text-base font-extrabold text-ink">
+          <h3 className="mt-2 text-xl font-extrabold leading-snug tracking-tight text-ink">
             {companions.length === 0
               ? "Compartí tu embarazo"
               : companions.length === 1
@@ -64,21 +64,29 @@ export function FamilyCard({ members }: { members: FamilyMember[] }) {
         </div>
         <Link
           href="/familia"
-          className="shrink-0 rounded-full bg-cream px-3 py-2 text-[13px] font-extrabold text-petrol transition active:scale-[0.98]"
+          className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-petrol px-4 py-2 text-sm font-extrabold text-white transition hover:bg-petrol-dark active:scale-[0.98]"
         >
           {companions.length === 0 ? "Invitá" : "Ver"}
         </Link>
       </div>
 
       {companions.length === 0 ? (
-        <p className="mt-2 text-sm leading-relaxed text-muted">
-          Invitá a tu pareja o a tu familia y van a ver tu semana, tu fecha
-          probable de parto y tu próximo control. Nada más: tus notas, tus
-          síntomas y tus fotos siguen siendo tuyas.
-        </p>
+        <div className="mt-5 space-y-4">
+          <p className="text-sm leading-relaxed text-ink/80">
+            Viví esta etapa con tu pareja o tu familia, también desde su celular.
+          </p>
+          <ul className="grid gap-3 text-sm font-bold text-petrol sm:grid-cols-3">
+            <li>Tu semana de embarazo</li>
+            <li>La fecha probable de parto</li>
+            <li>Tu próximo control</li>
+          </ul>
+          <p className="border-t border-petrol/10 pt-4 text-xs leading-relaxed text-ink/80">
+            Eso es lo que van a ver. Tus notas, tus síntomas y tus fotos siguen siendo tuyas.
+          </p>
+        </div>
       ) : (
         <>
-          <ul className="mt-3 flex flex-wrap items-center gap-2">
+          <ul className="mt-5 flex flex-wrap items-center gap-3">
             {companions.map((member) => {
               const role = member.role as Exclude<MemberRole, "owner">;
               return (
@@ -101,7 +109,7 @@ export function FamilyCard({ members }: { members: FamilyMember[] }) {
           </ul>
           <Link
             href="/familia"
-            className="mt-3 inline-block text-[13px] font-extrabold text-terracotta"
+            className="mt-4 inline-flex min-h-11 items-center rounded-full text-sm font-extrabold text-terracotta underline decoration-terracotta/30 underline-offset-4"
           >
             Invitar a alguien más
           </Link>

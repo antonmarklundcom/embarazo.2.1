@@ -68,8 +68,10 @@ test("the baby home: age, the four cards, alarm signs to /emergencia, and no mis
   );
   // The age-band picture (0–2 months) loads; the drawn face is only the fallback.
   const hero = page.getByRole("region", { name: "Tu bebé" });
-  const picture = hero.getByRole("img", { name: /recién nacido/ });
+  const picture = hero.locator('img[data-canonical-src="/assets/bebe/bebe-0-2-meses.webp"]');
   await expect(picture).toBeVisible();
+  await expect(picture).toHaveAttribute("alt", /\S/);
+  await expect(picture).not.toHaveAttribute("aria-hidden", "true");
   await expect.poll(() => picture.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
   // The pregnancy hero is gone, the mood check-in stays.
   await expect(page.getByText("Tip de hoy")).toHaveCount(0);

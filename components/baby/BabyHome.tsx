@@ -12,6 +12,8 @@ import {
   stageFor,
 } from "@/lib/baby/content";
 import { useImageLoaded } from "@/lib/hooks/useImageFailed";
+import { RealisticPicture } from "@/components/RealisticPicture";
+import { realisticImage } from "@/lib/realisticImages";
 
 // Growth plan item 9 ("Ya nació", G2) — the top of Hoy once a birth date exists.
 //
@@ -49,6 +51,7 @@ function Card({ title, tone, children }: { title: string; tone: string; children
 export function BabyHome({ birthDate, now = Date.now() }: { birthDate: number; now?: number }) {
   const age = babyAge(birthDate, now);
   const stage = stageFor(age);
+  const stageImage = realisticImage(stage.image);
   const { ref, loaded, onLoad } = useImageLoaded();
   const born = new Date(birthDate).toLocaleDateString("es-PY", { day: "numeric", month: "long", year: "numeric" });
 
@@ -58,13 +61,12 @@ export function BabyHome({ birthDate, now = Date.now() }: { birthDate: number; n
         <p className="text-[11px] font-extrabold tracking-[1.6px] text-sand-text">YA NACIÓ · {born.toUpperCase()}</p>
         <h1 className="mt-1 text-3xl font-black text-ink">Tu bebé tiene {babyAgeLabel(age)}</h1>
         <figure className="m-0 mt-4 flex justify-center">
-          {/* A plain <img>, like WeekHeroImage: offline-first, precached by the
-              service worker, and the load event is what reveals it. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            ref={ref}
-            src={stage.image}
-            alt={loaded ? stage.alt : ""}
+          {/* Keep the existing decoded-image check and drawn offline fallback. */}
+          <RealisticPicture
+            imageRef={ref}
+            canonicalSrc={stage.image}
+            sizes="240px"
+            alt={loaded ? (stageImage?.alt || stage.alt) : ""}
             aria-hidden={loaded ? undefined : true}
             width={240}
             height={180}

@@ -6,10 +6,21 @@ import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { WeekHeroImage } from "@/components/WeekHeroImage";
 import { ShareCard } from "@/components/ShareCard";
 import { WeekArticleFeed } from "@/components/WeekArticleFeed";
+import { EditorialPicture } from "@/components/EditorialPicture";
 import { perspectivesFor } from "@/lib/seed/perspectives";
 import { questionsForWeek } from "@/lib/controlPrep";
 import { weekMessage, whatsAppShareHref } from "@/lib/weekShare";
 import { siteWeekUrl } from "@/lib/siteLinks";
+
+// These exact existing tips discuss folic acid, hydration or vitamin C.
+// Editorial food/supplement art never replaces the gestational baby picture.
+const WEEK_TIP_IMAGES: Readonly<Record<number, string>> = {
+  1: "folic-acid",
+  2: "hydration",
+  3: "folic-acid",
+  6: "hydration",
+  10: "vitamin-c",
+};
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL;
 
@@ -85,7 +96,11 @@ export default async function SemanaPage({
             {band.vos}
           </WeekSection>
         )}
-        <WeekSection label="Para hacer esta semana" tone="bg-pastel-salvia">
+        <WeekSection
+          label="Para hacer esta semana"
+          tone="bg-pastel-salvia"
+          imageId={WEEK_TIP_IMAGES[week]}
+        >
           {info.tip}
         </WeekSection>
       </div>
@@ -179,10 +194,12 @@ function WeekNav({
 function WeekSection({
   label,
   tone,
+  imageId,
   children,
 }: {
   label: string;
   tone: string;
+  imageId?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -190,6 +207,12 @@ function WeekSection({
       <h2 className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-terracotta">
         {label}
       </h2>
+      {imageId && (
+        <EditorialPicture
+          id={imageId}
+          className="mt-3 aspect-[16/9] w-full rounded-[16px]"
+        />
+      )}
       <p className="mt-2 text-[15px] font-semibold leading-relaxed text-ink">{children}</p>
     </section>
   );

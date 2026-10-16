@@ -215,7 +215,7 @@ export default function InicioPage() {
   // more. Every pregnancy screen is still one tap away in Herramientas.
   if (profile.birthDate !== undefined) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-8 sm:space-y-10">
         <BabyHome birthDate={profile.birthDate} />
         <MoodCheckIn role={profile.role} week={week} />
         <HomeToolsGrid />
@@ -245,115 +245,83 @@ export default function InicioPage() {
   );
 
   return (
-    <div className="space-y-4">
-      <WeekStrip />
+    <div className="space-y-9 sm:space-y-12">
+      <section aria-label="Tu semana" className="space-y-5">
+        <WeekStrip />
+        <WeekHero
+          week={week}
+          weekPlusDay={weekPlusDay}
+          trimester={trimester}
+          completedLabel={completedLabel}
+          sizeComparison={info.sizeComparison}
+          progress={progress}
+          daysElapsed={daysElapsed}
+          daysLeft={daysLeft}
+          dueDateLabel={dueDateLabel}
+          babies={profile.babies}
+          role={profile.role}
+        />
+        <NextAppointmentCard
+          appointmentAt={profile.nextAppointment}
+          guests={ownerView?.members ?? []}
+          companionAppointmentAt={companionViewOf(shared.views)?.snapshot?.nextAppointmentAt ?? null}
+        />
+        <NewWeekCard
+          week={week}
+          daysIntoWeek={profile.completed?.days ?? 3}
+          lmpDate={lmpDate}
+          sizeComparison={info.sizeComparison}
+        />
+        <BirthCard week={week} lmpDate={lmpDate} birthDate={profile.birthDate} />
+      </section>
 
-      {/* Semana nueva: on the day her week turns over (her own weekday,
-          from her FUM) and the two after, until she closes it. */}
-      <NewWeekCard
-        week={week}
-        daysIntoWeek={profile.completed?.days ?? 3}
-        lmpDate={lmpDate}
-        sizeComparison={info.sizeComparison}
-      />
+      <section aria-labelledby="hoy-para-vos" className="space-y-5">
+        <h2 id="hoy-para-vos" className="text-xl font-extrabold tracking-tight text-ink">
+          Un momento para vos
+        </h2>
+        <WeeklyLineCard week={week} />
+        <DailyTipCard text={tip.text} tipId={tip.id} />
+        <MoodCheckIn role={profile.role} week={week} />
+      </section>
 
-      {/* Growth plan item 9 (G1): "¿Ya nació tu bebé?" from week 37. Once
-          she answers, the baby branch above takes over Hoy. */}
-      <BirthCard week={week} lmpDate={lmpDate} birthDate={profile.birthDate} />
+      <section aria-label="Para conocer tu semana" className="space-y-7">
+        <WeekContentRail week={week} role={profile.role} withLine={false} />
+        <WeekArticleFeed week={week} answers={profile} />
+        <PopularThisWeek />
+      </section>
 
-      {/* C1: circular week hero + progress ring + stats row (map #9, #10).
-          Everything below this comment, down to the tool/reading rails, is
-          the C2–C8 slot area — each of those tasks fills in one block here
-          (weekly one-liner, size tabs, perspective switcher, obstetra card,
-          article feed, popular-this-week, shortcuts+feedback) rather than
-          rearranging this hero. */}
-      <WeekHero
-        week={week}
-        weekPlusDay={weekPlusDay}
-        trimester={trimester}
-        completedLabel={completedLabel}
-        sizeComparison={info.sizeComparison}
-        progress={progress}
-        daysElapsed={daysElapsed}
-        daysLeft={daysLeft}
-        dueDateLabel={dueDateLabel}
-        babies={profile.babies}
-        role={profile.role}
-      />
+      <section aria-label="Tus herramientas" className="space-y-6">
+        <HomeShortcuts week={week} />
+        <HomeToolsGrid />
+      </section>
 
-      {/* The daily habit, right under the week: today's tip and the one-tap
-          check-in. They used to be the 8th and 9th cards, below everything
-          about the week — the two things that change every day were the
-          two nobody scrolled to. */}
-      {/* C2: the week's one-liner is the two-second answer, so it leads;
-          the daily tip and check-in follow it. */}
-      <NextAppointmentCard
-        appointmentAt={profile.nextAppointment}
-        guests={ownerView?.members ?? []}
-        companionAppointmentAt={companionViewOf(shared.views)?.snapshot?.nextAppointmentAt ?? null}
-      />
-      <HomeShortcuts week={week} />
-      <HomeToolsGrid />
-      <WeeklyLineCard week={week} />
-      <DailyTipCard text={tip.text} />
-      <MoodCheckIn role={profile.role} week={week} />
+      <section aria-label="Acompañada en esta etapa" className="space-y-5">
+        <HomeFamilySurfaces
+          showAppointment={false}
+          ownerView={ownerView}
+          nextAppointment={profile.nextAppointment}
+          companionAppointmentAt={
+            companionViewOf(shared.views)?.snapshot?.nextAppointmentAt ?? null
+          }
+        />
+        <ShareCard
+          week={week}
+          label="Compartir mi semana"
+          offerInvite
+          offerPartner={isSelfCentered(profile.role)}
+          nickname={shareNickname(profile.babies)}
+        />
+      </section>
 
-      {/* E2: share the week card (map #30). Drawn on the device; the image
-          carries the week number and nothing else. "Contale a tu pareja" (the
-          partner's paragraph for the week, text only) is offered to the mamá
-          only — anyone else on this screen is the person it would go to. */}
-      {/* C8: one-tap access to emergencia · carné · preguntas, and the
-          feedback path (map #18, #19). */}
-      {/* C2–C5: the cards that are about this week — one-liner, tamaños,
-          perspectivas, la nota de la obstetra. */}
-      <WeekContentRail week={week} role={profile.role} withLine={false} />
+      <section aria-label="Recursos para vos" className="space-y-5">
+        <RecomendadosRail trimester={trimester} />
+        <HomeParaguayCards trimester={trimester} />
+      </section>
 
-      {/* Family encouragement follows the practical tools. */}
-      <HomeFamilySurfaces
-        showAppointment={false}
-        ownerView={ownerView}
-        nextAppointment={profile.nextAppointment}
-        companionAppointmentAt={
-          companionViewOf(shared.views)?.snapshot?.nextAppointmentAt ?? null
-        }
-      />
-
-      <ShareCard
-        week={week}
-        label="Compartir mi semana"
-        offerInvite
-        offerPartner={isSelfCentered(profile.role)}
-        nickname={shareNickname(profile.babies)}
-      />
-
-      {/* U11 — the "Recomendados" rail (replaces E4). Self-gates on
-          useFlag("recomendados") and on having any items for this trimester,
-          so it renders nothing until the flag is on — no condition needed
-          here. Sits below the tools grid and above the article feed, per the
-          U11 brief. */}
-      <RecomendadosRail trimester={trimester} />
-
-      {/* C6: guías that are actually about this week, with read time
-          (map #15, #17). Replaces the old rail, whose three cards pointed at
-          two destinations. */}
-      <WeekArticleFeed week={week} answers={profile} />
-
-      {/* C7: aggregate counts, no identity anywhere (map #16). Renders
-          nothing when there is no data. */}
-      <PopularThisWeek />
-
-      {/* Derechos · recursos · temporada. */}
-      <HomeParaguayCards trimester={trimester} />
-
-      {/* Install prompt (P1.1) — hides itself once installed/unavailable */}
-      <InviteFriend />
-
-      <InstallCard />
-
-      {/* The "Lo que viene" roadmap card is gone from Hoy: a lone
-          "Próximamente" tile read as unfinished on the screen she opens
-          every day. The component stays for when there is something real
-          to announce. */}
+      <div className="space-y-5">
+        <InviteFriend />
+        <InstallCard />
+      </div>
       <HomeFooter department={department} />
     </div>
   );

@@ -26,28 +26,28 @@ export const BABY_STAGES: readonly BabyStage[] = [
     fromMonths: 0,
     toMonths: 2,
     image: "/assets/bebe/bebe-0-2-meses.webp",
-    alt: "Ilustración: un bebé recién nacido dormido, envuelto en una manta.",
+    alt: "Un bebé recién nacido duerme boca arriba con ropa de algodón.",
   },
   {
     id: "3-5",
     fromMonths: 3,
     toMonths: 5,
     image: "/assets/bebe/bebe-3-5-meses.webp",
-    alt: "Ilustración: un bebé de pocos meses boca abajo, levantando la cabeza.",
+    alt: "Un bebé despierto levanta la cabeza mientras está boca abajo.",
   },
   {
     id: "6-8",
     fromMonths: 6,
     toMonths: 8,
     image: "/assets/bebe/bebe-6-8-meses.webp",
-    alt: "Ilustración: un bebé sentado, probando una cucharita de puré.",
+    alt: "Un bebé sentado recibe una cucharita de puré de una persona adulta.",
   },
   {
     id: "9-12",
     fromMonths: 9,
     toMonths: 12,
     image: "/assets/bebe/bebe-9-12-meses.webp",
-    alt: "Ilustración: un bebé gateando hacia una pelota.",
+    alt: "Un bebé gatea en el piso hacia una pelota de tela.",
   },
 ];
 

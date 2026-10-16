@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { WEEK_ART_STYLE, hasWeekArt, weekArtAlt, weekArtSrc } from "./weekArt";
+import { WEEK_ART_REVISION, WEEK_ART_STYLE, hasWeekArt, weekArtAlt, weekArtSrc } from "./weekArt";
 
 // Item 7 of the growth plan: the site's week illustrations in the app hero.
 // The switch and the files on disk have to agree, or the hero asks for a 404
@@ -11,7 +11,8 @@ import { WEEK_ART_STYLE, hasWeekArt, weekArtAlt, weekArtSrc } from "./weekArt";
 
 describe("week art", () => {
   it("N6: every URL carries the art revision, so a replaced render is a new cache key", () => {
-    expect(weekArtSrc(20)).toMatch(/^\/assets\/semanas\/bebe-20\.webp\?v=\d{4}-\d{2}-\d{2}$/);
+    expect(weekArtSrc(20)).toBe(`/assets/semanas/bebe-20.webp?v=${WEEK_ART_REVISION}`);
+    expect(WEEK_ART_REVISION).toMatch(/^\d{4}-\d{2}-\d{2}(?:-[a-z0-9-]+)?$/);
   });
 
   it("has a file on disk for every week the switch claims", () => {

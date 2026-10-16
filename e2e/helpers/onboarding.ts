@@ -91,7 +91,7 @@ export async function completeOnboarding(
   await page.getByRole("button", { name: "Continuar" }).click();
 
   // The account step. Secondary, but never hidden.
-  await expect(page.getByRole("heading", {name:/Vista de prueba|Listo, ya entraste|Guardá tu embarazo y compartilo/})).toBeVisible();
+  await expect(page.getByRole("heading", {name:/Vista de prueba|Listo, ya entraste|Guardá tu embarazo y compartilo|Tu embarazo, organizado en un solo lugar/})).toBeVisible();
   const previewContinue = page.getByRole("button", { name: "Seguir sin cuenta", exact: true });
   if (await previewContinue.count()) await previewContinue.click();
   else await page.getByRole("button", { name: mode === "embarazada" ? "Continuar" : "Empezar", exact: true }).click();

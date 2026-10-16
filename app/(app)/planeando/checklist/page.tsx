@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { PRECONCEPTION_ITEMS } from "@/lib/preconception";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { PrivacyLine } from "@/components/PrivacyLine";
+import { EditorialPicture } from "@/components/EditorialPicture";
 
 export default function PreconcepcionPage() {
   const state = useLiveQuery(() => db().checklistState.toArray(), []);
@@ -45,6 +46,12 @@ export default function PreconcepcionPage() {
             const checked = done.has(item.key);
             return (
               <li key={item.key} className="border-b border-line pb-2 last:border-0">
+                {item.key === "preconcep-acido-folico" && (
+                  <EditorialPicture
+                    id="folic-acid"
+                    className="mb-3 aspect-[16/9] w-full rounded-[16px]"
+                  />
+                )}
                 <button
                   type="button"
                   onClick={() => toggle(item.key)}

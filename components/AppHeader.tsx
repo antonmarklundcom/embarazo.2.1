@@ -10,20 +10,26 @@ export function AppHeader() {
   const t = useT();
   return (
     <header
-      className="sticky top-0 z-30 border-b border-line bg-cream/90 backdrop-blur print:hidden"
+      className="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur print:hidden"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
-      <div className="mx-auto flex max-w-md items-center justify-between px-4 py-3">
-        <Link href="/" className="flex items-center gap-2.5">
+      <a
+        href="#main-content"
+        className="sr-only z-50 rounded-full bg-petrol px-5 py-3 font-bold text-white focus:not-sr-only focus:absolute focus:left-4 focus:top-2"
+      >
+        Ir al contenido
+      </a>
+      <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-5 py-4 sm:px-8">
+        <Link href="/" className="flex min-h-11 items-center gap-2.5 rounded-full">
           <BrandMark />
           <span className="text-[19px] font-black tracking-tight text-ink">
             {APP_NAME}
           </span>
         </Link>
-        <div className="flex items-center gap-2.5">
+        <div className="flex min-h-11 items-center gap-2.5 rounded-full">
           <Link
             href="/emergencia"
-            className="flex h-11 items-center rounded-full bg-terracotta px-4 text-sm font-black tracking-wide text-white transition active:scale-95"
+            className="flex h-11 items-center rounded-full bg-terracotta px-4 text-sm font-black tracking-wide text-white transition hover:bg-[#9d452e] active:scale-95"
           >
             {t("header.emergency")}
           </Link>

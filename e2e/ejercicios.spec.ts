@@ -20,11 +20,11 @@ test("the tile opens the list of all 12 exercises", async ({ page }) => {
   await expect(page.getByRole("link", { name: /Piso pélvico/ }).first()).toBeVisible();
 });
 
-test("an exercise shows its illustrated steps, and every image loads", async ({ page }) => {
+test("an exercise shows its step images, and every image loads", async ({ page }) => {
   await completeOnboarding(page, { daysAgo: 70 });
   await page.goto("/herramientas/ejercicios/caminar");
 
-  const images = page.locator('img[src*="ejercicios%2Fcaminar-"]');
+  const images = page.locator('img[data-canonical-src^="/assets/ejercicios/caminar-"]');
   await expect(images).toHaveCount(2);
   for (const img of await images.all()) {
     await img.scrollIntoViewIfNeeded();

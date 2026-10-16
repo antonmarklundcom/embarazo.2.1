@@ -148,6 +148,7 @@ export function SignInCard({
   credentialsAvailable,
   initialError,
   returnTo = "/",
+  compact = false,
 }: {
   providers: ProviderId[];
   /** PR-20 — true once email + password sign-in can complete (secret + db). */
@@ -155,6 +156,8 @@ export function SignInCard({
   /** Set when the sign-in callback bounced the user back (e.g. no consent). */
   initialError?: string;
   returnTo?: string;
+  /** Welcome already explains the benefits; keep the account step focused. */
+  compact?: boolean;
 }) {
   const [state, formAction, pending] = useActionState<SignInState, FormData>(
     startSignIn,
@@ -184,17 +187,21 @@ export function SignInCard({
       </header>
 
       <section className="rounded-card border border-line bg-white p-4 shadow-soft">
-        <h2 className="text-[15px] font-extrabold text-ink">
-          Todo lo que sumás con tu cuenta
-        </h2>
-        <ul className="mt-2 space-y-1.5 text-sm font-semibold text-ink">
-          <li>• Tu semana de embarazo y lo que viene en cada etapa.</li>
-          <li>• Tus controles y preguntas para la próxima consulta, organizados.</li>
-          <li>• Un registro de tus síntomas, ánimo y peso para ver tus cambios.</li>
-          <li>• Tu diario y tus checklists para preparar la llegada de tu bebé.</li>
-          <li>• Tus registros sincronizados, también si cambiás de teléfono.</li>
-          <li>• Compartir con tu pareja o tu familia solo lo que vos elijas.</li>
-        </ul>
+        {!compact && (
+          <>
+            <h2 className="text-[15px] font-extrabold text-ink">
+              Todo lo que sumás con tu cuenta
+            </h2>
+            <ul className="mt-2 space-y-1.5 text-sm font-semibold text-ink">
+              <li>• Tu semana de embarazo y lo que viene en cada etapa.</li>
+              <li>• Tus controles y preguntas para la próxima consulta, organizados.</li>
+              <li>• Un registro de tus síntomas, ánimo y peso para ver tus cambios.</li>
+              <li>• Tu diario y tus checklists para preparar la llegada de tu bebé.</li>
+              <li>• Tus registros sincronizados, también si cambiás de teléfono.</li>
+              <li>• Compartir con tu pareja o tu familia solo lo que vos elijas.</li>
+            </ul>
+          </>
+        )}
         <p className="mt-3 text-xs leading-relaxed text-muted">
           De Google recibimos solo tu nombre, tu correo y tu foto de perfil.
           Con correo y contraseña, solo eso: tu correo y una contraseña que

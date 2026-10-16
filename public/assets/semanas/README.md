@@ -1,4 +1,36 @@
 # Week renders and comparison objects
+## Current workflow — 16 October 2026
+
+The approved weekly set now uses restrained realistic 3D medical-style renders
+on opaque cream studio backgrounds. The historical transparency mandate below
+is superseded for this set. `WEEK_ART_STYLE = "cutout"` remains a compatibility
+value for the existing layout and week availability; it no longer promises alpha.
+Weeks 1–2 still have no embryo image. Images are illustrative and do not replace
+or modify the app's clinical measurements, dates or comparison captions.
+
+Generation originals, briefs and QA stay outside Git under
+`E:/ai work/Artifacts/embarazo.2.1/2026-10-16/design`. See
+[`docs/DESIGN-IMAGERY-2026-10-16.md`](../../../docs/DESIGN-IMAGERY-2026-10-16.md)
+and [`docs/imagery-manifest.json`](../../../docs/imagery-manifest.json) for the
+current handoff and provenance. Do not commit raw originals or private references.
+Use the approved webimg pipeline for local AVIF/WebP variants and inspect crops
+before placement. The canonical weekly WebP fallback is 640 pixels square.
+
+Runtime aliases in `lib/realistic-image-slots.json` resolve through
+`lib/realisticImages.ts` and `lib/editorialImages.ts` to
+`public/assets/img/manifest.json`. `RealisticPicture` emits responsive AVIF/WebP
+sources and preserves the original canonical URL when a mapped manifest entry
+is absent. Weekly callers pass `weekArtSrc(week)`, including its revision query;
+lookup strips the query only to find the alias. Keep canonical paths
+`/assets/semanas/bebe-3.webp` through `bebe-42.webp` as compatibility fallbacks.
+When replacing those bytes, advance `WEEK_ART_REVISION` in `lib/hero/weekArt.ts`,
+retain existing cache names, and verify installed online-to-offline behavior.
+
+The home ring keeps its circular clip; the week detail view gives the cream
+background rounded tile corners over the selected theme. Load/error probes,
+drawn fallbacks and theme preferences remain intact.
+
+## Historical cutout workflow (superseded for the current set)
 
 **Today (2026-09-28):** this directory holds the transparent **cutout** renders
 `bebe-3.webp` … `bebe-42.webp` (`npm run localize:images` from

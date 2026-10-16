@@ -1,16 +1,10 @@
 @import "tailwindcss";
 
-/* Brand design language (see lib/brand.ts for the product name) —
-   docs/archive/REDESIGN-PLAN.md §1 (canvas 1d).
-   Moved here from tailwind.config.ts by the Tailwind 3→4 migration: v4 is
-   CSS-first, and `@theme` is where tokens live now. Every token below kept its
-   value AND its generated class name, so `bg-petrol`, `text-sand-text`,
-   `rounded-card` and `shadow-soft` all still mean what they meant.
-
-   `@theme` extends the default theme rather than replacing it, which is the
-   same semantics as v3's `theme.extend`. */
+/* Shared Mi Bebé tokens: warm white surfaces, quiet pastels and generous
+   card corners. Brand green/terracotta retain accessible text contrast.
+   Tailwind v4 keeps these semantic class names available across the app. */
 @theme {
-  --color-cream: #FBF7F1;
+  --color-cream: #FCFBF9;
   --color-petrol: #2F5D50;
   --color-petrol-dark: #24463D;
   /* Darkened from #C96342 (3.9:1 under white text) to pass WCAG AA 4.5:1
@@ -21,7 +15,7 @@
   --color-sage: #6F8A66;
   --color-ink: #322E29;
   --color-muted: #7A7369;
-  --color-line: #EDE5DA;
+  --color-line: #EEEDE8;
   /* WhatsApp's own #25D366 carries white text at ~2:1. The icon is what
      people recognise; the fill is darkened to 5:1. */
   --color-whatsapp: #0F7F43;
@@ -35,13 +29,13 @@
   --color-pastel-lavanda: #E6E0F0;
   --color-pastel-arena: #F8E2CB;
 
-  --radius-card: 16px;
-  --radius-tile: 14px;
+  --radius-card: 24px;
+  --radius-tile: 20px;
 
   --font-sans: var(--font-nunito), system-ui, sans-serif;
 
   --shadow-soft:
-    0 1px 3px rgba(42, 39, 36, 0.06), 0 1px 2px rgba(42, 39, 36, 0.04);
+    0 3px 18px rgba(42, 39, 36, 0.035), 0 1px 3px rgba(42, 39, 36, 0.025);
 }
 
 :root {
@@ -50,7 +44,7 @@
 
 html,
 body {
-  background-color: #fbf7f1;
+  background-color: #fcfbf9;
   color: #322e29;
   -webkit-font-smoothing: antialiased;
 }
@@ -58,6 +52,12 @@ body {
 body {
   font-family: var(--font-nunito), system-ui, sans-serif;
   font-weight: 400;
+}
+
+/* Clear focus against both white and pastel surfaces. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid #2f5d50;
+  outline-offset: 3px;
 }
 
 /* Prose styling for guías detail (sentence case, calm, readable). */

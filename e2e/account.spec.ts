@@ -6,7 +6,7 @@ import { completeOnboarding } from "./helpers/onboarding";
 test("/cuenta offers public reading and no anonymous personal-tracking entry", async ({ page }) => {
   await page.goto("/cuenta");
   await expect(page.getByRole("link", { name: "Seguir sin cuenta" })).toHaveCount(0);
-  const guides = page.getByRole("link", { name: "Leer las guías" });
+  const guides = page.getByRole("link", { name: "Ver consejos", exact: true });
   await expect(guides).toBeVisible();
   await guides.click();
   await expect(page).toHaveURL(/\/guias$/);

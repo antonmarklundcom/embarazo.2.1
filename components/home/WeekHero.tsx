@@ -15,6 +15,7 @@ import { comparisonFor, comparisonCaption } from "@/lib/seed/comparisons";
 import { useImageFailed } from "@/lib/hooks/useImageFailed";
 
 import { HeroSubject } from "@/components/hero/HeroSubject";
+import { RealisticPicture } from "@/components/RealisticPicture";
 import { ThemeChip } from "@/components/hero/ThemeChip";
 
 // B1 (role-aware "Tu bebé"/"El bebé") and B2 (nickname, e.g. "Silvia") each
@@ -31,8 +32,8 @@ function babyAtWeekLabel(babies: BabyIdentity[], role: Role, week: number): stri
 // date, clamped so an overdue pregnancy doesn't overshoot). Below it, the
 // three-stat row (semana · días transcurridos · faltan) feature map #10
 // asks for explicitly, rather than leaving those numbers implicit in prose.
-const RING_SIZE = 168;
-const RING_STROKE = 8;
+const RING_SIZE = 208;
+const RING_STROKE = 5;
 const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
@@ -69,92 +70,71 @@ export function WeekHero({
   const measures = [info.lengthCm ? "≈ " + formatLength(info.lengthCm) : null, info.weightG ? "≈ " + formatWeight(info.weightG) : null].filter(Boolean).join(" · ");
 
   return (
-    <div className="rounded-card bg-white p-5 text-center shadow-soft">
-      <Link
-        href={`/semana/${week}`}
-        aria-label={`Semana ${week}, detalles`}
-        className="relative mx-auto block transition active:scale-[0.97]"
-        style={{ width: RING_SIZE, height: RING_SIZE }}
-      >
-        <svg
-          width={RING_SIZE}
-          height={RING_SIZE}
-          viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
-          className="absolute inset-0 -rotate-90"
-          aria-hidden
-        >
-          <circle
-            cx={RING_SIZE / 2}
-            cy={RING_SIZE / 2}
-            r={RING_RADIUS}
-            fill="none"
-            stroke="#EFE7DA"
-            strokeWidth={RING_STROKE}
-          />
-          <circle
-            cx={RING_SIZE / 2}
-            cy={RING_SIZE / 2}
-            r={RING_RADIUS}
-            fill="none"
-            stroke="#B5553A"
-            strokeWidth={RING_STROKE}
-            strokeLinecap="round"
-            strokeDasharray={RING_CIRCUMFERENCE}
-            strokeDashoffset={dashOffset}
-          />
-        </svg>
-        {/* U7: the inside of the ring is the themed hero now. The ring, the
-            stats and the link are untouched — this is the one place the theme
-            reaches the home screen. */}
-        <div
-          className="absolute overflow-hidden rounded-full"
-          style={{ inset: RING_STROKE + 6 }}
-        >
-          <HeroSubject week={week} alt={babyAtWeekLabel(babies, role, week)} />
+    <section aria-label="El desarrollo de tu bebé" className="overflow-hidden rounded-[28px] bg-pastel-salvia/40 p-6 sm:p-8">
+      <div className="grid items-center gap-7 text-center md:grid-cols-[minmax(0,1fr)_224px] md:text-left">
+        <div className="md:col-start-2 md:row-start-1">
+          <Link
+            href={`/semana/${week}`}
+            aria-label={`Semana ${week}, detalles`}
+            className="relative mx-auto block rounded-full transition active:scale-[0.97]"
+            style={{ width: RING_SIZE, height: RING_SIZE }}
+          >
+            <svg
+              width={RING_SIZE}
+              height={RING_SIZE}
+              viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
+              className="absolute inset-0 -rotate-90"
+              aria-hidden
+            >
+              <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_RADIUS} fill="none" stroke="#FFFFFF" strokeWidth={RING_STROKE} />
+              <circle
+                cx={RING_SIZE / 2}
+                cy={RING_SIZE / 2}
+                r={RING_RADIUS}
+                fill="none"
+                stroke="#B5553A"
+                strokeWidth={RING_STROKE}
+                strokeLinecap="round"
+                strokeDasharray={RING_CIRCUMFERENCE}
+                strokeDashoffset={dashOffset}
+              />
+            </svg>
+            <div className="absolute overflow-hidden rounded-full" style={{ inset: RING_STROKE + 7 }}>
+              <HeroSubject week={week} alt={babyAtWeekLabel(babies, role, week)} />
+            </div>
+            {showFruit && <SizeBadge week={week} />}
+          </Link>
         </div>
-        {/* 2026-09-28: the week's size, told by a Paraguayan fruit or
-            vegetable rather than by the baby drawing (the same character
-            every week). Decorative: the size line below says it in words. */}
-        {showFruit && <SizeBadge week={week} />}
-      </Link>
 
-      {/* B3: `week+day` is the default display, in carné notation ("24+3").
-          It is labelled "SEMANAS", not "SEMANA N", on purpose — the app has
-          two week numberings and this used to conflate them. `weekPlusDay`
-          counts COMPLETED weeks (carné convention); `week` is the friendly
-          1-based number the 42 `/semana/[n]` pages use, and it is one higher.
-          Rendering "SEMANA 24+3" next to a link to /semana/25 showed the user
-          two different weeks for the same day. See DECISIONS.md "B3". */}
-      <p className="mt-3 text-[11px] font-extrabold tracking-[1.6px] text-petrol">
-        {weekPlusDay} SEMANAS · {trimester}.º TRIMESTRE
-      </p>
-      <p className="mt-1 text-xl font-black text-ink">
-        {completedLabel ?? `Semana ${week}`}
-      </p>
-      <p className="mt-0.5 text-xs font-bold text-muted">
-        {showFruit ? (comparisonCaption(week) ?? sizeLine(sizeComparison)) : (week <= 3 ? sizeLine(sizeComparison) : "Medidas aproximadas de tu bebé")}
-      </p>
-      {measures && <p className="mt-2 text-lg font-black text-ink">{measures}</p>}
-      {info.lengthCm && <p className="mt-1 text-[11px] font-semibold text-muted">Longitud {measurementNote(week)}</p>}
-      {showFruit && comparisonFor(week) && <p className="mt-1 text-[10px] leading-relaxed text-muted">Referencia ilustrativa, sin escala. Las frutas varían.</p>}
-      <div className="mt-3"><ComparisonChoice /></div>
-      {/* U7: the way into the theme sheet, on the card it changes. */}
-      <div className="mt-2">
-        <ThemeChip />
+        <div className="min-w-0 md:col-start-1 md:row-start-1">
+          {/* Keep completed weeks + days distinct from the friendly week link. */}
+          <p className="text-xs font-extrabold tracking-[1.4px] text-petrol">
+            {weekPlusDay} SEMANAS · {trimester}.º TRIMESTRE
+          </p>
+          <h1 className="mt-3 text-[28px] font-black leading-tight tracking-tight text-ink sm:text-[32px]">
+            {completedLabel ?? `Semana ${week}`}
+          </h1>
+          <p className="mt-3 text-sm font-semibold leading-relaxed text-ink/80">
+            {showFruit ? (comparisonCaption(week) ?? sizeLine(sizeComparison)) : (week <= 3 ? sizeLine(sizeComparison) : "Medidas aproximadas de tu bebé")}
+          </p>
+          {measures && <p className="mt-3 text-xl font-black text-ink">{measures}</p>}
+          {info.lengthCm && <p className="mt-1 text-xs leading-relaxed text-ink/80">Longitud {measurementNote(week)}</p>}
+          {showFruit && comparisonFor(week) && <p className="mt-2 text-xs leading-relaxed text-ink/80">Referencia ilustrativa, sin escala. Las frutas varían.</p>}
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2 md:justify-start">
+            <ComparisonChoice />
+            <ThemeChip className="min-h-11" />
+          </div>
+        </div>
       </div>
 
-      {/* Three-stat row (feature map #10). It used to open with "Semana",
-          the same number the ring already shows in 120px — the card read the
-          week four ways. The FPP is the number she is asked for most. */}
-      <div className="mt-4 grid grid-cols-3 gap-2 border-t border-line pt-3.5">
+      <div className="mt-7 grid grid-cols-3 gap-2 border-t border-petrol/10 pt-5 text-center">
         <HeroStat value={dueDateLabel} label="Fecha probable" />
         <HeroStat value={String(daysElapsed)} label="Días pasados" />
         <HeroStat value={String(daysLeft)} label="Faltan" />
       </div>
-    </div>
+    </section>
   );
 }
-
 function SizeBadge({ week }: { week: number }) {
   const comparison = comparisonFor(week);
   const { ref, failed, onError } = useImageFailed();
@@ -164,10 +144,10 @@ function SizeBadge({ week }: { week: number }) {
       className="absolute bottom-1 right-1 flex h-[68px] w-[68px] items-center justify-center rounded-full border-4 border-white bg-cream shadow-soft"
       aria-hidden
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        ref={ref}
-        src={comparison.imageSrc}
+      <RealisticPicture
+        imageRef={ref}
+        canonicalSrc={comparison.imageSrc}
+        sizes="48px"
         alt=""
         width={48}
         height={48}
@@ -182,7 +162,7 @@ function HeroStat({ value, label }: { value: string; label: string }) {
   return (
     <div>
       <p className="text-lg font-black text-ink">{value}</p>
-      <p className="text-[11px] font-semibold text-muted">{label}</p>
+      <p className="text-xs font-semibold text-ink/80">{label}</p>
     </div>
   );
 }

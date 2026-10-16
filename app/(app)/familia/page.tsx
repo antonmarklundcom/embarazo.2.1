@@ -22,6 +22,7 @@ import {
 import { inviteCodeFromSearch } from "@/lib/sharing/inviteLink";
 import { fetchAuthStatus, type AuthStatus } from "@/lib/auth/status";
 import { SignInCard } from "@/components/SignInCard";
+import { EditorialPicture } from "@/components/EditorialPicture";
 
 // BUILD-PLAN E1 — one screen, both sides of sharing.
 //
@@ -180,6 +181,13 @@ export default function FamiliaPage() {
           Compartí tu semana con quien quieras, sin compartir todo lo demás.
         </p>
       </header>
+
+      {(owned || shared.length > 0 || invited) && (
+        <EditorialPicture
+          id="family"
+          className="aspect-[16/9] w-full rounded-[22px]"
+        />
+      )}
 
       {shared.map((view) => (
         <section

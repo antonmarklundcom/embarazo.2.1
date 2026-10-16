@@ -5,11 +5,12 @@ import { notFound } from "next/navigation";
 
 import { PUBLISHED_EJERCICIOS, getEjercicioById } from "@/lib/seed/ejercicios";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
+import { RealisticPicture } from "@/components/RealisticPicture";
+import { realisticImage } from "@/lib/realisticImages";
 
-// D6 — static per published exercise, same shape as `/guias/[slug]`. Step
-// images are runtime-cached by the service worker (not precached): unlike the
-// 42 week renders, this collection can grow without inflating the app's
-// offline-install budget.
+// Static per published exercise. Existing canonical paths remain valid while
+// responsive variants use the local manifest. Public images are hash-precached
+// by the installed Serwist build; verify the generated worker after replacements.
 // Only published exercises have routes; unknown IDs return a real 404.
 export const dynamicParams = false;
 
@@ -67,12 +68,23 @@ export default async function EjercicioDetailPage({
           {exercise.steps.map((step, index) => (
             <li key={index} className="rounded-card border border-line bg-white p-3">
               <div className="relative mb-2 aspect-[4/3] overflow-hidden rounded-tile bg-pastel-arena/40">
-                <Image
-                  src={step.imageSrc}
-                  alt={step.text}
-                  fill
-                  sizes="(max-width: 480px) 100vw, 480px"
-                  className="object-cover"
+                <RealisticPicture
+                  canonicalSrc={step.imageSrc}
+                  alt={realisticImage(step.imageSrc)?.alt ?? step.text}
+                  sizes="(max-width: 768px) calc(100vw - 80px), 640px"
+                  className="absolute inset-0 h-full w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                  fallback={
+                    <Image
+                      src={step.imageSrc}
+                      alt={realisticImage(step.imageSrc)?.alt ?? step.text}
+                      fill
+                      sizes="(max-width: 768px) calc(100vw - 80px), 640px"
+                      className="object-cover"
+                      data-canonical-src={step.imageSrc}
+                    />
+                  }
                 />
               </div>
               <p className="text-sm leading-relaxed text-ink/90">

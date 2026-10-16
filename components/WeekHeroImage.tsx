@@ -1,6 +1,7 @@
 "use client";
 
 import { useImageLoaded } from "@/lib/hooks/useImageFailed";
+import { RealisticPicture } from "@/components/RealisticPicture";
 
 import { ThemeBackdrop } from "./hero/ThemeBackdrop";
 import { ThemeChip } from "./hero/ThemeChip";
@@ -14,23 +15,13 @@ import { comparisonCaption, comparisonFor } from "@/lib/seed/comparisons";
 import { ComparisonChoice } from "./hero/ComparisonChoice";
 import { WEEK_ART_STYLE, hasWeekArt, weekArtAlt, weekArtSrc } from "@/lib/hero/weekArt";
 
-// Weekly "bebé a las N semanas" hero, v2 (U7).
-//
-// What changed from G3: the render is no longer the background. It is a
-// subject with alpha, composited over a theme the woman chooses
-// (`lib/hero/themes.ts`), which is what makes personalisation cost six
-// gradients instead of 42 × 6 image files — the trade HANDOFF §2 settled when
-// it rejected multiple baby art styles.
-//
-// The old hero hard-coded white text over a dark bottom gradient. That is an
-// assumption about a photograph, and it breaks the moment the background is a
-// pale lace medallion, so the scrim and the ink now come from the theme.
-//
-// **What is on disk today is the cutout set** (2026-09-28): transparent baby
-// renders for weeks 3–42, composited over the theme, with this week's
-// illustrative fruit reference (`ComparisonFigure`), clearly without scale.
-// The framed branch below stays for the site's opaque set; `lib/hero/weekArt.ts`
-// says which set is on disk.
+// Weekly baby art with the existing theme, comparison and measurement controls.
+// The legacy WEEK_ART_STYLE="cutout" value preserves the established layout;
+// current weekly images have cream studio backgrounds and use responsive local
+// AVIF/WebP mapping. They do not require alpha. WeekBabyFigure presents the art
+// as a rounded tile, while the home ring clips the same image to a circle.
+// Themes continue to supply the card background and caption colors. The older
+// framed-art branch and all loading fallbacks remain available for compatibility.
 export function WeekHeroImage({
   week,
   trimester,
@@ -58,16 +49,9 @@ export function WeekHeroImage({
   const hasSubject = week >= 3;
   const hasArt = hasWeekArt(week);
   const framed = WEEK_ART_STYLE === "framed";
-  // The render layout only once a cutout render has actually loaded. Until
-  // then the card is the bare layout — caption on the theme in its own dark
-  // ink, and the drawn baby beside the size comparison — so it never flashes a
-  // scrimmed caption over an empty frame and then swaps after hydration.
-  //
-  // 2026-09-28: not used for the cutout set after all. Composited full-bleed
-  // under the caption scrim the render went dark and hid the one thing that
-  // tells the size, the fruit. The bare layout draws the render beside the
-  // fruit, without a scale claim (`ComparisonFigure` → `WeekBabyFigure`), which is what
-  // the week page is for. Kept behind this constant, not deleted.
+  // Preserve the load-gated legacy full-bleed branch, currently disabled. The
+  // active layout keeps the caption on its selected theme and displays weekly
+  // art beside the optional comparison without changing measurement semantics.
   const COMPOSITE_RENDER = false;
   const onRender = COMPOSITE_RENDER && !framed && hasArt && loaded;
   // The framed set: the picture takes the drawing's place in the bare layout.
@@ -119,17 +103,16 @@ export function WeekHeroImage({
   // The probe: always in the DOM for weeks with art, so the day a file lands
   // it is picked up with no code change. Hidden until it has loaded.
   const probe = hasArt ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      ref={ref}
-      src={weekArtSrc(week)}
+    <RealisticPicture
+      imageRef={ref}
+      canonicalSrc={weekArtSrc(week)}
+      sizes={framed ? "200px" : "(min-width: 768px) 704px, calc(100vw - 40px)"}
       alt={shown ? (weekArtAlt(week) ?? alt ?? `Tu bebé a las ${week} semanas`) : ""}
       aria-hidden={shown ? undefined : true}
       width={framed ? 200 : undefined}
       height={framed ? 200 : undefined}
-      // Cutout: `object-contain`, not `cover` — the render has alpha and a
-      // theme behind it, so cropping it to fill would cut the subject the
-      // background exists to frame. Framed: a square picture in a square box.
+      // Preserve legacy composite sizing and framed crops. Current studio art
+      // uses the rounded WeekBabyFigure tile while this loading probe is hidden.
       className={
         framedShown
           ? "block h-[200px] w-[200px] rounded-2xl object-cover shadow-soft"

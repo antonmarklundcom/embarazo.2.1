@@ -13,8 +13,9 @@ actually needs it:
    `KNOWN-ISSUES.md` and `docs/decisions-needed.md` — the still-open,
    cross-unit items — or `docs/LAUNCH-CHECKLIST.md` for what's left before a
    public launch.
-4. [`docs/HANDOFF-2026-09-06.md`](HANDOFF-2026-09-06.md) — the latest
-   handoff: what shipped, what the founder decided, what's queued.
+4. [`docs/OPUS-HANDOFF-2026-10-16.md`](OPUS-HANDOFF-2026-10-16.md) — current
+   continuation: approved design/images, release verification, protected contracts
+   and next plan. The [September handoff](HANDOFF-2026-09-06.md) is historical context.
 5. [`docs/LAUNCH-CHECKLIST.md`](LAUNCH-CHECKLIST.md) — the one ordered list
    of what's left before a public launch.
 6. [`DECISIONS.md`](../DECISIONS.md) — the append-only decision log.
@@ -30,10 +31,12 @@ the banner still tells you what replaced them and why. Nothing under
 | File | Status | Read when | Superseded by |
 |---|---|---|---|
 | [`docs/INDEX.md`](INDEX.md) | current | you don't know where to start | — |
+| [`docs/OPUS-HANDOFF-2026-10-16.md`](OPUS-HANDOFF-2026-10-16.md) | current continuation | starting today's Opus/build session; approved work, evidence and next plan | — |
 | [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) | current | before writing any code; §4 is the data contract | — |
 | [`docs/BUILD-PLAN.md`](BUILD-PLAN.md) | current | task-level detail for phased engineering work | — |
 | [`docs/FEATURE-MAP.md`](FEATURE-MAP.md) | current | tracing a Preggers-benchmarked item to its task | — |
 | [`docs/FLO-BENCHMARK.md`](FLO-BENCHMARK.md) | current | the Flo benchmark behind monetisation/engagement calls | — |
+| [`docs/PREGGERS-RESEARCH-2026-10-16.md`](PREGGERS-RESEARCH-2026-10-16.md) | dated research | current official-source Preggers evidence, limits and stage-appropriate business proposals; no implementation authorization | — |
 | [`docs/ANDROID-LAUNCH.md`](ANDROID-LAUNCH.md) | current | planning the Play Store / TWA packaging phase | — |
 | [`docs/SITE-PLAN-EMBARAZO-COM-PY.md`](SITE-PLAN-EMBARAZO-COM-PY.md) | current | content/SEO/architecture reference for the marketing site (the Next.js build in §2/§7/§8 is superseded — the founder is hand-building it as static HTML/PHP outside this repo) | — |
 | [`docs/LAUNCH-CHECKLIST.md`](LAUNCH-CHECKLIST.md) | current | the running order of what's left before public launch | — |
@@ -58,3 +61,5 @@ the banner still tells you what replaced them and why. Nothing under
 | [`README.md`](../README.md) | current | first stop: what the app is, env vars, local dev, deployment | — |
 | [`DECISIONS.md`](../DECISIONS.md) | current | looking up why a specific call was made; append-only, search by keyword | — |
 | [`AGENTS.md`](../AGENTS.md) | current | dispatching or picking up a worker unit; the rules a worker follows | — |
+
+- [Design and realistic image release, 16 October 2026](DESIGN-IMAGERY-2026-10-16.md) — approved scope, cost, curation and release evidence.

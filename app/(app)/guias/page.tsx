@@ -1,111 +1,90 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getArticles } from "@/lib/wordpress";
-import { PUBLISHED_VIDEOS } from "@/lib/seed/videos";
+
+import { EditorialCard } from "@/components/EditorialCard";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { readTimeLabel } from "@/lib/articles/readTime";
+import { PUBLISHED_VIDEOS } from "@/lib/seed/videos";
+import { getArticles } from "@/lib/wordpress";
 
 export const metadata: Metadata = {
   title: "Guías",
   description: "Guías del embarazo hechas para Paraguay: salud, trámites y derechos.",
 };
 
+const SHELVES = [
+  { id: "salud", title: "Cuidá tu salud" },
+  { id: "dia-a-dia", title: "Tu día a día" },
+  { id: "llegada", title: "Prepará la llegada" },
+] as const;
+
+function shelfFor(cluster?: string) {
+  if (cluster === "salud") return "salud";
+  if (cluster === "logistica" || cluster === "tramites") return "llegada";
+  return "dia-a-dia";
+}
+
 export default async function GuiasPage() {
   const articles = await getArticles();
 
   return (
-    <div className="space-y-4">
-      <header>
-        <h1 className="text-2xl font-black tracking-tight text-ink">Consejos</h1>
-        <p className="mt-0.5 text-sm font-semibold text-muted">
-          Información del embarazo pensada para Paraguay.
+    <div className="space-y-8 pb-2 sm:space-y-10">
+      <header className="space-y-2">
+        <p className="text-xs font-bold tracking-wide text-petrol">Hecho para Paraguay</p>
+        <h1 className="text-[30px] font-black leading-tight tracking-tight text-ink sm:text-4xl">
+          Consejos para vos
+        </h1>
+        <p className="max-w-lg text-[15px] leading-relaxed text-muted">
+          Guías para acompañarte en cada etapa del embarazo.
         </p>
       </header>
 
-      {PUBLISHED_VIDEOS.length > 0 ? (
+      {SHELVES.map((shelf) => {
+        const shelfArticles = articles.filter((article) => shelfFor(article.cluster) === shelf.id);
+        if (shelfArticles.length === 0) return null;
+
+        return (
+          <section key={shelf.id} aria-labelledby={`guias-${shelf.id}`} className="space-y-4">
+            <h2 id={`guias-${shelf.id}`} className="text-xl font-extrabold leading-snug text-ink">
+              {shelf.title}
+            </h2>
+            <p id={`guias-${shelf.id}-instrucciones`} className="sr-only sm:hidden">
+              Deslizá para ver las guías. Con teclado, enfocá la lista y usá las flechas.
+            </p>
+            <ul
+              aria-label={shelf.title}
+              aria-describedby={`guias-${shelf.id}-instrucciones`}
+              tabIndex={0}
+              className="-mx-1 flex gap-4 overflow-x-auto rounded-[22px] px-1 pb-4 pt-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petrol sm:grid sm:grid-cols-2 xl:grid-cols-3"
+            >
+              {shelfArticles.map((article) => (
+                <li key={article.slug} className="w-[min(74vw,17rem)] shrink-0 sm:w-auto">
+                  <EditorialCard
+                    slug={article.slug}
+                    title={article.title}
+                    readTime={readTimeLabel(article.html)}
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      })}
+
+      {PUBLISHED_VIDEOS.length > 0 && (
         <Link
           href="/guias/videos"
-          className="block rounded-card bg-pastel-celeste p-4 transition active:scale-[0.99]"
+          className="block rounded-[22px] bg-pastel-celeste p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-petrol"
         >
-          <span className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">
-            Videos
-          </span>
-          <h2 className="mt-1 text-base font-extrabold text-ink">
-            Galería de videos educativos
-          </h2>
-          <p className="mt-1 text-sm font-semibold text-ink/70">
-            Videos seleccionados, filtrables por tema y trimestre.
+          <h2 className="text-lg font-extrabold text-ink">Videos educativos</h2>
+          <p className="mt-1 text-sm leading-relaxed text-muted">
+            Explorá videos seleccionados por tema y trimestre.
           </p>
+          <span className="mt-3 inline-block text-sm font-bold text-petrol">Ver videos →</span>
         </Link>
-      ) : (
-        // Shown locked rather than hidden, so people know the feature exists
-        // instead of never seeing it at all — see herramientas/page.tsx.
-        <div
-          aria-disabled="true"
-          className="relative block rounded-card bg-pastel-celeste/50 p-4"
-        >
-          <span className="absolute right-3 top-3 rounded-full bg-sand-bg px-2 py-0.5 text-[10px] font-extrabold text-sand-text">
-            Pronto
-          </span>
-          <span className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">
-            Videos
-          </span>
-          <h2 className="mt-1 text-base font-extrabold text-ink">
-            Galería de videos educativos
-          </h2>
-          <p className="mt-1 text-sm font-semibold text-ink/70">
-            Estamos armando esta sección. Volvé pronto.
-          </p>
-        </div>
       )}
 
-      <section className="space-y-2.5">
-        <h2 className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">
-          Lo más leído
-        </h2>
-        <div className="space-y-3">
-          {articles.map((a, i) => {
-            const tone = [
-              "bg-pastel-rosa",
-              "bg-pastel-celeste",
-              "bg-pastel-salvia",
-              "bg-pastel-lavanda",
-              "bg-pastel-arena",
-            ][i % 5];
-            return (
-              <Link
-                key={a.slug}
-                href={`/guias/${a.slug}`}
-                className="block overflow-hidden rounded-card border border-line bg-white transition active:scale-[0.99]"
-              >
-                <div className={`flex h-24 items-end ${tone} p-3`}>
-                  {a.cluster && (
-                    <span className="rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-extrabold text-ink">
-                      {a.cluster}
-                    </span>
-                  )}
-                </div>
-                <div className="p-4">
-                  <h3 className="text-[15px] font-extrabold leading-snug text-ink">
-                    {a.title}
-                  </h3>
-                  <p className="mt-1 text-sm font-semibold text-muted">
-                    {a.excerpt}
-                  </p>
-                  {/* C6 (map #17): computed from the body, never stored. */}
-                  <p className="mt-2 text-[11px] font-bold text-muted">
-                    {readTimeLabel(a.html)}
-                  </p>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-
-      <div className="pt-2">
-        <MedicalReviewByline />
-      </div>
+      <MedicalReviewByline />
     </div>
   );
 }

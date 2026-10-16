@@ -1,6 +1,7 @@
 "use client";
 import { useImageFailed } from "@/lib/hooks/useImageFailed";
 import { WeekBabyFigure } from "./WeekBabyFigure";
+import { RealisticPicture } from "@/components/RealisticPicture";
 import { comparisonFor, ILLUSTRATION_CAPTION } from "@/lib/seed/comparisons";
 
 // Fruit shapes and curled baby art cannot be compared using head-to-heel cm.
@@ -20,8 +21,16 @@ export function ComparisonFigure({ week, lengthCm, ink, boxPx = 96, illustrated 
     </span>}
     <span aria-hidden className="flex shrink-0 items-center justify-center" style={{width:itemPx,height:itemPx}}>
       {failed ? <span className="text-5xl">🍃</span> : (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img ref={ref} src={comparison.imageSrc} alt="" className="block h-full w-full object-contain" onError={onError} />
+        <RealisticPicture
+          imageRef={ref}
+          canonicalSrc={comparison.imageSrc}
+          alt=""
+          sizes={`${itemPx}px`}
+          width={itemPx}
+          height={itemPx}
+          className="block h-full w-full object-contain"
+          onError={onError}
+        />
       )}
     </span>
     <figcaption className="w-full text-center text-[11px] font-semibold leading-relaxed" style={{color:text}}>

@@ -3,9 +3,12 @@
 > Planning and process docs live under [`docs/`](docs/INDEX.md) — start at
 > `docs/INDEX.md`, the entrance to all of it.
 
+Current continuation: [Opus handoff, 16 October 2026](docs/OPUS-HANDOFF-2026-10-16.md) — approved design, finished image budget, verification, protected contracts and next plan. Read the latest owner manual for actual PR/deployment status.
+
 Una PWA de embarazo, gratuita e instalable, hecha para Paraguay. Con cuenta,
 seguí tu embarazo en familia — invitá a tu pareja o a tu familia y compartí
-lo que vos elijas; sin cuenta, la app funciona 100% en tu teléfono.
+lo que vos elijas. El seguimiento personal requiere una cuenta; sin cuenta,
+las guías y la información de emergencia siguen disponibles.
 
 Mi Bebé no es una app global traducida: el contenido, la logística (carné
 perinatal, IPS vs. sanatorio privado, trámites del Registro Civil, vacunas PAI,
@@ -22,11 +25,13 @@ perder datos):
   estimados (es una estimación, **no** un método anticonceptivo) y checklist
   preconcepción.
 
-Con cuenta (Google, opcional), tus datos se respaldan y se sincronizan entre
-dispositivos, y podés invitar a tu pareja o familia a seguir el embarazo por
-un link de WhatsApp — cada rol ve solo lo que vos decidís compartir. Sin
-cuenta ("seguir sin cuenta"), la app funciona completa y todo queda
-únicamente en el teléfono.
+Con tu cuenta, tus datos se respaldan y se sincronizan entre dispositivos,
+y podés invitar a tu pareja o familia a seguir el embarazo por un link de
+WhatsApp — cada rol ve solo lo que vos decidís compartir. El ingreso con
+Google y el consentimiento explícito de datos de salud se conservan. La
+presentación pública explica el valor de la app antes del ingreso; no habilita
+seguimiento personal anónimo. El modo local sin proveedor se usa solamente
+para desarrollo y pruebas explícitas, no para eludir los requisitos de producción.
 
 ---
 

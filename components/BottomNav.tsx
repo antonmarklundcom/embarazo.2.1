@@ -6,7 +6,7 @@ import { useProfile } from "@/lib/useProfile";
 import { useT } from "@/lib/i18n/useLocale";
 import { navTabs, type NavTab } from "@/lib/nav/tabs";
 
-// Fixed bottom tab bar — brand design: terracotta active state,
+// Fixed bottom tab bar — calm green active state,
 // white bar over line border.
 //
 // D4 nav IA: Hoy · Guías · Checklist · Herramientas · Cerca tuyo. Checklist
@@ -53,21 +53,23 @@ export function BottomNav({ showNearby }: { showNearby: boolean }) {
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       aria-label="Navegación principal"
     >
-      <ul className="mx-auto flex max-w-md items-stretch justify-between px-1">
+      <ul className="mx-auto flex max-w-3xl items-stretch justify-between px-2 sm:px-8">
         {TABS.map((tab) => {
           const active = isActive(tab.href);
           const Icon = tab.icon;
           return (
-            <li key={tab.href} className="flex-1">
+            <li key={tab.href} className="min-w-0 flex-1">
               <Link
                 href={tab.href}
-                className={`flex min-h-[56px] flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] transition ${
-                  active ? "font-extrabold text-terracotta" : "font-bold text-muted"
+                className={`group flex min-h-[68px] flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2.5 text-[11px] transition hover:bg-cream ${
+                  active ? "font-extrabold text-petrol" : "font-bold text-muted"
                 }`}
                 aria-current={active ? "page" : undefined}
               >
-                <Icon active={active} />
-                <span>{tab.label}</span>
+                <span className={`flex h-8 w-12 items-center justify-center rounded-full transition ${active ? "bg-pastel-salvia/70" : "group-hover:bg-white"}`}>
+                  <Icon active={active} />
+                </span>
+                <span className="max-w-full text-center leading-tight [overflow-wrap:anywhere]">{tab.label}</span>
               </Link>
             </li>
           );
@@ -78,7 +80,7 @@ export function BottomNav({ showNearby }: { showNearby: boolean }) {
 }
 
 type IconProps = { active?: boolean };
-const stroke = (active?: boolean) => (active ? "#B5553A" : "#7A7369");
+const stroke = (active?: boolean) => (active ? "#2F5D50" : "#7A7369");
 
 function HomeIcon({ active }: IconProps) {
   return (

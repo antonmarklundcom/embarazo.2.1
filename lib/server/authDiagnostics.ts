@@ -35,7 +35,7 @@ function causeValue(error: unknown, field: "code" | "error", allowed: Set<string
 
 export function logAuthFailure(error: unknown): void {
   const type = error && typeof error === "object" && "type" in error ? error.type : undefined;
-  console.error(JSON.stringify({
+  console.log(JSON.stringify({
     timestamp: new Date().toISOString(),
     level: "ERROR",
     message: JSON.stringify({

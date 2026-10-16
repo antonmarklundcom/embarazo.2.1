@@ -17,9 +17,12 @@ const BENEFITS = [
 /** Public introduction only: personal tracking still goes through /cuenta. */
 export function WelcomeScreen({
   accountHref,
+  returningHref = accountHref,
   forceWelcome = false,
 }: {
   accountHref: string;
+  /** The same sign-in, worded for somebody who already has an account. */
+  returningHref?: string;
   forceWelcome?: boolean;
 }) {
   const router = useRouter();
@@ -31,12 +34,12 @@ export function WelcomeScreen({
     // The existing binding identifies a returning device. It never grants
     // access or reads the pregnancy. Explicit welcome links stay open.
     void db().syncState.get("default").then((saved) => {
-      if (active && saved?.accountId) router.replace(accountHref);
+      if (active && saved?.accountId) router.replace(returningHref);
     }).catch(() => {
       // Public reading and account links also work without local storage.
     });
     return () => { active = false; };
-  }, [accountHref, forceWelcome, router]);
+  }, [returningHref, forceWelcome, router]);
 
   return (
     <div className="space-y-6 pb-3">
@@ -94,7 +97,7 @@ export function WelcomeScreen({
         </Link>
         <p className="pt-1 text-center text-sm text-muted">
           ¿Ya usás {APP_NAME}?{" "}
-          <Link href={accountHref} className="inline-flex min-h-[44px] items-center font-bold text-petrol underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-petrol">
+          <Link href={returningHref} className="inline-flex min-h-[44px] items-center font-bold text-petrol underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-petrol">
             Ya tengo una cuenta
           </Link>
         </p>

@@ -270,3 +270,46 @@ export async function scheduleCheerPoke(
     // enqueue is a missed notification, not a lost message.
   }
 }
+
+// ---------------------------------------------------------------------------
+// Owner acceptance — "Probar avisos"
+// ---------------------------------------------------------------------------
+
+export type TestPokeOutcome =
+  | "sent"
+  | "unconfigured"
+  | "not-subscribed"
+  | "gone"
+  | "failed";
+
+/**
+ * Send one poke, now, to a device the signed-in account owns.
+ *
+ * The only way a real phone can prove that notifications reach it, open the
+ * right screen and stop after "Desactivar avisos" without waiting for a week
+ * to turn over or editing a real control date. Same rules as every other
+ * poke: no body (the service worker writes the words), and only to an endpoint
+ * that is already stored under this account — never an arbitrary URL, and
+ * never somebody else's device. An endpoint the push service reports gone is
+ * deleted, exactly as the dispatcher would.
+ */
+export async function sendTestPoke(
+  backend: PushBackend,
+  userId: string,
+  endpoint: string,
+  now: number,
+  send: PushSender = fetchSender,
+): Promise<TestPokeOutcome> {
+  const keys = vapidFromEnv(process.env);
+  if (!keys) return "unconfigured";
+
+  const owned = await backend.subscriptionEndpointsOf(userId);
+  if (!owned.includes(endpoint)) return "not-subscribed";
+
+  const outcome = await send(endpoint, keys, now);
+  if (outcome === "gone") {
+    await deleteSubscription(backend, endpoint);
+    return "gone";
+  }
+  return outcome;
+}

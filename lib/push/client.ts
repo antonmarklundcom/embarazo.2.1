@@ -10,6 +10,7 @@ import {
 } from "./categories";
 import { weekStartTimes, weeklyTipTimes } from "./weekly";
 import { babyAgeTimes } from "@/lib/baby/push";
+import { PUSH_TEST_CACHE, PUSH_TEST_KEY } from "./testNotice";
 
 // BUILD-PLAN B5 — the device half.
 //
@@ -489,4 +490,61 @@ export async function refreshWeeklyTips(): Promise<void> {
     categories,
     consejos: categories.includes("consejos") ? await consejosTimes() : [],
   });
+}
+
+export type PushTestResult =
+  | "sent"
+  | "scheduled"
+  | "not-subscribed"
+  | "signed-out"
+  | "rate-limited"
+  | "offline"
+  | "failed";
+
+async function markPushTest(on: boolean): Promise<void> {
+  try {
+    const cache = await caches.open(PUSH_TEST_CACHE);
+    if (on) await cache.put(PUSH_TEST_KEY, new Response(String(Date.now())));
+    else await cache.delete(PUSH_TEST_KEY);
+  } catch {
+    // Without the marker the test still arrives, worded as an ordinary notice.
+  }
+}
+
+/**
+ * Owner acceptance — ask the server for one poke to THIS device.
+ *
+ * `delayMs` 0 sends now; 20 000 gives her time to close the app first, which
+ * is the case a real phone has to pass. The server answers for the delayed
+ * form before sending, so "scheduled" is not proof of delivery: the
+ * notification arriving is.
+ */
+export async function sendTestNotification(delayMs: 0 | 20_000 = 0): Promise<PushTestResult> {
+  const subscription = await existingSubscription();
+  if (!subscription) return "not-subscribed";
+
+  const link = await ensureAccountLink();
+  if (link.status === "offline") return "offline";
+  if (link.status !== "linked") return "signed-out";
+
+  await markPushTest(true);
+  let res: Response;
+  try {
+    res = await fetch("/api/v1/push/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", [ACCOUNT_HEADER]: link.accountId },
+      body: JSON.stringify({ endpoint: subscription.endpoint, delayMs }),
+    });
+  } catch {
+    await markPushTest(false);
+    return "offline";
+  }
+
+  if (res.status === 200) return "sent";
+  if (res.status === 202) return "scheduled";
+  await markPushTest(false);
+  if (res.status === 401) return "signed-out";
+  if (res.status === 429) return "rate-limited";
+  if (res.status === 404 || res.status === 410) return "not-subscribed";
+  return "failed";
 }

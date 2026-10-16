@@ -51,8 +51,9 @@ test("a returning device opens login while an explicit welcome link stays availa
     database.close();
   });
   await page.goto("/cuenta");
-  await expect(page.getByRole("heading", { name: "Tu embarazo, organizado en un solo lugar" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Volvé a tu embarazo" })).toBeVisible();
   expect(new URL(page.url()).searchParams.get("ingreso")).toBe("1");
+  expect(new URL(page.url()).searchParams.get("vuelvo")).toBe("1");
   await expect(page).toHaveTitle(/Tu cuenta/);
   await page.getByRole("link", { name: "Conocé Mi Bebé" }).click();
   await expect(page.getByRole("heading", { name: "Tu embarazo, con más calma." })).toBeVisible();
@@ -69,3 +70,16 @@ for (const width of [360, 1280]) {
     await expect(page.getByRole("link", { name: "Ver consejos", exact: true })).toBeVisible();
   });
 }
+
+test("'Ya tengo una cuenta' opens sign-in worded for a returning user", async ({ page }) => {
+  await page.goto("/cuenta?returnTo=%2Fherramientas%2Fpeso");
+  await page.getByRole("link", { name: "Ya tengo una cuenta" }).click();
+  await expect(page.getByRole("heading", { name: "Volvé a tu embarazo" })).toBeVisible();
+  expect(new URL(page.url()).searchParams.get("returnTo")).toBe("/herramientas/peso");
+  // The local preview has no sign-in provider, so the consent form itself is
+  // asserted in components/account-entry.test.ts (unchecked, still required).
+  // "Empezar mi seguimiento" keeps the sign-up wording.
+  await page.goto("/cuenta?returnTo=%2F");
+  await page.getByRole("link", { name: "Empezar mi seguimiento" }).click();
+  await expect(page.getByRole("heading", { name: "Tu embarazo, organizado en un solo lugar" })).toBeVisible();
+});

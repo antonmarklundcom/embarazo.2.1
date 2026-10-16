@@ -122,6 +122,25 @@ export function previousStep(
   return steps[index - 1] ?? null;
 }
 
+/**
+ * "Paso N de M" for the step on screen, or `null` on the first question.
+ *
+ * Counted over the steps this person will actually see (`stepsFor`), so a
+ * papá is never told about a step only the mamá gets. The first question
+ * (`mode`) has no count: the path is not known until it is answered, and a
+ * count that changes under her is worse than none.
+ */
+export function stepProgress(
+  step: OnboardingStep,
+  context: OnboardingContext,
+): { current: number; total: number } | null {
+  if (step === "mode") return null;
+  const steps = stepsFor(context).filter((candidate) => candidate !== "mode");
+  const index = steps.indexOf(step);
+  if (index === -1) return null;
+  return { current: index + 1, total: steps.length };
+}
+
 export function isLastStep(
   step: OnboardingStep,
   context: OnboardingContext,

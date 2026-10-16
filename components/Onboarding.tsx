@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
 import { db, type AppMode, type Role } from "@/lib/db";
@@ -11,9 +11,11 @@ import {
   lmpFromEcografia,
   lmpFromFiv,
   lmpFromConception,
+  getCurrentWeek,
   getRawWeek,
   MAX_WEEK,
 } from "@/lib/pregnancy";
+import { markWeekSeen } from "@/lib/newWeek";
 import { fetchAuthStatus, type AuthStatus } from "@/lib/auth/status";
 import {
   clearOnboardingDraft,
@@ -30,6 +32,7 @@ import {
   nextStep,
   previousStep,
   resumeStep,
+  stepProgress,
   type OnboardingAnswers,
   type OnboardingContext,
   type OnboardingStep,
@@ -114,6 +117,7 @@ export function Onboarding({
     }),
     [answers.mode, answers.invited, answers.role, auth?.signedIn],
   );
+  const progress = stepProgress(step, context);
 
   // Each step is swapped in place, not routed, so the browser keeps the
   // scroll offset of the step before — "Continuar" sits at the bottom, and
@@ -242,9 +246,20 @@ export function Onboarding({
 
   // --- navigation ----------------------------------------------------------
 
+  // Hoy's "Semana nueva" card celebrates a week turning over. Right after
+  // setup nothing has turned over — she has just told us her week — so the
+  // week she starts in counts as already seen. Later weeks show as before.
+  const markStartingWeekSeen = useRef<() => void>(() => {});
+  markStartingWeekSeen.current = () => {
+    if (answers.mode !== "embarazada" || answers.invited) return;
+    const lmpDate = resolveLmpDate();
+    if (lmpDate !== null && !Number.isNaN(lmpDate)) markWeekSeen(getCurrentWeek(lmpDate));
+  };
+
   const goTo = useCallback(
     (target: Step | null) => {
       if (target === null) {
+        markStartingWeekSeen.current();
         clearOnboardingDraft();
         window.scrollTo(0, 0);
         onDone();
@@ -428,17 +443,47 @@ export function Onboarding({
 
   return (
     <div className="mx-auto flex min-h-[80dvh] max-w-md flex-col justify-center py-6">
-      <div className="mb-6 text-center">
-        <h1 className="text-2xl font-black tracking-tight text-ink">
+      {/* The full welcome is for the first question. After it, the heading
+          steps back so each question sits near the top of a phone screen,
+          and a count says how much is left. */}
+      <div className={step === "mode" ? "mb-6 text-center" : "mb-4 text-center"}>
+        <h1
+          className={
+            step === "mode"
+              ? "text-2xl font-black tracking-tight text-ink"
+              : "text-base font-extrabold tracking-tight text-ink"
+          }
+        >
           {/* Before a role is picked the reader is almost always the mamá;
               after "Papá" or "Familiar", "Bienvenida" is the wrong person. */}
           {answers.role && answers.role !== "mama"
             ? `Te damos la bienvenida a ${APP_NAME}`
             : `Bienvenida a ${APP_NAME}`}
         </h1>
-        <p className="mt-2 text-sm text-muted">
-          Tu embarazo y tu familia, en una sola app — hecha para Paraguay.
-        </p>
+        {step === "mode" ? (
+          <p className="mt-2 text-sm text-muted">
+            Tu embarazo y tu familia, en una sola app — hecha para Paraguay.
+          </p>
+        ) : progress ? (
+          <div className="mx-auto mt-2 max-w-[16rem]">
+            <p className="text-xs font-bold text-muted">
+              Paso {progress.current} de {progress.total}
+            </p>
+            <div
+              role="progressbar"
+              aria-label="Avance de la configuración"
+              aria-valuemin={1}
+              aria-valuemax={progress.total}
+              aria-valuenow={progress.current}
+              className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-line"
+            >
+              <div
+                className="h-full rounded-full bg-petrol transition-[width] motion-reduce:transition-none"
+                style={{ width: `${(progress.current / progress.total) * 100}%` }}
+              />
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {step === "mode" && (
@@ -530,13 +575,17 @@ export function Onboarding({
         <p className="mt-3 px-1 text-sm text-terracotta">{saveError}</p>
       )}
 
-      <div className="mt-6 rounded-card border border-sage/30 bg-sage/5 p-4">
-        <p className="text-xs leading-relaxed text-muted">
-          Tu cuenta permite recuperar tus registros cuando cambiás de teléfono.
-          Podés borrar tu cuenta y sus datos desde Ajustes. Tus notas no se
-          comparten con tu familia. Tus fotos solo se respaldan si activás su copia.
-        </p>
-      </div>
+      {/* What the account does for her, where it is relevant: on the first
+          screen and next to the account step, not under every question. */}
+      {(step === "mode" || step === "cuenta") && (
+        <div className="mt-6 rounded-card border border-sage/30 bg-sage/5 p-4">
+          <p className="text-xs leading-relaxed text-muted">
+            Tu cuenta permite recuperar tus registros cuando cambiás de teléfono.
+            Podés borrar tu cuenta y sus datos desde Ajustes. Tus notas no se
+            comparten con tu familia. Tus fotos solo se respaldan si activás su copia.
+          </p>
+        </div>
+      )}
 
       <p className="mt-4 px-2 text-center text-[11px] leading-relaxed text-muted">
         {APP_NAME} es informativo y no reemplaza la atención de un profesional de la

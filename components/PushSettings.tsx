@@ -13,9 +13,22 @@ import {
   enablePush,
   pushResyncPending,
   readPushState,
+  sendTestNotification,
   setCategories,
   type PushState,
+  type PushTestResult,
 } from "@/lib/push/client";
+
+/** What each test outcome tells her, in the words she will act on. */
+const TEST_MESSAGES: Record<PushTestResult, string> = {
+  sent: "Listo: el aviso de prueba ya salió. Si no aparece en unos segundos, revisá que el sitio tenga permiso de notificaciones en tu teléfono.",
+  scheduled: `Cerrá ${APP_NAME} ahora (volvé a la pantalla de inicio). En unos 20 segundos te llega el aviso de prueba; tocalo para volver acá.`,
+  "not-subscribed": "Este teléfono no tiene los avisos guardados en tu cuenta. Tocá «Desactivar avisos» y después «Activar avisos» para volver a guardarlos.",
+  "signed-out": "Para probar los avisos tenés que entrar con tu cuenta en este teléfono.",
+  "rate-limited": "Ya enviamos varias pruebas. Esperá un minuto y probá de nuevo.",
+  offline: "Sin internet no podemos enviar la prueba. Conectate y probá de nuevo.",
+  failed: "El servicio de avisos no respondió. Probá de nuevo en un rato.",
+};
 
 // BUILD-PLAN B5 — the notification settings.
 //
@@ -42,10 +55,18 @@ export function PushSettings({
   const [state, setState] = useState<PushState | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [testing, setTesting] = useState(false);
+  const [testMessage, setTestMessage] = useState("");
 
   useEffect(() => {
     // Reading the state never prompts — it only inspects.
     void readPushState().then(setState);
+    // Tapping the test notification lands here (PUSH_TEST_URL): say so, so the
+    // tap destination is something she can confirm rather than infer.
+    if (new URLSearchParams(window.location.search).get("avisos") === "prueba") {
+      setTestMessage("¡Funciona! Llegaste acá tocando el aviso de prueba.");
+      document.getElementById("avisos")?.scrollIntoView({ block: "center" });
+    }
   }, []);
 
   if (!state) return null;
@@ -73,9 +94,17 @@ export function PushSettings({
     }
   }
 
+  async function sendTest(delayMs: 0 | 20_000) {
+    setTesting(true);
+    setTestMessage("");
+    setTestMessage(TEST_MESSAGES[await sendTestNotification(delayMs)]);
+    setTesting(false);
+  }
+
   async function turnOff() {
     setBusy(true);
     setMessage("");
+    setTestMessage("");
     const status = await disablePush();
     setState({ ...state!, status });
     setBusy(false);
@@ -99,7 +128,7 @@ export function PushSettings({
           {groupTitle}
         </h2>
       )}
-      <section className="rounded-card bg-white p-4 shadow-soft">
+      <section id="avisos" className="scroll-mt-24 rounded-card bg-white p-4 shadow-soft">
         <h3 className="text-base font-extrabold text-ink">Avisos</h3>
 
       {state.status === "unsupported" ? (
@@ -148,6 +177,38 @@ export function PushSettings({
           )}
 
           {message && <p className="mt-2 text-sm text-muted">{message}</p>}
+
+          {state.status === "on" && (
+            <div className="mt-4 rounded-tile bg-cream/60 p-3">
+              <h4 className="text-sm font-extrabold text-ink">Probar los avisos</h4>
+              <p className="mt-1 text-xs leading-relaxed text-muted">
+                Te mandamos un aviso de prueba a este teléfono. No cambia tus
+                fechas ni tus controles.
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => void sendTest(20_000)}
+                  disabled={testing}
+                  className="min-h-[44px] rounded-tile bg-petrol px-4 py-2 text-sm font-extrabold text-white disabled:opacity-60"
+                >
+                  {testing ? "Un momento…" : "Probar con la app cerrada"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void sendTest(0)}
+                  disabled={testing}
+                  className="min-h-[44px] rounded-tile border border-line bg-white px-4 py-2 text-sm font-extrabold text-petrol disabled:opacity-60"
+                >
+                  Enviar ahora
+                </button>
+              </div>
+            </div>
+          )}
+
+          {testMessage && (
+            <p role="status" className="mt-2 text-sm text-ink">{testMessage}</p>
+          )}
 
           {state.status === "on" && (
             <ul className="mt-4 space-y-3">

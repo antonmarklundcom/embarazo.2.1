@@ -149,6 +149,7 @@ export function SignInCard({
   initialError,
   returnTo = "/",
   compact = false,
+  returning = false,
 }: {
   providers: ProviderId[];
   /** PR-20 — true once email + password sign-in can complete (secret + db). */
@@ -158,6 +159,11 @@ export function SignInCard({
   returnTo?: string;
   /** Welcome already explains the benefits; keep the account step focused. */
   compact?: boolean;
+  /**
+   * "Ya tengo una cuenta": the same forms and the same unchecked consent,
+   * worded for somebody coming back rather than signing up.
+   */
+  returning?: boolean;
 }) {
   const [state, formAction, pending] = useActionState<SignInState, FormData>(
     startSignIn,
@@ -178,11 +184,12 @@ export function SignInCard({
           Tu cuenta
         </p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-ink">
-          Tu embarazo, organizado en un solo lugar
+          {returning ? "Volvé a tu embarazo" : "Tu embarazo, organizado en un solo lugar"}
         </h1>
         <p className="mt-2 text-[15px] font-semibold leading-relaxed text-muted">
-          Creá tu cuenta y empezá tu seguimiento: tu semana, tus controles y tus
-          registros, juntos y a mano.
+          {returning
+            ? "Entrá con la misma cuenta que usaste antes: tus registros sincronizados vuelven a este teléfono."
+            : "Creá tu cuenta y empezá tu seguimiento: tu semana, tus controles y tus registros, juntos y a mano."}
         </p>
       </header>
 
@@ -243,6 +250,12 @@ export function SignInCard({
                 sincronizarlos entre mis dispositivos.
               </span>
             </label>
+            {returning && (
+              <p className="mt-2 text-xs leading-relaxed text-ink/80">
+                Te pedimos este permiso cada vez que entrás, también si ya tenés
+                cuenta.
+              </p>
+            )}
             <ul className="mt-3 space-y-1.5 text-xs leading-relaxed text-ink/80">
               <li>
                 • Tus fotos de la panza y del carné <strong>no</strong> se
@@ -295,7 +308,7 @@ export function SignInCard({
                       className={`flex min-h-[52px] w-full items-center justify-center gap-3 rounded-full border px-4 text-[15px] font-extrabold shadow-soft transition enabled:cursor-pointer enabled:hover:shadow-md enabled:active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-petrol disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none motion-reduce:scale-100 ${id === "google" ? "border-petrol bg-petrol text-white enabled:hover:bg-petrol/90" : "border-line bg-white text-ink enabled:hover:border-petrol enabled:hover:bg-petrol/5"}`}
                     >
                       {pending ? <span aria-hidden="true" className="h-4 w-4 rounded-full border-2 border-current border-r-transparent motion-safe:animate-spin" /> : <Mark />}
-                      {pending ? "Abriendo el ingreso…" : `Empezar con ${PROVIDER_LABELS[id]}`}
+                      {pending ? "Abriendo el ingreso…" : `${returning ? "Entrar" : "Empezar"} con ${PROVIDER_LABELS[id]}`}
                     </button>
                   );
                 })}

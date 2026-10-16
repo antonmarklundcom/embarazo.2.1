@@ -88,11 +88,13 @@ export default async function CuentaPage({
   // Presentation only; the original validated destination and forms are kept.
   const accountParams = new URLSearchParams({ ingreso: "1", returnTo: destination });
   const welcomeParams = new URLSearchParams({ bienvenida: "1", returnTo: destination });
+  const returningParams = new URLSearchParams({ ingreso: "1", vuelvo: "1", returnTo: destination });
   const accountHref = `/cuenta?${accountParams}`;
+  const returningHref = `/cuenta?${returningParams}`;
   const welcomeHref = `/cuenta?${welcomeParams}`;
   const showSignIn = params.ingreso === "1" || Boolean(error) || deleted;
   if (!showSignIn) {
-    return <WelcomeScreen accountHref={accountHref} forceWelcome={params.bienvenida === "1"} />;
+    return <WelcomeScreen accountHref={accountHref} returningHref={returningHref} forceWelcome={params.bienvenida === "1"} />;
   }
   return (
     <div className="space-y-4">
@@ -108,6 +110,7 @@ export default async function CuentaPage({
         credentialsAvailable={isAuthAvailable()}
         initialError={error}
         returnTo={destination}
+        returning={params.vuelvo === "1"}
         compact
       />
     </div>

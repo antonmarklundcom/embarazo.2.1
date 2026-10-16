@@ -10,6 +10,14 @@ test("the new-week card greets her on the day her week turns over, and stays clo
   // 70 days since the FUM: 10+0, so today is the first day of week 11.
   await completeOnboarding(page, { daysAgo: 70 });
 
+  // She has only just told us her week: nothing turned over for her yet, so
+  // the first Hoy after setup does not celebrate it.
+  await expect(page.getByText("Tip de hoy")).toBeVisible();
+  await expect(page.getByRole("region", { name: /semana 11/ })).toHaveCount(0);
+
+  // A returning device that last saw week 10 is greeted on the turnover day.
+  await page.evaluate(() => localStorage.setItem("mibebe.newWeek.seen", "10"));
+  await page.reload();
   const card = page.getByRole("region", { name: "¡Hoy empezás la semana 11!" });
   await expect(card).toBeVisible();
   await expect(card).toContainText("Cumpliste 10 semanas");

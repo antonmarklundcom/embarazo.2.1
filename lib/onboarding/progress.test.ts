@@ -20,6 +20,7 @@ import {
   nextStep,
   previousStep,
   resumeStep,
+  stepProgress,
   stepsFor,
   type OnboardingContext,
   type OnboardingDraft,
@@ -379,5 +380,25 @@ describe("answeredProfileFields", () => {
     expect([...WORK_SITUATION_VALUES].sort()).toEqual(
       WORK_SITUATIONS.map((w) => w.key).sort(),
     );
+  });
+});
+
+describe("stepProgress — 'Paso N de M'", () => {
+  it("has no count on the first question, where the path is not known yet", () => {
+    expect(stepProgress("mode", ctx({ mode: "embarazada", signedIn: true }))).toBeNull();
+  });
+
+  it("counts the mamá's own steps after the first question", () => {
+    const context = ctx({ mode: "embarazada", signedIn: true });
+    const total = stepsFor(context).length - 1;
+    expect(stepProgress("role", context)).toEqual({ current: 1, total });
+    expect(stepProgress("avisos", context)).toEqual({ current: total, total });
+  });
+
+  it("never counts a step this person will not see", () => {
+    const papa = ctx({ mode: "embarazada", signedIn: true, role: "papa" });
+    const mama = ctx({ mode: "embarazada", signedIn: true });
+    expect(stepProgress("role", papa)!.total).toBe(stepProgress("role", mama)!.total - 1);
+    expect(stepProgress("perfil", papa)).toBeNull();
   });
 });

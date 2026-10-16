@@ -16,6 +16,12 @@ import {
 // the app to assert anything about.
 import { cheerSentence, weeklyTipSentence } from "@/lib/push/sentences";
 import { babyAgeSentence } from "@/lib/baby/push";
+import {
+  PUSH_TEST_CACHE,
+  PUSH_TEST_KEY,
+  PUSH_TEST_NOTICE,
+  isFreshPushTest,
+} from "@/lib/push/testNotice";
 
 // Service worker (build spec §9). Compiled from app/sw.ts → public/sw.js.
 declare global {
@@ -429,8 +435,28 @@ async function readFreshCheer(now: number): Promise<string | null> {
   }
 }
 
+/**
+ * Owner acceptance — a poke she asked for from "Probar avisos".
+ *
+ * The settings screen leaves a timestamp in its own small cache just before
+ * requesting the test; the first push after that is the test. The marker is
+ * consumed here either way, so it can never relabel a later real reminder.
+ */
+async function consumePushTestMarker(now: number): Promise<boolean> {
+  try {
+    const cache = await caches.open(PUSH_TEST_CACHE);
+    const marker = await cache.match(PUSH_TEST_KEY);
+    if (!marker) return false;
+    await cache.delete(PUSH_TEST_KEY);
+    return isFreshPushTest(Number(await marker.text()), now);
+  } catch {
+    return false;
+  }
+}
+
 async function composeNotification(): Promise<{ title: string; body: string; url?: string }> {
   const now = Date.now();
+  if (await consumePushTestMarker(now)) return { ...PUSH_TEST_NOTICE };
   const local = await readLocalReminderState();
 
   // Her own control first: it is the common case, it needs no network, and a

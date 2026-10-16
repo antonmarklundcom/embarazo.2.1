@@ -8,6 +8,7 @@ import {
   saveSubscription,
   scheduleCheerPoke,
   scheduleReminders,
+  sendTestPoke,
   type SendOutcome,
 } from "./push";
 import type { DueReminder, PushBackend } from "./pushBackend";
@@ -485,5 +486,91 @@ describe("the cheer poke", () => {
     };
 
     await expect(scheduleCheerPoke(backend, "owner-1", NOW)).resolves.toBeUndefined();
+  });
+});
+
+describe("the owner's test poke", () => {
+  const ORIGINAL_ENV = {
+    VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
+    VAPID_SUBJECT: process.env.VAPID_SUBJECT,
+  };
+
+  beforeEach(() => {
+    process.env.VAPID_PUBLIC_KEY = "fixture-public-key";
+    process.env.VAPID_PRIVATE_KEY = "fixture-private-key";
+    process.env.VAPID_SUBJECT = "mailto:hola@mibebe.com.py";
+  });
+
+  afterEach(() => {
+    for (const [key, value] of Object.entries(ORIGINAL_ENV)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+
+  async function ownedBy(userId: string | null) {
+    const backend = memoryBackend();
+    await saveSubscription(backend, { endpoint: ENDPOINT, p256dh: "p", auth: "a", categories: ["recordatorios"], userId });
+    return backend;
+  }
+
+  it("sends one poke, immediately, to the account's own device", async () => {
+    const backend = await ownedBy("u1");
+    const send = vi.fn(async (): Promise<SendOutcome> => "sent");
+
+    expect(await sendTestPoke(backend, "u1", ENDPOINT, NOW, send)).toBe("sent");
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(send).toHaveBeenCalledWith(ENDPOINT, expect.anything(), NOW);
+    // Nothing is queued: a test never lingers in the dispatcher's table.
+    expect(backend.reminders.size).toBe(0);
+  });
+
+  it("refuses another account's device", async () => {
+    const backend = await ownedBy("u2");
+    const send = vi.fn(async (): Promise<SendOutcome> => "sent");
+
+    expect(await sendTestPoke(backend, "u1", ENDPOINT, NOW, send)).toBe("not-subscribed");
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("refuses an anonymous subscription, even with the right endpoint", async () => {
+    const backend = await ownedBy(null);
+    const send = vi.fn(async (): Promise<SendOutcome> => "sent");
+
+    expect(await sendTestPoke(backend, "u1", ENDPOINT, NOW, send)).toBe("not-subscribed");
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("finds nothing to send to after the device turned notifications off", async () => {
+    const backend = await ownedBy("u1");
+    await deleteSubscription(backend, ENDPOINT);
+    const send = vi.fn(async (): Promise<SendOutcome> => "sent");
+
+    expect(await sendTestPoke(backend, "u1", ENDPOINT, NOW, send)).toBe("not-subscribed");
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("forgets an endpoint the push service reports gone", async () => {
+    const backend = await ownedBy("u1");
+
+    expect(await sendTestPoke(backend, "u1", ENDPOINT, NOW, async () => "gone")).toBe("gone");
+    expect(backend.subs.has(ENDPOINT)).toBe(false);
+  });
+
+  it("reports a failed send without deleting anything", async () => {
+    const backend = await ownedBy("u1");
+
+    expect(await sendTestPoke(backend, "u1", ENDPOINT, NOW, async () => "failed")).toBe("failed");
+    expect(backend.subs.has(ENDPOINT)).toBe(true);
+  });
+
+  it("does not reach a push service when push is not configured", async () => {
+    const backend = await ownedBy("u1");
+    delete process.env.VAPID_PRIVATE_KEY;
+    const send = vi.fn(async (): Promise<SendOutcome> => "sent");
+
+    expect(await sendTestPoke(backend, "u1", ENDPOINT, NOW, send)).toBe("unconfigured");
+    expect(send).not.toHaveBeenCalled();
   });
 });

@@ -144,3 +144,36 @@ describe("the poke still carries no body", () => {
     expect(body).not.toMatch(/cheerId|fromUserId|text/);
   });
 });
+
+// Owner acceptance — "Probar avisos" (`/api/v1/push/test`).
+const TEST_ROUTE = readFileSync(
+  join(process.cwd(), "app", "api", "v1", "push", "test", "route.ts"),
+  "utf8",
+);
+
+describe("the test-poke route cannot be aimed at somebody else's phone", () => {
+  it("whitelists the endpoint like the subscribe route", () => {
+    expect(TEST_ROUTE).toContain(".refine(isAllowedPushEndpoint");
+  });
+
+  it("requires a session and refuses another account's data", () => {
+    const post = TEST_ROUTE.slice(TEST_ROUTE.indexOf("export async function POST("));
+    expect(post.indexOf("getSession()")).toBeGreaterThan(-1);
+    expect(post).toContain("refuseOtherAccount(req, userId)");
+    expect(post).toContain("refuseCrossSite(req)");
+  });
+
+  it("checks ownership before scheduling the delayed form", () => {
+    const post = TEST_ROUTE.slice(TEST_ROUTE.indexOf("export async function POST("));
+    expect(post.indexOf("subscriptionEndpointsOf(userId)")).toBeLessThan(post.indexOf("after("));
+  });
+
+  it("is throttled per account, tighter than the subscribe route", () => {
+    expect(TEST_ROUTE).toContain("isRateLimited(`push-test:${userId}`");
+    expect(TEST_ROUTE).toMatch(/TEST_LIMIT_PER_MINUTE = [1-5];/);
+  });
+
+  it("sends no body: the service worker writes the words", () => {
+    expect(TEST_ROUTE).not.toMatch(/title|body:\s*JSON/);
+  });
+});

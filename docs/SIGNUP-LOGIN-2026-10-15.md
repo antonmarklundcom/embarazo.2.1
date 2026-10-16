@@ -1,5 +1,11 @@
 # Signup conversion and login incident — 15 October 2026
 
+## Follow-up: log stream investigation
+
+Hostinger documents Runtime Logs as stdout, separately from nodejs/stderr.log. The initial custom logger used console.error (stderr), explaining why changing its JSON shape did not establish visibility in the Runtime Logs stream. Emit the same allowlisted ERROR event through console.log (stdout); do not dump environment variables or raw errors. Regression tests assert stdout output, no stderr duplication, and continued exclusion of private fields. Hostinger's separate "Failed to load logs" UI response is not proof of an application error or proof that stdout capture is healthy; verify independently after release.
+
+A local production preview with fixture-only Google settings, a non-production secret and an unused loopback database port successfully sent the actual consent/server-action form to Google authorization. Agent stopped before identity selection; the fake client was expected to be rejected by Google. The preview was stopped afterwards. This verifies initiation under clean fixture configuration, not production callback, credentials or database access. The provider's documented log separation is [here](https://www.hostinger.com/support/understanding-empty-stderr-log-in-node-js-applications/).
+
 Owner subsequently authorized a follow-up PR, validation, merge and deployment of these copy/UI/diagnostic changes. This release does not claim to fix login. The dated owner manual records the resulting PR, source SHA, Hostinger build and live acceptance; the initial preparation/validation record below is retained. A full-suite diagnostic rerun uses an explicit30s local timeout allowance for slow external-drive scans, without changing committed timeout settings; do not describe it as the default5s gate or green CI.
 
 ## Production incident

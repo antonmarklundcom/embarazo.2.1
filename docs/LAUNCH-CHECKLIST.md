@@ -9,6 +9,15 @@ This exists because the launch path was spread across four documents —
 ordered by *what to do next*. Those remain the reference for **why**; this is
 the running order.
 
+> **2026-10-16 status.** This list is historical. The app is live as a PWA at
+> app.embarazo.com.py with Google accounts, the realistic week images (§4.1
+> done, PR146), push infrastructure and a monitored support route. The current
+> open items and their evidence are in
+> [`LAUNCH-READINESS-2026-10-16.md`](LAUNCH-READINESS-2026-10-16.md); the
+> owner manual records deployment and device status. Items below that are not
+> mentioned there (D-U-N-S, Play, reviewer, lawyer, Guaraní review,
+> directory) remain open as written.
+
 **The state it starts from: there is no unblocked code work left in v1.** Every
 item below is a founder task, an external party, or a decision only you can
 make. That is not a gap in the plan — it is the plan, and the code got there

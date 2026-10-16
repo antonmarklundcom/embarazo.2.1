@@ -52,3 +52,28 @@ describe("account entry benefits and feedback", () => {
     expect(markup).toContain('disabled="" aria-busy="false"');
   });
 });
+
+describe("returning-user sign-in wording", () => {
+  it("keeps the same unchecked, required consent and only changes the words", () => {
+    const returning = renderToStaticMarkup(createElement(SignInCard, {
+      providers: ["google"], credentialsAvailable: true, returning: true, compact: true,
+    }));
+    const fresh = renderToStaticMarkup(createElement(SignInCard, {
+      providers: ["google"], credentialsAvailable: true, compact: true,
+    }));
+    expect(returning).toContain("Volvé a tu embarazo");
+    expect(returning).toContain("Entrar con Google");
+    expect(returning).toContain("Te pedimos este permiso cada vez que entrás");
+    expect(fresh).toContain("Tu embarazo, organizado en un solo lugar");
+    expect(fresh).toContain("Empezar con Google");
+    expect(fresh).not.toContain("Volvé a tu embarazo");
+    for (const markup of [returning, fresh]) {
+      const checkbox = markup.match(/<input[^>]*type="checkbox"[^>]*>/)?.[0];
+      expect(checkbox).toBeDefined();
+      expect(checkbox).not.toContain("checked");
+      expect(markup).toContain('name="consent" value=""');
+      const google = markup.match(/<button[^>]*>/g)?.find((tag) => tag.includes('value="google"'));
+      expect(google).toContain('disabled=""');
+    }
+  });
+});

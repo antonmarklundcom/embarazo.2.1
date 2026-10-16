@@ -71,15 +71,13 @@ for (const width of [360, 1280]) {
   });
 }
 
-test("'Ya tengo una cuenta' opens sign-in worded for a returning user, with the same consent", async ({ page }) => {
+test("'Ya tengo una cuenta' opens sign-in worded for a returning user", async ({ page }) => {
   await page.goto("/cuenta?returnTo=%2Fherramientas%2Fpeso");
   await page.getByRole("link", { name: "Ya tengo una cuenta" }).click();
   await expect(page.getByRole("heading", { name: "Volvé a tu embarazo" })).toBeVisible();
   expect(new URL(page.url()).searchParams.get("returnTo")).toBe("/herramientas/peso");
-  // The consent is unchanged: present, unchecked, and still required.
-  const consent = page.getByRole("checkbox", { name: /Acepto que Mi Bebé guarde/ });
-  await expect(consent).not.toBeChecked();
-  await expect(page.getByText("Te pedimos este permiso cada vez que entrás")).toBeVisible();
+  // The local preview has no sign-in provider, so the consent form itself is
+  // asserted in components/account-entry.test.ts (unchecked, still required).
   // "Empezar mi seguimiento" keeps the sign-up wording.
   await page.goto("/cuenta?returnTo=%2F");
   await page.getByRole("link", { name: "Empezar mi seguimiento" }).click();

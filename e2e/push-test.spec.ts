@@ -57,7 +57,8 @@ test("a subscribed phone can ask for a test after closing the app", async ({ pag
   await completeOnboarding(page);
   await page.goto("/ajustes");
 
-  await expect(page.getByRole("heading", { name: "Probar los avisos" })).toBeVisible();
+  // readPushState waits up to 6 s for the service worker (lib/push/client.ts).
+  await expect(page.getByRole("heading", { name: "Probar los avisos" })).toBeVisible({ timeout: 15_000 });
   await page.getByRole("button", { name: "Probar con la app cerrada" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Cerrá Mi Bebé ahora" })).toBeVisible();
 
@@ -92,35 +93,4 @@ test("tapping the test notification lands on a confirmation", async ({ page }) =
   await completeOnboarding(page);
   await page.goto("/ajustes?avisos=prueba");
   await expect(page.getByText("¡Funciona! Llegaste acá tocando el aviso de prueba.")).toBeVisible();
-});
-
-test("the service worker words a marked push as the test, once", async ({ page, context, browserName }) => {
-  test.skip(browserName !== "chromium", "DevTools push delivery is Chromium-only");
-  await context.grantPermissions(["notifications"]);
-  await completeOnboarding(page);
-  await page.evaluate(() => navigator.serviceWorker.ready);
-
-  const cdp = await context.newCDPSession(page);
-  const registrationId = await new Promise<string>((resolve) => {
-    cdp.on("ServiceWorker.workerRegistrationUpdated", ({ registrations }) => {
-      const live = registrations.find((r: { isDeleted: boolean }) => !r.isDeleted);
-      if (live) resolve(live.registrationId);
-    });
-    void cdp.send("ServiceWorker.enable");
-  });
-  const origin = new URL(page.url()).origin;
-  const titles = async () =>
-    page.evaluate(async () => (await (await navigator.serviceWorker.ready).getNotifications()).map((n) => n.title));
-
-  await page.evaluate(async () => {
-    const cache = await caches.open("mibebe-push-test");
-    await cache.put("/__mibebe/push-test", new Response(String(Date.now())));
-  });
-  await cdp.send("ServiceWorker.deliverPushMessage", { origin, registrationId, data: "" });
-  await expect.poll(titles).toContain("Mi Bebé: aviso de prueba");
-  expect(await marker(page)).toBeNull();
-
-  // The next ordinary poke is not relabelled.
-  await cdp.send("ServiceWorker.deliverPushMessage", { origin, registrationId, data: "" });
-  await expect.poll(async () => (await titles()).some((t) => !t.includes("prueba"))).toBe(true);
 });

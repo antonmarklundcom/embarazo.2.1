@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { installDevice, type InstallDevice } from "./installDevice";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -17,22 +18,16 @@ function isStandalone(): boolean {
   );
 }
 
-function isIosSafari(): boolean {
-  if (typeof navigator === "undefined") return false;
-  const ua = navigator.userAgent;
-  const isIos = /iPad|iPhone|iPod/.test(ua);
-  const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
-  return isIos && isSafari;
-}
-
 /** P1.1 (BUILD-PLAN.md): install UX for the "installs from a link" distribution model. */
 export function useInstallPrompt() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
   const [standalone, setStandalone] = useState(false);
+  const [device, setDevice] = useState<InstallDevice | null>(null);
 
   useEffect(() => {
     setStandalone(isStandalone());
+    setDevice(installDevice(navigator.userAgent, navigator.maxTouchPoints));
 
     const onPrompt = (e: Event) => {
       e.preventDefault();
@@ -63,7 +58,8 @@ export function useInstallPrompt() {
     canPromptInstall: !!deferred && !standalone && !installed,
     promptInstall,
     // iOS Safari never fires beforeinstallprompt: show manual instructions.
-    showIosInstructions: isIosSafari() && !standalone && !installed,
+    showIosInstructions: device === "iphone" && !standalone && !installed,
+    device,
     isStandalone: standalone || installed,
   };
 }

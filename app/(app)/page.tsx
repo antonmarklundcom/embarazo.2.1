@@ -60,7 +60,6 @@ import { NewWeekCard } from "@/components/home/NewWeekCard";
 import { BirthCard } from "@/components/baby/BirthCard";
 import { completeHandoff, readHandoff, rememberHandoff } from "@/lib/auth/access.client";
 import { BabyHome } from "@/components/baby/BabyHome";
-import { WeekStrip } from "@/components/home/WeekStrip";
 import { flush as flushFunnel, markOnboarded } from "@/lib/stats/funnel.client";
 
 // "Hoy" screen — brand design 1a (docs/archive/REDESIGN-PLAN.md §2): week strip,
@@ -247,7 +246,6 @@ export default function InicioPage() {
   return (
     <div className="space-y-9 sm:space-y-12">
       <section aria-label="Tu semana" className="space-y-5">
-        <WeekStrip />
         <WeekHero
           week={week}
           weekPlusDay={weekPlusDay}

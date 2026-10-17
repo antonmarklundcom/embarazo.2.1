@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { ThemeSheet } from "./ThemeSheet";
 
@@ -19,6 +20,10 @@ export function ThemeChip({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  // The sheet renders on <body>: Hoy's hero is its own stacking context, and
+  // inside it the bottom bar covered the sheet's "Listo" button.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   return (
     <>
@@ -35,7 +40,7 @@ export function ThemeChip({
         <span aria-hidden>✦</span>
         Fondo
       </button>
-      <ThemeSheet open={open} onClose={() => setOpen(false)} />
+      {mounted && createPortal(<ThemeSheet open={open} onClose={() => setOpen(false)} />, document.body)}
     </>
   );
 }

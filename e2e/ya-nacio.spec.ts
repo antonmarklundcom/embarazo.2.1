@@ -1,13 +1,11 @@
 import { expect, test } from "@playwright/test";
 
+import { localDateInput } from "./helpers/dates";
 import { completeOnboarding } from "./helpers/onboarding";
 
 // Growth plan item 9 ("Ya nació", G1): the birth date on the pregnancy record.
 
-const localInput = (daysAgo: number) => {
-  const d = new Date(Date.now() - daysAgo * 86_400_000);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
+const localInput = (daysAgo: number) => localDateInput(-daysAgo);
 
 test("before week 37 Hoy does not ask", async ({ page }) => {
   // 245 days: 35+0, week 36.

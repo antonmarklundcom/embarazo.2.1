@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { localDateInput } from "./helpers/dates";
 import { completeOnboarding } from "./helpers/onboarding";
 
 // BUILD-PLAN K1 (docs/archive/FABLE-PLAN-2026-08.md §3) — account-first onboarding.
@@ -84,7 +85,7 @@ test("the account step is reached, and offers a way past it", async ({ page }) =
   await page.getByRole("button", { name: "Mamá" }).click();
   await page
     .locator("#lmp")
-    .fill(new Date(Date.now() - 70 * 86400000).toISOString().slice(0, 10));
+    .fill(localDateInput(-70));
   await page.getByRole("button", { name: "Continuar" }).click();
   // K9-F5's "tu situación", skipped without answering anything.
   await page.getByRole("button", { name: "Continuar" }).click();
@@ -104,7 +105,7 @@ test("leaving the flow at the account step and coming back resumes it", async ({
   await page.getByRole("button", { name: "Papá" }).click();
   await page
     .locator("#lmp")
-    .fill(new Date(Date.now() - 70 * 86400000).toISOString().slice(0, 10));
+    .fill(localDateInput(-70));
   await page.getByRole("button", { name: "Continuar" }).click();
   await page.locator("#dep").selectOption({ index: 1 });
   await page.locator("#city").fill("Luque");
@@ -282,7 +283,7 @@ test("the situación answers are optional, stored, and changeable", async ({ pag
   await page.getByRole("button", { name: "Mamá" }).click();
   await page
     .locator("#lmp")
-    .fill(new Date(Date.now() - 70 * 86400000).toISOString().slice(0, 10));
+    .fill(localDateInput(-70));
   await page.getByRole("button", { name: "Continuar" }).click();
 
   await expect(page.getByRole("heading", { name: "Contanos un poco más" })).toBeVisible();

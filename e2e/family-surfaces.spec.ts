@@ -1,5 +1,6 @@
 import { test, expect, type BrowserContext } from "@playwright/test";
 
+import { localDateInput } from "./helpers/dates";
 import { completeOnboarding } from "./helpers/onboarding";
 
 // K7 — "/familia is reachable in ≤2 taps from Hoy", and the three states of
@@ -168,10 +169,7 @@ test("the próximo control is edited on the home screen, not in ajustes", async 
   await expect(card).toContainText("Todavía no anotaste ninguno");
 
   await card.getByRole("button", { name: "Anotar" }).click();
-  const inThreeDays = new Date(Date.now() + 3 * 86400000)
-    .toISOString()
-    .slice(0, 10);
-  await card.getByLabel("Fecha del control").fill(inThreeDays);
+  await card.getByLabel("Fecha del control").fill(localDateInput(3));
   await card.getByLabel("Hora (opcional)").fill("09:00");
   await card.getByRole("button", { name: "Guardar" }).click();
 

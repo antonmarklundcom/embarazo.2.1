@@ -62,10 +62,14 @@ Verificación completa en un solo comando (antes de subir cambios):
 ```bash
 npm run verify                  # tsc, lint, vitest, test:db, validate:content y build, en orden
 npm run verify -- --skip-build  # igual, sin el build de producción (más rápido)
+npm run verify -- --e2e all      # después del build, también todos los specs de Playwright
+npm run verify -- --e2e "e2e/ya-nacio.spec.ts e2e/onboarding.spec.ts"  # solo esos specs
 ```
 
 Corre cada paso en orden y se detiene en el primero que falla. La salida de cada paso
 queda en `verify-logs/` (ignorado por git); `--logs <dir>` la guarda en otra carpeta.
+`--e2e` agrega un paso final con `playwright test` contra el build (no combina con
+`--skip-build`); sin esa opción el comportamiento es el de siempre.
 
 ## Variables de entorno (`.env`)
 

@@ -4,6 +4,8 @@
 //   npm run verify                     # all gates, logs in verify-logs/
 //   npm run verify -- --skip-build     # everything except `next build`
 //   npm run verify -- --logs <dir>     # write logs somewhere else
+//   npm run verify -- --e2e "e2e/ya-nacio.spec.ts e2e/onboarding.spec.ts"
+//   npm run verify -- --e2e all        # after the build, run Playwright specs too
 //
 // Plain Node ESM, no dependencies. `shell: true` so the npm/npx/node commands
 // resolve on Windows as well as POSIX.
@@ -32,8 +34,20 @@ const GATES = [
   { name: "build", command: "npm run build", env: BUILD_ENV, skippable: true },
 ];
 
+// Optional e2e gate, run after the build because `playwright test` serves the
+// production build. `--e2e all` runs every spec; otherwise the value is a list
+// of spec paths. Each path is checked against a plain pattern before it reaches
+// the shell.
+function e2eGate(specs) {
+  const target = specs === "all" ? "" : `${specs.join(" ")} `;
+  return {
+    name: "e2e",
+    command: `node node_modules/@playwright/test/cli.js test ${target}--workers=2 --reporter=line`,
+  };
+}
+
 function parseArgs(argv) {
-  const options = { logs: join(ROOT, "verify-logs"), skipBuild: false };
+  const options = { logs: join(ROOT, "verify-logs"), skipBuild: false, e2e: null };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--skip-build") {
@@ -44,9 +58,28 @@ function parseArgs(argv) {
         throw new Error("--logs needs a directory argument");
       }
       options.logs = resolve(process.cwd(), value);
+    } else if (arg === "--e2e") {
+      const value = argv[++i];
+      if (!value || value.startsWith("--")) {
+        throw new Error('--e2e needs spec paths or "all"');
+      }
+      const specs = value.trim();
+      if (specs === "all") {
+        options.e2e = "all";
+      } else {
+        options.e2e = specs.split(/\s+/);
+        for (const spec of options.e2e) {
+          if (!/^[\w./\\-]+\.spec\.ts$/.test(spec)) {
+            throw new Error(`--e2e: not a spec path: ${spec}`);
+          }
+        }
+      }
     } else {
       throw new Error(`unknown argument: ${arg}`);
     }
+  }
+  if (options.e2e && options.skipBuild) {
+    throw new Error("--e2e runs against the production build; drop --skip-build");
   }
   return options;
 }
@@ -97,14 +130,18 @@ async function main() {
     options = parseArgs(process.argv.slice(2));
   } catch (error) {
     console.error(`verify-all: ${error.message}`);
-    console.error("usage: node scripts/verify-all.mjs [--skip-build] [--logs <dir>]");
+    console.error(
+      'usage: node scripts/verify-all.mjs [--skip-build] [--logs <dir>] [--e2e "<spec paths>" | --e2e all]',
+    );
     return 2;
   }
 
   mkdirSync(options.logs, { recursive: true });
 
-  for (let index = 0; index < GATES.length; index++) {
-    const gate = GATES[index];
+  const gates = options.e2e ? [...GATES, e2eGate(options.e2e)] : GATES;
+
+  for (let index = 0; index < gates.length; index++) {
+    const gate = gates[index];
 
     if (gate.skippable && options.skipBuild) {
       console.log(`SKIP ${gate.name} 0.0s (--skip-build)`);

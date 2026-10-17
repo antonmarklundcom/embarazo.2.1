@@ -20,6 +20,10 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
+        // The app's audience is in Paraguay: date inputs and "today" are read
+        // in this zone. e2e/helpers/dates.ts computes the same calendar dates
+        // explicitly, so the specs do not depend on the machine's own zone.
+        timezoneId: "America/Asuncion",
         // The dev container ships a pre-installed Chromium pinned to a
         // different revision than this @playwright/test version expects
         // (browser downloads are disabled there). Point at it explicitly

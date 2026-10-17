@@ -16,6 +16,7 @@ import {
 // the app to assert anything about.
 import { cheerSentence, weeklyTipSentence } from "@/lib/push/sentences";
 import { babyAgeSentence } from "@/lib/baby/push";
+import { revisionedPages } from "@/lib/sw/pageRevision";
 import {
   PUSH_TEST_CACHE,
   PUSH_TEST_KEY,
@@ -154,8 +155,15 @@ export const SESSION_BEARING_API =
  */
 export const PRIVATE_NAVIGATION = /^\/(admin|familia|cuenta|ajustes)(\/|$)/;
 
+// The build's precache list. Referenced exactly once: the bundler injects it at
+// this one spot and refuses a second `self.__SW_MANIFEST`.
+const BUILD_MANIFEST = self.__SW_MANIFEST ?? [];
+
 const serwist = new Serwist({
-  precacheEntries: [...(self.__SW_MANIFEST ?? []), ...pageRoutes],
+  // Pages carry a per-build revision (lib/sw/pageRevision.ts). Bare URLs were
+  // never refreshed after the first install, so a phone kept HTML whose chunks
+  // the next deploy had deleted and the app stopped loading.
+  precacheEntries: [...BUILD_MANIFEST, ...revisionedPages(pageRoutes, BUILD_MANIFEST)],
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,

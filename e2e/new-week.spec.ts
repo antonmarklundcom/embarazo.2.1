@@ -40,3 +40,53 @@ test("mid-week there is no new-week card", async ({ page }) => {
   await expect(page.getByText("Tip de hoy")).toBeVisible();
   await expect(page.getByText("Semana nueva", { exact: true })).toHaveCount(0);
 });
+
+test("a slow first install offers 'Probá de nuevo' instead of calling the notice blocked", async ({
+  page,
+  context,
+}) => {
+  await completeOnboarding(page, { daysAgo: 70 });
+  await expect(page.getByText("Tip de hoy")).toBeVisible();
+
+  // A phone whose service worker never becomes ready: she says yes, the
+  // permission is granted, and `enablePush` gives up after its long wait with
+  // "pending" (lib/push/client.ts). The two waits (6 s passive, 25 s explicit)
+  // are shortened so the test does not sit through them.
+  await context.route("**/api/v1/push", (route) =>
+    route.request().method() === "GET"
+      ? route.fulfill({ json: { publicKey: "BNtestkey" } })
+      : route.fulfill({ status: 204, body: "" }),
+  );
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator.serviceWorker, "ready", {
+      configurable: true,
+      get: () => new Promise(() => {}),
+    });
+    Object.defineProperty(Notification, "permission", { configurable: true, get: () => "default" });
+    (window as unknown as { asks: number }).asks = 0;
+    Notification.requestPermission = async () => {
+      (window as unknown as { asks: number }).asks += 1;
+      return "granted";
+    };
+    const realSetTimeout = window.setTimeout.bind(window);
+    window.setTimeout = ((fn: TimerHandler, ms?: number, ...args: unknown[]) =>
+      realSetTimeout(fn, ms === 6000 || ms === 25_000 ? 150 : ms, ...args)) as typeof window.setTimeout;
+  });
+  await page.evaluate(() => localStorage.setItem("mibebe.newWeek.seen", "10"));
+  await page.reload();
+
+  const card = page.getByRole("region", { name: "¡Hoy empezás la semana 11!" });
+  await expect(card).toBeVisible();
+  await card.getByRole("button", { name: /^Avisame cada/ }).click();
+
+  // Not a refusal: no "No pudimos activar", no pointer to Ajustes.
+  const retry = card.getByRole("button", { name: "Probá de nuevo" });
+  await expect(retry).toBeVisible();
+  await expect(card.getByText("Todavía no pudimos preparar los avisos")).toBeVisible();
+  await expect(card.getByText("No pudimos activar los avisos")).toHaveCount(0);
+
+  // The retry asks again (and, with the worker still stuck, lands back here).
+  await retry.click();
+  await expect.poll(() => page.evaluate(() => (window as unknown as { asks: number }).asks)).toBe(2);
+  await expect(retry).toBeVisible();
+});

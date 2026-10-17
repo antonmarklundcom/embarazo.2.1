@@ -8,6 +8,10 @@ import {
   requireAdmin,
 } from "@/lib/server/admin";
 import { aiBabyAlertShare, aiSpendReport, drizzleAiSpendStore } from "@/lib/server/aiSpend";
+import { loadAdminSummary, type PushSummary } from "@/lib/server/adminSummary";
+import { getFlags, isFlagStoreAvailable } from "@/lib/server/flags";
+import { drizzlePushHealthStore } from "@/lib/server/pushHealth";
+import { getRevision } from "@/lib/server/revision";
 
 // BUILD-PLAN A7 — find a user, and see what has been done lately.
 //
@@ -28,6 +32,45 @@ function formatDate(value: Date | string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function Cell({
+  label,
+  value,
+  note,
+  alert = false,
+}: {
+  label: string;
+  value: string;
+  note?: string;
+  alert?: boolean;
+}) {
+  return (
+    <div className="rounded-tile border border-black/10 bg-cream p-3">
+      <dt className="text-[11px] font-extrabold uppercase tracking-wide text-muted">{label}</dt>
+      <dd className={`mt-1 text-base font-black ${alert ? "text-terracotta" : "text-ink"}`}>{value}</dd>
+      {note && <dd className="mt-0.5 text-xs text-muted">{note}</dd>}
+    </div>
+  );
+}
+
+/** What the push numbers say, in words; "sin base de datos" when there is none. */
+function pushCells(push: PushSummary) {
+  if (push.kind === "ok") {
+    return {
+      last: push.lastSentAt === null ? "Nunca" : formatDate(new Date(push.lastSentAt)),
+      overdue: String(push.overdue),
+      overdueNote:
+        push.overdueOverHour > 0
+          ? `${push.overdueOverHour} con más de 1 hora`
+          : push.overdue > 0
+            ? "Ninguno con más de 1 hora"
+            : undefined,
+      stuck: push.overdueOverHour > 0,
+    };
+  }
+  const text = push.kind === "no-database" ? "sin base de datos" : "no se pudo leer";
+  return { last: text, overdue: text, overdueNote: undefined, stuck: false };
 }
 
 export default async function AdminHomePage({
@@ -60,8 +103,61 @@ export default async function AdminHomePage({
     currentMonthSpend.ceilingUsd > 0 &&
     currentMonthSpend.spendShare >= alertShare;
 
+  // The state-of-the-service strip: deployed revision, when the dispatcher last
+  // sent, how many reminders are overdue, and the flags. Read-only, counts only.
+  const summary = await loadAdminSummary({
+    revision: getRevision(),
+    pushStore: database ? drizzlePushHealthStore(database) : null,
+    readFlags: getFlags,
+    flagsFromDatabase: isFlagStoreAvailable(),
+  });
+  const push = pushCells(summary.push);
+
   return (
     <div className="space-y-6">
+      <section
+        aria-labelledby="estado-ahora"
+        className="rounded-card border border-line bg-white p-4 shadow-soft"
+      >
+        <h2 id="estado-ahora" className="text-base font-extrabold text-ink">
+          Estado ahora
+        </h2>
+        <dl className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <Cell
+            label="Versión publicada"
+            value={summary.revision === "unknown" ? "desconocida" : summary.revision}
+          />
+          <Cell label="Último aviso enviado" value={push.last} />
+          <Cell
+            label="Avisos atrasados"
+            value={push.overdue}
+            note={push.overdueNote}
+            alert={push.stuck}
+          />
+        </dl>
+        <div className="mt-3 flex items-baseline justify-between gap-3">
+          <h3 className="text-xs font-extrabold uppercase tracking-wide text-muted">Funciones</h3>
+          <Link href="/admin/avisos" className="text-xs font-bold text-petrol underline">
+            Detalle de avisos
+          </Link>
+        </div>
+        <ul className="mt-1 space-y-1 text-sm">
+          {summary.flags.map((flag) => (
+            <li key={flag.key} className="flex justify-between gap-3">
+              <code className="text-ink">{flag.key}</code>
+              <span className={flag.on ? "font-black text-petrol" : "text-muted"}>
+                {flag.on ? "Prendida" : "Apagada"}
+              </span>
+            </li>
+          ))}
+        </ul>
+        {!summary.flagsFromDatabase && (
+          <p className="mt-2 text-xs text-muted">
+            Sin base de datos: las funciones están en su valor por defecto.
+          </p>
+        )}
+      </section>
+
       {spendAlerting && (
         <Link
           href="/admin/ia"

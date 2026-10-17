@@ -206,3 +206,48 @@ describe("signed-in users", () => {
     stop();
   });
 });
+
+// Photos, the companion snapshot and push schedules ask `ensureAccountLink`
+// before they send this phone's data. It used to open with the sync probe, so a
+// signed-out visitor produced a 401 on `/api/v1/sync` from those paths too.
+describe("ensureAccountLink (photos, sharing, push)", () => {
+  it("signed out: no-session, and no /api/v1/sync request", async () => {
+    const { ensureAccountLink } = await load();
+    expect(await ensureAccountLink()).toEqual({ status: "no-session" });
+    expect(syncCalls()).toEqual([]);
+    expect(statusCalls().length).toBe(1);
+  });
+
+  it("cannot ask auth-status: offline, never a sign-out, and still no sync request", async () => {
+    authSignedIn = "error";
+    const { ensureAccountLink } = await load();
+    expect(await ensureAccountLink()).toEqual({ status: "offline" });
+    expect(syncCalls()).toEqual([]);
+  });
+
+  it("signed in: the identity probe is reached", async () => {
+    authSignedIn = true;
+    const { ensureAccountLink } = await load();
+    await ensureAccountLink();
+    expect(syncCalls().length).toBe(1);
+  });
+
+  it("a session this tab already confirmed skips the extra auth-status request", async () => {
+    authSignedIn = true;
+    const { startSync, ensureAccountLink } = await load();
+    const stop = startSync();
+    await settle();
+    const before = statusCalls().length;
+    await ensureAccountLink();
+    expect(statusCalls().length).toBe(before);
+    expect(syncCalls().length).toBe(2); // the engine's probe, then this one
+    stop();
+  });
+
+  it("two callers on the same screen share one auth-status request", async () => {
+    const { ensureAccountLink } = await load();
+    await Promise.all([ensureAccountLink(), ensureAccountLink()]);
+    expect(statusCalls().length).toBe(1);
+    expect(syncCalls()).toEqual([]);
+  });
+});

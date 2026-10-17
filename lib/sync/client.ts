@@ -446,12 +446,24 @@ export type AccountLink =
  *
  * "adopt" (never linked) links here exactly as `syncNow` would, so the first
  * sync and the first photo upload after sign-in agree on the owner.
+ *
+ * Signed-out visitors get no `/api/v1/sync` request at all, the same rule the
+ * automatic sync follows (`syncWhenSignedIn`): unless this tab already
+ * confirmed a session, the shared `/api/v1/auth-status` answer comes first.
+ * "Not signed in" is `no-session` without touching the sync route; "could not
+ * ask" (offline, server error) is `offline`, never a sign-out.
  */
 export async function ensureAccountLink(): Promise<AccountLink> {
   if (typeof window === "undefined") return { status: "no-session" };
   const operation = lifecycle.begin();
   if (!operation) return { status: "no-session" };
   try {
+    if (!sessionConfirmed) {
+      const status = await fetchAuthStatusOrNull();
+      operation.signal.throwIfAborted();
+      if (!status) return { status: "offline" };
+      if (!status.signedIn) return { status: "no-session" };
+    }
     const observedOwner = (await readSyncState())?.accountId;
     let accountId: string;
     try {

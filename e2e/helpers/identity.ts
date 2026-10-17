@@ -7,6 +7,12 @@ import type { BrowserContext } from "@playwright/test";
 // up a signed-in user also stands up the probe. A real signed-in deployment
 // always has it.
 //
+// 2026-10-17: the probe is only sent to a visitor `/api/v1/auth-status` says is
+// signed in (signed-out visitors get no `/api/v1/sync` request), so this helper
+// stands up that answer too. A spec that needs a different auth-status (for
+// example `accountRequired: true`) registers its own route afterwards; the
+// latest route wins.
+//
 // Installed on the CONTEXT for the same reason as `serveClientFlags`: the
 // service worker's fetches only go through context routes.
 export async function serveIdentity(
@@ -14,6 +20,19 @@ export async function serveIdentity(
   account: string | { current: string } = "u1",
 ): Promise<void> {
   const id = () => (typeof account === "string" ? account : account.current);
+  await context.route("**/api/v1/auth-status", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        providers: ["google"],
+        credentialsAvailable: false,
+        signedIn: true,
+        accountRequired: false,
+        accountId: id(),
+      }),
+    }),
+  );
   await context.route("**/api/v1/sync**", async (route) => {
     const request = route.request();
     if (request.method() === "POST") {

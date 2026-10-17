@@ -163,6 +163,11 @@ beforeEach(() => {
       const bytes = bucket.get(objectKey);
       return bytes ? new Response(new Blob([bytes as BlobPart], { type: "image/jpeg" })) : new Response(null, { status: 404 });
     }
+    // ensureAccountLink asks auth-status before the sync probe (signed-out
+    // visitors send no /api/v1/sync request).
+    if (url.pathname === "/api/v1/auth-status") {
+      return json({ signedIn: Boolean(session), accountId: session ?? null, accountRequired: true, providers: [] });
+    }
     if (url.pathname === "/api/v1/sync") {
       return session ? json({ records: [], serverTime: Date.now(), accountId: session }) : json({ error: "x" }, 401);
     }
@@ -218,6 +223,7 @@ describe("F03 — deletions are jobs, not hopes", () => {
         const bytes = bucket.get(url.pathname.slice(1));
         return bytes ? new Response(new Blob([bytes as BlobPart])) : new Response(null, { status: 404 });
       }
+      if (url.pathname === "/api/v1/auth-status") return json({ signedIn: true, accountId: ME, accountRequired: true, providers: [] });
       if (url.pathname === "/api/v1/sync") return json({ records: [], serverTime: Date.now(), accountId: ME });
       return photosServer(init, url);
     });

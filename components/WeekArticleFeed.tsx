@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { EditorialCard } from "@/components/EditorialCard";
+import { EditorialCard, EditorialRow } from "@/components/EditorialCard";
 import { ARTICLE_INDEX } from "@/lib/articles/loadIndex";
 import { indexReadTimeLabel } from "@/lib/articles/index";
 import {
@@ -12,15 +12,42 @@ import {
 
 // Keep week filtering and optional-answer ranking on the lightweight index:
 // article bodies and their content validation stay out of the home bundle.
+//
+// `layout="list"`: thumbnail rows inside Hoy's "Qué esperar" card (Flo
+// benchmark, 2026-10-17). Same region name, same links, same read times.
 export function WeekArticleFeed({
   week,
   answers = {},
+  layout = "shelf",
 }: {
   week: number;
   answers?: PregnancyAnswers;
+  layout?: "shelf" | "list";
 }) {
   const articles = articlesForReader(ARTICLE_INDEX, week, answers);
   if (articles.length === 0) return null;
+
+  if (layout === "list") {
+    return (
+      <section aria-labelledby="para-leer" className="space-y-2">
+        <div className="flex items-center justify-between gap-4">
+          <h3 id="para-leer" className="text-base font-extrabold leading-snug text-ink">
+            Para leer esta semana
+          </h3>
+          <Link href="/guias" className="flex min-h-11 shrink-0 items-center text-sm font-bold text-petrol underline-offset-4 hover:underline">
+            Ver todas
+          </Link>
+        </div>
+        <ul aria-label="Para leer esta semana" className="divide-y divide-line/70">
+          {articles.map((article) => (
+            <li key={article.slug} className="py-1">
+              <EditorialRow slug={article.slug} title={article.title} readTime={indexReadTimeLabel(article)} />
+            </li>
+          ))}
+        </ul>
+      </section>
+    );
+  }
 
   return (
     <section aria-labelledby="para-leer" className="space-y-4 pt-2">

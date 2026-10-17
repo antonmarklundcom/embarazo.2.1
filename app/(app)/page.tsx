@@ -19,7 +19,7 @@ import {
   WeeklyLineCard,
   PopularThisWeek,
   ShareCard,
-  WeekArticleFeed,
+  QueEsperarCard,
 } from "@/components/home/dynamicSections";
 
 import {
@@ -286,7 +286,7 @@ export default function InicioPage() {
 
       <section aria-label="Para conocer tu semana" className="space-y-7">
         <WeekContentRail week={week} role={profile.role} withLine={false} sizeInHero />
-        <WeekArticleFeed week={week} answers={profile} />
+        <QueEsperarCard week={week} answers={profile} />
         <PopularThisWeek />
       </section>
 

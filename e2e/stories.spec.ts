@@ -52,7 +52,7 @@ test("the last story ends with the symptom log", async ({ page }) => {
 
 test("Qué esperar: week shortcuts and this week's guías as thumbnail rows", async ({ page }) => {
   await completeOnboarding(page, { role: "Mamá", daysAgo: 140 });
-  const card = page.getByRole("region", { name: /Qué esperar en la semana \d+/ });
+  const card = page.getByRole("region", { name: "Qué esperar esta semana" });
   await expect(card).toBeVisible();
   for (const name of ["Tu bebé", "Para preguntar", "Síntomas", "Qué comer"]) {
     await expect(card.getByRole("link", { name })).toBeVisible();

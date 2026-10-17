@@ -20,8 +20,13 @@ const SHORTCUTS = (week: number): { href: string; label: string; icon: ToolIconN
 export function QueEsperarCard({ week, answers }: { week: number; answers?: PregnancyAnswers }) {
   return (
     <section aria-labelledby="que-esperar" className="rounded-card border border-line/70 bg-white p-4">
-      <h2 id="que-esperar" className="text-lg font-extrabold leading-snug text-ink">
-        Qué esperar en la semana {week}
+      {/* The week number stays out of the region's name: "semana N" regions
+          belong to the new-week card, and e2e/new-week.spec.ts counts them. */}
+      <p className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol" aria-hidden>
+        Semana {week}
+      </p>
+      <h2 id="que-esperar" className="mt-0.5 text-lg font-extrabold leading-snug text-ink">
+        Qué esperar esta semana
       </h2>
       <ul className="mt-3 grid grid-cols-4 gap-2" aria-label="Atajos de la semana">
         {SHORTCUTS(week).map((item) => (

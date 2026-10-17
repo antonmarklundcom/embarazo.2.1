@@ -7,8 +7,14 @@ import { enableWeekStartNotice, isIosWithoutInstall, pushResyncPending, readPush
 
 import { BackButton, PrimaryButton } from "./controls";
 
-/** How long "Sí" may wait for the browser before onboarding finishes anyway. */
-const SUBSCRIBE_WAIT_MS = 8000;
+/**
+ * Outer cap on "Sí" before onboarding finishes anyway. It must sit above the
+ * 25 s `enablePush` itself gives a slow first service-worker install, plus time
+ * to answer the permission prompt, so it only fires when something is truly stuck.
+ */
+const SUBSCRIBE_WAIT_MS = 45_000;
+/** Past this, say what is happening instead of a silent "Un momento…". */
+const PREPARING_AFTER_MS = 2000;
 
 /**
  * Growth plan item 8 — "¿Te aviso cuando empieza tu semana nueva?", the last
@@ -31,7 +37,12 @@ export function AvisosStep({
 }) {
   const [busy, setBusy] = useState(false);
   const [iosNote, setIosNote] = useState(false);
-  const [result, setResult] = useState<PushStatus | "pending" | "error" | null>(null);
+  const [preparing, setPreparing] = useState(false);
+  // "pending" (a PushStatus) = the service worker was still not ready after the
+  // long explicit wait: not a refusal, and worth another try. "unconfirmed" =
+  // she is subscribed here but the server has not stored it yet (or the outer
+  // cap fired).
+  const [result, setResult] = useState<PushStatus | "unconfirmed" | "error" | null>(null);
 
   useEffect(() => {
     void readPushState().catch(() => undefined);
@@ -45,19 +56,22 @@ export function AvisosStep({
     setBusy(true);
     setResult(null);
     let timer: ReturnType<typeof setTimeout> | undefined;
+    const preparingTimer = setTimeout(() => setPreparing(true), PREPARING_AFTER_MS);
     try {
       // Capped: `navigator.serviceWorker.ready` never settles on a device where
       // the service worker did not register, and onboarding must not hang on
       // "Un momento…". Past the cap the subscription may still finish on its own.
       const status = await Promise.race([
         enableWeekStartNotice(),
-        new Promise<"pending">((resolve) => { timer = setTimeout(() => resolve("pending"), SUBSCRIBE_WAIT_MS); }),
+        new Promise<"unconfirmed">((resolve) => { timer = setTimeout(() => resolve("unconfirmed"), SUBSCRIBE_WAIT_MS); }),
       ]);
-      setResult(status === "on" && pushResyncPending() ? "pending" : status);
+      setResult(status === "on" && pushResyncPending() ? "unconfirmed" : status);
     } catch {
       setResult("error");
     } finally {
       clearTimeout(timer);
+      clearTimeout(preparingTimer);
+      setPreparing(false);
       setBusy(false);
     }
   }
@@ -78,7 +92,13 @@ export function AvisosStep({
             : result === "unconfigured" ? "Los avisos todavía no están disponibles. Podés seguir y revisar Ajustes más adelante."
             : result === "unsupported" ? "Este navegador no admite estos avisos. Podés usar la app igual."
             : result === "off" ? "No activaste los avisos. Podés hacerlo después en Ajustes."
+            : result === "pending" ? "Todavía no pudimos preparar los avisos. Probá de nuevo en un momento."
             : "Todavía no pudimos confirmar la activación. Revisá los avisos en Ajustes cuando tengas conexión."}
+        </p>
+      )}
+      {preparing && !result && (
+        <p role="status" className="mt-3 text-sm font-semibold text-ink">
+          Preparando los avisos en este teléfono…
         </p>
       )}
 
@@ -90,6 +110,17 @@ export function AvisosStep({
             <strong>Agregar a inicio</strong>; después activalos en Ajustes.
           </p>
           <PrimaryButton label="Entendido, empezar" onClick={onFinish} />
+        </>
+      ) : result === "pending" ? (
+        <>
+          <PrimaryButton label="Probar de nuevo" onClick={() => void yes()} />
+          <button
+            type="button"
+            onClick={onFinish}
+            className="mt-2 min-h-[44px] w-full rounded-tile border border-line px-4 text-sm font-bold text-ink"
+          >
+            Continuar
+          </button>
         </>
       ) : result ? (
         <PrimaryButton label="Continuar" onClick={onFinish} />

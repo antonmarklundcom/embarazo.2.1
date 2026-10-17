@@ -3,6 +3,7 @@ import { clearPin } from "@/lib/crypto";
 import { clearOnboardingDraft } from "@/lib/onboarding/draftStorage";
 import { purgePrivateCaches } from "@/lib/sw/privateCaches";
 import { AUTH_STATUS_PATH } from "@/lib/auth/status";
+import { endPushForSignOut } from "@/lib/push/client";
 import { pauseSyncForDeviceWipe, resumeSyncAfterFailedWipe } from "./client";
 import { pausePhotoSyncForDeviceWipe, resumePhotoSyncAfterFailedWipe } from "@/lib/photos/client";
 
@@ -17,6 +18,12 @@ export async function wipeSignedOutDevice(signOut: () => Promise<unknown>): Prom
       const current = await before.json();
       if (current?.signedIn !== false && (current?.signedIn !== true || current.accountId !== expectedAccountId)) throw new Error("account-changed");
     }
+    // Privacy: end this phone's push subscription (browser and server row)
+    // while the session cookie still authorises the DELETE, and before any
+    // local data goes. Otherwise the server keeps poking this phone at the
+    // previous account's reminder times. Bounded and never throws, so a slow
+    // network cannot hold the wipe.
+    await endPushForSignOut();
     await signOut();
     // Auth.js's redirect:false response alone does not prove its POST worked.
     // Do not use fetchAuthStatus here: it treats a network error as signed out.

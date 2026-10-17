@@ -18,7 +18,12 @@ import {
 
 describe("the flag vocabulary", () => {
   it("is exactly these keys", () => {
-    expect([...FLAG_KEYS]).toEqual(["ai_baby_paused", "guarani", "recomendados"]);
+    expect([...FLAG_KEYS]).toEqual([
+      "ai_baby_paused",
+      "guarani",
+      "nombres_link",
+      "recomendados",
+    ]);
   });
 
   it("declares a scope, a default and a description for each", () => {
@@ -46,11 +51,22 @@ describe("the flag vocabulary", () => {
   });
 
   it("publishes only client-scope keys", () => {
-    expect(CLIENT_FLAG_KEYS).toEqual(["guarani", "recomendados"]);
-    expect(clientScope(defaultFlags())).toEqual({ guarani: false, recomendados: false });
+    expect(CLIENT_FLAG_KEYS).toEqual(["guarani", "nombres_link", "recomendados"]);
+    expect(clientScope(defaultFlags())).toEqual({
+      guarani: false,
+      nombres_link: false,
+      recomendados: false,
+    });
     expect(Object.keys(clientScope(defaultFlags()))).not.toContain(
       "ai_baby_paused",
     );
+  });
+
+  it("keeps `nombres_link` a client-scope flag that is off by default", () => {
+    // Item 19: the link to nombres.com.py stays hidden until the site is live.
+    expect(FLAG_DEFINITIONS.nombres_link.scope).toBe("client");
+    expect(FLAG_DEFINITIONS.nombres_link.default).toBe(false);
+    expect(defaultFlags().nombres_link).toBe(false);
   });
 
   it("narrows an untrusted string", () => {
@@ -66,6 +82,7 @@ describe("folding stored rows onto the defaults", () => {
     expect(mergeFlagRows([{ key: "recomendados", value: true }])).toEqual({
       ai_baby_paused: false,
       guarani: false,
+      nombres_link: false,
       recomendados: true,
     });
   });
@@ -86,7 +103,12 @@ describe("folding stored rows onto the defaults", () => {
       { key: "video_gallery", value: true },
       { key: "recomendados", value: true },
     ]);
-    expect(values).toEqual({ ai_baby_paused: false, guarani: false, recomendados: true });
+    expect(values).toEqual({
+      ai_baby_paused: false,
+      guarani: false,
+      nombres_link: false,
+      recomendados: true,
+    });
   });
 
   it("ignores a null value", () => {

@@ -1,5 +1,6 @@
 "use client";
 
+import { NombresLink } from "@/components/NombresLink";
 import type { OnboardingAnswers } from "@/lib/onboarding/progress";
 
 import { BackButton, FIELD_CLASS, PrimaryButton } from "./controls";
@@ -38,6 +39,7 @@ export function BabyStep({
         placeholder="Ej: Silvia"
         className={`mt-3 ${FIELD_CLASS}`}
       />
+      <NombresLink className="mt-2 block text-xs" />
 
       <PrimaryButton
         disabled={saving}

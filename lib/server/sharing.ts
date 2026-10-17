@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { SharingBackend } from "./sharingBackend";
+import { DuplicatePregnancyError, type SharingBackend } from "./sharingBackend";
 import {
   INVITE_TTL_DAYS,
   canSeeSharedTasks,
@@ -56,6 +56,10 @@ export async function ensurePregnancyForOwner(
   try {
     await backend.insertPregnancy({ id, ownerUserId, updatedAt: now });
   } catch (error) {
+    // Only the duplicate-owner failure is the race; anything else (a dropped
+    // connection, a bug) is a real failure the caller must see, even if a row
+    // happens to exist by now.
+    if (!(error instanceof DuplicatePregnancyError)) throw error;
     // K14 — `pregnancies_owner_idx` is UNIQUE now (see lib/server/schema.ts),
     // so the loser of the read-then-insert race lands here instead of creating
     // a second pregnancy for the same owner. The winner's row is committed by
@@ -66,7 +70,7 @@ export async function ensurePregnancyForOwner(
       await ensureOwnerMembership(backend, raced, ownerUserId);
       return raced;
     }
-    // Not the race, then. A real failure the caller must see.
+    // A duplicate was reported but nothing is readable: do not guess.
     throw error;
   }
 

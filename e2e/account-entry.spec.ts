@@ -77,9 +77,14 @@ test("signed-in tool entry completes a fresh profile before opening the tool", a
   await page.getByRole("button",{name:"Continuar",exact:true}).click();
   await page.locator("#dep").selectOption({index:1});
   await page.getByRole("button",{name:"Continuar",exact:true}).click();
-  // Already authenticated: continue with the verified account, no guest option.
-  await expect(page.getByRole("heading",{name:"Listo, ya entraste"})).toBeVisible();
+  // Already authenticated: the account step has nothing to ask, so setup
+  // goes straight on to the baby's name — no guest option, no extra tap.
+  await expect(page.locator("#babyName")).toBeVisible();
+  await expect(page.getByRole("heading",{name:"Listo, ya entraste"})).toHaveCount(0);
   await expect(page.getByRole("button",{name:"Seguir sin cuenta"})).toHaveCount(0);
+  // Going back from the name skips the account step too.
+  await page.getByRole("button",{name:/^Volver/}).click();
+  await expect(page.locator("#dep")).toBeVisible();
   await page.getByRole("button",{name:"Continuar",exact:true}).click();
   await expect(page.locator("#babyName")).toBeVisible();
   await page.getByRole("button",{name:"Continuar",exact:true}).click();
@@ -125,10 +130,17 @@ test("overlapping rechecks cannot let a stale signed-in answer reopen signed-out
   await serveAccount(context, { current: "owner" });
   await page.goto("/");
   await expect(page.getByText("Tip de hoy")).toBeVisible();
+  // Hoy's own late mounts (CreateAccountNudge reads auth-status too) are not
+  // the gate's rechecks: answer them as before and count only from here on.
+  let counting = false;
   let requestNumber = 0;
   let stale: (() => void) | undefined;
   const delay = new Promise<void>((resolve) => { stale = resolve; });
   await context.route("**/api/v1/auth-status", async (route) => {
+    if (!counting) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ accountRequired: true, signedIn: true, accountId: "owner", providers: [] }) });
+      return;
+    }
     if (++requestNumber === 1) {
       await delay;
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ accountRequired: true, signedIn: true, accountId: "owner", providers: [] }) }).catch(() => {});
@@ -136,6 +148,8 @@ test("overlapping rechecks cannot let a stale signed-in answer reopen signed-out
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ accountRequired: true, signedIn: false, accountId: null, providers: [] }) });
     }
   });
+  await page.waitForTimeout(1000);
+  counting = true;
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect.poll(() => requestNumber).toBe(1);
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
@@ -186,4 +200,23 @@ test("a signed-in calculator arrival keeps its date through ownership setup",asy
   await page.getByRole("button",{name:"Mamá"}).click();
   await expect(page.locator("#lmp")).toHaveValue(fum);
   expect(new URL(page.url()).hash).toBe("");
+});
+
+test("a signed-out visit to Hoy never flashes the account error on its way to the welcome", async ({ page, context }) => {
+  await serveAccount(context, { current: null });
+  await page.addInitScript(() => {
+    const note = () => {
+      if (document.body?.innerText.includes("No pudimos comprobar tu cuenta")) sessionStorage.setItem("flashed", "1");
+    };
+    new MutationObserver(note).observe(document, { subtree: true, childList: true, characterData: true });
+    // A focus event mid-redirect starts a second account check, which the
+    // browser then cancels as the page unloads: the case that used to flash.
+    window.addEventListener("DOMContentLoaded", () => {
+      for (const delay of [0, 50, 150, 300]) setTimeout(() => window.dispatchEvent(new Event("focus")), delay);
+    });
+  });
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/cuenta\?returnTo=/);
+  await expect(page.getByRole("heading", { name: "Tu embarazo, con más calma." })).toBeVisible();
+  expect(await page.evaluate(() => sessionStorage.getItem("flashed"))).toBeNull();
 });

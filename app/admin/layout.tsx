@@ -86,6 +86,13 @@ export default async function AdminLayout({
             >
               IA
             </Link>
+            {/* Push health — are scheduled notifications going out? */}
+            <Link
+              href="/admin/avisos"
+              className="text-[13px] font-extrabold text-petrol"
+            >
+              Avisos
+            </Link>
           </div>
           <p className="truncate text-xs text-muted">{actor.email}</p>
         </div>

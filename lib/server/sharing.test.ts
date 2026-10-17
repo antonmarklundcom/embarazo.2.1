@@ -23,8 +23,10 @@ import {
   setTaskDone,
   unassignTask,
 } from "./sharing";
-import type {
-  SharingBackend,
+import {
+  DuplicatePregnancyError,
+  isMysqlDuplicateEntry,
+  type SharingBackend,
   StoredCheer,
   StoredInvite,
   StoredMembership,
@@ -101,7 +103,7 @@ function memoryBackend(): SharingBackend & {
       // recovery path in `ensurePregnancyForOwner` is never exercised.
       for (const existing of pregnancies.values()) {
         if (existing.ownerUserId === row.ownerUserId) {
-          throw new Error("ER_DUP_ENTRY: pregnancies_owner_idx");
+          throw new DuplicatePregnancyError(row.ownerUserId);
         }
       }
       pregnancies.set(row.id, { id: row.id, ownerUserId: row.ownerUserId });
@@ -388,6 +390,24 @@ describe("a pregnancy belongs to exactly one owner", () => {
 
     await expect(ensurePregnancyForOwner(backend, OWNER, NOW)).rejects.toThrow(
       "connection lost",
+    );
+  });
+
+  it("does not treat a non-duplicate error as the race, even if a row exists", async () => {
+    // Only DuplicatePregnancyError selects the recovery path. A generic
+    // failure must surface rather than be papered over by a re-read.
+    const backend = memoryBackend();
+    await ensurePregnancyForOwner(backend, OWNER, NOW);
+    backend.findPregnancyByOwner = (() => {
+      let calls = 0;
+      return async () => (calls++ === 0 ? null : "some-pregnancy");
+    })();
+    backend.insertPregnancy = async () => {
+      throw new Error("ER_DUP_ENTRY but not our class");
+    };
+
+    await expect(ensurePregnancyForOwner(backend, OWNER, NOW)).rejects.toThrow(
+      "ER_DUP_ENTRY but not our class",
     );
   });
 
@@ -1213,6 +1233,26 @@ describe("ánimos", () => {
 // ---------------------------------------------------------------------------
 // The cut itself
 // ---------------------------------------------------------------------------
+
+describe("recognising MySQL's duplicate-key error", () => {
+  it("finds it on the error or anywhere along the cause chain", () => {
+    expect(isMysqlDuplicateEntry({ code: "ER_DUP_ENTRY", errno: 1062 })).toBe(true);
+    expect(isMysqlDuplicateEntry({ errno: 1062 })).toBe(true);
+    // Drizzle's DrizzleQueryError keeps the driver error on `.cause`.
+    expect(
+      isMysqlDuplicateEntry(
+        Object.assign(new Error("Failed query"), { cause: { code: "ER_DUP_ENTRY" } }),
+      ),
+    ).toBe(true);
+  });
+
+  it("does not match other failures", () => {
+    expect(isMysqlDuplicateEntry(new Error("connection lost"))).toBe(false);
+    expect(isMysqlDuplicateEntry({ code: "ECONNRESET", errno: -104 })).toBe(false);
+    expect(isMysqlDuplicateEntry(null)).toBe(false);
+    expect(isMysqlDuplicateEntry("ER_DUP_ENTRY")).toBe(false);
+  });
+});
 
 describe("the rules do not reach around the backend", () => {
   it("leaves sharingBackend.ts as the only server module querying these tables", () => {

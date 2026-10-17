@@ -81,7 +81,7 @@ export function PerspectiveSwitcher({ week, role }: { week: number; role: Role }
             onClick={() => setActive(id)}
             onKeyDown={(event) => onKeyDown(event, index)}
             className={`min-h-[36px] shrink-0 rounded-tile px-3.5 text-[13px] font-extrabold transition ${
-              id === active ? "bg-pastel-lavanda text-ink" : "bg-pastel-arena/50 text-muted"
+              id === active ? "bg-pastel-lavanda text-ink" : "bg-pastel-arena/50 text-ink/80"
             }`}
           >
             {TAB_LABELS[id]}

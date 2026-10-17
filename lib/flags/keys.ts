@@ -70,6 +70,16 @@ export const FLAG_DEFINITIONS = {
       "guaraní bajo el castellano. Apagado hasta la revisión nativa " +
       "(docs/GUARANI-REVIEW.md).",
   },
+  // Growth plan item 19 — the outbound link to the owner's separate
+  // baby-name site (https://nombres.com.py). Off until that site is live, so
+  // the app never points a mother at a page that does not answer yet.
+  nombres_link: {
+    scope: "client",
+    default: false,
+    description:
+      "Muestra el enlace a nombres.com.py en el paso del nombre del bebé y en " +
+      "Ajustes. Apagado hasta que el sitio esté en línea.",
+  },
 } as const satisfies Record<string, FlagDefinition>;
 
 export type FlagKey = keyof typeof FLAG_DEFINITIONS;

@@ -13,6 +13,7 @@ import {
   weekCardContent,
 } from "@/lib/share/card";
 import { drawBumpFrame, drawWeekCard } from "@/lib/share/draw";
+import { useChosenHeroTheme } from "@/lib/hero/preferences";
 import { hasWeekArt, weekArtSrc } from "@/lib/hero/weekArt";
 import { partnerShareText, partnerWhatsAppUrl } from "@/lib/share/partner";
 
@@ -111,6 +112,8 @@ export function ShareCard({
   label?: string;
   className?: string;
 }) {
+  // KNOWN-ISSUES item 12: the card follows the hero theme she chose, if any.
+  const chosenTheme = useChosenHeroTheme();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [shared, setShared] = useState(false);
@@ -130,7 +133,7 @@ export function ShareCard({
       if (photo) {
         const bitmap = await createImageBitmap(photo);
         file = await toFile(
-          (ctx) => drawBumpFrame(ctx, bumpFrameContent(week), bitmap),
+          (ctx) => drawBumpFrame(ctx, bumpFrameContent(week), bitmap, chosenTheme),
           name,
         );
         bitmap.close();
@@ -142,6 +145,7 @@ export function ShareCard({
               ctx,
               weekCardContent(week, withNickname ? cardNickname : null),
               art ?? undefined,
+              chosenTheme,
             ),
           name,
         );

@@ -272,8 +272,16 @@ export function Onboarding({
     [onDone],
   );
 
+  // Somebody who is already signed in (the usual case: /cuenta comes first)
+  // has nothing to do on the account step but read "Listo, ya entraste" and
+  // tap Continuar. Step over it in both directions. Landing on it after a
+  // Google round trip from that very step still shows it — that is the one
+  // moment its confirmation is news.
+  const skipsAccountStep = Boolean(auth?.signedIn) && !answers.invited;
+
   function goBack() {
-    const target = previousStep(step, context);
+    let target = previousStep(step, context);
+    if (target === "cuenta" && skipsAccountStep) target = previousStep("cuenta", context);
     if (target) goTo(target);
   }
 
@@ -418,7 +426,8 @@ export function Onboarding({
   async function continueFromDepartment() {
     if (!answers.department) return;
     if (!(await persistProfile())) return;
-    goTo(nextStep("department", context));
+    const next = nextStep("department", context);
+    goTo(next === "cuenta" && skipsAccountStep ? nextStep("cuenta", context) : next);
   }
 
   /** The baby's nickname lands on the profile row that already exists. */
@@ -579,7 +588,7 @@ export function Onboarding({
           screen and next to the account step, not under every question. */}
       {(step === "mode" || step === "cuenta") && (
         <div className="mt-6 rounded-card border border-sage/30 bg-sage/5 p-4">
-          <p className="text-xs leading-relaxed text-muted">
+          <p className="text-xs leading-relaxed text-ink/80">
             Tu cuenta permite recuperar tus registros cuando cambiás de teléfono.
             Podés borrar tu cuenta y sus datos desde Ajustes. Tus notas no se
             comparten con tu familia. Tus fotos solo se respaldan si activás su copia.

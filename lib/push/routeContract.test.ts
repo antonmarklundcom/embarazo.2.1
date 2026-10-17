@@ -177,3 +177,61 @@ describe("the test-poke route cannot be aimed at somebody else's phone", () => {
     expect(TEST_ROUTE).not.toMatch(/title|body:\s*JSON/);
   });
 });
+
+// `pushsubscriptionchange` — `/api/v1/push/rotate`, called by the service worker.
+const ROTATE_ROUTE = readFileSync(
+  join(process.cwd(), "app", "api", "v1", "push", "rotate", "route.ts"),
+  "utf8",
+);
+
+describe("the rotate route cannot be used to plant or hijack a subscription", () => {
+  it("whitelists BOTH endpoint fields through one refined field", () => {
+    // Old endpoint: a database key. New endpoint: stored, then fetched by our
+    // own server on a schedule (SSRF if unchecked).
+    expect(ROTATE_ROUTE.match(/\.refine\(isAllowedPushEndpoint/g)?.length).toBe(1);
+    expect(ROTATE_ROUTE).toMatch(/oldEndpoint:\s*endpointField/);
+    expect(ROTATE_ROUTE).toMatch(/\bendpoint:\s*endpointField/);
+    // No second, unrefined URL field.
+    expect(ROTATE_ROUTE.match(/\.url\(\)/g)?.length).toBe(1);
+  });
+
+  it("takes exactly three fields, strictly, and nothing that names an owner or a category", () => {
+    expect(ROTATE_ROUTE.match(/\.strict\(\)/g)?.length).toBe(2);
+    const schema = ROTATE_ROUTE.slice(
+      ROTATE_ROUTE.indexOf("const RotateSchema"),
+      ROTATE_ROUTE.indexOf("function unavailable"),
+    );
+    expect(schema).not.toMatch(/userId|categories|reminders|consejos/);
+    // Owner and opt-ins come from the stored row, never from the request.
+    expect(ROTATE_ROUTE).not.toMatch(/getSession\s*\(|session\.user/);
+  });
+
+  it("refuses cross-site requests before reading the body", () => {
+    const post = ROTATE_ROUTE.slice(ROTATE_ROUTE.indexOf("export async function POST("));
+    expect(post).toContain("refuseCrossSite(req)");
+    expect(post.indexOf("refuseCrossSite(req)")).toBeLessThan(post.indexOf("req.json()"));
+  });
+
+  it("is throttled, on a key of its own, before touching the database", () => {
+    const post = ROTATE_ROUTE.slice(ROTATE_ROUTE.indexOf("export async function POST("));
+    expect(post).toContain("isRateLimited(`push-rotate:${clientKeyFromHeaders(req.headers)}`)");
+    expect(post.indexOf("isRateLimited(")).toBeLessThan(post.indexOf("dbOrNull()"));
+  });
+
+  it("404s when push is unconfigured, and never caches", () => {
+    const post = ROTATE_ROUTE.slice(ROTATE_ROUTE.indexOf("export async function POST("));
+    expect(post.indexOf("isPushConfigured()")).toBeLessThan(post.indexOf("refuseCrossSite(req)"));
+    expect(ROTATE_ROUTE).toContain("status: 404");
+    expect(ROTATE_ROUTE).toContain('"Cache-Control": "no-store"');
+    // Every response carries the headers, not just the happy path.
+    expect(ROTATE_ROUTE.match(/headers: HEADERS/g)?.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("is covered by the service worker's never-cache rule", () => {
+    const SW = readFileSync(join(process.cwd(), "app", "sw.ts"), "utf8");
+    const start = SW.indexOf("export const SESSION_BEARING_API");
+    const pattern = SW.slice(start, SW.indexOf(";", start));
+    expect(pattern).toContain("|push|");
+    expect(SW).toContain("/api/v1/push/rotate");
+  });
+});

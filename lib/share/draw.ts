@@ -6,6 +6,7 @@ import {
   shareWeekLine,
   type ShareCardContent,
 } from "./card";
+import { bareInk, HERO_THEMES, THEME_IDS, type ThemeId } from "@/lib/hero/themes";
 
 // BUILD-PLAN E2 — the drawing, on device.
 //
@@ -41,6 +42,74 @@ const TRIMESTER_GROUND: Record<1 | 2 | 3, string> = {
   2: "#D9E5EC",
   3: "#F3DAD4",
 };
+
+/**
+ * The chosen hero theme's ground, as canvas stops. A canvas cannot read the CSS
+ * `background` string in `lib/hero/themes.ts`, so the colours are written out
+ * here in the same order. `share.test.ts` checks each list against that CSS,
+ * so the two cannot drift apart unnoticed. The radial centre is the CSS
+ * `at 50% NN%`, and the radius is a round approximation of the CSS ellipse.
+ */
+type CanvasGround =
+  | { shape: "radial"; cy: number; stops: ReadonlyArray<readonly [number, string]> }
+  | { shape: "linear"; stops: ReadonlyArray<readonly [number, string]> };
+
+const THEME_GROUND: Record<ThemeId, CanvasGround> = {
+  halo: { shape: "radial", cy: 0.38, stops: [[0, "#FDF1DF"], [0.45, "#F8E2CB"], [1, "#EBCDAE"]] },
+  nanduti: { shape: "radial", cy: 0.4, stops: [[0, "#FFFFFF"], [0.55, "#F3DAD4"], [1, "#E6C9C2"]] },
+  cielo: { shape: "linear", stops: [[0, "#D9E5EC"], [0.55, "#EAF0F4"], [1, "#F8E2CB"]] },
+  estevia: { shape: "radial", cy: 0.42, stops: [[0, "#F2F7EE"], [0.55, "#DFE8D8"], [1, "#CBD9C1"]] },
+  alas: { shape: "radial", cy: 0.4, stops: [[0, "#F6F2FB"], [0.55, "#E6E0F0"], [1, "#D5CDE6"]] },
+  estrellas: { shape: "radial", cy: 0.3, stops: [[0, "#4A5A70"], [0.5, "#37455A"], [1, "#232C3B"]] },
+};
+
+/** Text colours for one card. The trimester card keeps its own literals. */
+interface Ink {
+  headline: string;
+  eyebrow: string;
+  milestone: string;
+  line: string;
+  tagline: string;
+}
+
+const TRIMESTER_INK: Ink = {
+  headline: INK,
+  eyebrow: PETROL,
+  milestone: TERRACOTTA,
+  line: INK,
+  tagline: PETROL,
+};
+
+/**
+ * Text colours for a chosen theme, taken from `bareInk` in `lib/hero/themes.ts`.
+ * The card has no scrim behind its text, so this is the no-scrim pair: dark on
+ * the five pastel themes, white on the dark `estrellas`. The accent colours
+ * (terracotta, petrol) are dropped on a theme because they fail on the dark one.
+ */
+function inkFor(theme: ThemeId | null): Ink {
+  if (!theme) return TRIMESTER_INK;
+  const text = bareInk(HERO_THEMES[theme]);
+  return {
+    headline: text.strong,
+    eyebrow: text.eyebrow,
+    milestone: text.eyebrow,
+    line: text.strong,
+    tagline: text.strong,
+  };
+}
+
+/**
+ * The theme to draw with, or `null` for the trimester pastel. An absent value,
+ * or one that is not a known theme id, falls back to the pastel. It is not
+ * mapped to the default `halo`, because a card whose owner never chose a
+ * theme should still look like the trimester card.
+ */
+function drawableTheme(theme: ThemeId | null | undefined): ThemeId | null {
+  return theme && (THEME_IDS as readonly string[]).includes(theme) ? theme : null;
+}
+
+/** Radius for the canvas radial gradient: about the card's height. */
+const RADIAL_RADIUS = CARD_HEIGHT * 0.75;
 
 // The illustration's own skin tones. Warm and flat on purpose: a realistic
 // fetus on a status post reads as a scan, and a scan is medical.
@@ -310,6 +379,7 @@ function drawHeader(
   eyebrowY: number,
   headlineY: number,
   headlineSize: number,
+  ink: Ink,
 ): void {
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
@@ -317,14 +387,14 @@ function drawHeader(
   const eyebrow = shareEyebrow(content);
   ctx.letterSpacing = "6px";
   fitFont(ctx, eyebrow, 800, 36, 26, CARD_WIDTH - 200);
-  ctx.fillStyle = content.milestone ? TERRACOTTA : PETROL;
+  ctx.fillStyle = content.milestone ? ink.milestone : ink.eyebrow;
   ctx.fillText(eyebrow, CENTER_X, eyebrowY);
   ctx.letterSpacing = "0px";
 
   const headline = shareHeadline(content);
   // 56, not 80: a nickname (growth plan 11) can be up to 24 characters.
   fitFont(ctx, headline, 900, headlineSize, 56, CARD_WIDTH - 160);
-  ctx.fillStyle = INK;
+  ctx.fillStyle = ink.headline;
   ctx.fillText(headline, CENTER_X, headlineY);
 }
 
@@ -350,9 +420,26 @@ function drawFooterPill(
   ctx.textBaseline = "alphabetic";
 }
 
-/** The trimester ground, edge to edge. */
-function drawGround(ctx: CanvasRenderingContext2D, content: ShareCardContent): void {
-  ctx.fillStyle = TRIMESTER_GROUND[content.trimester];
+/**
+ * The ground, edge to edge: the chosen theme's gradient, or the trimester pastel
+ * when no theme is chosen.
+ */
+function drawGround(
+  ctx: CanvasRenderingContext2D,
+  content: ShareCardContent,
+  theme: ThemeId | null,
+): void {
+  if (!theme) {
+    ctx.fillStyle = TRIMESTER_GROUND[content.trimester];
+  } else {
+    const ground = THEME_GROUND[theme];
+    const gradient =
+      ground.shape === "radial"
+        ? ctx.createRadialGradient(CENTER_X, CARD_HEIGHT * ground.cy, 0, CENTER_X, CARD_HEIGHT * ground.cy, RADIAL_RADIUS)
+        : ctx.createLinearGradient(0, 0, 0, CARD_HEIGHT);
+    for (const [offset, color] of ground.stops) gradient.addColorStop(offset, color);
+    ctx.fillStyle = gradient;
+  }
   ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 }
 
@@ -388,13 +475,20 @@ function drawWeekArt(ctx: CanvasRenderingContext2D, art: Picture, cx: number, cy
   ctx.stroke();
 }
 
+/**
+ * `theme` is the hero theme she chose, read from her own profile. Omit it, or
+ * pass null, and the card keeps the trimester pastel.
+ */
 export function drawWeekCard(
   ctx: CanvasRenderingContext2D,
   content: ShareCardContent,
   art?: Picture,
+  theme?: ThemeId | null,
 ): void {
-  drawGround(ctx, content);
-  drawHeader(ctx, content, 136, 276, 128);
+  const chosen = drawableTheme(theme);
+  const ink = inkFor(chosen);
+  drawGround(ctx, content, chosen);
+  drawHeader(ctx, content, 136, 276, 128, ink);
 
   const artY = 652;
   const lace = 292;
@@ -433,7 +527,7 @@ export function drawWeekCard(
   ctx.textAlign = "center";
   if (content.size) {
     const line = shareWeekLine(content);
-    ctx.fillStyle = INK;
+    ctx.fillStyle = ink.line;
     // Shrink a little before breaking: a short line reads better on one line
     // at 52px than on two at 58px. Only the genuinely long ones wrap, at full
     // size ("Semana 42 · una sandía grande y madura").
@@ -444,7 +538,7 @@ export function drawWeekCard(
     const firstY = lines.length === 1 ? 1072 : 1040;
     lines.forEach((line, i) => ctx.fillText(line, CENTER_X, firstY + i * 70));
   } else {
-    ctx.fillStyle = PETROL;
+    ctx.fillStyle = ink.tagline;
     fitFont(ctx, content.tagline, 800, 52, 36, CARD_WIDTH - 200);
     ctx.fillText(content.tagline, CENTER_X, 1072);
   }
@@ -463,8 +557,11 @@ export function drawBumpFrame(
   ctx: CanvasRenderingContext2D,
   content: ShareCardContent,
   photo: CanvasImageSource & { width: number; height: number },
+  theme?: ThemeId | null,
 ): void {
-  drawGround(ctx, content);
+  const chosen = drawableTheme(theme);
+  const ink = inkFor(chosen);
+  drawGround(ctx, content, chosen);
 
   const frameX = 110;
   const frameY = 300;
@@ -482,7 +579,7 @@ export function drawBumpFrame(
   drawNanduti(ctx, CENTER_X, frameY + frameH / 2, 500);
   ctx.restore();
 
-  drawHeader(ctx, content, 112, 230, 116);
+  drawHeader(ctx, content, 112, 230, 116, ink);
 
   ctx.save();
   roundedRect(ctx, frameX, frameY, frameW, frameH, 56);
@@ -505,7 +602,7 @@ export function drawBumpFrame(
   ctx.stroke();
 
   ctx.textAlign = "center";
-  ctx.fillStyle = PETROL;
+  ctx.fillStyle = ink.tagline;
   ctx.font = font(800, 44);
   ctx.fillText(content.tagline, CENTER_X, 1140);
 

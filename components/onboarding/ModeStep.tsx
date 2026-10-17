@@ -44,7 +44,7 @@ export function ModeStep({
         <p className="text-sm font-extrabold text-ink">
           Me invitaron / tengo un código
         </p>
-        <p className="mt-1 text-xs leading-relaxed text-muted">
+        <p className="mt-1 text-xs leading-relaxed text-ink/80">
           Si alguien te pasó un link o un código para acompañar su embarazo,
           entrá por acá: no te vamos a preguntar por tus fechas.
         </p>

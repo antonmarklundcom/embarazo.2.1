@@ -72,6 +72,7 @@ export function AppointmentSettings({
         <input
           id="appt-date"
           type="date"
+          aria-label="Fecha del próximo control"
           value={apptInput}
           min={today}
           onChange={(e) => setApptInput(e.target.value)}

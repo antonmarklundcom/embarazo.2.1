@@ -73,6 +73,7 @@ export function GestationSettings({
       <div className="mt-3 flex items-center gap-2">
         <input
           type="number"
+          aria-label="Duración del embarazo, en días"
           inputMode="numeric"
           min={140}
           max={320}
@@ -100,6 +101,7 @@ export function GestationSettings({
       </p>
       <input
         type="date"
+        aria-label="Fecha de parto planificada"
         value={plannedInput}
         onChange={(e) => setPlannedInput(e.target.value)}
         className="mt-3 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-3 py-2 text-ink focus:border-petrol focus:outline-none"

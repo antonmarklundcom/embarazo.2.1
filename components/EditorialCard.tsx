@@ -26,7 +26,6 @@ export function EditorialCard({
   return (
     <Link
       href={`/guias/${slug}`}
-      aria-label={title}
       data-editorial-card
       className="group block h-full overflow-hidden rounded-[22px] border border-line/70 bg-white transition-colors hover:border-petrol/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-petrol"
     >

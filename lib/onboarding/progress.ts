@@ -135,7 +135,12 @@ export function stepProgress(
   context: OnboardingContext,
 ): { current: number; total: number } | null {
   if (step === "mode") return null;
-  const steps = stepsFor(context).filter((candidate) => candidate !== "mode");
+  // A signed-in person (not on an invite) steps over the account step, so it
+  // is not counted for them; see `skipsAccountStep` in components/Onboarding.
+  const skipsAccount = context.signedIn && !context.invited;
+  const steps = stepsFor(context).filter(
+    (candidate) => candidate !== "mode" && !(skipsAccount && candidate === "cuenta"),
+  );
   const index = steps.indexOf(step);
   if (index === -1) return null;
   return { current: index + 1, total: steps.length };

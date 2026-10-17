@@ -69,7 +69,9 @@ export function PushSettings({
     }
   }, []);
 
-  if (!state) return null;
+  // Arriving from the test notification, say so at once: reading the push
+  // state can wait up to 6 s for the service worker.
+  if (!state) return testMessage ? <p role="status" className="text-sm text-ink">{testMessage}</p> : null;
 
   async function turnOn() {
     setBusy(true);

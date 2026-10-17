@@ -73,6 +73,25 @@ const pageRoutes: string[] = [
   "/herramientas/contracciones",
   "/herramientas/pataditas",
   "/herramientas/carne",
+  // KNOWN-ISSUES R0-2 (#10): the README listed these five as working offline
+  // while only the three above were precached, so a phone that installed the
+  // app and went offline before ever opening them got /offline. Decision, by
+  // evidence rather than by wording: precache them. Each is a static
+  // "use client" page with no server-side session, cookie or fetch in its
+  // render (no getSession/cookies/headers/dynamic, no notFound/redirect), so
+  // the HTML the install downloads is the same for everyone and carries no
+  // account data; the data it shows is read from Dexie after hydration. The
+  // account gate (components/AccountEntryGate.tsx) still decides who may see
+  // that data: offline it admits only a device with a verified account
+  // (`verifiedOfflineAccountId`), and anyone else gets its "unavailable"
+  // panel, never the cached shell's contents. Nothing here matches
+  // PRIVATE_NAVIGATION (admin|familia|cuenta|ajustes), whose pages render
+  // somebody's account and stay NetworkOnly.
+  "/herramientas/sintomas",
+  "/herramientas/diario",
+  "/herramientas/fotos",
+  "/herramientas/peso",
+  "/herramientas/checklist",
   ...Array.from(
     { length: MAX_WEEK - MIN_WEEK + 1 },
     (_, i) => `/semana/${MIN_WEEK + i}`,
@@ -518,6 +537,79 @@ self.addEventListener("push", (event) => {
         data: { url: url ?? "/" },
       });
     })(),
+  );
+});
+
+// ---------------------------------------------------------------------------
+// pushsubscriptionchange — the push service replaced our subscription
+// ---------------------------------------------------------------------------
+//
+// Chrome/FCM rotate subscriptions now and then (and invalidate them after a
+// long idle). Nothing tells the page — it may not even be open — so without
+// this, the server keeps poking an endpoint that is gone and reminders stop
+// until she next opens the app and `refreshWeeklyTips` re-posts. The worker is
+// the only part that is alive at that moment, so it tells the server which
+// endpoint became which (`/api/v1/push/rotate`), and the server carries the
+// owner, the opt-ins and the unsent reminders across (`rotateSubscription`).
+//
+// Everything here is best-effort and silent: no notification (a rotation is
+// not news to her), and every failure is swallowed, because the start-up
+// refresh remains the fallback. Browsers fire this with `oldSubscription` null
+// on some versions; then there is nothing to key the move on, and we do not
+// guess.
+
+/**
+ * `PushSubscriptionChangeEvent` is not in lib.dom / lib.webworker for the
+ * TypeScript version this repo pins, so the narrow shape we use is spelled out
+ * here instead of reaching for `any`.
+ */
+interface PushSubscriptionChangeEventLike extends ExtendableEvent {
+  readonly oldSubscription?: PushSubscription | null;
+  readonly newSubscription?: PushSubscription | null;
+}
+
+async function rotatePushSubscription(
+  event: PushSubscriptionChangeEventLike,
+): Promise<void> {
+  try {
+    const oldEndpoint = event.oldSubscription?.endpoint;
+    if (!oldEndpoint) return;
+
+    let next = event.newSubscription ?? null;
+    if (!next) {
+      // Same key the old subscription used, so the server's VAPID identity is
+      // unchanged; `userVisibleOnly` is the only mode Chrome accepts.
+      const applicationServerKey = event.oldSubscription?.options.applicationServerKey;
+      if (!applicationServerKey) return;
+      next = await self.registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey,
+      });
+    }
+
+    const json = next.toJSON();
+    const p256dh = json.keys?.p256dh;
+    const auth = json.keys?.auth;
+    if (!json.endpoint || !p256dh || !auth) return;
+
+    await fetch("/api/v1/push/rotate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        oldEndpoint,
+        endpoint: json.endpoint,
+        keys: { p256dh, auth },
+      }),
+    });
+  } catch {
+    // Offline, throttled or push unconfigured: the app re-posts on its next
+    // start, which is the same repair done later.
+  }
+}
+
+self.addEventListener("pushsubscriptionchange", (event) => {
+  (event as PushSubscriptionChangeEventLike).waitUntil(
+    rotatePushSubscription(event as PushSubscriptionChangeEventLike),
   );
 });
 

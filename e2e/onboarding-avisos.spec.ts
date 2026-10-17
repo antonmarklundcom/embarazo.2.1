@@ -101,7 +101,8 @@ for (const saved of [true, false]) {
     }, { saved });
     await completeOnboarding(page, { stopBeforeAvisos: true });
     await page.getByRole("button", { name: "Sí, avisame" }).click();
-    await expect(page.getByRole("status")).toContainText(saved ? "Listo: activaste" : "Todavía no pudimos confirmar");
+    // Activation waits up to 6 s for the service worker (lib/push/client.ts).
+    await expect(page.getByRole("status")).toContainText(saved ? "Listo: activaste" : "Todavía no pudimos confirmar", { timeout: 15_000 });
     expect(await page.evaluate(() => sessionStorage.getItem("weeklyCategories"))).toBe('["consejos"]');
     await page.getByRole("button", { name: "Continuar", exact: true }).click();
     await expect(page.getByText("Tip de hoy")).toBeVisible();

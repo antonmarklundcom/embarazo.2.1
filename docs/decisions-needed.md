@@ -44,11 +44,11 @@ resolution, so the reasoning is not lost.
   all five in `lib/hero/themes.ts` (background hues untouched); all six themes now measure ≥4.6:1
   for body ink and ≥5.4:1 for large ink. See `docs/log/w3.md` addendum for the per-theme ratios.
 
-- **W4 — finish the PIN card extraction.** `lib/pinPolicy.test.ts` (K18) reads
+- ~~**W4 — finish the PIN card extraction.** `lib/pinPolicy.test.ts` (K18) reads
   `app/(app)/ajustes/AjustesClient.tsx` **by path** and asserts the floor comes
   from `MIN_PIN_LENGTH` rather than a copied literal, plus two copy assertions
   ("no se recuperan", "probando todas las combinaciones"). W4 split every other
   settings card into `components/ajustes/**`; the PIN card stayed behind only so
   that guardrail keeps pointing at real code. Repoint the three assertions at
   `components/ajustes/PinSettings.tsx`, then move the card there — it is ~60
-  lines and would take the shell from 274 to ~214.
+  lines and would take the shell from 274 to ~214.~~ **Fixed**: moved to `components/ajustes/PinSettings.tsx` on 2026-10-17; `lib/pinPolicy.test.ts` now reads that file.

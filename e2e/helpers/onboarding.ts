@@ -90,11 +90,18 @@ export async function completeOnboarding(
   await page.locator("#dep").selectOption({ index: 1 });
   await page.getByRole("button", { name: "Continuar" }).click();
 
-  // The account step. Secondary, but never hidden.
-  await expect(page.getByRole("heading", {name:/Vista de prueba|Listo, ya entraste|Guardá tu embarazo y compartilo|Tu embarazo, organizado en un solo lugar/})).toBeVisible();
-  const previewContinue = page.getByRole("button", { name: "Seguir sin cuenta", exact: true });
-  if (await previewContinue.count()) await previewContinue.click();
-  else await page.getByRole("button", { name: mode === "embarazada" ? "Continuar" : "Empezar", exact: true }).click();
+  // The account step. Secondary, but never hidden — except for somebody
+  // already signed in (not on an invite), who steps straight over it
+  // (components/Onboarding.tsx `skipsAccountStep`): then the next screen, or
+  // Hoy for planeando, is what appears.
+  const accountHeading = page.getByRole("heading", {name:/Vista de prueba|Listo, ya entraste|Guardá tu embarazo y compartilo|Tu embarazo, organizado en un solo lugar/});
+  const skippedTo = mode === "embarazada" ? page.locator("#babyName") : page.getByRole("heading", { name: "Estás planeando tu embarazo" });
+  await expect(accountHeading.or(skippedTo)).toBeVisible();
+  if (await accountHeading.isVisible()) {
+    const previewContinue = page.getByRole("button", { name: "Seguir sin cuenta", exact: true });
+    if (await previewContinue.count()) await previewContinue.click();
+    else await page.getByRole("button", { name: mode === "embarazada" ? "Continuar" : "Empezar", exact: true }).click();
+  }
 
   if (mode === "embarazada") {
     await expect(page.locator("#babyName")).toBeVisible();

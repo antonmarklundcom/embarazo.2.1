@@ -16,5 +16,6 @@ test("log a symptom entry", async ({ page }) => {
 
   await page.getByRole("button", { name: /Guardar registro/ }).click();
 
-  await expect(page.getByText(/guardado/i)).toBeVisible();
+  // Exact: the page's privacy line also says "Guardado en este dispositivo".
+  await expect(page.getByText("Guardado en tu teléfono.")).toBeVisible();
 });

@@ -1,0 +1,24 @@
+# Static images under /assets — read by Hostinger's LiteSpeed front end, which
+# serves these files itself, before the Next.js app and its headers
+# (next.config.ts) are ever involved. Measured 16 October 2026: AVIF came back
+# as text/plain and no image carried Cache-Control.
+#
+# Deliberately scoped to this folder: the site root's .htaccess belongs to
+# Hostinger's Node.js proxy setup and must not be replaced from the repo.
+# Every directive is wrapped in IfModule, so a server without the module
+# ignores it rather than failing the request.
+
+<IfModule mod_mime.c>
+  AddType image/avif .avif
+  AddType image/webp .webp
+</IfModule>
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.(avif|webp|jpe?g|png|svg)$">
+    # File names are stable, not content-hashed (a replaced week image keeps its
+    # name), so a day of freshness plus a week of background revalidation.
+    # The service worker's own image caches are unaffected.
+    Header set Cache-Control "public, max-age=86400, stale-while-revalidate=604800"
+    Header set X-Content-Type-Options "nosniff"
+  </FilesMatch>
+</IfModule>

@@ -9,19 +9,25 @@ import { ComparisonChoice } from "./hero/ComparisonChoice";
 
 type TabId = "tamano" | "pie" | "mano";
 interface Tab { id: TabId; label: string; value: string; comparison: string; }
-export function SizeTabs({ week }: { week: number }) {
+/**
+ * `limbsOnly`: Hoy's week hero already shows the overall size, its fruit and
+ * the Frutas/Medidas choice, so there this card adds only what the hero does
+ * not — her baby's foot and hand — and renders nothing in weeks without them.
+ */
+export function SizeTabs({ week, limbsOnly = false }: { week: number; limbsOnly?: boolean }) {
   const info = getWeek(week);
   const limbs = limbSize(info.week);
   const showFruit = useShowComparison();
   const prefix = useId();
   const measures = [info.lengthCm ? "≈ " + formatLength(info.lengthCm) : null,
     info.weightG ? "≈ " + formatWeight(info.weightG) : null].filter(Boolean).join(" · ");
-  const tabs: Tab[] = [{id:"tamano",label:"Bebé",value:measures || "Todavía sin medida",comparison:comparisonCaption(info.week) ?? ""}];
+  const tabs: Tab[] = limbsOnly ? [] : [{id:"tamano",label:"Bebé",value:measures || "Todavía sin medida",comparison:comparisonCaption(info.week) ?? ""}];
   if (limbs?.footCm) tabs.push({id:"pie",label:"Pie",value:"≈ " + formatCm(limbs.footCm),comparison:limbs.footComparison ?? ""});
   if (limbs?.handCm) tabs.push({id:"mano",label:"Mano",value:"≈ " + formatCm(limbs.handCm),comparison:limbs.handComparison ?? ""});
-  const [active, setActive] = useState<TabId>("tamano");
+  const [active, setActive] = useState<TabId>(limbsOnly ? "pie" : "tamano");
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
-  const current = tabs.find(tab => tab.id === active) ?? tabs[0]!;
+  const current = tabs.find(tab => tab.id === active) ?? tabs[0];
+  if (!current) return null;
   function onKeyDown(event: React.KeyboardEvent, index: number) {
     const delta = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
     if (!delta) return;
@@ -31,14 +37,14 @@ export function SizeTabs({ week }: { week: number }) {
   }
   return <section className="rounded-card border border-line bg-white p-4" aria-labelledby={prefix+"-heading"}>
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <h2 id={prefix+"-heading"} className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">Qué tan grande está</h2>
-      <ComparisonChoice />
+      <h2 id={prefix+"-heading"} className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">{limbsOnly ? "Su pie y su mano" : "Qué tan grande está"}</h2>
+      {!limbsOnly && <ComparisonChoice />}
     </div>
     {tabs.length > 1 && <div role="tablist" aria-label="Medidas del bebé" className="mt-2.5 flex gap-2">
       {tabs.map((tab,index) => <button key={tab.id} ref={node => { buttons.current[index]=node; }} type="button" role="tab"
         id={prefix+"-"+tab.id} aria-selected={tab.id===current.id} aria-controls={prefix+"-panel"}
         tabIndex={tab.id===current.id?0:-1} onClick={()=>setActive(tab.id)} onKeyDown={event=>onKeyDown(event,index)}
-        className={"min-h-[44px] rounded-tile px-3.5 text-[13px] font-extrabold "+(tab.id===current.id?"bg-pastel-celeste text-ink":"bg-pastel-arena/50 text-muted")}>{tab.label}</button>)}
+        className={"min-h-[44px] rounded-tile px-3.5 text-[13px] font-extrabold "+(tab.id===current.id?"bg-pastel-celeste text-ink":"bg-pastel-arena/50 text-ink/80")}>{tab.label}</button>)}
     </div>}
     <div role={tabs.length>1?"tabpanel":undefined} id={prefix+"-panel"}
       aria-labelledby={tabs.length>1?prefix+"-"+current.id:undefined} className="mt-3">

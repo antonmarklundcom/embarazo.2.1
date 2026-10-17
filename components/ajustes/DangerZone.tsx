@@ -21,10 +21,10 @@ export function DangerZone({ onWipe }: { onWipe: () => void | Promise<void> }) {
 
   return (
     <section className="rounded-card border border-terracotta/30 bg-terracotta/5 p-4">
-      <h2 className="text-base font-medium text-terracotta">
+      <h2 className="text-base font-medium text-[#9A4530]">
         Borrar datos de este teléfono
       </h2>
-      <p className="mt-1 text-sm text-muted">
+      <p className="mt-1 text-sm text-ink/80">
         Cerramos tu sesión y borramos el perfil, los registros, las fotos y el
         PIN de este teléfono. Tu cuenta y su copia en la nube siguen existiendo:
         para eliminarlas, usá «Borrar mi cuenta». Tus notas con PIN se guardan

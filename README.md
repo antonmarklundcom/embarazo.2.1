@@ -57,6 +57,16 @@ node scripts/gen-icons.mjs  # regenera los iconos PWA en public/icons/
 > El service worker (Serwist) está **desactivado en desarrollo**. Para probar el
 > comportamiento offline / instalable, usá `npm run build && npm start`.
 
+Verificación completa en un solo comando (antes de subir cambios):
+
+```bash
+npm run verify                  # tsc, lint, vitest, test:db, validate:content y build, en orden
+npm run verify -- --skip-build  # igual, sin el build de producción (más rápido)
+```
+
+Corre cada paso en orden y se detiene en el primero que falla. La salida de cada paso
+queda en `verify-logs/` (ignorado por git); `--logs <dir>` la guarda en otra carpeta.
+
 ## Variables de entorno (`.env`)
 
 ```ini
@@ -207,9 +217,13 @@ Precargado para uso sin conexión:
   calculadas localmente.
 - **Emergencia** (`/emergencia`, botón SOS del header): 141/911 con un toque,
   señales de alarma (castellano + guaraní) y tus contactos guardados.
-- Las herramientas (**Síntomas y ánimo, Diario de fotos, Carné perinatal,
-  Pataditas, Contracciones, Peso, Checklist**) funcionan 100% offline: los
-  datos son locales (IndexedDB).
+- Las herramientas (**Síntomas y ánimo, Diario, Diario de fotos, Carné
+  perinatal, Pataditas, Contracciones, Peso, Checklist**) están precargadas
+  (sus rutas están en la lista del service worker) y funcionan 100% offline:
+  los datos son locales (IndexedDB). Sin internet, el acceso a tus registros lo
+  decide la verificación de cuenta ya guardada en el dispositivo
+  (`AccountEntryGate`); las pantallas que muestran tu cuenta o tu familia
+  (`/cuenta`, `/familia`, `/ajustes`, `/admin`) nunca se guardan en caché.
 
 Con estrategia *network-first* + caché de respaldo:
 

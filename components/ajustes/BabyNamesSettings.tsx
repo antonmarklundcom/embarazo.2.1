@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { NombresLink } from "@/components/NombresLink";
 import { db, type AppMode, type BabyIdentity } from "@/lib/db";
 
 // W4: "Nombre de tu bebé" (B2, twins and more), moved verbatim out of
@@ -79,6 +80,7 @@ export function BabyNamesSettings({
           </div>
         ))}
       </div>
+      <NombresLink className="mt-2 block text-sm" />
       <button
         type="button"
         onClick={addBabyNameField}

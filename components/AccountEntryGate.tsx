@@ -43,6 +43,12 @@ export function AccountEntryGate({ children }: { children: React.ReactNode }) {
     // and strip calculator fields, or while a photo input is saving.
     if (owner === undefined) return;
     let active = true;
+    // Set once this page is navigating away (our own redirect, or the browser
+    // unloading it). A request the browser cancels on the way out is not an
+    // account problem, and must not flash "No pudimos comprobar tu cuenta" to
+    // somebody who is simply being taken to the welcome screen.
+    let leaving = false;
+    const leave = () => { leaving = true; };
     let sequence = 0;
     let controller: AbortController | undefined;
     const setMode = (mode: AccessMode, accountId: string | null = null) => {
@@ -80,6 +86,7 @@ export function AccountEntryGate({ children }: { children: React.ReactNode }) {
             if (!current()) return;
             if (!hasPersonalSetup(profile.find(row => !row.deletedAt)) || hasOnboardingDraft()) {
               rememberHandoff();
+              leave();
               window.location.replace("/");
               return;
             }
@@ -87,27 +94,31 @@ export function AccountEntryGate({ children }: { children: React.ReactNode }) {
           setMode("allowed", auth.accountId);
           return;
         }
+        // Leaving first: clearing the grant fires ACCESS_REVOKED_EVENT in this
+        // tab, and `revoke` must not paint the error panel on the way out.
+        leave();
         clearOfflineAccess();
         const returnTo = rememberHandoff();
         window.location.replace(`/cuenta?returnTo=${encodeURIComponent(returnTo)}`);
       } catch {
-        if (!current()) return;
+        if (!current() || leaving) return;
         const accountId = !navigator.onLine ? await verifiedOfflineAccountId() : null;
         if (current()) setMode(accountId ? "offline" : "unavailable", accountId);
       } finally {
         window.clearTimeout(timeout);
       }
     };
-    const revoke = () => { ++sequence; controller?.abort(); setMode("unavailable"); };
+    const revoke = () => { if (leaving) return; ++sequence; controller?.abort(); setMode("unavailable"); };
     const storageChanged = (event: StorageEvent) => {
       if (event.key === null || (event.key === VERIFIED_KEY && event.newValue === null)) revoke();
     };
-    const reconnect = () => { void check(); };
+    const reconnect = () => { if (!leaving) void check(); };
     void check();
     window.addEventListener("online", reconnect);
     window.addEventListener("focus", reconnect);
     window.addEventListener(ACCESS_REVOKED_EVENT, revoke);
     window.addEventListener("storage", storageChanged);
+    window.addEventListener("pagehide", leave);
     return () => {
       active = false;
       ++sequence;
@@ -116,6 +127,7 @@ export function AccountEntryGate({ children }: { children: React.ReactNode }) {
       window.removeEventListener("focus", reconnect);
       window.removeEventListener(ACCESS_REVOKED_EVENT, revoke);
       window.removeEventListener("storage", storageChanged);
+      window.removeEventListener("pagehide", leave);
     };
   }, [pathname, publicPage, owner]);
 
@@ -129,7 +141,7 @@ export function AccountEntryGate({ children }: { children: React.ReactNode }) {
   return (
     <section className="mx-auto my-5 max-w-md rounded-card border border-line bg-white p-5">
       <h1 className="text-xl font-black text-ink">{mode === "mismatch" ? "Este teléfono tiene datos de otra cuenta" : "No pudimos comprobar tu cuenta"}</h1>
-      <p className="mt-2 text-sm text-muted">{mode === "mismatch" ? "Volvé a entrar con la cuenta de estos registros. No los vamos a mezclar ni a subir a otra persona." : "Conectate y volvé a entrar. Tus registros guardados siguen en este teléfono."}</p>
+      <p className="mt-2 text-sm text-muted">{mode === "mismatch" ? "Volvé a entrar con la cuenta de estos registros. No los vamos a mezclar ni a subir a otra persona." : owner ? "Conectate y volvé a entrar. Tus registros guardados siguen en este teléfono." : "Conectate a internet y probá de nuevo."}</p>
       <Link href="/cuenta" className="mt-4 inline-flex min-h-[48px] items-center rounded-full bg-petrol px-5 font-bold text-white">Ir a mi cuenta</Link>
       <Link href="/emergencia" className="mt-3 block text-sm font-bold text-terracotta underline">Señales de alarma y ayuda</Link>
     </section>

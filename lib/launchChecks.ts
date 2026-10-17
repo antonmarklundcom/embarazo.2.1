@@ -96,8 +96,48 @@ export function launchCheckErrors(env: LaunchCheckEnv): string[] {
   return errors;
 }
 
+/**
+ * Addresses on the app's own domain that are known to reach a person.
+ *
+ * Email routing lives in Cloudflare, outside this repo, so the build cannot
+ * check it. This list records the last verified state (owner manual,
+ * 15 October 2026: only `soporte@` forwards; catch-all is off). Update it
+ * when a route is added — the warning below exists because the deployment
+ * once published `hola@embarazo.com.py` as the deletion contact while only
+ * `soporte@` was routed.
+ */
+export const VERIFIED_ROUTED_ADDRESSES = ["soporte@embarazo.com.py"] as const;
+const OWN_MAIL_DOMAIN = "@embarazo.com.py";
+
+/**
+ * Problems worth seeing in the build log that must NOT block a deploy: the
+ * build cannot know the routing, and failing here would take the whole app
+ * down over a mailbox.
+ */
+export function launchCheckWarnings(env: LaunchCheckEnv): string[] {
+  if (!isDeploymentBuild(env)) return [];
+  const warnings: string[] = [];
+  const email = env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim().toLowerCase() ?? "";
+  if (
+    email.endsWith(OWN_MAIL_DOMAIN) &&
+    !(VERIFIED_ROUTED_ADDRESSES as readonly string[]).includes(email)
+  ) {
+    warnings.push(
+      `NEXT_PUBLIC_SUPPORT_EMAIL is ${email}, which /borrar-cuenta and ` +
+        `/privacidad publish as the deletion contact, but the last verified ` +
+        `email route covers only ${VERIFIED_ROUTED_ADDRESSES.join(", ")}. ` +
+        "Add a Cloudflare Email Routing rule for it (and record it in " +
+        "lib/launchChecks.ts), or set the variable to a routed address.",
+    );
+  }
+  return warnings;
+}
+
 /** Throws with all problems listed at once. Called from next.config.ts. */
 export function assertLaunchReady(env: LaunchCheckEnv): void {
+  for (const warning of launchCheckWarnings(env)) {
+    console.warn(`Launch check warning: ${warning}`);
+  }
   const errors = launchCheckErrors(env);
   if (errors.length === 0) return;
   throw new Error(

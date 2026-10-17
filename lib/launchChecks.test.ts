@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertLaunchReady, isDeploymentBuild, isPlaceholderReviewer, launchCheckErrors } from "./launchChecks";
+import { assertLaunchReady, isDeploymentBuild, isPlaceholderReviewer, launchCheckErrors, launchCheckWarnings } from "./launchChecks";
 
 const AUTH_ENV = {
   DATABASE_URL: "mysql://example.invalid/test",
@@ -51,5 +51,23 @@ describe("legacy reviewer placeholder helper", () => {
   it("detects unset, blank and known placeholders", () => {
     for (const value of [undefined, "   ", "Dra. ___", "placeholder", "TBD"]) expect(isPlaceholderReviewer(value)).toBe(true);
     expect(isPlaceholderReviewer("Dra. Pérez, gineco-obstetra")).toBe(false);
+  });
+});
+
+describe("support address routing warning", () => {
+  const deployed = { ...AUTH_ENV, NEXT_PUBLIC_APP_URL: "https://app.embarazo.com.py" };
+
+  it("warns, without blocking, when the published address on our domain is not a verified route", () => {
+    const env = { ...deployed, NEXT_PUBLIC_SUPPORT_EMAIL: "hola@embarazo.com.py" };
+    expect(launchCheckWarnings(env)).toHaveLength(1);
+    expect(launchCheckWarnings(env)[0]).toContain("hola@embarazo.com.py");
+    expect(launchCheckErrors(env)).toEqual([]);
+    expect(() => assertLaunchReady(env)).not.toThrow();
+  });
+
+  it("is quiet for the routed address, other domains and local builds", () => {
+    expect(launchCheckWarnings({ ...deployed, NEXT_PUBLIC_SUPPORT_EMAIL: "Soporte@Embarazo.com.py" })).toEqual([]);
+    expect(launchCheckWarnings({ ...deployed, NEXT_PUBLIC_SUPPORT_EMAIL: "hola@mibebe.example.py" })).toEqual([]);
+    expect(launchCheckWarnings({ NEXT_PUBLIC_SUPPORT_EMAIL: "hola@embarazo.com.py" })).toEqual([]);
   });
 });

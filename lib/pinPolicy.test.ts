@@ -15,8 +15,8 @@ import { MIN_PIN_LENGTH } from "./crypto";
 // server — an offline attack surface, where 10 000 candidates is hours of
 // compute whatever the PBKDF2 iteration count is.
 
-const AJUSTES = readFileSync(
-  join(process.cwd(), "app", "(app)", "ajustes", "AjustesClient.tsx"),
+const PIN_CARD = readFileSync(
+  join(process.cwd(), "components", "ajustes", "PinSettings.tsx"),
   "utf8",
 );
 
@@ -35,8 +35,8 @@ describe("the PIN floor", () => {
   it("is enforced from the shared constant, not a copied literal", () => {
     // A hard-coded `< 4` next to a constant that says 6 is the shape this bug
     // had in the first place.
-    expect(AJUSTES).toContain("pinInput.length < MIN_PIN_LENGTH");
-    expect(AJUSTES).not.toMatch(/pinInput\.length < \d/);
+    expect(PIN_CARD).toContain("pinInput.length < MIN_PIN_LENGTH");
+    expect(PIN_CARD).not.toMatch(/pinInput\.length < \d/);
   });
 
   it("still applies because a downloaded backup carries the ciphertext AND the salt", () => {
@@ -50,9 +50,9 @@ describe("the PIN floor", () => {
 });
 
 describe("the copy says what it does and does not protect", () => {
-  const pinSection = AJUSTES.slice(
-    AJUSTES.indexOf("PIN opcional"),
-    AJUSTES.indexOf("Tu privacidad"),
+  const pinSection = PIN_CARD.slice(
+    PIN_CARD.indexOf("PIN opcional"),
+    PIN_CARD.indexOf("Tu privacidad"),
   );
 
   it("says the PIN is not recoverable", () => {

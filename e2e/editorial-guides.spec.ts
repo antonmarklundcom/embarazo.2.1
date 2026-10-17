@@ -33,7 +33,10 @@ test("mobile guides keep all eight articles in keyboard-accessible image shelves
   }
 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  const prenatal = page.getByRole("link", { name: "Control prenatal en Paraguay: IPS, sanatorio privado y carné perinatal", exact: true });
+  // The card is named by what it shows (its short title and read time), no
+  // longer by a hidden aria-label holding the full article title — axe's
+  // label-content-name-mismatch rule, 2026-10-17.
+  const prenatal = page.getByRole("link", { name: /Control prenatal en Paraguay/ }).and(page.locator('a[href="/guias/control-prenatal-ips-vs-privado"]'));
   await prenatal.click();
   await expect(page).toHaveURL(/\/guias\/control-prenatal-ips-vs-privado$/);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Control prenatal");

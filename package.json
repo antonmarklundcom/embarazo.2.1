@@ -14,6 +14,7 @@
     "test:mysql": "vitest run --config vitest.mysql.config.mts",
     "validate:content": "node --experimental-strip-types scripts/validate-content.mts",
     "test:e2e": "playwright test",
+    "verify": "node scripts/verify-all.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
@@ -45,6 +46,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.63.0",
     "@serwist/next": "^9.5.12",
     "@tailwindcss/postcss": "^4.3.3",

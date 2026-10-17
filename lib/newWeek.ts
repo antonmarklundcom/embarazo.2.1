@@ -12,6 +12,24 @@
 /** The card shows on the turnover day and the two days after it. */
 export const NEW_WEEK_WINDOW_DAYS = 3;
 
+/**
+ * What the card's offer line becomes after she taps it, from the status
+ * `enableWeekStartNotice()` returns (`PushStatus` in `lib/push/client.ts`).
+ *
+ * "pending" is its own answer: her phone's service worker was still not ready
+ * after the long wait, so nothing was refused and another try may well work.
+ * Treating it as "blocked" told her to go and look in Ajustes for a problem
+ * that was not there. Every other non-"on" status (denied, dismissed,
+ * unsupported, unconfigured) stays "blocked".
+ */
+export type OfferOutcome = "done" | "pending" | "blocked";
+
+export function offerOutcome(status: string): OfferOutcome {
+  if (status === "on") return "done";
+  if (status === "pending") return "pending";
+  return "blocked";
+}
+
 const SEEN_KEY = "mibebe.newWeek.seen";
 
 const WEEKDAYS_ES = [

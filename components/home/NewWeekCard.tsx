@@ -8,6 +8,7 @@ import {
   inNewWeekWindow,
   markWeekSeen,
   newWeekTitle,
+  offerOutcome,
   readSeenWeek,
   turnoverWeekday,
 } from "@/lib/newWeek";
@@ -28,7 +29,10 @@ import { enableWeekStartNotice, readPushState } from "@/lib/push/client";
 // offered here, on the day it would have arrived, instead of only deep in
 // Ajustes.
 
-type OfferState = "hidden" | "offer" | "busy" | "done" | "blocked";
+// "pending": she said yes, but this phone's service worker was still not ready
+// after the long wait an explicit request gets (`enablePush` -> "pending"). Not a
+// refusal, so it offers another try instead of sending her to Ajustes.
+type OfferState = "hidden" | "offer" | "busy" | "done" | "blocked" | "pending";
 
 export function NewWeekCard({
   week,
@@ -78,7 +82,7 @@ export function NewWeekCard({
   async function turnOn() {
     setOffer("busy");
     const status = await enableWeekStartNotice();
-    setOffer(status === "on" ? "done" : "blocked");
+    setOffer(offerOutcome(status));
   }
 
   return (
@@ -139,6 +143,20 @@ export function NewWeekCard({
         <p className="mt-2 text-xs font-semibold text-petrol" aria-live="polite">
           Listo: te avisamos cada {weekday} a las 10.
         </p>
+      )}
+      {offer === "pending" && (
+        <div aria-live="polite">
+          <p className="mt-2 text-xs text-ink/75">
+            Todavía no pudimos preparar los avisos en este teléfono.
+          </p>
+          <button
+            type="button"
+            onClick={turnOn}
+            className="mt-2 min-h-[44px] w-full rounded-tile border border-petrol/30 bg-white px-4 text-sm font-bold text-petrol"
+          >
+            Probá de nuevo
+          </button>
+        </div>
       )}
       {offer === "blocked" && (
         <p className="mt-2 text-xs text-ink/75" aria-live="polite">

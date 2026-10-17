@@ -1,0 +1,18 @@
+# Static icons under /icons (PWA manifest and home-screen icons) — read by
+# Hostinger's LiteSpeed front end, which serves these files itself, before the
+# Next.js app and its headers (next.config.ts) are ever involved. Without this
+# file the PNGs came back with no Cache-Control at all (measured 16 October 2026).
+#
+# Deliberately scoped to this folder: the site root's .htaccess belongs to
+# Hostinger's Node.js proxy setup and must not be replaced from the repo.
+# Every directive is wrapped in IfModule, so a server without the module
+# ignores it rather than failing the request.
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.(png|jpe?g|svg|ico)$">
+    # File names are stable, not content-hashed (icon-192.png keeps its name when
+    # replaced), so a week of freshness plus a month of background revalidation.
+    Header set Cache-Control "public, max-age=604800, stale-while-revalidate=2592000"
+    Header set X-Content-Type-Options "nosniff"
+  </FilesMatch>
+</IfModule>

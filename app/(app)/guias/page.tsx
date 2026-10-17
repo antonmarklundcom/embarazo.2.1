@@ -26,6 +26,9 @@ function shelfFor(cluster?: string) {
 
 export default async function GuiasPage() {
   const articles = await getArticles();
+  const firstShelfId = SHELVES.find((shelf) =>
+    articles.some((article) => shelfFor(article.cluster) === shelf.id),
+  )?.id;
 
   return (
     <div className="space-y-8 pb-2 sm:space-y-10">
@@ -42,6 +45,8 @@ export default async function GuiasPage() {
       {SHELVES.map((shelf) => {
         const shelfArticles = articles.filter((article) => shelfFor(article.cluster) === shelf.id);
         if (shelfArticles.length === 0) return null;
+        // The first rendered shelf's first two cards are the likely LCP image; every other card stays lazy.
+        const isFirstShelf = shelf.id === firstShelfId;
 
         return (
           <section key={shelf.id} aria-labelledby={`guias-${shelf.id}`} className="space-y-4">
@@ -57,12 +62,13 @@ export default async function GuiasPage() {
               tabIndex={0}
               className="-mx-1 flex gap-4 overflow-x-auto rounded-[22px] px-1 pb-4 pt-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petrol sm:grid sm:grid-cols-2 xl:grid-cols-3"
             >
-              {shelfArticles.map((article) => (
+              {shelfArticles.map((article, index) => (
                 <li key={article.slug} className="w-[min(74vw,17rem)] shrink-0 sm:w-auto">
                   <EditorialCard
                     slug={article.slug}
                     title={article.title}
                     readTime={readTimeLabel(article.html)}
+                    priority={isFirstShelf && index < 2}
                   />
                 </li>
               ))}

@@ -19,7 +19,7 @@ import {
   WeeklyLineCard,
   PopularThisWeek,
   ShareCard,
-  WeekArticleFeed,
+  QueEsperarCard,
 } from "@/components/home/dynamicSections";
 
 import {
@@ -56,11 +56,11 @@ import { NoPregnancyYet } from "@/components/home/NoPregnancyYet";
 import { RecomendadosRail } from "@/components/RecomendadosRail";
 import { WeekContentRail } from "@/components/home/WeekContentRail";
 import { WeekHero } from "@/components/home/WeekHero";
+import { StoryRail } from "@/components/home/StoryRail";
 import { NewWeekCard } from "@/components/home/NewWeekCard";
 import { BirthCard } from "@/components/baby/BirthCard";
 import { completeHandoff, readHandoff, rememberHandoff } from "@/lib/auth/access.client";
 import { BabyHome } from "@/components/baby/BabyHome";
-import { WeekStrip } from "@/components/home/WeekStrip";
 import { flush as flushFunnel, markOnboarded } from "@/lib/stats/funnel.client";
 
 // "Hoy" screen — brand design 1a (docs/archive/REDESIGN-PLAN.md §2): week strip,
@@ -247,7 +247,6 @@ export default function InicioPage() {
   return (
     <div className="space-y-9 sm:space-y-12">
       <section aria-label="Tu semana" className="space-y-5">
-        <WeekStrip />
         <WeekHero
           week={week}
           weekPlusDay={weekPlusDay}
@@ -261,6 +260,7 @@ export default function InicioPage() {
           babies={profile.babies}
           role={profile.role}
         />
+        <StoryRail week={week} role={profile.role} />
         <NextAppointmentCard
           appointmentAt={profile.nextAppointment}
           guests={ownerView?.members ?? []}
@@ -286,7 +286,7 @@ export default function InicioPage() {
 
       <section aria-label="Para conocer tu semana" className="space-y-7">
         <WeekContentRail week={week} role={profile.role} withLine={false} sizeInHero />
-        <WeekArticleFeed week={week} answers={profile} />
+        <QueEsperarCard week={week} answers={profile} />
         <PopularThisWeek />
       </section>
 

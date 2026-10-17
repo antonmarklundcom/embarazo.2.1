@@ -61,3 +61,47 @@ export function EditorialCard({
     </Link>
   );
 }
+
+/** The same guía as a compact row: square thumbnail, title, read time. Used where a list reads better than a shelf ("Qué esperar" on Hoy). */
+export function EditorialRow({
+  slug,
+  title,
+  readTime,
+}: {
+  slug: string;
+  title: string;
+  readTime: string;
+}) {
+  const image = editorialImage(slug);
+
+  return (
+    <Link
+      href={`/guias/${slug}`}
+      data-editorial-card
+      className="flex min-h-[76px] items-center gap-3 rounded-tile p-1.5 transition-colors hover:bg-cream focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petrol"
+    >
+      <span className="block h-16 w-16 shrink-0 overflow-hidden rounded-tile bg-sand-bg">
+        {image && (
+          <picture className="contents">
+            <source type="image/avif" srcSet={image.avifSrcSet} sizes="64px" />
+            <img
+              src={image.src}
+              srcSet={image.srcSet}
+              sizes="64px"
+              width={64}
+              height={64}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="block h-16 w-16 object-cover"
+            />
+          </picture>
+        )}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-[15px] font-extrabold leading-snug text-ink">{CARD_TITLES[slug] ?? title}</span>
+        <span className="mt-0.5 block text-xs font-semibold text-muted">{readTime}</span>
+      </span>
+    </Link>
+  );
+}

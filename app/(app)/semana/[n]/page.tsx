@@ -76,8 +76,8 @@ export default async function SemanaPage({
 
   return (
     <div className="space-y-5">
-      <WeekNav prev={prev} next={next} trimester={info.trimester} />
-
+      {/* The hero comes first so its theme can bleed up behind the header on
+          phones (`.hero-bleed`); the top week nav rides inside it. */}
       <WeekHeroImage
         week={week}
         trimester={info.trimester}
@@ -85,6 +85,7 @@ export default async function SemanaPage({
         lengthCm={info.lengthCm}
         weightG={info.weightG}
         alt={`Tu bebé a las ${week} semanas`}
+        nav={<WeekNav prev={prev} next={next} trimester={info.trimester} />}
       />
 
       <div className="space-y-3">
@@ -177,7 +178,12 @@ function WeekNav({
       ) : (
         <span className="w-16" />
       )}
-      <Link href="/progreso" className="text-sm font-bold text-muted underline-offset-4 hover:underline">
+      {/* A pill, not bare muted text: the top nav sits on whichever theme
+          she picked, including the dark one. */}
+      <Link
+        href="/progreso"
+        className="flex min-h-[44px] items-center rounded-full bg-white/75 px-3 text-center text-[13px] font-bold text-ink backdrop-blur-sm underline-offset-4 hover:underline"
+      >
         {trimester}.º trimestre · ver todas
       </Link>
       {next ? (

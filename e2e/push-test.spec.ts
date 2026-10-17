@@ -28,6 +28,13 @@ async function subscribedDevice(page: Page, testStatus: number, signedIn = true)
       if (url.pathname === "/api/v1/push" && (init?.method ?? "GET") === "GET") {
         return Promise.resolve(new Response(JSON.stringify({ publicKey: "BNtestkey" }), { status: 200 }));
       }
+      // The identity probe is only sent to a visitor auth-status says is signed in.
+      if (url.pathname === "/api/v1/auth-status") {
+        return Promise.resolve(new Response(JSON.stringify({
+          providers: [], credentialsAvailable: false, accountRequired: false,
+          signedIn, accountId: signedIn ? "fixture-account" : null,
+        }), { status: 200 }));
+      }
       if (url.pathname === "/api/v1/sync" && url.searchParams.has("since")) {
         return Promise.resolve(signedIn
           ? new Response(JSON.stringify({ accountId: "fixture-account", records: [], cursor: 0 }), { status: 200 })

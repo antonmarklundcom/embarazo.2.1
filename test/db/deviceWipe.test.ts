@@ -89,9 +89,12 @@ describe("phone-only deletion", () => {
     await db().syncState.put({ key: "default", lastPulledAt: 0, accountId: "owner" });
     const waiting: string[] = [];
     const stopped: string[] = [];
+    // Signed in while the writers run (ensureAccountLink asks auth-status
+    // first), signed out once the wipe has ended the session.
+    let signedIn = true;
     vi.stubGlobal("fetch", async (input: string | URL, init?: RequestInit) => {
       const url = new URL(String(input), "http://app.test");
-      if (url.pathname.endsWith("auth-status")) return Response.json({ signedIn: false });
+      if (url.pathname.endsWith("auth-status")) return Response.json({ signedIn, accountId: signedIn ? "owner" : null });
       if (url.searchParams.get("since") === String(Number.MAX_SAFE_INTEGER)) return Response.json({ accountId: "owner" });
       if (init?.method === "POST") {
         const { records } = JSON.parse(String(init.body));
@@ -108,6 +111,7 @@ describe("phone-only deletion", () => {
     await vi.waitFor(() => expect(waiting).toHaveLength(2));
     await wipeSignedOutDevice(async () => {
       expect(stopped.sort()).toEqual(["/api/v1/photos", "/api/v1/sync"]);
+      signedIn = false;
     });
     await Promise.all(writers);
     expect(await db().profile.count()).toBe(0);

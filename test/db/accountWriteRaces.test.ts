@@ -91,11 +91,15 @@ describe("incoming responses cannot write across a different tab's restore or wi
   });
   it("does not let an old identity probe rebind a wiped device",async()=>{
     await replace(A);
-    const fetcher=vi.fn(async()=>delayedBody(pullBody(),()=>replace(undefined)));
+    // auth-status first (signed out sends no sync probe), then the one probe.
+    const fetcher=vi.fn(async(input:string|URL)=>{
+      if(new URL(String(input),ORIGIN).pathname==="/api/v1/auth-status") return Response.json({signedIn:true,accountId:A,accountRequired:true,providers:[]});
+      return delayedBody(pullBody(),()=>replace(undefined));
+    });
     vi.stubGlobal("fetch",fetcher);
     expect((await ensureAccountLink()).status).toBe("mismatch");
     expect(await db().syncState.get("default")).toBeUndefined();
-    expect(fetcher).toHaveBeenCalledOnce();
+    expect(fetcher.mock.calls.filter(([input])=>new URL(String(input),ORIGIN).pathname==="/api/v1/sync")).toHaveLength(1);
   });
 });
 
@@ -104,6 +108,7 @@ describe("photo responses cannot mark or restore into a replaced database",()=>{
     await replace(A);
     vi.stubGlobal("fetch",async(input:string|URL)=>{
       const url=new URL(String(input),ORIGIN);
+      if(url.pathname==="/api/v1/auth-status") return Response.json({signedIn:true,accountId:A,accountRequired:true,providers:[]});
       if(probe(url)) return Response.json(pullBody());
       if(url.hostname==="bucket.test") {
         await replace(B,{photo:true});
@@ -120,6 +125,7 @@ describe("photo responses cannot mark or restore into a replaced database",()=>{
     await replace(A,{photo:true});
     vi.stubGlobal("fetch",async(input:string|URL,init?:RequestInit)=>{
       const url=new URL(String(input),ORIGIN);
+      if(url.pathname==="/api/v1/auth-status") return Response.json({signedIn:true,accountId:A,accountRequired:true,providers:[]});
       if(probe(url)) return Response.json(pullBody());
       if(url.hostname==="bucket.test") return new Response(null,{status:200});
       if(init?.method!=="POST") return Response.json({photos:[]});

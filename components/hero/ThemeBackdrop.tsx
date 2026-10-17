@@ -18,15 +18,18 @@ import { heroTheme, type ThemeId } from "@/lib/hero/themes";
 export function ThemeBackdrop({
   theme,
   className = "",
+  motifOnly = false,
 }: {
   theme: ThemeId;
   className?: string;
+  /** Draw only the motif, for a frame that paints the gradient itself (Hoy's full-bleed hero). */
+  motifOnly?: boolean;
 }) {
   const t = heroTheme(theme);
   return (
     <div
       className={`absolute inset-0 ${className}`}
-      style={{ background: t.background }}
+      style={motifOnly ? undefined : { background: t.background }}
       aria-hidden
     >
       {t.motif && <Motif id={t.motif} />}

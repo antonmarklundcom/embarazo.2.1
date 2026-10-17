@@ -71,6 +71,9 @@ export const MoodCheckIn = dynamic(() =>
 export const WeekArticleFeed = dynamic(() =>
   import("@/components/WeekArticleFeed").then((m) => m.WeekArticleFeed),
 );
+export const QueEsperarCard = dynamic(() =>
+  import("@/components/home/QueEsperarCard").then((m) => m.QueEsperarCard),
+);
 export const LocalResourcesBlock = dynamic(() =>
   import("@/components/LocalResourcesBlock").then((m) => m.LocalResourcesBlock),
 );

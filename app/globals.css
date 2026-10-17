@@ -31,6 +31,12 @@
   --color-pastel-salvia: #DFE8D8;
   --color-pastel-lavanda: #E6E0F0;
   --color-pastel-arena: #F8E2CB;
+  /* 17 Oct 2026 redesign: warmer accents. Blush is decoration only (story
+     rings, dots), never text. Terracotta-deep is the headline colour on the
+     light hero themes (4.8:1 or better on every stop). */
+  --color-blush: #E9899D;
+  --color-peach: #FCE7DA;
+  --color-terracotta-deep: #8E3B24;
 
   --radius-card: 24px;
   --radius-tile: 20px;
@@ -39,6 +45,62 @@
 
   --shadow-soft:
     0 3px 18px rgba(42, 39, 36, 0.035), 0 1px 3px rgba(42, 39, 36, 0.025);
+  --shadow-card:
+    0 10px 30px rgba(42, 39, 36, 0.06), 0 1px 3px rgba(42, 39, 36, 0.04);
+}
+
+/* The sticky header's height (76px row + 1px border) — Hoy's hero reaches up
+   behind it on phones, so both read the same number. */
+:root {
+  --app-header-h: calc(4.75rem + 1px);
+}
+
+/* Hoy's hero: full-bleed and pulled up behind the transparent header on
+   phones; a large rounded card from 768px, where the shell is centred. */
+.hero-bleed {
+  margin-top: calc(-1 * (var(--app-header-h) + env(safe-area-inset-top) + 1.5rem));
+  margin-inline: -1.25rem;
+  padding: calc(var(--app-header-h) + env(safe-area-inset-top) + 0.5rem) 1.25rem 1.75rem;
+}
+@media (min-width: 640px) {
+  .hero-bleed {
+    margin-top: calc(-1 * (var(--app-header-h) + env(safe-area-inset-top) + 2rem));
+    margin-inline: -2rem;
+    padding: calc(var(--app-header-h) + env(safe-area-inset-top) + 1rem) 2rem 2.25rem;
+  }
+}
+@media (min-width: 768px) {
+  .hero-bleed {
+    margin-top: 0;
+    margin-inline: 0;
+    padding: 2rem 2rem 2.25rem;
+    border-radius: 32px;
+  }
+}
+
+/* /cuenta welcome: the week render drifts a few pixels. Applied only under
+   motion-safe (components/welcome/WelcomeBaby.tsx). */
+@keyframes welcome-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* Horizontal shelves: snap, no visible scrollbar (they stay keyboard
+   scrollable through their focusable list). */
+.shelf {
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.shelf::-webkit-scrollbar {
+  display: none;
+}
+.shelf > * {
+  scroll-snap-align: start;
 }
 
 :root {
@@ -101,6 +163,20 @@ body {
   }
   .no-print {
     display: none !important;
+  }
+}
+
+/* Shown only if a placeholder is still on screen after 10 s — works with no
+   JavaScript at all (the account gate's repair link). */
+.reveal-late {
+  visibility: hidden;
+  opacity: 0;
+  animation: mb-reveal 0.2s linear 10s forwards;
+}
+@keyframes mb-reveal {
+  to {
+    visibility: visible;
+    opacity: 1;
   }
 }
 

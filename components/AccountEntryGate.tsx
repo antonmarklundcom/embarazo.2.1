@@ -113,12 +113,17 @@ export function AccountEntryGate({ children }: { children: React.ReactNode }) {
       if (event.key === null || (event.key === VERIFIED_KEY && event.newValue === null)) revoke();
     };
     const reconnect = () => { if (!leaving) void check(); };
+    // A page restored from the back/forward cache keeps `leaving = true` from
+    // its pagehide, which used to swallow every later error and leave
+    // "Abriendo tu embarazo…" on screen for good.
+    const restored = (event: PageTransitionEvent) => { if (event.persisted) { leaving = false; void check(); } };
     void check();
     window.addEventListener("online", reconnect);
     window.addEventListener("focus", reconnect);
     window.addEventListener(ACCESS_REVOKED_EVENT, revoke);
     window.addEventListener("storage", storageChanged);
     window.addEventListener("pagehide", leave);
+    window.addEventListener("pageshow", restored);
     return () => {
       active = false;
       ++sequence;
@@ -128,16 +133,39 @@ export function AccountEntryGate({ children }: { children: React.ReactNode }) {
       window.removeEventListener(ACCESS_REVOKED_EVENT, revoke);
       window.removeEventListener("storage", storageChanged);
       window.removeEventListener("pagehide", leave);
+      window.removeEventListener("pageshow", restored);
     };
   }, [pathname, publicPage, owner]);
 
   // Neither a route change nor a local-owner change can reuse the old grant.
   const routeMode = state.pathname === pathname ? state.mode : "checking";
   const mode = state.accountId && owner !== state.accountId ? "checking" : routeMode;
+
+  // Never an endless "Abriendo…": after 12 s of checking, offer a retry and
+  // the repair page instead of a screen that looks frozen.
+  const [slow, setSlow] = useState(false);
+  const stuck = !publicPage && mode === "checking";
+  useEffect(() => {
+    if (!stuck) { setSlow(false); return; }
+    const timer = window.setTimeout(() => setSlow(true), 12_000);
+    return () => window.clearTimeout(timer);
+  }, [stuck, pathname]);
   if (publicPage || mode === "allowed" || mode === "offline") {
     return <>{!publicPage && mode === "offline" && <p role="status" className="mb-3 rounded-tile bg-pastel-arena p-3 text-sm text-ink">Sin internet: estás viendo los registros guardados de tu cuenta.</p>}{children}</>;
   }
-  if (mode === "checking") return <div className="py-10 text-center"><p role="status" className="text-sm text-muted">Abriendo tu embarazo…</p><Link href="/emergencia" className="mt-4 inline-block text-sm font-bold text-terracotta underline">Señales de alarma y ayuda</Link></div>;
+  if (mode === "checking" && slow) return (
+    <section className="mx-auto my-5 max-w-md rounded-card border border-line bg-white p-5">
+      <h1 className="text-xl font-black text-ink">Está tardando más de lo normal</h1>
+      <p className="mt-2 text-sm text-muted">Probá de nuevo. Si sigue igual, repará la app: tus registros guardados en este teléfono no se borran.</p>
+      <button type="button" onClick={() => window.location.reload()} className="mt-4 inline-flex min-h-[48px] items-center rounded-full bg-petrol px-5 font-bold text-white">Reintentar</button>
+      <a href="/reparar" className="mt-3 block text-sm font-bold text-petrol underline">Reparar la app</a>
+      <Link href="/emergencia" className="mt-3 block text-sm font-bold text-terracotta underline">Señales de alarma y ayuda</Link>
+    </section>
+  );
+  // The server-rendered placeholder. If the app's JavaScript never starts (an
+  // old cached page naming deleted files), the repair link still appears after
+  // 10 s through CSS alone.
+  if (mode === "checking") return <div className="py-10 text-center"><p role="status" className="text-sm text-muted">Abriendo tu embarazo…</p><Link href="/emergencia" className="mt-4 inline-block text-sm font-bold text-terracotta underline">Señales de alarma y ayuda</Link><p className="reveal-late mt-6 text-sm text-muted">¿No carga? <a href="/reparar" className="font-bold text-petrol underline">Reparar la app</a></p></div>;
   return (
     <section className="mx-auto my-5 max-w-md rounded-card border border-line bg-white p-5">
       <h1 className="text-xl font-black text-ink">{mode === "mismatch" ? "Este teléfono tiene datos de otra cuenta" : "No pudimos comprobar tu cuenta"}</h1>

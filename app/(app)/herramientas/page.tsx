@@ -192,11 +192,80 @@ const VIDEOS: Tool = {
   locked: PUBLISHED_VIDEOS.length === 0,
 };
 
+// Flo benchmark (2026-10-17): the same tiles, sorted into three shelves so the
+// urgent ones are found first, and painted in their own colour instead of a
+// white card with a coloured dot. Still three per row; every tool keeps its
+// sentence for screen readers. A tool missing from GROUPS lands in the last
+// shelf, so adding one never hides it.
+const GROUPS: { title: string; hrefs: string[] }[] = [
+  {
+    title: "Para ahora",
+    hrefs: ["/emergencia", "/herramientas/contracciones", "/herramientas/pataditas", "/herramientas/sintomas", "/herramientas/comer", "/herramientas/resumen"],
+  },
+  {
+    title: "Tu seguimiento",
+    hrefs: ["/herramientas/peso", "/herramientas/fotos", "/herramientas/diario", "/herramientas/sueno", "/herramientas/carne", "/herramientas/kegel", "/herramientas/ejercicios", "/herramientas/dental"],
+  },
+  { title: "Para saber y preparar", hrefs: [] },
+];
+
+function groupTools(tools: Tool[]): { title: string; tools: Tool[] }[] {
+  const placed = new Set<string>();
+  const groups = GROUPS.map((group) => {
+    const members = group.hrefs
+      .map((href) => tools.find((tool) => tool.href === href))
+      .filter((tool): tool is Tool => Boolean(tool));
+    members.forEach((tool) => placed.add(tool.href));
+    return { title: group.title, tools: members };
+  });
+  groups[groups.length - 1]!.tools.push(...tools.filter((tool) => !placed.has(tool.href)));
+  return groups.filter((group) => group.tools.length > 0);
+}
+
+function ToolTile({ tool }: { tool: Tool }) {
+  const body = (
+    <>
+      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/85 text-ink">
+        <ToolIcon name={tool.icon} />
+      </span>
+      <span className={`text-[12px] font-extrabold leading-tight ${tool.locked ? "text-ink/75" : "text-ink"}`}>
+        {tool.title}
+      </span>
+    </>
+  );
+  if (tool.locked) {
+    return (
+      <div
+        aria-disabled="true"
+        className="relative flex min-h-[112px] flex-col items-start justify-between gap-2 rounded-card border border-line bg-white p-3 text-left"
+      >
+        {/* Only the icon is faded elsewhere; here the tile stays white so the
+            badge, the one word explaining why it does nothing, keeps 4.7:1. */}
+        <span className="absolute right-2 top-2 rounded-full bg-sand-bg px-2 py-0.5 text-[10px] font-extrabold text-sand-text">
+          Pronto
+        </span>
+        {body}
+        <span className="sr-only">{tool.desc} (disponible pronto)</span>
+      </div>
+    );
+  }
+  return (
+    <Link
+      href={tool.href}
+      className={`flex min-h-[112px] flex-col items-start justify-between gap-2 rounded-card ${tool.tone} p-3 text-left transition active:scale-[0.97]`}
+    >
+      {body}
+      {/* Kept for screen readers and for anyone who needs the sentence. */}
+      <span className="sr-only">{tool.desc}</span>
+    </Link>
+  );
+}
+
 export default function HerramientasPage() {
-  const tools = [...TOOLS, VIDEOS];
+  const groups = groupTools([...TOOLS, VIDEOS]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-black tracking-tight text-ink">Herramientas</h1>
         {/* K18 — "todo funciona sin internet y se guarda solo en tu teléfono"
@@ -210,50 +279,18 @@ export default function HerramientasPage() {
         </p>
       </header>
 
-      <div className="grid grid-cols-3 gap-3">
-        {tools.map((tool) =>
-          tool.locked ? (
-            <div
-              key={tool.href}
-              aria-disabled="true"
-              className="relative flex min-h-[112px] flex-col items-center justify-start gap-2 rounded-card border border-line bg-white p-3 text-center"
-            >
-              {/* Only the icon is faded. Fading the whole tile took the badge
-                  and title below 3:1; the badge is the one word that explains
-                  why the tile does nothing, so it keeps full contrast (4.7:1). */}
-              <span className="absolute right-2 top-2 rounded-full bg-sand-bg px-2 py-0.5 text-[10px] font-extrabold text-sand-text">
-                Pronto
-              </span>
-              <span
-                className={`flex h-11 w-11 items-center justify-center rounded-full opacity-60 ${tool.tone}`}
-              >
-                <ToolIcon name={tool.icon} />
-              </span>
-              <span className="text-[12px] font-extrabold leading-tight text-ink/75">
-                {tool.title}
-              </span>
-              <span className="sr-only">{tool.desc} (disponible pronto)</span>
-            </div>
-          ) : (
-            <Link
-              key={tool.href}
-              href={tool.href}
-              className="flex min-h-[112px] flex-col items-center justify-start gap-2 rounded-card border border-line bg-white p-3 text-center transition active:scale-[0.97]"
-            >
-              <span
-                className={`flex h-11 w-11 items-center justify-center rounded-full ${tool.tone}`}
-              >
-                <ToolIcon name={tool.icon} />
-              </span>
-              <span className="text-[12px] font-extrabold leading-tight text-ink">
-                {tool.title}
-              </span>
-              {/* Kept for screen readers and for anyone who needs the sentence. */}
-              <span className="sr-only">{tool.desc}</span>
-            </Link>
-          ),
-        )}
-      </div>
+      {groups.map((group, index) => (
+        <section key={group.title} aria-labelledby={`herramientas-${index}`} className="space-y-2.5">
+          <h2 id={`herramientas-${index}`} className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">
+            {group.title}
+          </h2>
+          <div className="grid grid-cols-3 gap-3">
+            {group.tools.map((tool) => (
+              <ToolTile key={tool.href} tool={tool} />
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

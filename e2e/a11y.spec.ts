@@ -23,7 +23,9 @@ async function audit(page: Page, label: string) {
         v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(" | "),
     );
   }
-  expect(
+  // Soft, so one screen's finding does not hide the next screen's; the test
+  // still fails at the end.
+  expect.soft(
     blocking.map((v) => `${v.id} (${v.nodes.length})`),
     `${label}: serious/critical accessibility violations`,
   ).toEqual([]);
@@ -33,11 +35,43 @@ const PUBLIC_ROUTES = [
   "/cuenta",
   "/cuenta?ingreso=1",
   "/cuenta?ingreso=1&vuelvo=1",
+  "/cuenta?cuenta=borrada",
   "/guias",
+  "/guias/control-prenatal-ips-vs-privado",
+  "/semana/1",
   "/semana/15",
+  "/semana/40",
   "/emergencia",
+  "/derechos",
+  "/preguntas",
   "/borrar-cuenta",
   "/privacidad",
+  "/terminos",
+];
+
+// Personal screens, audited after onboarding (2026-10-17: widened from Hoy,
+// Ajustes and Herramientas to every tool and the family/progress screens).
+const PERSONAL_ROUTES = [
+  "/ajustes",
+  "/herramientas",
+  "/herramientas/carne",
+  "/herramientas/checklist",
+  "/herramientas/comer",
+  "/herramientas/contracciones",
+  "/herramientas/dental",
+  "/herramientas/diario",
+  "/herramientas/ejercicios",
+  "/herramientas/fotos",
+  "/herramientas/kegel",
+  "/herramientas/nombres",
+  "/herramientas/pataditas",
+  "/herramientas/peso",
+  "/herramientas/resumen",
+  "/herramientas/sintomas",
+  "/herramientas/sueno",
+  "/familia",
+  "/progreso",
+  "/recomendados",
 ];
 
 for (const path of PUBLIC_ROUTES) {
@@ -57,10 +91,11 @@ test("the first onboarding questions have no serious accessibility violations", 
   await audit(page, "onboarding role");
 });
 
-test("Hoy, Ajustes and Herramientas have no serious accessibility violations", async ({ page }) => {
+test("Hoy and every personal screen have no serious accessibility violations", async ({ page }) => {
+  test.setTimeout(180_000);
   await completeOnboarding(page);
   await audit(page, "Hoy");
-  for (const path of ["/ajustes", "/herramientas"]) {
+  for (const path of PERSONAL_ROUTES) {
     await page.goto(path);
     await expect(page.locator("main").first()).toBeVisible();
     await audit(page, path);

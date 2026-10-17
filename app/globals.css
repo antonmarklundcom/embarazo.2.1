@@ -14,7 +14,10 @@
   --color-rose: #E0A4A0;
   --color-sage: #6F8A66;
   --color-ink: #322E29;
-  --color-muted: #7A7369;
+  /* 2026-10-17: was #7A7369, which fell to ~3.5:1 on the pastel and tinted
+     cards (axe color-contrast). #655F56 keeps the same warm grey and passes
+     4.5:1 on white, cream, every pastel and the sage tint. */
+  --color-muted: #655F56;
   --color-line: #EEEDE8;
   /* WhatsApp's own #25D366 carries white text at ~2:1. The icon is what
      people recognise; the fill is darkened to 5:1. */

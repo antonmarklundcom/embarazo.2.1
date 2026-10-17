@@ -82,6 +82,59 @@ export async function deleteSubscription(
   await backend.deleteSubscriptionRow(endpoint);
 }
 
+export interface RotationInput {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+}
+
+/**
+ * The push service replaced this browser's subscription (`pushsubscriptionchange`
+ * in `app/sw.ts`): carry everything the old row stood for to the new endpoint.
+ *
+ * What moves: the owner (`userId`, null stays null), the category opt-ins, and
+ * the old endpoint's not-yet-sent reminders — re-pointed, so their ids, times
+ * and categories are unchanged and the server still learns nothing new. What
+ * does not: rows already sent (a record, not a promise), which go with the old
+ * subscription. If `oldEndpoint` is not stored this does nothing and says so —
+ * the caller must not be able to mint a subscription out of thin air, and the
+ * app's own start-up refresh (`refreshWeeklyTips`) is the fallback for a
+ * device the server never knew.
+ *
+ * Order matters for failure: the new row exists and owns the reminders before
+ * the old one is deleted, so a crash half-way leaves a duplicate subscription
+ * (harmless: a dead endpoint answers 404/410 and is pruned at dispatch), never
+ * a silent loss of the schedule.
+ *
+ * `now` is unused today; it is in the signature so a future audit trail or
+ * lastSeen stamp does not change every caller.
+ */
+export async function rotateSubscription(
+  backend: PushBackend,
+  oldEndpoint: string,
+  newSub: RotationInput,
+  now: number,
+): Promise<"rotated" | "unknown"> {
+  void now;
+  const old = await backend.subscriptionOf(oldEndpoint);
+  if (!old) return "unknown";
+
+  await backend.upsertSubscription({
+    endpoint: newSub.endpoint,
+    p256dh: newSub.p256dh,
+    auth: newSub.auth,
+    categories: normaliseCategories(old.categories),
+    userId: old.userId,
+  });
+
+  // Same endpoint (a key-only refresh): nothing to move or delete.
+  if (newSub.endpoint === oldEndpoint) return "rotated";
+
+  await backend.moveUnsentReminders(oldEndpoint, newSub.endpoint);
+  await deleteSubscription(backend, oldEndpoint);
+  return "rotated";
+}
+
 // ---------------------------------------------------------------------------
 // Reminders
 // ---------------------------------------------------------------------------

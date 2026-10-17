@@ -70,6 +70,18 @@ export interface PushBackend {
   pruneSentBefore(before: number): Promise<void>;
   /** Every endpoint this account currently has subscribed. */
   subscriptionEndpointsOf(userId: string): Promise<string[]>;
+  /**
+   * The stored owner and opt-ins of one endpoint, or null when it is not
+   * subscribed. Used by `rotateSubscription` to carry them to the new endpoint.
+   */
+  subscriptionOf(
+    endpoint: string,
+  ): Promise<{ userId: string | null; categories: PushCategory[] } | null>;
+  /**
+   * Re-point every not-yet-sent reminder of `from` at `to`, keeping its id,
+   * category and time. Already-sent rows stay where they are.
+   */
+  moveUnsentReminders(from: string, to: string): Promise<void>;
 }
 
 /** The real thing. Constructed once per request. */
@@ -174,6 +186,25 @@ export function drizzlePushBackend(database: Database): PushBackend {
         .from(pushSubscriptions)
         .where(eq(pushSubscriptions.userId, userId));
       return rows.map((row) => row.endpoint);
+    },
+
+    async subscriptionOf(endpoint) {
+      const [row] = await database
+        .select({
+          userId: pushSubscriptions.userId,
+          categories: pushSubscriptions.categories,
+        })
+        .from(pushSubscriptions)
+        .where(eq(pushSubscriptions.endpoint, endpoint))
+        .limit(1);
+      return row ? { userId: row.userId, categories: row.categories } : null;
+    },
+
+    async moveUnsentReminders(from, to) {
+      await database
+        .update(pushReminders)
+        .set({ endpoint: to })
+        .where(and(eq(pushReminders.endpoint, from), isNull(pushReminders.sentAt)));
     },
   };
 }

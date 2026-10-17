@@ -5,6 +5,7 @@ import {
   deleteSubscription,
   dispatchDueReminders,
   pruneSentReminders,
+  rotateSubscription,
   saveSubscription,
   scheduleCheerPoke,
   scheduleReminders,
@@ -128,6 +129,18 @@ function memoryBackend(): PushBackend & {
     async subscriptionEndpointsOf(userId) {
       return [...subs.values()].filter((row) => row.userId === userId).map((row) => row.endpoint);
     },
+
+    async subscriptionOf(endpoint) {
+      const row = subs.get(endpoint);
+      return row ? { userId: row.userId, categories: row.categories } : null;
+    },
+
+    // Mirrors the UPDATE … WHERE endpoint = from AND sentAt IS NULL.
+    async moveUnsentReminders(from, to) {
+      for (const row of reminders.values()) {
+        if (row.endpoint === from && row.sentAt === null) row.endpoint = to;
+      }
+    },
   };
 }
 
@@ -205,6 +218,104 @@ describe("subscribing", () => {
     });
 
     expect(backend.subs.get(ENDPOINT)?.categories).toEqual(["recordatorios"]);
+  });
+});
+
+describe("rotating a subscription (pushsubscriptionchange)", () => {
+  const NEW_ENDPOINT = "https://fcm.googleapis.com/fcm/send/new";
+  const NEW_SUB = { endpoint: NEW_ENDPOINT, p256dh: "p2", auth: "a2" };
+
+  it("carries the owner and the category opt-ins to the new endpoint", async () => {
+    const backend = memoryBackend();
+    await saveSubscription(backend, {
+      endpoint: ENDPOINT,
+      p256dh: "p",
+      auth: "a",
+      categories: ["recordatorios", "consejos"],
+      userId: "user-1",
+    });
+
+    expect(await rotateSubscription(backend, ENDPOINT, NEW_SUB, NOW)).toBe("rotated");
+
+    expect(backend.subs.get(NEW_ENDPOINT)).toMatchObject({
+      userId: "user-1",
+      categories: ["recordatorios", "consejos"],
+    });
+    expect(backend.subs.has(ENDPOINT)).toBe(false);
+  });
+
+  it("moves pending reminders, keeps their times, and leaves sent ones behind", async () => {
+    const backend = memoryBackend();
+    await saveSubscription(backend, { endpoint: ENDPOINT, p256dh: "p", auth: "a", categories: [], userId: null });
+    await scheduleReminders(backend, ENDPOINT, "recordatorios", [NOW + 1000, NOW + 2000]);
+    await scheduleReminders(backend, ENDPOINT, "consejos", [NOW + 3000]);
+    const sentId = [...backend.reminders.values()].find((r) => r.fireAt === NOW + 1000)!.id;
+    await backend.markSent(sentId, NOW);
+
+    await rotateSubscription(backend, ENDPOINT, NEW_SUB, NOW);
+
+    const rows = [...backend.reminders.values()];
+    // The sent row is gone with the old subscription; it was never moved.
+    expect(rows.find((r) => r.id === sentId)).toBeUndefined();
+    expect(rows.some((r) => r.endpoint === ENDPOINT)).toBe(false);
+    expect(
+      rows
+        .filter((r) => r.endpoint === NEW_ENDPOINT)
+        .map((r) => [r.category, r.fireAt])
+        .sort(),
+    ).toEqual([
+      ["consejos", NOW + 3000],
+      ["recordatorios", NOW + 2000],
+    ]);
+    expect(rows.every((r) => r.sentAt === null)).toBe(true);
+  });
+
+  it("does nothing, and says so, when the old endpoint is not stored", async () => {
+    const backend = memoryBackend();
+    await saveSubscription(backend, {
+      endpoint: "https://fcm.googleapis.com/fcm/send/other",
+      p256dh: "p",
+      auth: "a",
+      categories: [],
+      userId: "user-2",
+    });
+
+    expect(await rotateSubscription(backend, ENDPOINT, NEW_SUB, NOW)).toBe("unknown");
+
+    expect(backend.subs.has(NEW_ENDPOINT)).toBe(false);
+    expect(backend.subs.size).toBe(1);
+  });
+
+  it("keeps an anonymous owner anonymous", async () => {
+    const backend = memoryBackend();
+    await saveSubscription(backend, { endpoint: ENDPOINT, p256dh: "p", auth: "a", categories: ["recordatorios"], userId: null });
+
+    await rotateSubscription(backend, ENDPOINT, NEW_SUB, NOW);
+
+    expect(backend.subs.get(NEW_ENDPOINT)?.userId).toBeNull();
+  });
+
+  it("a key-only refresh (same endpoint) keeps the subscription and its reminders", async () => {
+    const backend = memoryBackend();
+    await saveSubscription(backend, { endpoint: ENDPOINT, p256dh: "p", auth: "a", categories: ["recordatorios"], userId: "user-1" });
+    await scheduleReminders(backend, ENDPOINT, "recordatorios", [NOW + 1000]);
+
+    expect(
+      await rotateSubscription(backend, ENDPOINT, { ...NEW_SUB, endpoint: ENDPOINT }, NOW),
+    ).toBe("rotated");
+
+    expect(backend.subs.get(ENDPOINT)?.userId).toBe("user-1");
+    expect([...backend.reminders.values()]).toHaveLength(1);
+  });
+
+  it("a rotated reminder is dispatched to the new endpoint, not the old", async () => {
+    const backend = memoryBackend();
+    await saveSubscription(backend, { endpoint: ENDPOINT, p256dh: "p", auth: "a", categories: ["recordatorios"], userId: null });
+    await scheduleReminders(backend, ENDPOINT, "recordatorios", [NOW - 1000]);
+    await rotateSubscription(backend, ENDPOINT, NEW_SUB, NOW);
+
+    const due = await backend.dueReminders(NOW, 10);
+    expect(due.map((r) => r.endpoint)).toEqual([NEW_ENDPOINT]);
   });
 });
 

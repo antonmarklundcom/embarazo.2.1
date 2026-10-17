@@ -7,13 +7,14 @@ import { APP_NAME } from "@/lib/brand";
 import { useT } from "@/lib/i18n/useLocale";
 
 // App header — brand circle mark + 900 wordmark, terracotta SOS pill and a
-// round Ajustes button. 17 Oct 2026: on Hoy it starts transparent so the hero's
-// theme runs up to the top of the screen, and turns white once the page
-// scrolls. Every other screen keeps the white bar.
+// round Ajustes button. 17 Oct 2026: on Hoy and on /semana/N it starts
+// transparent so the hero's theme runs up to the top of the screen, and turns
+// white once the page scrolls. Every other screen keeps the white bar.
 export function AppHeader() {
   const t = useT();
   const pathname = usePathname();
-  const immersive = pathname === "/";
+  // Hoy and the week pages (/semana/N) both open on a full-bleed hero.
+  const immersive = pathname === "/" || /^\/semana\/\d+\/?$/.test(pathname ?? "");
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {

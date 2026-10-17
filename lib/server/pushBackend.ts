@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, eq, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 
 import type { Database } from "./db";
 import { pushReminders, pushSubscriptions } from "./schema";
@@ -80,6 +80,11 @@ export interface PushBackend {
   /**
    * Re-point every not-yet-sent reminder of `from` at `to`, keeping its id,
    * category and time. Already-sent rows stay where they are.
+   *
+   * A reminder whose (category, fireAt) already exists unsent on `to` is NOT
+   * moved: the app may have re-posted the new endpoint's schedule before the
+   * worker's rotate call arrived, and moving it would queue the same poke
+   * twice. Those duplicates are deleted from `from` instead.
    */
   moveUnsentReminders(from: string, to: string): Promise<void>;
 }
@@ -201,6 +206,34 @@ export function drizzlePushBackend(database: Database): PushBackend {
     },
 
     async moveUnsentReminders(from, to) {
+      // Read-then-write rather than DELETE … WHERE EXISTS: MySQL refuses a
+      // subquery on the table being deleted from (error 1093). The window for
+      // a concurrent insert is the same one the move itself always had.
+      const [existing, moving] = await Promise.all([
+        database
+          .select({ category: pushReminders.category, fireAt: pushReminders.fireAt })
+          .from(pushReminders)
+          .where(and(eq(pushReminders.endpoint, to), isNull(pushReminders.sentAt))),
+        database
+          .select({
+            id: pushReminders.id,
+            category: pushReminders.category,
+            fireAt: pushReminders.fireAt,
+          })
+          .from(pushReminders)
+          .where(and(eq(pushReminders.endpoint, from), isNull(pushReminders.sentAt))),
+      ]);
+
+      if (existing.length > 0 && moving.length > 0) {
+        const taken = new Set(existing.map((row) => `${row.category}|${row.fireAt}`));
+        const duplicateIds = moving
+          .filter((row) => taken.has(`${row.category}|${row.fireAt}`))
+          .map((row) => row.id);
+        if (duplicateIds.length > 0) {
+          await database.delete(pushReminders).where(inArray(pushReminders.id, duplicateIds));
+        }
+      }
+
       await database
         .update(pushReminders)
         .set({ endpoint: to })

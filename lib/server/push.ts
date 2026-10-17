@@ -94,7 +94,10 @@ export interface RotationInput {
  *
  * What moves: the owner (`userId`, null stays null), the category opt-ins, and
  * the old endpoint's not-yet-sent reminders — re-pointed, so their ids, times
- * and categories are unchanged and the server still learns nothing new. What
+ * and categories are unchanged and the server still learns nothing new. A
+ * reminder the new endpoint already has unsent (same category and time — the
+ * app re-posted its schedule before this call arrived) is dropped rather than
+ * moved, so the queue never holds the same poke twice. What
  * does not: rows already sent (a record, not a promise), which go with the old
  * subscription. If `oldEndpoint` is not stored this does nothing and says so —
  * the caller must not be able to mint a subscription out of thin air, and the

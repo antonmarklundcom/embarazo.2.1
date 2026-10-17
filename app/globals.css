@@ -78,6 +78,18 @@
   }
 }
 
+/* /cuenta welcome: the week render drifts a few pixels. Applied only under
+   motion-safe (components/welcome/WelcomeBaby.tsx). */
+@keyframes welcome-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
 /* Horizontal shelves: snap, no visible scrollbar (they stay keyboard
    scrollable through their focusable list). */
 .shelf {

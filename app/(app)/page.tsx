@@ -285,7 +285,7 @@ export default function InicioPage() {
       </section>
 
       <section aria-label="Para conocer tu semana" className="space-y-7">
-        <WeekContentRail week={week} role={profile.role} withLine={false} />
+        <WeekContentRail week={week} role={profile.role} withLine={false} sizeInHero />
         <WeekArticleFeed week={week} answers={profile} />
         <PopularThisWeek />
       </section>

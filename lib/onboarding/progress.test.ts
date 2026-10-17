@@ -390,7 +390,8 @@ describe("stepProgress — 'Paso N de M'", () => {
 
   it("counts the mamá's own steps after the first question", () => {
     const context = ctx({ mode: "embarazada", signedIn: true });
-    const total = stepsFor(context).length - 1;
+    // Minus "mode" and the account step a signed-in person steps over.
+    const total = stepsFor(context).length - 2;
     expect(stepProgress("role", context)).toEqual({ current: 1, total });
     expect(stepProgress("avisos", context)).toEqual({ current: total, total });
   });
@@ -400,5 +401,23 @@ describe("stepProgress — 'Paso N de M'", () => {
     const mama = ctx({ mode: "embarazada", signedIn: true });
     expect(stepProgress("role", papa)!.total).toBe(stepProgress("role", mama)!.total - 1);
     expect(stepProgress("perfil", papa)).toBeNull();
+  });
+});
+
+describe("stepProgress — the account step", () => {
+  it("is counted for somebody who still has to sign in", () => {
+    const context = ctx({ mode: "embarazada", signedIn: false });
+    expect(stepProgress("cuenta", context)).not.toBeNull();
+  });
+
+  it("is not counted for somebody already signed in", () => {
+    const context = ctx({ mode: "embarazada", signedIn: true });
+    expect(stepProgress("cuenta", context)).toBeNull();
+    expect(stepProgress("bebe", context)!.current).toBe(stepProgress("department", context)!.current + 1);
+  });
+
+  it("is still counted on an invite, where it explains the code", () => {
+    const context = ctx({ mode: "embarazada", signedIn: true, invited: true });
+    expect(stepProgress("cuenta", context)).not.toBeNull();
   });
 });

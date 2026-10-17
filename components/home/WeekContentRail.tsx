@@ -20,11 +20,14 @@ export function WeekContentRail({
   week,
   role,
   withLine = true,
+  sizeInHero = false,
 }: {
   week: number;
   role: Role;
   /** Hoy renders the one-liner itself, above the daily tip. */
   withLine?: boolean;
+  /** Hoy's hero already shows size, fruit and measures: show only pie/mano. */
+  sizeInHero?: boolean;
 }) {
   return (
     <>
@@ -32,8 +35,9 @@ export function WeekContentRail({
           no line yet. */}
       {withLine && <WeeklyLineCard week={week} />}
 
-      {/* C3: size comparison tabs (map #12) — tamaño / pie / mano. */}
-      <SizeTabs week={week} />
+      {/* C3: size comparison tabs (map #12) — tamaño / pie / mano. Under a
+          hero that already shows tamaño, only pie / mano (2026-10-17). */}
+      <SizeTabs week={week} limbsOnly={sizeInHero} />
 
       {/* C4: same week, three entrances (map #13). Opens on the user's own
           role; nothing is hidden by role. */}

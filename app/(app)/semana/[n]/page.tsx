@@ -204,7 +204,7 @@ function WeekSection({
 }) {
   return (
     <section className={`rounded-card p-5 ${tone}`}>
-      <h2 className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-terracotta">
+      <h2 className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">
         {label}
       </h2>
       {imageId && (

@@ -31,6 +31,7 @@ export function DepartmentSettings({
     <section className="rounded-card bg-white p-4 shadow-soft">
       <h2 className="text-base font-extrabold text-ink">Tu departamento</h2>
       <select
+        aria-label="Tu departamento"
         value={department}
         onChange={(e) => setDepartment(e.target.value)}
         className="mt-2 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-3 focus:border-petrol focus:outline-none"

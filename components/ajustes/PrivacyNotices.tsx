@@ -54,7 +54,7 @@ export function PrivacyNotices() {
           </li>
           <li>• No usamos cookies de seguimiento ni rastreadores.</li>
         </ul>
-        <p className="mt-3 text-xs text-muted">
+        <p className="mt-3 text-xs text-ink/80">
           <Link href="/privacidad" className="underline">
             Política de privacidad
           </Link>

@@ -91,7 +91,7 @@ export function HomeShortcuts({ week }: { week: number }) {
               <p className="text-sm font-extrabold leading-tight text-ink">
                 {shortcut.title}
               </p>
-              <p className="mt-0.5 text-[11px] font-semibold leading-tight text-ink/70">
+              <p className="mt-0.5 text-[11px] font-semibold leading-tight text-ink/80">
                 {shortcut.subtitle}
               </p>
             </Link>

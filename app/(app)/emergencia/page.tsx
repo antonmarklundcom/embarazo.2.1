@@ -55,11 +55,11 @@ export default function EmergenciaPage() {
           >
             <div>
               <p className="text-2xl font-black">{n.number}</p>
-              <p className="text-sm text-white/90">{n.name}</p>
+              <p className="text-sm text-white">{n.name}</p>
               <Bilingual
                 as="p"
-                className="text-xs text-white/70"
-                gnClassName="mt-0.5 block italic text-white/60"
+                className="text-xs text-white"
+                gnClassName="mt-0.5 block italic text-white"
                 text={n.detail}
               />
             </div>

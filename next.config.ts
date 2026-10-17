@@ -1,5 +1,6 @@
 import withSerwistInit from "@serwist/next";
 import { assertLaunchReady } from "./lib/launchChecks";
+import { resolveBuildRevision } from "./lib/server/buildRevision";
 
 // BUILD-PLAN Z2: block a configured deployment build that would ship a
 // placeholder medical byline. No-op for local and CI builds (no APP_URL).
@@ -142,6 +143,12 @@ function securityHeaders(env: NodeJS.ProcessEnv = process.env) {
 
 const nextConfig = {
   reactStrictMode: true,
+  // `/api/v1/health` reports this. Resolved here, at build time, because the
+  // deployed app may have no `.git` next to it (Hostinger): git first, then CI
+  // env vars, else "unknown". See lib/server/buildRevision.ts.
+  env: {
+    BUILD_REVISION: resolveBuildRevision(process.cwd(), process.env),
+  },
   // NOTE: never use output: 'export'. Hostinger runs the standard Node server (SSR + API routes).
   experimental: {
     // Next sizes the image optimizer's sharp thread pool from the host CPU count;

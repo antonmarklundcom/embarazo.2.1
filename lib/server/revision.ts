@@ -9,12 +9,14 @@ import { dirname, join, resolve, sep } from "node:path";
 // `git log --oneline`, nothing about branches, remotes or paths.
 //
 // Where the SHA comes from, in order:
-//   1. The repository itself: `.git/HEAD`, then the ref file it names, then
-//      `packed-refs`. Hostinger's Git-based build checks the repo out next to
-//      the app, so this works without any build-time step.
-//   2. `GIT_COMMIT`, `SOURCE_VERSION`, `VERCEL_GIT_COMMIT_SHA` — set by other
-//      CI/hosts that build from an export without `.git`.
-//   3. "unknown".
+//   1. `BUILD_REVISION`, baked into the bundle by `next.config.ts` at build time
+//      (`lib/server/buildRevision.ts`: git, then CI env vars). This is the one
+//      that works on a host that deploys the build without `.git`.
+//   2. The repository itself: `.git/HEAD`, then the ref file it names, then
+//      `packed-refs`. Works where the server runs next to a checkout.
+//   3. `GIT_COMMIT`, `SOURCE_VERSION`, `VERCEL_GIT_COMMIT_SHA` — set by other
+//      CI/hosts that run from an export without `.git`.
+//   4. "unknown".
 //
 // `next build` with `output: "standalone"` runs the server from
 // `.next/standalone`, so `process.cwd()` can be a subfolder of the checkout.
@@ -135,6 +137,11 @@ export function resolveRevision(
   cwd: string,
   env: Record<string, string | undefined>,
 ): string {
+  // The value `next.config.ts` baked in at build time wins: it was resolved
+  // where the checkout was, which is not where the server runs.
+  const baked = shortShaFrom(env.BUILD_REVISION);
+  if (baked) return baked;
+
   try {
     for (const dir of candidateDirs(cwd)) {
       const found = revisionFromGitDir(dir);
@@ -160,7 +167,12 @@ let cached: string | undefined;
 export function getRevision(): string {
   if (cached === undefined) {
     try {
-      cached = resolveRevision(process.cwd(), process.env);
+      // `process.env.BUILD_REVISION` must stay a literal member access: Next's
+      // `env` option replaces exactly that expression in the bundle.
+      cached = resolveRevision(process.cwd(), {
+        ...process.env,
+        BUILD_REVISION: process.env.BUILD_REVISION,
+      });
     } catch {
       cached = UNKNOWN_REVISION;
     }

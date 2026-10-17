@@ -56,6 +56,7 @@ import { NoPregnancyYet } from "@/components/home/NoPregnancyYet";
 import { RecomendadosRail } from "@/components/RecomendadosRail";
 import { WeekContentRail } from "@/components/home/WeekContentRail";
 import { WeekHero } from "@/components/home/WeekHero";
+import { StoryRail } from "@/components/home/StoryRail";
 import { NewWeekCard } from "@/components/home/NewWeekCard";
 import { BirthCard } from "@/components/baby/BirthCard";
 import { completeHandoff, readHandoff, rememberHandoff } from "@/lib/auth/access.client";
@@ -259,6 +260,7 @@ export default function InicioPage() {
           babies={profile.babies}
           role={profile.role}
         />
+        <StoryRail week={week} role={profile.role} />
         <NextAppointmentCard
           appointmentAt={profile.nextAppointment}
           guests={ownerView?.members ?? []}

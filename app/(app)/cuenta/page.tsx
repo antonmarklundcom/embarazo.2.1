@@ -4,6 +4,8 @@ import Link from "next/link";
 import { AccountCard } from "@/components/AccountCard";
 import { SignInCard } from "@/components/SignInCard";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
+import { WelcomeBaby } from "@/components/welcome/WelcomeBaby";
+import { heroTheme } from "@/lib/hero/themes";
 import { APP_NAME } from "@/lib/brand";
 import { availableProviders, getSession, isAuthAvailable } from "@/lib/server/auth";
 import { safeReturnTo, signInDestination } from "@/lib/auth/access";
@@ -101,13 +103,21 @@ export default async function CuentaPage({
   }
   return (
     <div className="space-y-4">
+      {/* The welcome's warm ground, smaller: the account step stays the focus. */}
+      <div className="hero-bleed relative isolate overflow-hidden pb-2!">
+        <div aria-hidden className="absolute inset-0 -z-10" style={{ background: heroTheme("halo").background }} />
+        <div aria-hidden className="absolute inset-x-0 bottom-0 -z-10 h-16 bg-gradient-to-b from-transparent to-cream md:hidden" />
+        <Link href={welcomeHref} className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-white/80 px-4 text-sm font-bold text-petrol underline underline-offset-4 shadow-soft focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-petrol"><span aria-hidden>←</span> Conocé {APP_NAME}</Link>
+        <div className="-mt-2">
+          <WelcomeBaby size={148} alt="" />
+        </div>
+      </div>
       {deleted && <section role="status" className="rounded-card border border-sage/30 bg-sage/5 p-4">
         <h1 className="font-extrabold text-ink">Tu cuenta fue borrada</h1>
         <p className="mt-1 text-sm text-muted">El seguimiento personal necesita una cuenta. Las guías y la información de emergencia siguen disponibles.</p>
         {params.limpieza === "pendiente" && <p className="mt-2 text-sm font-semibold text-terracotta">El borrado de la cuenta se completó, pero no pudimos confirmar la limpieza de este teléfono. Cerrá la sesión y borrá los datos del sitio en tu navegador si también querés quitarlos.</p>}
         {params.local === "conservado" && <p className="mt-2 text-sm text-muted">Conservaste los registros de este teléfono, vinculados a la cuenta eliminada. No se van a mezclar con otra cuenta.</p>}
       </section>}
-      <Link href={welcomeHref} className="inline-flex min-h-[44px] items-center gap-2 text-sm font-bold text-petrol underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-petrol"><span aria-hidden>←</span> Conocé {APP_NAME}</Link>
       <SignInCard
         providers={availableProviders()}
         credentialsAvailable={isAuthAvailable()}

@@ -119,17 +119,14 @@ export function WeekHeroImage({
       {nav}
 
       <div className="mt-4">
-        {/* From week 3 the baby is always the page's figure (offline.spec and
-            the share/size specs find it there); the "sin escala" caption only
-            belongs next to the fruit. */}
-        {hasSubject ? (
+        {/* The figure exists only while the fruit comparison is shown
+            (week-hero.spec: Medidas mode has no figure). */}
+        {withFruit ? (
           <figure className="m-0">
             {stage}
-            {withFruit && (
-              <figcaption className={`mx-auto mt-3 max-w-xs text-center text-[11px] font-semibold leading-relaxed ${quiet}`}>
-                {ILLUSTRATION_CAPTION}
-              </figcaption>
-            )}
+            <figcaption className={`mx-auto mt-3 max-w-xs text-center text-[11px] font-semibold leading-relaxed ${quiet}`}>
+              {ILLUSTRATION_CAPTION}
+            </figcaption>
           </figure>
         ) : (
           stage

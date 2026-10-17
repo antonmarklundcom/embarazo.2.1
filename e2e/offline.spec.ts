@@ -81,6 +81,11 @@ test("the precached tool pages open offline for a verified owner", async ({ page
   await context.setOffline(true);
 
   for (const { path, h1 } of OFFLINE_TOOLS) {
+    // Offline, the previous tool's link prefetches fail and Next falls back to
+    // browser navigations, which can race the next page.goto and win. A blank
+    // page between visits leaves nothing in flight (the SW still answers the
+    // navigation from the precache).
+    await page.goto("about:blank");
     await gotoPrecached(page, path);
     await expect(page.locator("main h1").first(), `${path} renders its own heading offline`).toHaveText(h1);
     await expect(page.getByText("Sin internet: estás viendo los registros guardados de tu cuenta.")).toBeVisible();

@@ -36,6 +36,11 @@ test("login errors and account deletion do not hide behind welcome", async ({ pa
 test("a returning device opens login while an explicit welcome link stays available", async ({ page }) => {
   await page.goto("/cuenta?bienvenida=1");
   await expect(page.getByRole("heading", { name: "Tu embarazo, con más calma." })).toBeVisible();
+  // Wait for the app's own Dexie open to create the stores. Opening "mibebe"
+  // raw before that creates an empty version-1 database and the transaction
+  // below fails with "object store not found" (seen once on 2026-10-16).
+  await page.waitForFunction(async () =>
+    (await indexedDB.databases()).some((info) => info.name === "mibebe" && (info.version ?? 0) > 1));
   await page.evaluate(async () => {
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open("mibebe");

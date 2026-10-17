@@ -222,8 +222,16 @@ test("a local-only user's data uploads once when they sign in", async ({
   const server = fakeServer();
   const context = await browser.newContext();
 
-  // Before signing in: /api/v1/sync does not exist for this visitor.
+  // Before signing in: /api/v1/sync does not exist for this visitor, and
+  // auth-status says so — the sync engine asks it first (2026-10-17) so a
+  // signed-out visitor never probes /api/v1/sync. Both flip together on
+  // sign-in, as they do on the real server (one session behind both).
   let signedIn = false;
+  await context.route("**/api/v1/auth-status", route => route.fulfill({
+    json: signedIn
+      ? { providers: ["google"], signedIn: true, accountId: server.accountId, accountRequired: true }
+      : { providers: ["google"], signedIn: false, accountId: null, accountRequired: false },
+  }));
   await context.route("**/api/v1/sync**", async (route) => {
     if (!signedIn) {
       return route.fulfill({ status: 401, body: "sesión requerida" });
@@ -344,6 +352,10 @@ test("a forced resync brings an emptied device's records back", async ({
   const withEpoch = <T,>(body: T) => ({ ...body, epoch });
 
   const context = await browser.newContext();
+  // Signed in throughout: the sync engine asks auth-status before it syncs.
+  await context.route("**/api/v1/auth-status", route => route.fulfill({
+    json: { providers: ["google"], signedIn: true, accountId: server.accountId, accountRequired: true },
+  }));
   await context.route("**/api/v1/sync**", async (route) => {
     const request = route.request();
     if (request.method() === "POST") {

@@ -27,6 +27,8 @@ import { SYNCED_STORES, type SyncedStore } from "./stores";
 import { SyncLifecycle } from "./lifecycle";
 import { assertLocalAccountOwner, LocalAccountChanged } from "./writeGuard";
 import { preserveLegacyPhotoDeletionOwner } from "./photoDeletions";
+import { clearAuthStatusCache, fetchAuthStatusOrNull } from "@/lib/auth/status";
+import { ACCESS_REVOKED_EVENT, VERIFIED_KEY } from "@/lib/auth/access.client";
 
 const SYNC_URL = "/api/v1/sync";
 /** Wait this long after a local edit before pushing, so typing is not chatty. */
@@ -55,10 +57,26 @@ export interface SyncSummary {
 let running = false;
 /**
  * Set when the server tells us sync is not for this visitor — no session, or
- * no account system configured at all. Sticky for the page load: there is no
- * point re-asking every three seconds, and a sign-in navigates the page.
+ * no account system configured at all. Sticky: there is no point re-asking every
+ * three seconds. Only a sign-in signal (see `syncWhenSignedIn`: app start,
+ * reconnect, focus, a route change, another tab's verified-account marker)
+ * re-asks `/api/v1/auth-status` and lifts it.
  */
 let unavailable = false;
+/**
+ * True once something told us there is a session: the server's own
+ * `/api/v1/auth-status` said `signedIn`, or this phone already carries a
+ * verified-account marker (a returning signed-in user, who goes straight to the
+ * sync probe exactly as before). A signed-out visitor never gets here, so the
+ * automatic triggers send them no `/api/v1/sync` request at all (no 401, no
+ * console error, no wasted request on mobile data). Cleared on a 401/404 and
+ * on ACCESS_REVOKED_EVENT.
+ */
+let sessionConfirmed = false;
+/** One session check at a time; concurrent triggers share it. */
+let gate: Promise<void> | null = null;
+let lastFocusRecheck = 0;
+const FOCUS_RECHECK_MS = 5_000;
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 let started = false;
 const lifecycle = new SyncLifecycle();
@@ -539,6 +557,8 @@ export async function syncNow(): Promise<SyncSummary> {
       // No session, or no account system in this deployment. Both are normal
       // ("seguir sin cuenta"), not failures worth showing anybody.
       unavailable = true;
+      sessionConfirmed = false;
+      clearAuthStatusCache();
       return { ...idle, outcome: "unavailable" };
     }
     await writeSyncState({
@@ -557,8 +577,65 @@ export function scheduleSync(delay: number = DEBOUNCE_MS): void {
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     debounceTimer = undefined;
-    void syncNow();
+    // Once the engine is running it asks the session gate first, so a local
+    // write by a visitor whose session is not yet known cannot cause a 401.
+    void (started ? syncWhenSignedIn(false) : syncNow());
   }, delay);
+}
+
+/** A verified-account marker means this phone belongs to a signed-in user. */
+function hasVerifiedHint(): boolean {
+  try { return localStorage.getItem(VERIFIED_KEY) !== null; } catch { return false; }
+}
+
+/**
+ * Sync only if there is a session; otherwise stand down silently.
+ *
+ * - Already confirmed: straight to `syncNow()` (all ownership guards inside).
+ * - Not confirmed and not `fresh`, with a verified-account marker on the phone:
+ *   treat as signed in and go to the probe as before; a 401 flips the state.
+ * - Otherwise ask `/api/v1/auth-status` (shared with the other components). Not
+ *   signed in -> hold: no sync request until a sign-in signal re-runs this with
+ *   `fresh`. Could not ask (offline, server error) -> do nothing now and try
+ *   again at the next trigger; that is not "signed out".
+ */
+function syncWhenSignedIn(fresh: boolean): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
+  if (gate) return gate;
+  const task = (async () => {
+    if (sessionConfirmed) {
+      await syncNow();
+      return;
+    }
+    if (!fresh && !unavailable && hasVerifiedHint()) {
+      sessionConfirmed = true;
+      await syncNow();
+      return;
+    }
+    if (navigator.onLine === false) return;
+    const status = await fetchAuthStatusOrNull({ fresh });
+    if (!status) return;
+    if (!status.signedIn) {
+      unavailable = true;
+      return;
+    }
+    unavailable = false;
+    sessionConfirmed = true;
+    await syncNow();
+  })().finally(() => {
+    if (gate === task) gate = null;
+  });
+  gate = task;
+  return task;
+}
+
+/**
+ * A sign-in may just have happened in this tab (a soft navigation keeps this
+ * module alive). Called on route changes; free once a session is confirmed.
+ */
+export function recheckSyncSession(): void {
+  if (typeof window === "undefined" || !started || sessionConfirmed) return;
+  void syncWhenSignedIn(true);
 }
 
 /**
@@ -571,15 +648,39 @@ export function startSync(): () => void {
   if (started) return () => {};
   started = true;
 
-  const onOnline = () => void syncNow();
+  const onOnline = () => void syncWhenSignedIn(true);
+  // Focus is only a sign-in signal: with a confirmed session it does nothing.
+  const onFocus = () => {
+    if (sessionConfirmed || Date.now() - lastFocusRecheck < FOCUS_RECHECK_MS) return;
+    lastFocusRecheck = Date.now();
+    void syncWhenSignedIn(true);
+  };
+  // Another tab signed in: its account gate wrote the verified-account marker.
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === VERIFIED_KEY && event.newValue !== null && !sessionConfirmed) {
+      void syncWhenSignedIn(true);
+    }
+  };
+  // Sign-out / revoked access: forget the session and any cached answer. The
+  // next trigger asks again; nothing is sent from here.
+  const onRevoked = () => {
+    sessionConfirmed = false;
+    clearAuthStatusCache();
+  };
   window.addEventListener("online", onOnline);
+  window.addEventListener("focus", onFocus);
+  window.addEventListener("storage", onStorage);
+  window.addEventListener(ACCESS_REVOKED_EVENT, onRevoked);
   const stopListening = onLocalChange(() => scheduleSync());
 
-  void syncNow();
+  void syncWhenSignedIn(false);
 
   return () => {
     started = false;
     window.removeEventListener("online", onOnline);
+    window.removeEventListener("focus", onFocus);
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener(ACCESS_REVOKED_EVENT, onRevoked);
     stopListening();
     if (debounceTimer) clearTimeout(debounceTimer);
   };
@@ -622,5 +723,9 @@ export async function restoreConflict(id: number): Promise<void> {
 /** Test seam: forget that the server said "not for you". */
 export function resetSyncAvailability(): void {
   unavailable = false;
+  sessionConfirmed = false;
+  gate = null;
+  lastFocusRecheck = 0;
+  clearAuthStatusCache();
   lifecycle.resume();
 }

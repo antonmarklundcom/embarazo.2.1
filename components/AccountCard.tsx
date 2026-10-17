@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import type { Session } from "next-auth";
 import { useEffect, useRef, useState } from "react";
 
 import { signOutAction } from "@/app/(app)/cuenta/actions";
@@ -17,14 +16,23 @@ import { SignOutButton } from "./SignOutButton";
 // URL that is present but blocked (CSP, a moved CDN, offline) must show the
 // same initial as an absent one.
 
+// Only the three fields this card shows cross the server/client boundary. The
+// callers pass `{ name, email, image }` from the session, never the whole
+// Session (which carries the internal user id and expiry).
+export type AccountCardUser = {
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+};
+
 export function AccountCard({
-  session,
+  user,
   showDeletionNote = false,
 }: {
-  session: Session;
+  user: AccountCardUser;
   showDeletionNote?: boolean;
 }) {
-  const { name, email, image } = session.user;
+  const { name, email, image } = user;
   // The URL that failed. Keyed by URL so a different avatar gets a fresh try.
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);

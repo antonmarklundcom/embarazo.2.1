@@ -16,6 +16,7 @@ import {
   MAX_WEEK,
 } from "@/lib/pregnancy";
 import { markWeekSeen } from "@/lib/newWeek";
+import { requestPersistentStorage } from "@/lib/storagePersist";
 import { fetchAuthStatus, type AuthStatus } from "@/lib/auth/status";
 import {
   clearOnboardingDraft,
@@ -261,6 +262,9 @@ export function Onboarding({
       if (target === null) {
         markStartingWeekSeen.current();
         clearOnboardingDraft();
+        // Ask the browser to keep the diary it is about to fill. Fire-and-forget:
+        // the helper never throws and Chrome decides silently.
+        void requestPersistentStorage();
         window.scrollTo(0, 0);
         onDone();
         return;

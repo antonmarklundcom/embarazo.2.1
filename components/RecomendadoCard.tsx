@@ -11,12 +11,15 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 // WhatsApp number or a plain url, so /admin/patrocinios counts it the same
 // way a directory or placement click is counted.
 
-function PlainCta({ href, label }: { href: string; label: string }) {
+// Internal app paths (`/derechos`, `/emergencia`) open in the same tab. The
+// href still goes through /api/v1/go/[id], which counts the tap and then
+// 302s to the in-app path on this origin, so /admin/patrocinios keeps its
+// count without a new tab.
+function PlainCta({ href, label, internal }: { href: string; label: string; internal: boolean }) {
   return (
     <a
       href={href}
-      target="_blank"
-      rel="noopener noreferrer"
+      {...(internal ? {} : { target: "_blank", rel: "noopener noreferrer" })}
       className="inline-flex min-h-[44px] items-center justify-center rounded-tile bg-cream px-4 py-2.5 text-sm font-medium text-petrol transition active:scale-[0.98]"
     >
       {label}
@@ -26,6 +29,7 @@ function PlainCta({ href, label }: { href: string; label: string }) {
 
 export function RecomendadoCard({ recomendado: r }: { recomendado: Recommendation }) {
   const goHref = `/api/v1/go/${r.id}`;
+  const internal = r.url?.startsWith("/") ?? false;
 
   return (
     <article className="rounded-card bg-white p-4 shadow-soft">
@@ -43,7 +47,7 @@ export function RecomendadoCard({ recomendado: r }: { recomendado: Recommendatio
         {r.whatsappNumber ? (
           <WhatsAppButton href={goHref} label={r.ctaLabel} />
         ) : (
-          <PlainCta href={goHref} label={r.ctaLabel} />
+          <PlainCta href={goHref} label={r.ctaLabel} internal={internal} />
         )}
       </div>
     </article>

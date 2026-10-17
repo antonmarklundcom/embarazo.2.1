@@ -22,6 +22,7 @@ import {
 import { drawBumpFrame, drawWeekCard } from "./draw";
 import { partnerShareText, partnerWhatsAppUrl } from "./partner";
 import { perspectivesFor } from "@/lib/seed/perspectives";
+import { HERO_THEMES, THEME_IDS, bareInk, type ThemeId } from "@/lib/hero/themes";
 
 // BUILD-PLAN E2: "health details never leave beyond the week number; the photo
 // is composited on device." Both halves are properties of the code rather than
@@ -226,11 +227,27 @@ describe("the photo is composited on device (§4.4)", () => {
  * real canvas in Node; Path2D is stubbed below to see *whether the baby is
  * drawn*.
  */
-function recordingContext(): { ctx: CanvasRenderingContext2D; texts: string[] } {
+function recordingContext(): {
+  ctx: CanvasRenderingContext2D;
+  texts: string[];
+  /** Colour stops added to any gradient, in order. */
+  stops: string[];
+  /** The fill in force for each fillRect: a gradient object or a colour. */
+  grounds: unknown[];
+  /** The fill in force for each fillText, in the same order as `texts`. */
+  inks: unknown[];
+} {
   const texts: string[] = [];
-  const gradient = { addColorStop: () => {} };
+  const stops: string[] = [];
+  const grounds: unknown[] = [];
+  const inks: unknown[] = [];
+  const gradient = { addColorStop: (_offset: number, color: string) => stops.push(color) };
   const target: Record<string, unknown> = {
-    fillText: (text: string) => texts.push(text),
+    fillText: (text: string) => {
+      texts.push(text);
+      inks.push(target.fillStyle);
+    },
+    fillRect: () => grounds.push(target.fillStyle),
     measureText: (text: string) => ({ width: text.length * 30 }),
     createRadialGradient: () => gradient,
     createLinearGradient: () => gradient,
@@ -242,7 +259,7 @@ function recordingContext(): { ctx: CanvasRenderingContext2D; texts: string[] } 
       return true;
     },
   }) as unknown as CanvasRenderingContext2D;
-  return { ctx, texts };
+  return { ctx, texts, stops, grounds, inks };
 }
 
 let paths: string[] = [];
@@ -297,6 +314,73 @@ describe("drawWeekCard with the week's illustration (growth plan 11)", () => {
     expect(paths.some((d) => d.startsWith("M62 150"))).toBe(false);
     expect(texts[1]).toBe("Mateo");
     expect(texts.slice(2, -1).join(" ")).toBe("Semana 20 · Referencia de peso: un mango");
+  });
+});
+
+describe("the ground follows the hero theme she chose", () => {
+  /** The hex colours a CSS gradient string names, in order. */
+  const cssColours = (background: string) => background.match(/#[0-9A-Fa-f]{6}/g) ?? [];
+  const TRIMESTER_2 = "#D9E5EC";
+  const photo = { width: 900, height: 1200 } as unknown as HTMLCanvasElement;
+
+  it("draws the chosen theme's gradient, with the colours of its CSS background", () => {
+    for (const id of THEME_IDS) {
+      const { ctx, stops, grounds } = recordingContext();
+      drawWeekCard(ctx, weekCardContent(20), undefined, id);
+      expect(typeof grounds[0], id).toBe("object");
+      expect(stops, id).toEqual(cssColours(HERO_THEMES[id].background));
+    }
+  });
+
+  it("uses the theme's own bare ink for the text, so it stays legible on each ground", () => {
+    for (const id of THEME_IDS) {
+      const { ctx, texts, inks } = recordingContext();
+      drawWeekCard(ctx, weekCardContent(20), undefined, id);
+      const ink = bareInk(HERO_THEMES[id]).strong;
+      expect(inks[texts.indexOf("¡Semana 20!")], id).toBe(ink);
+      // The size line, which may wrap onto two lines.
+      for (let i = 2; i < texts.length - 1; i++) expect(inks[i], `${id}: ${texts[i]}`).toBe(ink);
+    }
+    // Dark ink on the five pastels, white on the dark night theme.
+    expect(bareInk(HERO_THEMES.estrellas).strong).toBe("#FFFFFF");
+    expect(bareInk(HERO_THEMES.halo).strong).toBe("#322E29");
+  });
+
+  it("keeps the trimester pastel and its own ink when no theme is chosen", () => {
+    const absent = recordingContext();
+    drawWeekCard(absent.ctx, weekCardContent(20));
+    expect(absent.grounds[0]).toBe(TRIMESTER_2);
+    expect(absent.stops).toEqual([]);
+    expect(absent.inks[1]).toBe("#322E29");
+  });
+
+  it("treats null, undefined and an unknown id the same as no choice", () => {
+    for (const theme of [null, undefined, "no-existe" as ThemeId]) {
+      const { ctx, grounds, stops } = recordingContext();
+      drawWeekCard(ctx, weekCardContent(20), undefined, theme);
+      expect(grounds[0], String(theme)).toBe(TRIMESTER_2);
+      expect(stops, String(theme)).toEqual([]);
+    }
+  });
+
+  it("follows the trimester for each pastel when no theme is chosen", () => {
+    const expected = { 1: "#DFE8D8", 2: "#D9E5EC", 3: "#F3DAD4" } as const;
+    for (const week of [6, 20, 35] as const) {
+      const { ctx, grounds } = recordingContext();
+      drawWeekCard(ctx, weekCardContent(week));
+      expect(grounds[0], String(week)).toBe(expected[weekCardContent(week).trimester]);
+    }
+  });
+
+  it("gives the bump frame the same choice", () => {
+    const chosen = recordingContext();
+    drawBumpFrame(chosen.ctx, bumpFrameContent(20), photo, "nanduti");
+    expect(chosen.stops).toEqual(cssColours(HERO_THEMES.nanduti.background));
+
+    const absent = recordingContext();
+    drawBumpFrame(absent.ctx, bumpFrameContent(20), photo);
+    expect(absent.grounds[0]).toBe(TRIMESTER_2);
+    expect(absent.stops).toEqual([]);
   });
 });
 

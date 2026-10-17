@@ -30,6 +30,21 @@ export function useHeroTheme(): ThemeId {
   return theme ?? DEFAULT_THEME;
 }
 
+/**
+ * The theme she actually chose, or `null` if she never chose one.
+ *
+ * Unlike `useHeroTheme`, no default: the share card (KNOWN-ISSUES, item 12)
+ * keeps its trimester pastel for somebody who never picked a theme, and only
+ * follows the hero when she did.
+ */
+export function useChosenHeroTheme(): ThemeId | null {
+  const theme = useLiveQuery(async () => {
+    const raw = notDeleted(await db().profile.toArray())[0]?.heroTheme;
+    return raw ? asThemeId(raw) : null;
+  }, []);
+  return theme ?? null;
+}
+
 const PREVIEW_COMPARISON_EVENT = "mibebe:comparison-preview-changed";
 let previewComparison = true;
 

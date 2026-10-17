@@ -99,14 +99,51 @@ export interface StoredCheer {
   seenAt: number | null;
 }
 
+/**
+ * `insertPregnancy` rejected because this owner already has a pregnancy.
+ *
+ * Part of the `SharingBackend` contract, not an implementation detail:
+ * `ensurePregnancyForOwner` recovers from the read-then-insert race only when
+ * it catches *this* class. A backend that swallowed the duplicate, or threw a
+ * generic Error for it, would turn a harmless lost race into a 500.
+ */
+export class DuplicatePregnancyError extends Error {
+  constructor(
+    public readonly ownerUserId: string,
+    options?: { cause?: unknown },
+  ) {
+    super("This owner already has a pregnancy.", options);
+    this.name = "DuplicatePregnancyError";
+  }
+}
+
+/**
+ * Is this a MySQL duplicate-key failure (ER_DUP_ENTRY / errno 1062)?
+ *
+ * Drizzle 0.45 wraps driver errors in `DrizzleQueryError` and keeps the mysql2
+ * error on `.cause`, so the code is looked for along the cause chain rather
+ * than on the top-level error only. Pure, so it is unit-tested without MySQL.
+ */
+export function isMysqlDuplicateEntry(error: unknown): boolean {
+  let current: unknown = error;
+  for (let depth = 0; depth < 5 && current && typeof current === "object"; depth++) {
+    const fields = current as { code?: unknown; errno?: unknown; cause?: unknown };
+    if (fields.code === "ER_DUP_ENTRY" || fields.errno === 1062) return true;
+    current = fields.cause;
+  }
+  return false;
+}
+
 export interface SharingBackend {
   // -- pregnancies ----------------------------------------------------------
   /** The owner's pregnancy id, or null. */
   findPregnancyByOwner(ownerUserId: string): Promise<string | null>;
   /**
-   * Create one. **Throws** when the owner already has a pregnancy — the unique
-   * index is what settles the read-then-insert race (see schema.ts), so the
-   * failure has to reach `ensurePregnancyForOwner` rather than be swallowed.
+   * Create one. **MUST reject with `DuplicatePregnancyError`** when the owner
+   * already has a pregnancy — and with nothing else for that case. The unique
+   * index is what settles the read-then-insert race (see schema.ts), and
+   * `ensurePregnancyForOwner` recovers by checking `instanceof
+   * DuplicatePregnancyError`; any other error is a real failure and is re-thrown.
    */
   insertPregnancy(row: {
     id: string;
@@ -272,7 +309,16 @@ export function drizzleSharingBackend(database: Database): SharingBackend {
     },
 
     async insertPregnancy(row) {
-      await database.insert(pregnancies).values(row);
+      try {
+        await database.insert(pregnancies).values(row);
+      } catch (error) {
+        // `pregnancies_owner_idx` is UNIQUE: a duplicate owner is the lost
+        // race, and the contract says it surfaces as this class.
+        if (isMysqlDuplicateEntry(error)) {
+          throw new DuplicatePregnancyError(row.ownerUserId, { cause: error });
+        }
+        throw error;
+      }
     },
 
     async findPregnancyOwner(pregnancyId) {

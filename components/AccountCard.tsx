@@ -1,6 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import type { Session } from "next-auth";
+import { useEffect, useRef, useState } from "react";
 
 import { signOutAction } from "@/app/(app)/cuenta/actions";
 import { SignOutButton } from "./SignOutButton";
@@ -9,6 +12,10 @@ import { SignOutButton } from "./SignOutButton";
 //
 // Shows exactly what we hold: name, email, avatar (ARCHITECTURE.md §4.7).
 // There is nothing else to show, and that is the point.
+//
+// Client component because the avatar needs an onError fallback: a provider
+// URL that is present but blocked (CSP, a moved CDN, offline) must show the
+// same initial as an absent one.
 
 export function AccountCard({
   session,
@@ -18,6 +25,16 @@ export function AccountCard({
   showDeletionNote?: boolean;
 }) {
   const { name, email, image } = session.user;
+  // The URL that failed. Keyed by URL so a different avatar gets a fresh try.
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  // A failure can land before hydration, when React has no onError listener
+  // yet. An image that has finished with no pixels has already failed.
+  useEffect(() => {
+    const img = imgRef.current;
+    if (image && img?.complete && img.naturalWidth === 0) setFailedSrc(image);
+  }, [image]);
 
   return (
     <section className="rounded-card border border-line bg-white p-4 shadow-soft">
@@ -25,8 +42,9 @@ export function AccountCard({
         Tu cuenta
       </p>
       <div className="mt-2 flex items-center gap-3">
-        {image ? (
+        {image && failedSrc !== image ? (
           <Image
+            ref={imgRef}
             src={image}
             alt=""
             width={48}
@@ -36,6 +54,7 @@ export function AccountCard({
             // optimizer avoids a remotePatterns allowlist that would have to
             // track Google's hostnames forever.
             unoptimized
+            onError={() => setFailedSrc(image)}
           />
         ) : (
           <div

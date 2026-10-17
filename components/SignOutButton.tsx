@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { endPushForSignOut } from "@/lib/push/client";
 import { purgePrivateCaches } from "@/lib/sw/privateCaches";
 
 // K14 — signing out has to take the cached answers with it.
@@ -23,6 +24,10 @@ export function SignOutButton({ action }: { action: () => Promise<void> }) {
     <form
       action={async () => {
         setBusy(true);
+        // Privacy: drop this phone's push subscription while the session
+        // cookie still lets the DELETE through. Bounded (4 s) and never
+        // throws, so it cannot keep her on this screen or block the sign-out.
+        await endPushForSignOut();
         await purgePrivateCaches();
         await action();
       }}

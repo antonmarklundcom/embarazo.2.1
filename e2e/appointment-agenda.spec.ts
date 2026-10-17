@@ -1,5 +1,6 @@
 import { test, expect, type BrowserContext } from "@playwright/test";
 
+import { localDateOf, localTimeOn } from "./helpers/dates";
 import { completeOnboarding } from "./helpers/onboarding";
 
 // BUILD-PLAN K8 — the prenatal control as a shared object.
@@ -35,10 +36,7 @@ interface View {
 
 /** Tomorrow at 09:00, local — the "acompañala al control el jueves a las 9:00" case. */
 function tomorrowAt9(): number {
-  const date = new Date();
-  date.setDate(date.getDate() + 1);
-  date.setHours(9, 0, 0, 0);
-  return date.getTime();
+  return localTimeOn(1, 9);
 }
 
 function fakeSharing(initial: View[]) {
@@ -74,9 +72,7 @@ test("a control can carry an hour, and every sentence about it uses one", async 
   await page.goto("/ajustes");
 
   const appointment = tomorrowAt9();
-  const date = `${appointment ? new Date(appointment).getFullYear() : ""}-${String(
-    new Date(appointment).getMonth() + 1,
-  ).padStart(2, "0")}-${String(new Date(appointment).getDate()).padStart(2, "0")}`;
+  const date = localDateOf(appointment);
 
   await page.locator("#appt-date").fill(date);
   await page.locator("#appt-time").fill("09:00");
@@ -107,11 +103,7 @@ test("leaving the hour blank keeps a date-only control, with no invented 00:00",
   await completeOnboarding(page);
   await page.goto("/ajustes");
 
-  const appointment = tomorrowAt9();
-  const d = new Date(appointment);
-  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate(),
-  ).padStart(2, "0")}`;
+  const date = localDateOf(tomorrowAt9());
 
   await page.locator("#appt-date").fill(date);
   await page.getByRole("button", { name: "Guardar el control" }).click();
@@ -202,14 +194,7 @@ test("the mamá sees who is coming, by role and never by name", async ({
 
   // Her own control, set locally — the marker is about the same minute.
   await page.goto("/ajustes");
-  const d = new Date(appointment);
-  await page
-    .locator("#appt-date")
-    .fill(
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-        d.getDate(),
-      ).padStart(2, "0")}`,
-    );
+  await page.locator("#appt-date").fill(localDateOf(appointment));
   await page.locator("#appt-time").fill("09:00");
   await page.getByRole("button", { name: "Guardar el control" }).click();
   await expect(page.getByText("Control guardado.")).toBeVisible();
@@ -261,15 +246,7 @@ test("moving the control invalidates every 'yo la acompaño'", async ({
   await completeOnboarding(page);
   await page.goto("/ajustes");
 
-  const moved = new Date(agreed);
-  moved.setHours(15, 0, 0, 0);
-  await page
-    .locator("#appt-date")
-    .fill(
-      `${moved.getFullYear()}-${String(moved.getMonth() + 1).padStart(2, "0")}-${String(
-        moved.getDate(),
-      ).padStart(2, "0")}`,
-    );
+  await page.locator("#appt-date").fill(localDateOf(agreed));
   await page.locator("#appt-time").fill("15:00");
   await page.getByRole("button", { name: "Guardar el control" }).click();
   await expect(page.getByText("Control guardado.")).toBeVisible();

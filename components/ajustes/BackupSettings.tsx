@@ -4,6 +4,7 @@ import { clearOnboardingDraft } from "@/lib/onboarding/draftStorage";
 import { APP_NAME } from "@/lib/brand";
 import { BackupError, exportBackup, backupFileName, importBackup } from "@/lib/backup";
 import { syncNow } from "@/lib/sync/client";
+import { requestPersistentStorage } from "@/lib/storagePersist";
 
 // W4: "Copia de seguridad" (Phase 0 hardening — data never leaves the device),
 // moved verbatim out of AjustesClient with the file input, the restore
@@ -22,14 +23,7 @@ export function BackupSettings() {
   const [persisted, setPersisted] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (typeof navigator === "undefined" || !navigator.storage?.persist) return;
-    navigator.storage.persisted().then((already) => {
-      if (already) {
-        setPersisted(true);
-        return;
-      }
-      navigator.storage.persist().then(setPersisted);
-    });
+    void requestPersistentStorage().then(setPersisted);
   }, []);
 
   async function handleExport() {

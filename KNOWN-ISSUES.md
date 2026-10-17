@@ -1,5 +1,7 @@
 # Known issues
 
+> **Closed 2026-10-17 (PR #152):** the entries struck through below were fixed by the twenty improvements. Evidence: `docs/IMPROVEMENTS-2026-10-17.md` (items 9–13 and 17), and the R0-2 precache list in `app/sw.ts` (`pageRoutes`). Where only part of an entry was fixed, the open part is left unstruck. The npm audit entry was re-triaged on 2026-10-17 and stays open.
+
 Still-open, cross-unit items promoted from the "Known issues" sections of
 `docs/log/u1.md`–`u9.md` and `docs/log/w1.md`–`w5.md` by U11 (the link
 pass), plus V1–V3, W6, R0-1–R0-3 and the two integration logs promoted by
@@ -14,12 +16,12 @@ tracked there, not duplicated here.
 - Two of the eight Recomendados resources have no verified WhatsApp number
   (only landlines found for La Leche League Paraguay); every seeded entry
   uses `url` instead. — `docs/log/u3.md`
-- Recomendados internal-path CTAs (`/derechos`, `/emergencia`) open in a new
+- ~~Recomendados internal-path CTAs (`/derechos`, `/emergencia`) open in a new
   tab, same as every other CTA — a minor UX rough edge worth revisiting on a
-  real phone before launch. — `docs/log/u3.md`
-- The E2 share card follows the trimester pastel, not the hero theme she
+  real phone before launch.~~ — `docs/log/u3.md` **Fixed 2026-10-17** (PR #152: internal Recomendados links open in the same tab and are still counted via `/api/v1/go`)
+- ~~The E2 share card follows the trimester pastel, not the hero theme she
   chose; growth plan item 11 added the week's illustration, the optional
-  nickname and "Semana N · <tamaño>". — `docs/log/u7.md`, `lib/share/draw.ts`
+  nickname and "Semana N · <tamaño>".~~ — `docs/log/u7.md`, `lib/share/draw.ts` **Fixed 2026-10-17** (PR #152: the share card follows the chosen hero theme; with no choice it keeps the trimester pastel)
 
 ## AI usage & spend
 
@@ -83,16 +85,16 @@ tracked there, not duplicated here.
 Promoted by W7; U11 predates these merges so its own pass never saw them.
 
 - CSP `img-src` names Google's and Facebook's avatar CDNs by hostname — if a
-  provider moves its CDN the avatar breaks and there is no fallback for a
-  present-but-blocked image, only for an absent one. — `docs/log/v1.md`
+  provider moves its CDN the avatar breaks and ~~there is no fallback for a
+  present-but-blocked image, only for an absent one~~. — `docs/log/v1.md` **Fixed 2026-10-17** (PR #152: a present-but-blocked avatar now falls back, via `onError` in `components/AccountCard.tsx`; the hostname coupling stays open, and the `onError` path is not covered by the node-only unit tests)
 - CSP `connect-src` carries no object-storage origin in a build where
   `PHOTO_STORAGE_ENDPOINT` is unset at **build** time (the header is baked in
   at build, not read at runtime) — a deployment that only sets it at runtime
   would have photo backup blocked by its own policy. — `docs/log/v1.md`
-- `insertPregnancy`'s duplicate-key contract (V2's sharing backend) is
+- ~~`insertPregnancy`'s duplicate-key contract (V2's sharing backend) is
   expressed in prose and in the test-only memory backend, not in the
   `SharingBackend` type — a future sharing backend could swallow the
-  duplicate and break the race-recovery path silently. — `docs/log/v2.md`
+  duplicate and break the race-recovery path silently.~~ — `docs/log/v2.md` **Fixed 2026-10-17** (PR #152: the contract is typed as `DuplicatePregnancyError`, translated from MySQL `ER_DUP_ENTRY`/1062 in `lib/server/sharingBackend.ts`; not yet tested against real MySQL)
 - V3's Dexie `SCHEMAS` fixture duplicates each version's `stores` string by
   hand (a test asserts the version lists agree, so a version can't be
   forgotten, only mistyped) and its photo fixtures store a string where a
@@ -100,21 +102,26 @@ Promoted by W7; U11 predates these merges so its own pass never saw them.
   — `docs/log/v3.md`
 - W6's `npm run perf` does not pass in full on the dev machine it was built
   on: `/` (home) is bimodal (~2000 ms LCP on a quiet run vs. ~4600–4800 ms on
-  one sharing CPU with other sessions) and `/semana/20` has a small,
-  reproducible CLS of 0.004995 (under Lighthouse's "good" 0.1 threshold).
+  one sharing CPU with other sessions) ~~and `/semana/20` has a small,
+  reproducible CLS of 0.004995 (under Lighthouse's "good" 0.1 threshold)~~.
   Flagged, not chased — W6 owns the script, not app performance; see G3 in
-  `docs/BUILD-PLAN.md`. — `docs/log/w6.md`
-- R0-2's fix covers `/emergencia` and `/derechos` only. The README's "Qué
+  `docs/BUILD-PLAN.md`. — `docs/log/w6.md` **Fixed 2026-10-17** (PR #152, CLS part only: `/semana/20` measured CLS 0 live on mobile and desktop, so no change was needed; the `/` LCP part stays open)
+- ~~R0-2's fix covers `/emergencia` and `/derechos` only. The README's "Qué
   funciona offline" section also lists several tools (síntomas, diario,
   carné, pataditas, contracciones, peso, checklist) whose *data* is local but
   whose *routes* are not in the service worker's cold-install precache
   list — a weaker, different claim than R0-2's, left as a maintainer call on
-  whether the README wording or the precache list should change.
-  — `docs/log/r0-2.md`
-- The 8 residual `npm audit` findings (5 moderate, 3 high) all need a major
-  dependency bump each and are blocked upstream: `next` 16 needs `next-auth`
-  v5 stable (still `5.0.0-beta.32` on npm as of 2026-09-16 — no `latest`-tag
-  v5 release exists yet, checked live), `@serwist/next` pins `browserslist`
-  exactly and has no 9.x patch, and `drizzle-kit`'s only audit-fix offer is a
-  downgrade. None are realistically exploitable in this app's build/runtime
-  shape. — `docs/log/npm-audit-2026-09.md`, `docs/log/round-2-integration.md`
+  whether the README wording or the precache list should change.~~
+  — `docs/log/r0-2.md` **Fixed 2026-10-17** (PR #152: every tool the README lists as offline, including síntomas, diario, carné, pataditas, contracciones, peso and checklist, is now in the cold-install precache list in `app/sw.ts`)
+- The 11 residual `npm audit` findings (5 moderate, 6 high) are re-triaged as
+  not runtime-reachable (2026-10-17). Next is at 15.5.28, which applies the
+  Server Actions DoS fix and the sharp floor for the image-optimizer advisory.
+  The rest: `drizzle-kit` → `esbuild` (5 moderate) and `eslint-config-next` →
+  `braces` (5 high) are development-only, and their only offered fixes are
+  downgrades (no patched `braces` exists). The nested `postcss` in `next` (1
+  high plus its parent moderate) needs attacker-controlled CSS or source maps
+  at build time and waits for Next 16, which waits for `next-auth` v5 stable
+  (still `5.0.0-beta.32` on npm as of 2026-09-16). Dependabot major bumps are
+  ignored in `.github/dependabot.yml` (PR150). Stays open until Next 16 and
+  `next-auth` v5 stable land. — `docs/log/npm-audit-2026-09.md`,
+  `docs/log/round-2-integration.md`, `docs/LAUNCH-READINESS-2026-10-16.md`

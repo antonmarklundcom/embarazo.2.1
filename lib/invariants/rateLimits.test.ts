@@ -18,7 +18,10 @@ const API_ROOT = join(process.cwd(), "app", "api", "v1");
 const EXEMPT: Record<string, string> = {
   // A liveness probe. Throttling it is how a monitor concludes the app is
   // down, and it reads nothing, writes nothing and returns a constant.
-  "/api/v1/health": "constant response, no reads, no writes",
+  // 2026-10-17: it also reports the deployed git revision, read from `.git`
+  // once per process and memoised (lib/server/revision.ts) — still no DB, no
+  // request data and nothing an attacker can make expensive.
+  "/api/v1/health": "no DB or request data; constant per process, no writes",
   // The dispatcher, called by a cron with PUSH_DISPATCH_SECRET. Its gate is
   // the shared secret; a rate limit keyed on the caller's address would
   // throttle the one caller that is supposed to hammer it.

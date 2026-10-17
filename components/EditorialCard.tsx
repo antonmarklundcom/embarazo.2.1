@@ -12,14 +12,17 @@ const CARD_TITLES: Record<string, string> = {
   "derechos-embarazada-que-trabaja": "Derechos de la embarazada que trabaja",
 };
 
+/** `priority` is opt-in for the first visible cards on a page, where the image is the LCP candidate. */
 export function EditorialCard({
   slug,
   title,
   readTime,
+  priority = false,
 }: {
   slug: string;
   title: string;
   readTime: string;
+  priority?: boolean;
 }) {
   const image = editorialImage(slug);
 
@@ -43,7 +46,8 @@ export function EditorialCard({
           width={image.width}
           height={image.height}
           alt={image.alt}
-          loading="lazy"
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : undefined}
           decoding="async"
           className="aspect-[4/3] w-full object-cover"
         />

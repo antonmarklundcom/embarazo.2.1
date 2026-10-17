@@ -80,7 +80,7 @@ export function BottomNav({ showNearby }: { showNearby: boolean }) {
 }
 
 type IconProps = { active?: boolean };
-const stroke = (active?: boolean) => (active ? "#2F5D50" : "#7A7369");
+const stroke = (active?: boolean) => (active ? "#2F5D50" : "#655F56");
 
 function HomeIcon({ active }: IconProps) {
   return (

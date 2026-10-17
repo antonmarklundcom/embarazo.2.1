@@ -1,5 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
+import { localDateInput } from "./dates";
+
 // BUILD-PLAN K1 — one onboarding walk-through, shared by every spec that needs
 // an onboarded app to test something else.
 //
@@ -63,15 +65,11 @@ export async function completeOnboarding(
     if (method === "lmp") {
       await page
         .locator("#lmp")
-        .fill(new Date(Date.now() - daysAgo * 86400000).toISOString().slice(0, 10));
+        .fill(localDateInput(-daysAgo));
     } else if (method === "ecografia") {
-      await page
-        .locator("#due")
-        .fill(new Date(Date.now() + 150 * 86400000).toISOString().slice(0, 10));
+      await page.locator("#due").fill(localDateInput(150));
     } else {
-      await page
-        .locator("#fivDate")
-        .fill(new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10));
+      await page.locator("#fivDate").fill(localDateInput(-30));
     }
     await page.getByRole("button", { name: "Continuar" }).click();
 

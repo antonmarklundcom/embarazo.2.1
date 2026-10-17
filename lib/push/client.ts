@@ -31,7 +31,15 @@ export type PushStatus =
   | "unconfigured"
   | "denied"
   | "off"
-  | "on";
+  | "on"
+  /**
+   * She said yes, but this phone's service worker was still not active after
+   * the long wait an explicit request gets (`EXPLICIT_READY_MS`). Neither
+   * "off" (she did not decline) nor "on" (nothing was subscribed): the UI says
+   * it could not prepare the notices yet and offers another try.
+   * `readPushState` never returns it.
+   */
+  | "pending";
 
 export interface PushState {
   status: PushStatus;
@@ -84,18 +92,35 @@ function writeLocalCategories(categories: PushCategory[]): void {
   }
 }
 
+/**
+ * How long a passive read (`readPushState`, `existingSubscription`, the
+ * start-up refresh) waits for the service worker before treating it as absent.
+ * Nobody asked for anything, so nothing should hang on a slow install.
+ */
+export const PASSIVE_READY_MS = 6000;
+
+/**
+ * How long a request the user made on purpose (`enablePush`,
+ * `enableWeekStartNotice`, `sendTestNotification`) waits. On a first visit over
+ * mobile data the worker was measured taking 13.5 s to activate; giving up at
+ * 6 s turned her tap on "Sí" into "No activaste los avisos".
+ */
+export const EXPLICIT_READY_MS = 25_000;
+
 async function existingSubscription(): Promise<PushSubscription | null> {
   if (!supported()) return null;
   const registration = await readyRegistration();
   return registration ? registration.pushManager.getSubscription() : null;
 }
 
-async function readyRegistration(): Promise<ServiceWorkerRegistration | null> {
+async function readyRegistration(
+  waitMs: number = PASSIVE_READY_MS,
+): Promise<ServiceWorkerRegistration | null> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
       navigator.serviceWorker.ready,
-      new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), 6000); }),
+      new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), waitMs); }),
     ]);
   } finally {
     clearTimeout(timer);
@@ -173,8 +198,10 @@ export async function enablePush(
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return permission === "denied" ? "denied" : "off";
 
-  const registration = await readyRegistration();
-  if (!registration) return "off";
+  // Explicit request: wait for a slow first install rather than reporting a
+  // refusal she never made.
+  const registration = await readyRegistration(EXPLICIT_READY_MS);
+  if (!registration) return "pending";
   const existing = await registration.pushManager.getSubscription();
   const subscription =
     existing ??
@@ -195,21 +222,74 @@ export async function enablePush(
 }
 
 export async function disablePush(): Promise<PushStatus> {
-  const subscription = await existingSubscription();
+  let subscription: PushSubscription | null = null;
+  try {
+    subscription = await existingSubscription();
+  } catch {
+    // A browser that refuses to look is a browser with nothing to undo.
+  }
   if (!subscription) return "off";
 
+  // The DELETE starts first (it needs the endpoint and, on sign-out, the still
+  // live session) but the local unsubscribe does not wait for it: a hanging
+  // network must not leave the browser subscribed.
+  const endpoint = subscription.endpoint;
+  const serverDelete = (async () => {
+    try {
+      await fetch("/api/v1/push", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint }),
+      });
+    } catch {
+      // Unsubscribing locally still stops notifications reaching this device;
+      // the server drops the endpoint when the push service reports it gone.
+    }
+  })();
   try {
-    await fetch("/api/v1/push", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ endpoint: subscription.endpoint }),
-    });
+    await subscription.unsubscribe();
   } catch {
-    // Unsubscribing locally still stops notifications reaching this device;
-    // the server drops the endpoint when the push service reports it gone.
+    // The server row is already gone or the push service will drop it.
   }
-  await subscription.unsubscribe();
+  await serverDelete;
   return "off";
+}
+
+/** How long sign-out / device wipe will wait for this phone to drop its push. */
+export const SIGN_OUT_PUSH_WAIT_MS = 4000;
+
+/**
+ * End this device's push subscription as part of leaving an account, without
+ * ever holding the person on the screen.
+ *
+ * Privacy: the server pokes the endpoint at the previous account's reminder
+ * times until its row is deleted, so sign-out and "Borrar datos de este
+ * teléfono" must call this BEFORE the session ends (the DELETE needs the
+ * session cookie) and before local data is wiped. It never throws and gives up
+ * after `waitMs`: a slow or offline network cannot block sign-out. When it
+ * gives up, the in-flight DELETE may or may not still land; the local
+ * unsubscribe has already been issued by then (it does not wait on the DELETE).
+ */
+export async function endPushForSignOut(waitMs: number = SIGN_OUT_PUSH_WAIT_MS): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      disablePush().catch(() => undefined),
+      new Promise<void>((resolve) => { timer = setTimeout(resolve, waitMs); }),
+    ]);
+  } catch {
+    // Unreachable (both branches are guarded); kept so no caller sees a throw.
+  } finally {
+    clearTimeout(timer);
+  }
+  // The next account on this phone starts from the defaults, not from the
+  // previous person's category choices or a pending resync of her schedule.
+  try {
+    localStorage.removeItem(LOCAL_KEY);
+    localStorage.removeItem(RESYNC_KEY);
+  } catch {
+    // Storage unavailable: nothing to forget.
+  }
 }
 
 export async function setCategories(
@@ -493,6 +573,7 @@ export async function refreshWeeklyTips(): Promise<void> {
 }
 
 export type PushTestResult =
+  | "pending"
   | "sent"
   | "scheduled"
   | "not-subscribed"
@@ -520,7 +601,12 @@ async function markPushTest(on: boolean): Promise<void> {
  * notification arriving is.
  */
 export async function sendTestNotification(delayMs: 0 | 20_000 = 0): Promise<PushTestResult> {
-  const subscription = await existingSubscription();
+  if (!supported()) return "not-subscribed";
+  // She asked for this: wait for a slow service worker, and say so if it never
+  // came up instead of claiming this phone has no subscription.
+  const registration = await readyRegistration(EXPLICIT_READY_MS);
+  if (!registration) return "pending";
+  const subscription = await registration.pushManager.getSubscription();
   if (!subscription) return "not-subscribed";
 
   const link = await ensureAccountLink();

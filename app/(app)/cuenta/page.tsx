@@ -73,7 +73,10 @@ export default async function CuentaPage({
             Ya entraste
           </h1>
         </header>
-        <AccountCard session={session} showDeletionNote />
+        <AccountCard
+          user={{ name: session.user.name, email: session.user.email, image: session.user.image }}
+          showDeletionNote
+        />
         <Link
           href={signInDestination(destination)}
           className="flex min-h-[52px] w-full items-center justify-center rounded-full bg-petrol px-4 text-[15px] font-extrabold text-white transition active:scale-[0.99]"

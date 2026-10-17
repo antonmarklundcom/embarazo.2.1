@@ -1,0 +1,24 @@
+# Static fonts under /fonts (self-hosted Nunito Sans subsets) — read by
+# Hostinger's LiteSpeed front end, which serves these files itself, before the
+# Next.js app and its headers (next.config.ts) are ever involved. Without this
+# file the woff2 files came back with no Cache-Control at all (measured 16
+# October 2026).
+#
+# Deliberately scoped to this folder: the site root's .htaccess belongs to
+# Hostinger's Node.js proxy setup and must not be replaced from the repo.
+# Every directive is wrapped in IfModule, so a server without the module
+# ignores it rather than failing the request.
+
+<IfModule mod_mime.c>
+  AddType font/woff2 .woff2
+</IfModule>
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.woff2$">
+    # Font file names are stable (nunito-sans-latin.woff2 keeps its name when the
+    # subset is regenerated), so a week of freshness plus a month of background
+    # revalidation.
+    Header set Cache-Control "public, max-age=604800, stale-while-revalidate=2592000"
+    Header set X-Content-Type-Options "nosniff"
+  </FilesMatch>
+</IfModule>

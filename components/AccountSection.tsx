@@ -24,7 +24,9 @@ export async function AccountSection() {
   if (session) {
     return (
       <>
-        <AccountCard session={session} />
+        <AccountCard
+          user={{ name: session.user.name, email: session.user.email, image: session.user.image }}
+        />
         {/* The unconfirmed-address nudge, under the identity it is about.
             Renders nothing unless this is an email + password account whose
             address is genuinely unconfirmed — and it is a nudge, never a gate:

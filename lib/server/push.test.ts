@@ -135,10 +135,18 @@ function memoryBackend(): PushBackend & {
       return row ? { userId: row.userId, categories: row.categories } : null;
     },
 
-    // Mirrors the UPDATE … WHERE endpoint = from AND sentAt IS NULL.
+    // Mirrors the Drizzle method: unsent rows of `from` whose (category,
+    // fireAt) already exists unsent on `to` are dropped; the rest are re-pointed.
     async moveUnsentReminders(from, to) {
-      for (const row of reminders.values()) {
-        if (row.endpoint === from && row.sentAt === null) row.endpoint = to;
+      const taken = new Set(
+        [...reminders.values()]
+          .filter((row) => row.endpoint === to && row.sentAt === null)
+          .map((row) => `${row.category}|${row.fireAt}`),
+      );
+      for (const [id, row] of [...reminders]) {
+        if (row.endpoint !== from || row.sentAt !== null) continue;
+        if (taken.has(`${row.category}|${row.fireAt}`)) reminders.delete(id);
+        else row.endpoint = to;
       }
     },
   };
@@ -306,6 +314,59 @@ describe("rotating a subscription (pushsubscriptionchange)", () => {
 
     expect(backend.subs.get(ENDPOINT)?.userId).toBe("user-1");
     expect([...backend.reminders.values()]).toHaveLength(1);
+  });
+
+  it("skips a reminder the new endpoint already has, and drops it from the old one", async () => {
+    const backend = memoryBackend();
+    await saveSubscription(backend, { endpoint: ENDPOINT, p256dh: "p", auth: "a", categories: ["recordatorios"], userId: null });
+    await scheduleReminders(backend, ENDPOINT, "recordatorios", [NOW + 1000, NOW + 2000]);
+    // The app re-posted the new endpoint's schedule before the rotate arrived.
+    await scheduleReminders(backend, NEW_ENDPOINT, "recordatorios", [NOW + 1000]);
+
+    await rotateSubscription(backend, ENDPOINT, NEW_SUB, NOW);
+
+    const rows = [...backend.reminders.values()];
+    expect(rows.some((r) => r.endpoint === ENDPOINT)).toBe(false);
+    expect(rows.map((r) => [r.endpoint, r.category, r.fireAt]).sort()).toEqual([
+      [NEW_ENDPOINT, "recordatorios", NOW + 1000],
+      [NEW_ENDPOINT, "recordatorios", NOW + 2000],
+    ]);
+  });
+
+  it("moves a reminder that differs from the new endpoint's in category or time", async () => {
+    const backend = memoryBackend();
+    await saveSubscription(backend, { endpoint: ENDPOINT, p256dh: "p", auth: "a", categories: [], userId: null });
+    await scheduleReminders(backend, ENDPOINT, "recordatorios", [NOW + 1000]);
+    await scheduleReminders(backend, ENDPOINT, "consejos", [NOW + 2000]);
+    await scheduleReminders(backend, NEW_ENDPOINT, "consejos", [NOW + 1000]);
+    await scheduleReminders(backend, NEW_ENDPOINT, "recordatorios", [NOW + 3000]);
+
+    await rotateSubscription(backend, ENDPOINT, NEW_SUB, NOW);
+
+    expect(
+      [...backend.reminders.values()].map((r) => [r.category, r.fireAt]).sort(),
+    ).toEqual([
+      ["consejos", NOW + 1000],
+      ["consejos", NOW + 2000],
+      ["recordatorios", NOW + 1000],
+      ["recordatorios", NOW + 3000],
+    ]);
+  });
+
+  it("does not treat a sent row on the new endpoint as a duplicate, and leaves it untouched", async () => {
+    const backend = memoryBackend();
+    await saveSubscription(backend, { endpoint: ENDPOINT, p256dh: "p", auth: "a", categories: [], userId: null });
+    await scheduleReminders(backend, ENDPOINT, "recordatorios", [NOW + 1000]);
+    await scheduleReminders(backend, NEW_ENDPOINT, "recordatorios", [NOW + 1000]);
+    const sent = [...backend.reminders.values()].find((r) => r.endpoint === NEW_ENDPOINT)!;
+    await backend.markSent(sent.id, NOW);
+
+    await rotateSubscription(backend, ENDPOINT, NEW_SUB, NOW);
+
+    const rows = [...backend.reminders.values()];
+    expect(rows).toHaveLength(2);
+    expect(backend.reminders.get(sent.id)).toMatchObject({ endpoint: NEW_ENDPOINT, sentAt: NOW });
+    expect(rows.filter((r) => r.sentAt === null)).toHaveLength(1);
   });
 
   it("a rotated reminder is dispatched to the new endpoint, not the old", async () => {

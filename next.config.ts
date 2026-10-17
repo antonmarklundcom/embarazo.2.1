@@ -174,6 +174,14 @@ const nextConfig = {
         source: "/:path*",
         headers: securityHeaders(),
       },
+      {
+        // Next serves app/manifest.webmanifest as a static metadata file with
+        // `public, immutable, max-age=31536000`, so an installed app could keep
+        // a stale name, icon or start_url for a year after a change. An hour,
+        // revalidated, is plenty for a file that changes rarely (2026-10-17).
+        source: "/manifest.webmanifest",
+        headers: [{ key: "Cache-Control", value: "public, max-age=3600, must-revalidate" }],
+      },
     ];
   },
 };

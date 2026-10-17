@@ -1,4 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { localDateInput } from "./helpers/dates";
 import { completeOnboarding } from "./helpers/onboarding";
 
 function serveAccount(context: BrowserContext, account: { current: string | null }) {
@@ -72,7 +73,7 @@ test("signed-in tool entry completes a fresh profile before opening the tool", a
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("mibebe.auth.handoff.v1") ?? "null").returnTo)).toBe("/herramientas/resumen");
   await page.getByRole("button",{name:/^Estoy embarazada\b/}).click();
   await page.getByRole("button",{name:"Mamá"}).click();
-  await page.locator("#lmp").fill(new Date(Date.now()-70*86400000).toISOString().slice(0,10));
+  await page.locator("#lmp").fill(localDateInput(-70));
   await page.getByRole("button",{name:"Continuar",exact:true}).click();
   await page.getByRole("button",{name:"Continuar",exact:true}).click();
   await page.locator("#dep").selectOption({index:1});
@@ -128,6 +129,15 @@ test("local-owner changes in another tab revoke an already-open private screen",
 test("overlapping rechecks cannot let a stale signed-in answer reopen signed-out records", async ({ page, context }) => {
   await completeOnboarding(page);
   await serveAccount(context, { current: "owner" });
+  // A signed-in sync, so the sync engine confirms the session and stops asking
+  // auth-status on focus (2026-10-17): this test counts the gate's rechecks.
+  await context.route("**/api/v1/sync**", (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify(route.request().method() === "POST"
+      ? { results: [], serverTime: Date.now(), accountId: "owner" }
+      : { records: [], serverTime: Date.now(), accountId: "owner" }),
+  }));
   await page.goto("/");
   await expect(page.getByText("Tip de hoy")).toBeVisible();
   // Hoy's own late mounts (CreateAccountNudge reads auth-status too) are not
@@ -194,7 +204,7 @@ test("a contact-only imported profile does not bypass personal setup",async({pag
 
 test("a signed-in calculator arrival keeps its date through ownership setup",async({page,context})=>{
   await serveAccount(context,{current:"owner"});
-  const fum=new Date(Date.now()-70*86400000).toISOString().slice(0,10);
+  const fum=localDateInput(-70);
   await page.goto('/#fum='+fum);
   await page.getByRole("button",{name:/^Estoy embarazada\b/}).click();
   await page.getByRole("button",{name:"Mamá"}).click();

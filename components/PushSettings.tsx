@@ -20,7 +20,13 @@ import {
 } from "@/lib/push/client";
 
 /** What each test outcome tells her, in the words she will act on. */
+const NOT_READY_MESSAGE = "Todavía no pudimos preparar los avisos. Probá de nuevo en un momento.";
+/** Shown once a request she made on purpose has waited this long. */
+const PREPARING_AFTER_MS = 2000;
+const PREPARING_MESSAGE = "Preparando los avisos en este teléfono…";
+
 const TEST_MESSAGES: Record<PushTestResult, string> = {
+  pending: NOT_READY_MESSAGE,
   sent: "Listo: el aviso de prueba ya salió. Si no aparece en unos segundos, revisá que el sitio tenga permiso de notificaciones en tu teléfono.",
   scheduled: `Cerrá ${APP_NAME} ahora (volvé a la pantalla de inicio). En unos 20 segundos te llega el aviso de prueba; tocalo para volver acá.`,
   "not-subscribed": "Este teléfono no tiene los avisos guardados en tu cuenta. Tocá «Desactivar avisos» y después «Activar avisos» para volver a guardarlos.",
@@ -57,6 +63,9 @@ export function PushSettings({
   const [message, setMessage] = useState("");
   const [testing, setTesting] = useState(false);
   const [testMessage, setTestMessage] = useState("");
+  // True once an explicit request has waited past PREPARING_AFTER_MS: the
+  // service worker of a first visit can take well over ten seconds to come up.
+  const [preparing, setPreparing] = useState(false);
 
   useEffect(() => {
     // Reading the state never prompts — it only inspects.
@@ -76,11 +85,22 @@ export function PushSettings({
   async function turnOn() {
     setBusy(true);
     setMessage("");
-    const status = await enablePush(state!.categories, companionAppointmentAt);
+    const timer = setTimeout(() => setPreparing(true), PREPARING_AFTER_MS);
+    let status: PushState["status"];
+    try {
+      status = await enablePush(state!.categories, companionAppointmentAt);
+    } finally {
+      clearTimeout(timer);
+      setPreparing(false);
+    }
+    // "pending" (worker still not ready) must not read as a refusal, and the
+    // switch stays off so she can simply try again.
     setState({ ...state!, status });
     setBusy(false);
 
-    if (status === "on" && pushResyncPending()) {
+    if (status === "pending") {
+      setMessage(NOT_READY_MESSAGE);
+    } else if (status === "on" && pushResyncPending()) {
       // N5: the browser subscription exists, but the server did not store the
       // schedule. Said plainly instead of a switch that only looks on.
       setMessage(
@@ -99,8 +119,14 @@ export function PushSettings({
   async function sendTest(delayMs: 0 | 20_000) {
     setTesting(true);
     setTestMessage("");
-    setTestMessage(TEST_MESSAGES[await sendTestNotification(delayMs)]);
-    setTesting(false);
+    const timer = setTimeout(() => setPreparing(true), PREPARING_AFTER_MS);
+    try {
+      setTestMessage(TEST_MESSAGES[await sendTestNotification(delayMs)]);
+    } finally {
+      clearTimeout(timer);
+      setPreparing(false);
+      setTesting(false);
+    }
   }
 
   async function turnOff() {
@@ -179,6 +205,10 @@ export function PushSettings({
           )}
 
           {message && <p className="mt-2 text-sm text-muted">{message}</p>}
+
+          {preparing && (
+            <p role="status" className="mt-2 text-sm text-ink">{PREPARING_MESSAGE}</p>
+          )}
 
           {state.status === "on" && (
             <div className="mt-4 rounded-tile bg-cream/60 p-3">

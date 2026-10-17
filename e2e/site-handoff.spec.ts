@@ -1,16 +1,12 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { localDateInput } from "./helpers/dates";
+
 // F12 — the calculator on embarazo.com.py hands its date to the app in the URL
 // fragment, which the browser never sends anywhere, under the key that says
 // which date she typed. Old `?fpp=` links keep working.
 
-function isoDaysFromToday(days: number): string {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${date.getFullYear()}-${month}-${day}`;
-}
+const isoDaysFromToday = (days: number) => localDateInput(days);
 
 async function reachDateStep(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Estoy embarazada" }).click();

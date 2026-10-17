@@ -19,6 +19,25 @@ updates:
         dependency-type: "production"
       development-dependencies:
         dependency-type: "development"
+    # 2026-10-17: these majors are blocked and kept arriving bundled with safe
+    # updates (PR136/137, PR148/149), which made every group PR unmergeable.
+    # Next 16 and eslint-config-next 16 wait on next-auth v5 leaving beta;
+    # ESLint 10 waits on the same; TypeScript 7 waits on typescript-eslint;
+    # Vitest 5 and @types/node above Node 22 need their own migration. Remove
+    # an entry when its blocker is gone (docs/LAUNCH-READINESS-2026-10-16.md).
+    ignore:
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint-config-next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     labels:
       - "dependencies"
     commit-message:

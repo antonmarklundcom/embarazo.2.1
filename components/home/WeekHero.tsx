@@ -8,6 +8,7 @@
 // ring and the three numbers (fecha probable · días pasados · faltan).
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { primaryBabyName } from "@/lib/babies";
 import { babyAtWeekLabel as roleBabyAtWeekLabel } from "@/lib/roleCopy";
@@ -57,6 +58,7 @@ export function WeekHero({
   dueDateLabel,
   babies,
   role,
+  weeklyOverview,
 }: {
   week: number;
   weekPlusDay: string;
@@ -71,6 +73,7 @@ export function WeekHero({
   dueDateLabel: string;
   babies: BabyIdentity[];
   role: Role;
+  weeklyOverview?: ReactNode;
 }) {
   const showFruit = useShowComparison();
   const themeId = useHeroTheme();
@@ -158,7 +161,7 @@ export function WeekHero({
           </p>
         )}
 
-        <div className="mt-4 flex justify-center">
+        {weeklyOverview ? <div className="mt-5">{weeklyOverview}</div> : <div className="mt-4 flex justify-center">
           <Link
             href={`/semana/${week}`}
             className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-6 text-sm font-extrabold shadow-soft transition active:scale-[0.97] ${dark ? "bg-white text-[#232C3B]" : "bg-white text-ink"}`}
@@ -168,7 +171,7 @@ export function WeekHero({
               <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </Link>
-        </div>
+        </div>}
 
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
           <ComparisonChoice ink={dark ? "light" : "dark"} />

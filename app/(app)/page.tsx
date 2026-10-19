@@ -20,6 +20,7 @@ import {
   PopularThisWeek,
   ShareCard,
   QueEsperarCard,
+  PerspectiveSwitcher,
 } from "@/components/home/dynamicSections";
 
 import {
@@ -259,6 +260,7 @@ export default function InicioPage() {
           dueDateLabel={dueDateLabel}
           babies={profile.babies}
           role={profile.role}
+          weeklyOverview={<PerspectiveSwitcher week={week} role={profile.role} />}
         />
         <StoryRail week={week} role={profile.role} />
         <NextAppointmentCard
@@ -285,7 +287,7 @@ export default function InicioPage() {
       </section>
 
       <section aria-label="Para conocer tu semana" className="space-y-7">
-        <WeekContentRail week={week} role={profile.role} withLine={false} sizeInHero />
+        <WeekContentRail week={week} role={profile.role} withLine={false} withPerspectives={false} sizeInHero />
         <QueEsperarCard week={week} answers={profile} />
         <PopularThisWeek />
       </section>

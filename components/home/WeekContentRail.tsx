@@ -20,12 +20,15 @@ export function WeekContentRail({
   week,
   role,
   withLine = true,
+  withPerspectives = true,
   sizeInHero = false,
 }: {
   week: number;
   role: Role;
   /** Hoy renders the one-liner itself, above the daily tip. */
   withLine?: boolean;
+  /** Hoy puts the overview in its hero instead. */
+  withPerspectives?: boolean;
   /** Hoy's hero already shows size, fruit and measures: show only pie/mano. */
   sizeInHero?: boolean;
 }) {
@@ -41,7 +44,7 @@ export function WeekContentRail({
 
       {/* C4: same week, three entrances (map #13). Opens on the user's own
           role; nothing is hidden by role. */}
-      <PerspectiveSwitcher week={week} role={role} />
+      {withPerspectives && <PerspectiveSwitcher week={week} role={role} />}
 
       {/* C5: one bylined note per week (map #14). Renders only when a real
           medical reviewer is configured — the byline IS the gate. */}

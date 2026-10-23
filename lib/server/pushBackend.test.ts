@@ -111,13 +111,15 @@ describe("atomic schedule replacement SQL", () => {
 });
 
 type RotationRow = { id: string; endpoint: string; category: string; fireAt: number; sentAt: number | null };
-function rotationFixture(oldSentAt: number | null, newSentAt: number | null, destinationRow = true) {
+function rotationFixture(oldSentAt: number | null, newSentAt: number | null, destinationRow = true, oldExists = true, destinationExists = true) {
   const rows = new Map<string, RotationRow>([
     ["old-id", { id: "old-id", endpoint: "old", category: "consejos", fireAt: 100, sentAt: oldSentAt }],
     ["new-id", { id: "new-id", endpoint: "new", category: "consejos", fireAt: 100, sentAt: newSentAt }],
   ]);
   if (!destinationRow) rows.delete("new-id");
   const endpoints = new Set(["old", "new"]);
+  if (!oldExists) endpoints.delete("old");
+  if (!destinationExists) endpoints.delete("new");
   const calls: { sql: string; params: unknown[] }[] = [];
   const client = {
     async query(query: { sql: string }, params: unknown[] = []) {
@@ -163,6 +165,15 @@ function rotationFixture(oldSentAt: number | null, newSentAt: number | null, des
 }
 
 describe("rotation preserves delivery claims in real backend SQL", () => {
+  it("rolls back the provisional destination when the old endpoint is unknown", async () => {
+    const { backend, calls } = rotationFixture(null, null, false, false, false);
+    expect(await backend.rotateSubscription("old", { endpoint: "new", p256dh: "synthetic", auth: "synthetic" })).toBe("unknown");
+    expect(calls[1]!.sql).toContain("insert into `pushSubscriptions`");
+    expect(calls[1]!.sql.split("on duplicate key update")[1]).toBe(" `endpoint` = ?");
+    expect(calls.at(-1)!.sql).toBe("rollback");
+    expect(calls.some((call) => call.sql === "commit")).toBe(false);
+  });
+
   it("migrates the old claimed ID/stamp and discards a pending destination duplicate", async () => {
     const { backend, rows, calls } = rotationFixture(50, null);
     expect(await backend.rotateSubscription("old", { endpoint: "new", p256dh: "synthetic", auth: "synthetic" })).toBe("rotated");

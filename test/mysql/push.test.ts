@@ -1,7 +1,9 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { mysqlEnabled, sql } from "./setup";
 import type { Database } from "@/lib/server/db";
-import { pushSubscriptions } from "@/lib/server/schema";
+import { pushSubscriptions, schema } from "@/lib/server/schema";
+import { drizzle } from "drizzle-orm/mysql2";
+import type { Connection } from "mysql2/promise";
 import type { SQL } from "drizzle-orm";
 
 describe.skipIf(!mysqlEnabled)("push schedules on a disposable MySQL database", () => {
@@ -93,6 +95,67 @@ describe.skipIf(!mysqlEnabled)("push schedules on a disposable MySQL database", 
       const [rows] = await connection.query("SELECT COUNT(*) AS n FROM pushSubscriptions WHERE endpoint = ?", [fresh]);
       expect(Number((rows as { n: number }[])[0]!.n)).toBe(1);
     } finally { await connection.end(); }
+  });
+
+  it("two anonymous rotations to one missing destination both converge without a deadlock", async () => {
+    const destination = `${endpoint}-rotation-z-target`;
+    const origins = [`${endpoint}-rotation-a`, `${endpoint}-rotation-b`];
+    for (const origin of origins) {
+      await push.saveSubscription(real(), { endpoint: origin, p256dh: "synthetic", auth: "synthetic", categories: ["consejos"], userId: null });
+      await push.scheduleReminders(real(), origin, "consejos", [100]);
+    }
+    let reads = 0;
+    let release!: () => void;
+    const bothRead = new Promise<void>((resolve) => { release = resolve; });
+    const driverFailures: string[] = [];
+    const connections = await Promise.all([sql(), sql()]);
+    const databases = connections.map((connection) => drizzle({
+      async query(query: { sql: string } | string, params: unknown[] = []) {
+        let result: Awaited<ReturnType<typeof connection.query>>;
+        try { result = await connection.query(query as string, params); }
+        catch (error) {
+          if (error && typeof error === "object" && "code" in error) driverFailures.push(String(error.code));
+          throw error;
+        }
+        const statement = typeof query === "string" ? query : query.sql;
+        // Pause only the vulnerable locking read of a still-missing target.
+        // An insert-first reservation returns an existing row and never waits.
+        if (statement.startsWith("select") && statement.includes("for update") &&
+            params[0] === destination && Array.isArray(result[0]) && result[0].length === 0) {
+          reads += 1;
+          if (reads === 2) release();
+          await bothRead;
+        }
+        return result;
+      },
+    } as unknown as Connection, { schema, mode: "default" }));
+    try {
+      const { withAccountWrite } = await import("@/lib/server/accountWrite");
+      const outcomes = await Promise.allSettled(databases.map((database, index) =>
+        // The actual anonymous route has no account owners to serialize it.
+        withAccountWrite(database, [], (transaction) => push.rotateSubscription(
+          backend.drizzlePushBackend(transaction, []), origins[index]!,
+          { endpoint: destination, p256dh: "synthetic", auth: "synthetic" }, 0,
+        )),
+      ));
+      for (const outcome of outcomes) if (outcome.status === "rejected") throw new Error(`Rotation driver failures: ${driverFailures.join(", ")}`, { cause: outcome.reason });
+      expect(outcomes.map((outcome) => outcome.status === "fulfilled" && outcome.value)).toEqual(["rotated", "rotated"]);
+      expect(await real().dueReminders(100, 100)).toHaveLength(1);
+      for (const origin of origins) expect(await real().subscriptionOf(origin)).toBeNull();
+      expect(await real().subscriptionOf(destination)).toEqual({ userId: null, categories: ["consejos"] });
+    } finally { await Promise.all(connections.map((connection) => connection.end())); }
+  });
+
+  it("an unknown old endpoint rolls back a provisionally reserved destination", async () => {
+    const oldEndpoint = `${endpoint}-z-unknown-old`;
+    const destination = `${endpoint}-a-unknown-target`;
+    const { withAccountWrite } = await import("@/lib/server/accountWrite");
+    expect(await withAccountWrite(db.db(), [], (transaction) => push.rotateSubscription(
+      backend.drizzlePushBackend(transaction, []), oldEndpoint,
+      { endpoint: destination, p256dh: "synthetic", auth: "synthetic" }, 0,
+    ))).toBe("unknown");
+    expect(await real().subscriptionOf(destination)).toBeNull();
+    expect(await real().subscriptionOf(oldEndpoint)).toBeNull();
   });
 
 });

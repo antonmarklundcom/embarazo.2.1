@@ -94,6 +94,9 @@ export interface PushBackend {
   rotateSubscription(oldEndpoint: string, next: { endpoint: string; p256dh: string; auth: string }): Promise<"rotated" | "unknown">;
 }
 
+// Force rollback of any provisional destination when the old endpoint vanished.
+class UnknownRotationEndpoint extends Error {}
+
 /** The real thing. Constructed once per request. */
 export function drizzlePushBackend(database: Database, guardedOwners?: readonly string[]): PushBackend {
   return {
@@ -181,21 +184,31 @@ export function drizzlePushBackend(database: Database, guardedOwners?: readonly 
     },
 
     async rotateSubscription(oldEndpoint, next) {
-      return database.transaction(async (tx) => {
-        // Stable endpoint order avoids opposing rotations taking locks in
-        // opposite order. The upsert also holds the destination's unique key
-        // until commit, serializing ordinary schedules with this migration.
+      try {
+      return await database.transaction(async (tx) => {
+        // Claim/lock endpoints in one order, including an absent destination.
+        // Locking its missing-key gap before INSERT lets concurrent anonymous
+        // rotations share gap locks and then deadlock trying to create it.
+        const locked = new Map<string, { userId: string | null; categories: PushCategory[] }>();
         for (const endpoint of [...new Set([oldEndpoint, next.endpoint])].sort()) {
-          await tx.select({ id: pushSubscriptions.id }).from(pushSubscriptions)
-            .where(eq(pushSubscriptions.endpoint, endpoint)).for("update");
+          if (endpoint !== oldEndpoint) {
+            // Existing owner, keys and categories are untouched before guards.
+            await tx.insert(pushSubscriptions).values({
+              id: crypto.randomUUID(), userId: null, endpoint,
+              p256dh: next.p256dh, auth: next.auth, categories: [], lastSeenAt: new Date(),
+            }).onDuplicateKeyUpdate({ set: { endpoint } });
+          }
+          const [row] = await tx.select({ userId: pushSubscriptions.userId, categories: pushSubscriptions.categories })
+            .from(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint)).for("update");
+          if (!row && endpoint === oldEndpoint) throw new UnknownRotationEndpoint();
+          if (row) locked.set(endpoint, row);
         }
-        const backend = drizzlePushBackend(tx as unknown as Database, guardedOwners);
-        const old = await backend.subscriptionOf(oldEndpoint);
-        if (!old) return "unknown";
-        const destination = await backend.subscriptionOf(next.endpoint);
+        const old = locked.get(oldEndpoint)!;
+        const destination = locked.get(next.endpoint);
         for (const owner of [old.userId, destination?.userId]) {
           if (owner && guardedOwners && !guardedOwners.includes(owner)) throw new AccountWriteDenied();
         }
+        const backend = drizzlePushBackend(tx as unknown as Database, guardedOwners);
         await backend.upsertSubscription({ ...next, userId: old.userId, categories: old.categories });
         if (next.endpoint === oldEndpoint) return "rotated";
         await backend.moveUnsentReminders(oldEndpoint, next.endpoint);
@@ -203,6 +216,12 @@ export function drizzlePushBackend(database: Database, guardedOwners?: readonly 
         await backend.deleteSubscriptionRow(oldEndpoint);
         return "rotated";
       });
+      } catch (error) {
+        // Returning unknown inside the transaction could commit a new anonymous
+        // destination despite there being no old subscription to authorize it.
+        if (error instanceof UnknownRotationEndpoint) return "unknown";
+        throw error;
+      }
     },
 
     async dueReminders(now, limit) {

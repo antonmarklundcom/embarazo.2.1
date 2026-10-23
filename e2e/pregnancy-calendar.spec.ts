@@ -243,12 +243,18 @@ test("summary includes same-day records after SPA navigation and refreshes when 
   await page.clock.setSystemTime(later);
   const nav = page.getByRole("navigation", { name: "Navegación principal" });
   await nav.getByRole("link", { name: "Herramientas", exact: true }).click();
-  await page.locator('a[href="/herramientas/sintomas"]').click();
+  await expect(page.getByRole("heading", { name: "Herramientas", exact: true, level: 1 })).toBeVisible();
+  await page.getByRole("link", {
+    name: "Síntomas y ánimo Registrá cómo te sentís y tus síntomas, día a día.", exact: true,
+  }).click();
   await page.getByRole("button", { name: "Náuseas", exact: true }).click();
   await page.getByRole("button", { name: /^Guardar registro/ }).click();
   await expect(page.getByText("Guardado en tu teléfono.", { exact: true })).toBeVisible();
   await nav.getByRole("link", { name: "Herramientas", exact: true }).click();
-  await page.locator('a[href="/herramientas/resumen"]').click();
+  await expect(page.getByRole("heading", { name: "Herramientas", exact: true, level: 1 })).toBeVisible();
+  await page.getByRole("link", {
+    name: "Preparar mi control Preguntas para tu semana y tus datos en una hoja para mostrarle a tu médico/a.", exact: true,
+  }).click();
   const sheet = page.locator("article");
   const recent = sheet.getByRole("heading", { name: "Últimas 4 semanas", exact: true }).locator("..");
   await expect(recent).toContainText("Náuseas (1)");

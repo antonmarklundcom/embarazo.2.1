@@ -1,12 +1,13 @@
 import "server-only";
 
-import { and, eq, isNull, lt, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, lt, sql } from "drizzle-orm";
 
 import type { Database } from "./db";
 import { finishPendingDeletions } from "./account";
 import { deleteObject } from "./photoStorage";
 import { photoBlobs, users, verificationTokens } from "./schema";
-import { isUploadIntentStore, retryUploadIntents } from "./photoUploadIntents";
+import { retryUploadIntents } from "./photoUploadIntents";
+import { PHOTO_STORES } from "@/lib/photos/keys";
 
 // Housekeeping that has to happen even when nobody signs in again. It rides
 // the one scheduled request this deployment already has
@@ -70,13 +71,15 @@ async function retryOrphanPhotos(database: Database, now: number, limit = 20): P
     .where(
       and(
         isNull(users.id),
+        // Retained upload obligations have their own fair retry queue. Filter
+        // them before LIMIT so they cannot occupy every ordinary-orphan slot.
+        inArray(photoBlobs.store, [...PHOTO_STORES]),
         sql`${photoBlobs.serverUpdatedAt} < ${now - ORPHAN_PHOTO_GRACE_MS}`,
       ),
     )
     .limit(limit);
   let deleted = 0;
   for (const row of orphans) {
-    if (isUploadIntentStore(row.store)) continue;
     if (!(await deleteObject(row.userId, row.objectKey))) continue;
     await database
       .delete(photoBlobs)

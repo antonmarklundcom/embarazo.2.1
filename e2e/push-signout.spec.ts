@@ -62,6 +62,9 @@ async function subscribedDevice(page: Page, events: string[], deleteHangs: boole
 
 async function wipeThisPhone(page: Page): Promise<void> {
   await page.goto("/ajustes");
+  // This fixture models an already-subscribed worker. Finish its cold install
+  // before testing unsubscribe/request order; readiness deadlines have unit coverage.
+  await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
   await page.getByRole("button", { name: "Borrar datos de este teléfono" }).click();
   await page.getByRole("button", { name: "Sí, borrar este teléfono" }).click();
 }
@@ -72,7 +75,7 @@ test("the push subscription is deleted on the server before the session is ended
   await completeOnboarding(page);
   await wipeThisPhone(page);
 
-  // Reading the subscription waits up to 6 s for the service worker (lib/push/client.ts).
+  // With the fixture worker ready, verify the push cleanup precedes sign-out.
   await expect.poll(() => events, { timeout: 20_000 }).toContain("signout");
   expect(events.indexOf(`push-delete:${ENDPOINT}`)).toBeGreaterThanOrEqual(0);
   expect(events.indexOf(`push-delete:${ENDPOINT}`)).toBeLessThan(events.indexOf("signout"));
@@ -85,7 +88,7 @@ test("a hanging push request cannot hold the wipe: sign-out still happens", asyn
   await completeOnboarding(page);
   await wipeThisPhone(page);
 
-  // endPushForSignOut gives up after 4 s (plus up to 6 s for a slow worker).
+  // The ready-worker fixture isolates the bounded 4 s server-delete wait.
   await expect.poll(() => events, { timeout: 25_000 }).toContain("signout");
   expect(events[0]).toBe(`push-delete:${ENDPOINT}`);
 });

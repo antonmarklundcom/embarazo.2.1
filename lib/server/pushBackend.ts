@@ -99,6 +99,17 @@ export function drizzlePushBackend(database: Database, guardedOwners?: readonly 
   return {
     async upsertSubscription(input) {
       await database.transaction(async (tx) => {
+      const values = {
+        id: crypto.randomUUID(), userId: input.userId, endpoint: input.endpoint,
+        p256dh: input.p256dh, auth: input.auth, categories: input.categories,
+        lastSeenAt: new Date(),
+      };
+      // Claim the unique endpoint before any locking read. Two first anonymous
+      // requests otherwise share missing-key gap locks and deadlock on INSERT.
+      // An existing row is unchanged until the owner guards below pass; a
+      // refusal rolls this reservation back with the surrounding transaction.
+      await tx.insert(pushSubscriptions).values(values)
+        .onDuplicateKeyUpdate({ set: { endpoint: input.endpoint } });
       const [existing] = await tx.select({ userId: pushSubscriptions.userId }).from(pushSubscriptions)
         .where(eq(pushSubscriptions.endpoint, input.endpoint)).for("update");
       if (existing?.userId && guardedOwners && !guardedOwners.includes(existing.userId)) throw new AccountWriteDenied();
@@ -107,15 +118,7 @@ export function drizzlePushBackend(database: Database, guardedOwners?: readonly 
       if (existing?.userId && input.userId && existing.userId !== input.userId) throw new AccountWriteDenied();
       await tx
         .insert(pushSubscriptions)
-        .values({
-          id: crypto.randomUUID(),
-          userId: input.userId,
-          endpoint: input.endpoint,
-          p256dh: input.p256dh,
-          auth: input.auth,
-          categories: input.categories,
-          lastSeenAt: new Date(),
-        })
+        .values(values)
         .onDuplicateKeyUpdate({
           set: {
             // K14 — `coalesce`, not an overwrite. See the file comment above

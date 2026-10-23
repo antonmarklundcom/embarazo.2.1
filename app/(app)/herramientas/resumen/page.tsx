@@ -56,7 +56,7 @@ function fmtDateTime(ts: number): string {
 }
 
 export default function ResumenPage() {
-  const generatedAt = useCalendarClock();
+  const calendarNow = useCalendarClock();
   const [pinNeeded, setPinNeeded] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState("");
@@ -94,6 +94,13 @@ export default function ResumenPage() {
     );
     return { profile, pregnancy, weights, journal, kicks, contractions };
   }, []);
+
+  // Calendar snapshots deliberately keep the same timestamp within a day.
+  // A report needs the actual generation time: include records saved after
+  // another mounted consumer (for example BottomNav) started that clock.
+  // Keep the label stable through local question edits, but regenerate when
+  // the report's records or calendar context change.
+  const generatedAt = useMemo(() => data ? Date.now() : calendarNow, [data, calendarNow]);
 
   const symptomCounts = useMemo(() => {
     const c = new Map<string, number>();
@@ -148,9 +155,9 @@ export default function ResumenPage() {
 
   const { profile, pregnancy, weights, journal, kicks, contractions } = data;
   const lmp = pregnancy?.lmpDate;
-  const week = lmp !== undefined ? getCurrentWeek(lmp, generatedAt) : undefined;
+  const week = lmp !== undefined ? getCurrentWeek(lmp, calendarNow) : undefined;
   const completed =
-    lmp !== undefined ? formatCompletedGestation(getCompletedGestation(lmp, generatedAt)) : undefined;
+    lmp !== undefined ? formatCompletedGestation(getCompletedGestation(lmp, calendarNow)) : undefined;
 
   const firstWeight = weights[0];
   const lastWeight = weights[weights.length - 1];

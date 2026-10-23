@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { completeOnboarding } from "./helpers/onboarding";
-import { localDateInput } from "./helpers/dates";
+import { localDateInput, localTimeOn } from "./helpers/dates";
 
 async function savedPregnancy(page: Page) {
   return page.evaluate(async () => {
@@ -116,4 +116,52 @@ test("overview respects both week bounds and supports keyboard tab edges and foc
   await expect(overview.getByText("Explorando semana 41", { exact: true })).toBeVisible();
   await overview.getByRole("button", { name: "Volver a mi semana", exact: true }).click();
   await expect(overview.getByText("Tu semana actual", { exact: true })).toBeVisible();
+});
+
+test("summary includes same-day records after SPA navigation and refreshes when its data changes", async ({ page, context }) => {
+  const openedAt = localTimeOn(0, 9);
+  const later = openedAt + 60 * 60 * 1000;
+  await page.clock.install({ time: openedAt });
+  await completeOnboarding(page, { daysAgo: 120 });
+  // A full navigation would reset the calendar module and hide this bug.
+  await page.evaluate(() => Object.assign(window, { summarySpaMarker: "preserved" }));
+  await page.clock.setSystemTime(later);
+  const nav = page.getByRole("navigation", { name: "Navegación principal" });
+  await nav.getByRole("link", { name: "Herramientas", exact: true }).click();
+  await page.locator('a[href="/herramientas/sintomas"]').click();
+  await page.getByRole("button", { name: "Náuseas", exact: true }).click();
+  await page.getByRole("button", { name: /^Guardar registro/ }).click();
+  await expect(page.getByText("Guardado en tu teléfono.", { exact: true })).toBeVisible();
+  await nav.getByRole("link", { name: "Herramientas", exact: true }).click();
+  await page.locator('a[href="/herramientas/resumen"]').click();
+  const sheet = page.locator("article");
+  const recent = sheet.getByRole("heading", { name: "Últimas 4 semanas", exact: true }).locator("..");
+  await expect(recent).toContainText("Náuseas (1)");
+  expect(await page.evaluate(() => "summarySpaMarker" in window)).toBe(true);
+  const generated = sheet.getByText(/^Generado el /);
+  const initialGeneration = await generated.innerText();
+  await page.clock.setSystemTime(later + 30 * 60 * 1000);
+  const prep = page.getByRole("region", { name: "Preparar mi control", exact: true });
+  await prep.getByLabel("Tus preguntas", { exact: true }).fill("Pregunta sintética");
+  await prep.getByRole("button", { name: "Agregar", exact: true }).click();
+  await expect(generated).toHaveText(initialGeneration);
+
+  // Another local tab changes the live records without remounting the report.
+  const newest = later + 60 * 60 * 1000;
+  await page.clock.setSystemTime(newest);
+  const second = await context.newPage();
+  try {
+    await second.clock.install({ time: newest });
+    await second.goto("/herramientas/sintomas");
+    await second.getByRole("button", { name: "Náuseas", exact: true }).click();
+    await second.getByRole("button", { name: /^Guardar registro/ }).click();
+    await expect(second.getByText("Guardado en tu teléfono.", { exact: true })).toBeVisible();
+    await expect(recent).toContainText("Náuseas (2)");
+    const newestLabel = await page.evaluate((at) => new Date(at).toLocaleString("es-PY", {
+      day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
+    }), newest);
+    await expect(generated).toHaveText(`Generado el ${newestLabel}`);
+  } finally {
+    await second.close();
+  }
 });

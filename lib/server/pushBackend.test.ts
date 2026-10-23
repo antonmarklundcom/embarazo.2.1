@@ -60,8 +60,19 @@ describe("atomic schedule replacement SQL", () => {
   it("refuses to rebind another non-null owner even when both accounts are live", async () => {
     const { backend, calls } = fixture({ owner: "old-owner", guardedOwners: ["old-owner", "new-owner"] });
     await expect(backend.upsertSubscription({ endpoint: "endpoint-fixture", categories: [], p256dh: "synthetic", auth: "synthetic", userId: "new-owner" })).rejects.toMatchObject({ name: "AccountWriteDenied" });
-    expect(calls.some((call) => call.sql.startsWith("insert"))).toBe(false);
+    const inserts = calls.filter((call) => call.sql.startsWith("insert"));
+    expect(inserts).toHaveLength(1);
+    // Only a no-op unique-key reservation may precede the owner refusal.
+    expect(inserts[0]!.sql.split("on duplicate key update")[1]).toBe(" `endpoint` = ?");
     expect(calls.at(-1)?.sql).toBe("rollback");
+  });
+
+  it("claims a missing unique endpoint before selecting it for update", async () => {
+    const { backend, calls } = fixture({ missing: true });
+    await backend.upsertSubscription({ endpoint: "endpoint-fixture", categories: [], p256dh: "synthetic", auth: "synthetic", userId: null });
+    expect(calls.map((call) => call.sql.split(" ")[0])).toEqual(["begin", "insert", "select", "insert", "commit"]);
+    expect(calls[1]!.sql.split("on duplicate key update")[1]).toBe(" `endpoint` = ?");
+    expect(calls[2]!.sql).toContain("for update");
   });
 
   it("keeps anonymous coalescing while requiring a held lock for an existing owner", async () => {

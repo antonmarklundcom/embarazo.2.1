@@ -100,8 +100,11 @@ for (const saved of [true, false]) {
       };
     }, { saved });
     await completeOnboarding(page, { stopBeforeAvisos: true });
+    // This fixture supplies a working subscription and tests the server-save
+    // outcome. Complete cold installation first; the explicit readiness deadline
+    // is 25 s and has separate unit coverage.
+    await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
     await page.getByRole("button", { name: "Sí, avisame" }).click();
-    // Activation waits up to 6 s for the service worker (lib/push/client.ts).
     await expect(page.getByRole("status")).toContainText(saved ? "Listo: activaste" : "Todavía no pudimos confirmar", { timeout: 15_000 });
     expect(await page.evaluate(() => sessionStorage.getItem("weeklyCategories"))).toBe('["consejos"]');
     await page.getByRole("button", { name: "Continuar", exact: true }).click();

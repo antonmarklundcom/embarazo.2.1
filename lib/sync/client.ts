@@ -342,6 +342,8 @@ async function pull(accountId: string, signal: AbortSignal): Promise<{ pulled: n
   // Seeded from the stored mark, not from the overlapped `since`, so the saved
   // value never moves backwards and the overlap never compounds.
   let highWater = stored;
+  let complete = false;
+  const seenCursors = new Set<string>();
 
   // Bounded so a server that keeps handing back a cursor cannot spin forever.
   for (let page = 0; page < 50; page += 1) {
@@ -383,10 +385,19 @@ async function pull(accountId: string, signal: AbortSignal): Promise<{ pulled: n
       if (result.conflict) conflicts += 1;
     }
 
-    if (!body.nextCursor) break;
+    if (!body.nextCursor) { complete = true; break; }
+    if (seenCursors.has(body.nextCursor)) break;
+    seenCursors.add(body.nextCursor);
     cursor = body.nextCursor;
   }
 
+  if (!complete) {
+    // Applied rows are already durable. Retain their safe high-water mark so
+    // the next attempt can resume with the normal overlap, but never label a
+    // bounded/repeating walk as a completed account copy or export.
+    await writeSyncState({ lastPulledAt: highWater }, accountId);
+    throw new Error("La sincronización quedó incompleta. Volvé a intentar para descargar los registros que faltan.");
+  }
   await writeSyncState({ lastPulledAt: highWater, lastSyncAt: Date.now() }, accountId);
   return { pulled, conflicts };
 }

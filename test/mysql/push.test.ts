@@ -1,5 +1,8 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { mysqlEnabled } from "./setup";
+import { mysqlEnabled, sql } from "./setup";
+import type { Database } from "@/lib/server/db";
+import { pushSubscriptions } from "@/lib/server/schema";
+import type { SQL } from "drizzle-orm";
 
 describe.skipIf(!mysqlEnabled)("push schedules on a disposable MySQL database", () => {
   let push: typeof import("@/lib/server/push");
@@ -35,4 +38,61 @@ describe.skipIf(!mysqlEnabled)("push schedules on a disposable MySQL database", 
     await Promise.all([push.rotateSubscription(real(), endpoint, { endpoint: next, p256dh: "synthetic", auth: "synthetic" }, 0), push.scheduleReminders(real(), next, "consejos", [100])]);
     expect(await real().dueReminders(100, 100)).toHaveLength(1);
   });
+  it("concurrent first anonymous subscriptions both succeed on an initially missing endpoint", async () => {
+    // The actual missing-key locking SELECTs both finish before either INSERT
+    // starts. This reproduces the first-subscribe gap-lock race deterministically;
+    // existing schedule tests begin with an already-created endpoint row.
+    let reads = 0;
+    let release!: () => void;
+    const bothRead = new Promise<void>((resolve) => { release = resolve; });
+    const synchronized = {
+      transaction: <T,>(write: (transaction: Database) => Promise<T>) => db.db().transaction(async (transaction) => {
+        let inserted = false;
+        const wrapped = {
+          select: (fields: { userId: typeof pushSubscriptions.userId }) => ({
+            from: (table: typeof pushSubscriptions) => ({
+              where: (clause: SQL | undefined) => ({
+                for: async (mode: "update") => {
+                  const rows = await transaction.select(fields).from(table).where(clause).for(mode);
+                  // Synchronize only the vulnerable read-before-first-insert
+                  // path. A unique-key insert first already owns the row; do
+                  // not hold that owner's lock waiting for a blocked rival.
+                  if (!inserted) {
+                    reads += 1;
+                    if (reads === 2) release();
+                    await bothRead;
+                  }
+                  return rows;
+                },
+              }),
+            }),
+          }),
+          insert: ((...args: Parameters<typeof transaction.insert>) => {
+            inserted = true;
+            return transaction.insert(...args);
+          }) as typeof transaction.insert,
+        };
+        return write(wrapped as unknown as Database);
+      }),
+    } as unknown as Database;
+    const fresh = `${endpoint}-first-save`;
+    const firstBackend = () => backend.drizzlePushBackend(synchronized);
+    const input = { endpoint: fresh, p256dh: "synthetic", auth: "synthetic", categories: ["consejos"], userId: null };
+    const outcomes = await Promise.allSettled([push.saveSubscription(firstBackend(), input), push.saveSubscription(firstBackend(), input)]);
+    for (const outcome of outcomes) if (outcome.status === "rejected") throw outcome.reason;
+    expect(await real().subscriptionOf(fresh)).toEqual({ userId: null, categories: ["consejos"] });
+  });
+
+  it("a burst of first anonymous subscriptions leaves one endpoint with no rejected request", async () => {
+    const fresh = `${endpoint}-first-stress`;
+    await Promise.all(Array.from({ length: 6 }, () => push.saveSubscription(real(), {
+      endpoint: fresh, p256dh: "synthetic", auth: "synthetic", categories: ["consejos"], userId: null,
+    })));
+    const connection = await sql();
+    try {
+      const [rows] = await connection.query("SELECT COUNT(*) AS n FROM pushSubscriptions WHERE endpoint = ?", [fresh]);
+      expect(Number((rows as { n: number }[])[0]!.n)).toBe(1);
+    } finally { await connection.end(); }
+  });
+
 });

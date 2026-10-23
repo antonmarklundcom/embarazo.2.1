@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { PhotosBackend } from "./photosBackend";
-import type { PhotoStore } from "@/lib/photos/keys";
+import { isPhotoStore, type PhotoStore } from "@/lib/photos/keys";
 
 // BUILD-PLAN K4 — the index of what a user has backed up.
 //
@@ -99,7 +99,7 @@ export async function listPhotos(
 ): Promise<PhotoBlobRecord[]> {
   const rows = await backend.listSince(userId, since);
 
-  return rows.map((row) => ({
+  return rows.filter((row) => isPhotoStore(row.store)).map((row) => ({
     store: row.store as PhotoStore,
     recordId: row.recordId,
     objectKey: row.objectKey,
@@ -116,11 +116,11 @@ export async function listPhotos(
 export async function allObjectKeys(
   backend: PhotosBackend,
   userId: string,
-): Promise<{ store: PhotoStore; recordId: string; objectKey: string }[]> {
+): Promise<{ store: string; recordId: string; objectKey: string }[]> {
   const rows = await backend.allKeys(userId);
 
   return rows.map((row) => ({
-    store: row.store as PhotoStore,
+    store: row.store,
     recordId: row.recordId,
     objectKey: row.objectKey,
   }));
@@ -148,7 +148,7 @@ export async function photoRow(
 export async function forgetPhotoRow(
   backend: PhotosBackend,
   userId: string,
-  store: PhotoStore,
+  store: string,
   recordId: string,
 ): Promise<void> {
   await backend.deleteRow(userId, store, recordId);

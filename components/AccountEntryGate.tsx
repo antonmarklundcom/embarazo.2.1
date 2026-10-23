@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import Link from "next/link";
@@ -14,12 +14,14 @@ import {
   clearOfflineAccess, verifiedOfflineAccountId, rememberHandoff, rememberVerifiedAccount,
 } from "@/lib/auth/access.client";
 
-type AccessMode = "checking" | "allowed" | "offline" | "mismatch" | "unavailable";
+type AccessMode = "checking" | "rechecking" | "allowed" | "offline" | "mismatch" | "unavailable";
 type AccessState = { pathname: string; mode: AccessMode; accountId: string | null };
 
 export function AccountEntryGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const publicPage = isPublicAppPath(pathname);
+  const privateSubtree = useRef<HTMLDivElement>(null);
+  const returnFocus = useRef<HTMLElement | null>(null);
   // Restore/wipe in another tab must revoke the previous grant immediately,
   // without waiting for navigation or browser focus.
   const owner = useLiveQuery(async () => (await db().syncState.get("default"))?.accountId ?? null, [], undefined);
@@ -61,9 +63,23 @@ export function AccountEntryGate({ children }: { children: React.ReactNode }) {
       const requestController = controller;
       const timeout = window.setTimeout(() => requestController.abort(), 10_000);
       const current = () => active && sequence === checkId;
-      setMode("checking");
+      const focused = document.activeElement;
+      if (focused instanceof HTMLElement && privateSubtree.current?.contains(focused)) returnFocus.current = focused;
+      setState(previous => {
+        const sameGrant = previous.pathname === pathname && previous.accountId === owner &&
+          ["allowed", "offline", "rechecking"].includes(previous.mode);
+        return sameGrant ? { ...previous, mode: "rechecking" } : { pathname, mode: "checking", accountId: null };
+      });
       try {
         const response = await fetch("/api/v1/auth-status", { cache: "no-store", signal: controller.signal });
+        if (!current()) return;
+        if (response.status === 401 || response.status === 403) {
+          leave();
+          clearOfflineAccess();
+          const returnTo = rememberHandoff();
+          window.location.replace("/cuenta?returnTo=" + encodeURIComponent(returnTo));
+          return;
+        }
         if (!response.ok) throw new Error("unavailable");
         const auth = parseAuthStatus(await response.json());
         if (!current()) return;
@@ -102,7 +118,9 @@ export function AccountEntryGate({ children }: { children: React.ReactNode }) {
         window.location.replace(`/cuenta?returnTo=${encodeURIComponent(returnTo)}`);
       } catch {
         if (!current() || leaving) return;
-        const accountId = !navigator.onLine ? await verifiedOfflineAccountId() : null;
+        // onLine only describes the network interface, not whether this server is reachable.
+        // An explicit signed-out response above still revokes the grant immediately.
+        const accountId = await verifiedOfflineAccountId();
         if (current()) setMode(accountId ? "offline" : "unavailable", accountId);
       } finally {
         window.clearTimeout(timeout);
@@ -141,17 +159,40 @@ export function AccountEntryGate({ children }: { children: React.ReactNode }) {
   const routeMode = state.pathname === pathname ? state.mode : "checking";
   const mode = state.accountId && owner !== state.accountId ? "checking" : routeMode;
 
+  useEffect(() => {
+    if (mode === "allowed" || mode === "offline") {
+      const element = returnFocus.current;
+      returnFocus.current = null;
+      if (element?.isConnected && privateSubtree.current?.contains(element)) element.focus({ preventScroll: true });
+    } else if (mode !== "rechecking") { returnFocus.current = null; }
+  }, [mode]);
+
   // Never an endless "Abriendo…": after 12 s of checking, offer a retry and
   // the repair page instead of a screen that looks frozen.
   const [slow, setSlow] = useState(false);
-  const stuck = !publicPage && mode === "checking";
+  const stuck = !publicPage && (mode === "checking" || mode === "rechecking");
   useEffect(() => {
     if (!stuck) { setSlow(false); return; }
     const timer = window.setTimeout(() => setSlow(true), 12_000);
     return () => window.clearTimeout(timer);
   }, [stuck, pathname]);
-  if (publicPage || mode === "allowed" || mode === "offline") {
-    return <>{!publicPage && mode === "offline" && <p role="status" className="mb-3 rounded-tile bg-pastel-arena p-3 text-sm text-ink">Sin internet: estás viendo los registros guardados de tu cuenta.</p>}{children}</>;
+  if (publicPage) return <>{children}</>;
+  if (mode === "allowed" || mode === "offline" || mode === "rechecking") {
+    // Keep the same child position and wrapper during a same-owner check. Hidden/inert
+    // locks interaction without destroying unsaved component state. Revocation and
+    // owner changes take the other branches below and immediately unmount it.
+    return <>
+      {mode === "offline" ? <p role="status" className="mb-3 rounded-tile bg-pastel-arena p-3 text-sm text-ink">Sin internet: estás viendo los registros guardados de tu cuenta.</p>
+        : mode === "rechecking" ? <section className="mb-3 rounded-tile border border-line p-3 text-sm text-muted">
+          <p role="status">{slow ? "La comprobación está tardando. Tus cambios sin guardar siguen en esta pantalla." : "Comprobando tu cuenta…"}</p>
+          {slow && <div className="mt-2 flex flex-wrap gap-3">
+            <button type="button" className="min-h-11 font-bold text-petrol underline" onClick={() => window.dispatchEvent(new Event("focus"))}>Volver a comprobar</button>
+            <a href="/reparar" className="inline-flex min-h-11 items-center font-bold text-petrol underline">Reparar la app</a>
+            <Link href="/emergencia" className="inline-flex min-h-11 items-center font-bold text-terracotta underline">Señales de alarma y ayuda</Link>
+          </div>}
+        </section> : null}
+      <div ref={privateSubtree} hidden={mode === "rechecking"} inert={mode === "rechecking"}>{children}</div>
+    </>;
   }
   if (mode === "checking" && slow) return (
     <section className="mx-auto my-5 max-w-md rounded-card border border-line bg-white p-5">

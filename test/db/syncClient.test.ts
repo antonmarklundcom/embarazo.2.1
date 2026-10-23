@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { db } from "@/lib/db";
 import { resetSyncAvailability, syncNow } from "@/lib/sync/client";
+import { exportCompleteness } from "@/lib/sync/status";
 import { pullRecords, pushRecords, type StoredRecord, type SyncBackend } from "@/lib/server/sync";
 import { PullQuerySchema, PushBatchSchema, partitionRecords } from "@/lib/sync/protocol";
 
@@ -258,5 +259,113 @@ describe("the account cannot change during a sync", () => {
     expect((await syncNow()).outcome).toBe("account-mismatch");
     expect(await db().journalEntries.count()).toBe(0);
     expect((await db().weightEntries.toArray())[0]?.kg).toBe(60);
+  });
+});
+
+describe("explicit backup joins an in-flight synchronization", () => {
+  it("waits for remote-only records instead of accepting a busy result as complete", async () => {
+    await otherDevicePushes(Date.now() - 1000, 62);
+    const server = globalThis.fetch;
+    let release!: () => void;
+    const delay = new Promise<void>(resolve => { release = resolve; });
+    let observed!: () => void;
+    const blocked = new Promise<void>(resolve => { observed = resolve; });
+    let firstRequest = true;
+    vi.stubGlobal("fetch", async (input: string | URL, init?: RequestInit) => {
+      if (firstRequest) { firstRequest = false; observed(); await delay; }
+      return server(input, init);
+    });
+    const background = syncNow();
+    await blocked;
+    const explicit = syncNow({ waitForRunning: true });
+    expect((await syncNow()).outcome).toBe("busy");
+    release();
+    expect((await background).outcome).toBe("ok");
+    expect((await explicit).outcome).toBe("ok");
+    expect((await db().weightEntries.where("uid").equals("w1").first())?.kg).toBe(62);
+  });
+});
+
+describe("bounded pulls never confirm an incomplete account copy", () => {
+  function paginatedFixture(total: number): number[] {
+    const server = globalThis.fetch;
+    const visited: number[] = [];
+    vi.stubGlobal("fetch", async (input: string | URL, init?: RequestInit) => {
+      const url = new URL(String(input), "http://app.test");
+      if (init?.method === "POST" || url.searchParams.get("since") === String(Number.MAX_SAFE_INTEGER)) return server(input, init);
+      // One synthetic record per page exercises the real bound without
+      // manufacturing 25,000 health records. Spacing exceeds pull overlap.
+      const since = Number(url.searchParams.get("since"));
+      const index = url.searchParams.has("cursor")
+        ? Number(url.searchParams.get("cursor"))
+        : Math.max(0, Math.ceil(since / 60_000) - 1);
+      visited.push(index);
+      return Response.json({ accountId: USER,
+        ...(index + 1 < total ? { nextCursor: String(index + 1) } : {}),
+        records: [{
+          store: "weightEntries", recordId: `page-${index}`, updatedAt: (index + 1) * 60_000,
+          serverUpdatedAt: (index + 1) * 60_000, deletedAt: null, payload: { date: index + 1, kg: 60 },
+        }],
+      });
+    });
+    return visited;
+  }
+
+  it("retains 50 fetched pages and progress, refuses completeness, then finishes page51 on retry", async () => {
+    await db().syncState.put({ key: "default", accountId: USER, lastPulledAt: 0, lastSyncAt: 987 });
+    const visited = paginatedFixture(51);
+    const first = await syncNow();
+    expect(first.outcome).toBe("error");
+    expect(exportCompleteness(first.outcome)).toBe("local-only");
+    expect(visited).toEqual(Array.from({ length: 50 }, (_, index) => index));
+    expect(await db().weightEntries.count()).toBe(50);
+    expect(await db().weightEntries.where("uid").equals("page-50").first()).toBeUndefined();
+    expect(await db().syncState.get("default")).toMatchObject({
+      lastPulledAt: 3_000_000, lastSyncAt: 987, lastError: expect.stringContaining("incompleta"),
+    });
+    expect((await db().weightEntries.where("uid").equals("page-49").first())?.dirty).toBe(0);
+
+    const second = await syncNow();
+    expect(second.outcome).toBe("ok");
+    expect(exportCompleteness(second.outcome)).toBe("complete");
+    expect(visited.slice(50)).toEqual([49, 50]);
+    expect(await db().weightEntries.count()).toBe(51);
+    const state = await db().syncState.get("default");
+    expect(state?.lastPulledAt).toBe(3_060_000);
+    expect(state?.lastSyncAt).toBeGreaterThan(987);
+    expect(state?.lastError).toBeUndefined();
+  });
+
+  it("accepts exactly50 pages only when the final page has no continuation", async () => {
+    const visited = paginatedFixture(50);
+    const result = await syncNow();
+    expect(result.outcome).toBe("ok");
+    expect(exportCompleteness(result.outcome)).toBe("complete");
+    expect(visited).toHaveLength(50);
+    expect(await db().weightEntries.count()).toBe(50);
+    expect((await db().syncState.get("default"))?.lastSyncAt).toBeGreaterThan(0);
+  });
+
+  it.each([["same", "same"], ["first", "second", "first"]])("stops repeating or cyclic cursors without confirming success: %j", async (...cursors: string[]) => {
+    await db().syncState.put({ key: "default", accountId: USER, lastPulledAt: 0, lastSyncAt: 987 });
+    const server = globalThis.fetch;
+    let pages = 0;
+    vi.stubGlobal("fetch", async (input: string | URL, init?: RequestInit) => {
+      const url = new URL(String(input), "http://app.test");
+      if (init?.method === "POST" || url.searchParams.get("since") === String(Number.MAX_SAFE_INTEGER)) return server(input, init);
+      const index = pages++;
+      return Response.json({ accountId: USER, nextCursor: cursors[index % cursors.length], records: [{
+        store: "weightEntries", recordId: `repeat-${index}`, updatedAt: (index + 1) * 60_000,
+        serverUpdatedAt: (index + 1) * 60_000, deletedAt: null, payload: { date: index + 1, kg: 60 },
+      }] });
+    });
+    const result = await syncNow();
+    expect(result.outcome).toBe("error");
+    expect(exportCompleteness(result.outcome)).toBe("local-only");
+    expect(pages).toBe(cursors.length);
+    expect(await db().weightEntries.count()).toBe(cursors.length);
+    expect(await db().syncState.get("default")).toMatchObject({
+      lastPulledAt: cursors.length * 60_000, lastSyncAt: 987, lastError: expect.stringContaining("incompleta"),
+    });
   });
 });

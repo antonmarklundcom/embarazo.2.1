@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ToolsAccountFooter } from "@/components/ToolsAccountFooter";
 import { PUBLISHED_VIDEOS } from "@/lib/seed/videos";
 import { PUBLISHED_EJERCICIOS } from "@/lib/seed/ejercicios";
 import { ToolIcon, type ToolIconName } from "@/components/ToolIcon";
@@ -291,6 +292,7 @@ export default function HerramientasPage() {
           </div>
         </section>
       ))}
+      <ToolsAccountFooter />
     </div>
   );
 }

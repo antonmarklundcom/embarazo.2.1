@@ -48,5 +48,7 @@ if (url) {
 
 /** A raw connection for seeding and inspecting rows. */
 export async function sql() {
-  return mysql.createConnection({ uri: url! });
+  // Drizzle timestamps use UTC strings; raw Date fixtures must use the same
+  // contract even when the test host is in a different timezone.
+  return mysql.createConnection({ uri: url!, timezone: "Z" });
 }

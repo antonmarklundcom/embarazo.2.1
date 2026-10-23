@@ -1,0 +1,91 @@
+# Local inspection fixes — 23 October 2026
+
+## Status and authority
+
+The owner first requested inspection, then explicitly authorized finishing the inspection and fixing its software findings locally. This handoff describes the local implementation of B01–B15; it does not authorize publication. The manager retains push, PR, merge and release responsibility.
+
+- Repository: `antonmarklundcom/embarazo.2.1`.
+- Reused registered checkout: `E:/ai work/Projects/embarazo.2.1/worktrees/claude-embarazo.2.1`; no clone or dependency installation for this work.
+- Fix branch: `codex/inspection-fixes-20261023`, based on unpublished `322beaf329180a1aa0408332892a2988a0ddf567`, which includes `438a79c6366474395eeee11c76069af72279e86e`. Both original local commits and branch references are preserved.
+- Inspection baseline: remote main `b29e2bbc4ed9f2fc699071da850f2734ae67be39`; a public health GET reported `b29e2bb`. These are dated observations, not a continuing deployment guarantee.
+- No push, PR, merge, deployment, production account/data change, actual notification, paid service, or live database/object-store test was performed.
+- Aggregate validation and the exact final local commit are recorded in the completion report. At this document's drafting, final aggregate checks/build/browser acceptance were pending; focused passing tests alone are not a release gate.
+
+Reading guide: [original inspection HTML](<E:/ai work/Artifacts/embarazo.2.1/2026-10-23/inspection/REVIEW.html>), [original evidence/register](<E:/ai work/Artifacts/embarazo.2.1/2026-10-23/inspection/REPORT.md>), and [local fix completion HTML](<E:/ai work/Artifacts/embarazo.2.1/2026-10-23/inspection/FIXES.html>). The completion HTML is produced after verification; if absent, use the inspection and logs.
+
+## Implemented changes, benefits and costs
+
+| Finding | Local correction and source | Benefit | Cost or limit |
+| --- | --- | --- | --- |
+| B01 — writes after erasure | `lib/server/accountWrite.ts` locks sorted unique user rows inside a transaction, rejects missing/deleted owners, and gives the write callback that transaction. Sync, photos, sharing (actor and owner), community, AI reservations, and relevant auth/token/session mutations use the barrier. Deletion updates the same user row. | A stale request authenticated before erasure cannot insert personal data after erasure's last sweep. Earlier writes finish before deletion proceeds. | Adds row locking and transaction contention. Every future mutation must use the supplied transaction rather than the pool. Real MySQL race acceptance remains necessary. |
+| B02 — late signed uploads | `lib/server/photoUploadIntents.ts` records a payload-free cleanup obligation before issuing a signed PUT. Account/photo erasure preserves it; `lib/server/maintenance.ts` retries cleanup. | A late upload still has a known key that maintenance can delete, including uploads finishing after acknowledgement of erasure. | Retains minimal opaque cleanup metadata indefinitely and depends on working scheduled maintenance/provider DELETE. This is an explicit privacy/operational tradeoff, not a promise of instantaneous object erasure. |
+| B03 — repair loses offline pages | `lib/sw/repair.ts`, `app/sw.ts`, and `app/reparar/route.ts` stage refreshed documents/missing assets, check document asset references against the active manifest, and report progress/acknowledgement. No old precache key is deleted; replacements are prepared before runtime cleanup follows. | Failed downloads, stale deployment chunks and stalled response bodies preserve the previous offline copy and give an actionable retry. Same-build repair keeps emergency/week coverage. | Temporary cache space and network traffic are required. CacheStorage has no multi-entry atomic commit. Old installed workers still require the online upgrade checks below. |
+| B04 — focus loses drafts | `components/AccountEntryGate.tsx` retains the same private subtree for a same-route, same-owner recheck; it is hidden and inert while access is uncertain, then restores focus. Slow checks offer retry, repair and emergency links. | Normal return-to-app verification preserves unsaved fields and keyboard position. | The form is temporarily inaccessible during verification. Revocation, route/owner mismatch and account change still unmount it deliberately. |
+| B05 — duration/FPP inconsistency | `components/ajustes/PregnancyDateSettings.tsx` and its settings caller pass the effective saved gestation duration through explicit date edits; pregnancy math handles the same duration in both directions. | FUM/FPP edits agree with the selected duration rather than reverting silently to 280 days. | Existing inconsistent historical rows are not rewritten automatically; a deliberate edit is the point of recalculation. |
+| B06 — incomplete export presented as complete | `components/ajustes/BackupSettings.tsx`, `lib/sync/export.ts`, and `lib/sync/status.ts` join a running sync, inspect its result, bound the wait to 20 seconds, and require an explicit local-only download after incomplete sync. Mismatched accounts are refused; owner is rechecked before download. | Users can distinguish a confirmed sync from a backup that may omit other-device records. | Failed/stalled sync adds an extra choice. Photos remain those available locally; exports contain unencrypted personal data except already PIN-protected notes. A local-only backup is still useful but incomplete across devices. |
+| B07 — network interface mistaken for server reachability | `components/AccountEntryGate.tsx` consults the matching, unexpired offline grant after transport/server failures even if `navigator.onLine` is true. Explicit 401/403 or signed-out responses revoke it. | A failed API/captive or unreliable network does not unnecessarily block valid local records. | The existing seven-day offline-grant limit remains. An unknown server outage cannot prove that remote credentials are still valid. |
+| B08 — notification categories ignored | `lib/push/compose.ts`, `lib/push/notificationPolicy.ts`, the client and worker enforce selected categories before composing text/reading category-specific health stores. Missing/corrupt consent uses generic text. Policy writes are serialized. | Disabled pregnancy categories cannot leak into lock-screen notification text merely because another category remains enabled. | Generic fallback is less personalized. Explicit local consent must be set again after sign-out; see below. |
+| B09 — duplicate concurrent reminders | `lib/server/pushBackend.ts` performs schedule replacement transactionally under subscription locks and orders rotation locks. Rotation retains a claimed/sent row's ID and `sentAt` on the destination, dropping an identical pending event. Dispatch claims verify the expected endpoint. API mutations use the account barrier and recheck owner under endpoint locks. | Concurrent replacements deduplicate pending schedules; rotation does not revive a pending duplicate of an already-claimed event. A failed send can release the migrated ID for retry on the new endpoint. | Adds lock contention. Two sends already in flight before rotation cannot be cancelled or promised exactly-once delivery; real MySQL and provider/device acceptance remain necessary. |
+| B10 — push settings remain busy after rejection | `lib/push/client.ts` and `components/PushSettings.tsx` handle permission/subscription/read failures, reset busy state in finally, and expose retryable errors. | Permission denial/browser exceptions leave usable controls and honest status. | A browser or OS can continue refusing permission; the UI cannot grant it automatically. |
+| B11 — current day/week remains stale | `lib/calendarClock.ts`, `lib/useCalendarClock.ts`, profile/home/summary callers share a clock refreshed at local midnight, focus, pageshow, visibility and offset changes. | Current-week headings, countdowns and summaries catch up after midnight and device resume. | Suspended browsers may delay timers; resume events are part of acceptance. |
+| B12 — 24-hour arithmetic crosses civil-date boundaries | `lib/calendarDate.ts` and `lib/pregnancy.ts` calculate local civil-day differences/additions rather than elapsed 24-hour periods. Stored epoch-ms contracts remain unchanged. | DST's 23/25-hour days no longer make date-only pregnancy displays one day early/late. | Legacy timestamps lack the original timezone. Travel can still change their current-device date projection; no inferred migration attempts to recover an unknown original date. |
+| B13 — false cloud-saved status | `lib/sync/client.ts`, `lib/sync/status.ts`, and `components/SyncStatusCard.tsx` expose running/pending/error/offline/never-confirmed state, last success and retry. Linked unavailable/error results retain failure state; retry does not resume a deliberately paused wipe lifecycle. | Status does not claim a cloud save merely because the browser has a network interface or an earlier success exists. | More states need clear wording; last success is historical evidence, not proof that newer records reached the server. |
+| B14 — new-week card stays latched | `components/home/NewWeekCard.tsx` resets visibility/offers when the profile, seen state or eligible time window changes. | Notice follows the actual current week and stops appearing outside its eligible window. | Already-seen state continues to suppress it intentionally. |
+| B15 — unpublished overview stale selection | `components/PerspectiveSwitcher.tsx` clears browsing state on every actual-week change, including 21→22→21; Home/End and a focusable tab panel improve keyboard use, with explicit exploring-week copy. | Returning to the current week/date rollback cannot resurrect an old adjacent-week selection. | Browsing selection resets when the actual week changes. This is local behavior awaiting mobile/device acceptance. |
+
+B01–B14 also affect the inspected main baseline. B15 is specific to the unpublished weekly-overview changes. Local implementation does not change the deployed status of any finding.
+
+## Related accessibility improvement — I09
+
+`app/(app)/progreso/page.tsx` and `app/(app)/herramientas/pataditas/page.tsx` now use `transition-transform` on the affected touch controls instead of the generic transition. The inspection's contrast findings matched interpolation of the current-week link color and start-button disabled opacity. Applying color/opacity immediately avoids those intermediate states while retaining scale feedback for touch. The tradeoff is an immediate visual state change; the fresh-build accessibility audit remains pending in the completion report. This targeted correction is not a blanket WCAG or physical-device acceptance claim.
+
+## Compatibility and recovery contracts
+
+### Erasure and signed-upload obligations
+
+The write barrier uses the existing `users.deletedAt` row as the cross-process serialization point. Deletion waits for an earlier writer; a later writer sees deleted/missing state and fails. Multi-owner locks are acquired in a stable order. Session authentication performed before the transaction is insufficient permission on its own.
+
+Upload obligations reuse the existing `photoBlobs` table with `store="upload:<photo store>"`, zero bytes, null payload and an opaque object key/record identifier. They are hidden from public photo metadata. There is no schema migration or new bucket/account.
+
+A signed request may start before URL expiry and finish after an arbitrary delay. No provider maximum request duration has been verified. Consequently, the implementation keeps the key even after a successful DELETE and even while the corresponding photo is live. After expiry plus a 20-minute earliest-attempt grace, maintenance checks at most 20 eligible obligations, in oldest-last-checked order; live photos are retained, erased/orphaned objects are deleted. Successful, failed and live checks all advance the last-checked timestamp so an early group cannot starve later keys. Retry eligibility is 20 minutes; provider DELETE is bounded to 10 seconds.
+
+This cleanup runs through existing maintenance invoked by `/api/v1/push/dispatch`; no new job or provider action was created. A manager must verify that deployment's authenticated maintenance schedule actually runs. Do not manually remove the retained keys without a reviewed provider guarantee/compaction design.
+
+### Notification consent after sign-out
+
+The new `mibebe-push-policy-v1` cache contains only device category consent at `/__push-category-policy`; it is separate from health/account records. Existing cache names/route paths were not renamed. An absent/unreadable policy allows generic text only. Removing an older policy before storing a new one prevents a failed opt-out write from retaining more permissive consent.
+
+Sign-out deliberately retains explicit `categories=[]` rather than deleting the preference. If unsubscribe fails and health IDB records remain, passive subscription reads must not restore old category defaults. The next account must explicitly opt in to categories. Mock tests cannot establish OS permission or push delivery.
+
+Rotation locks all source/destination reminder rows and keeps one canonical event per category and time. A claimed/sent marker wins over a pending duplicate; when the winner belongs to the old endpoint, its ID and `sentAt` move to the destination. A delayed failed-send release still addresses that migrated ID, allowing a retry on the new endpoint. Dispatch additionally supplies the expected endpoint when claiming, so a stale old-endpoint snapshot cannot claim a moved ID. This handles one already-claimed event overlapping one pending event. If sends on both endpoints already started before rotation, the application cannot unsend them and does not guarantee exactly-once network delivery.
+
+### Dates and upgrade behavior
+
+Dexie schema versions, database name, backup/sync timestamp format and existing storage keys remain unchanged. Numeric timestamps are interpreted as the local year/month/day already shown by the device; rows are not UTC-normalized or rewritten. A saved FPP is honored on read, including old custom-duration/DST discrepancies, until an explicit date/duration edit. Original-zone reconstruction needs actual metadata or user confirmation and is outside this fix.
+
+Clinical formulas and week content were not newly clinically validated. Content-shape validation is not medical approval. Qualified medical review items remain in the inspection report.
+
+### Repair and account checks
+
+The standalone repair document does not depend on app chunks. It registers/updates the worker, waits for activation and repair acknowledgement, reports progress, and preserves records/push state. Each resource download/body/cache-write has a bounded wait. Concurrent repair callers receive progress. The worker accepts repair messages only from the same-origin repair route with a message port.
+
+The new worker makes `/reparar` network-only. An already-installed old worker can still replay its old cached repair document while offline, before this new behavior activates. A manager must test the actual old→new path online; no promise is made that an offline old installation already has these fixes. Do not clear site data/IndexedDB as routine recovery. A failed repair should leave the previous offline documents available.
+
+The hidden/inert subtree exists only during an already-granted same-owner recheck. It is not an authorization bypass: mismatch/revocation/account-owner changes remove private children. A successful offline fallback still requires the matching valid grant.
+
+## Verification and remaining release work
+
+Focused synthetic suites cover the account barrier and delayed route writes, upload obligations, auth erasure, category combinations/permission failures, schedule behavior, duration/calendar boundaries, shared sync/export state and repair failure retention. Final aggregate test counts, failures/retries, build revision and browser results belong in the completion report and `E:/ai work/Artifacts/embarazo.2.1/2026-10-23/inspection/fixes/`. Do not sum overlapping focused suites as an aggregate count.
+
+The required local order is TypeScript, lint, unit, fake-IDB database, content validation, production fixture build, then applicable Playwright specs. The fixture build uses `PHOTO_STORAGE_ENDPOINT=https://bucket.example.test` and `NEXT_PUBLIC_SUPPORT_EMAIL=hola@mibebe.example.py`; these are not production configuration. Real service credentials must stay unset in synthetic checks.
+
+Before any manager-approved release, use isolated controlled identities/devices to accept:
+
+1. Disposable real MySQL: delayed sync/photo/sharing/auth writes versus erasure; companion-owner lock ordering; simultaneous schedule replacement, claim and endpoint rotation. No production database.
+2. Mock or isolated object store: pre-expiry PUT completing after erase, failed DELETE/retry, live-photo preservation and fairness past the first 20 obligations; inspect metadata retention and actual maintenance delivery. No claim that provider transfer bounds are known.
+3. Physical Android installed PWA: cold start, low-connectivity/reconnect, old→new service-worker update, same-build repair, offline emergency and weeks 1–42; confirm records and consent survive. Test repeated resumes and network transitions.
+4. Actual phone timezone/DST/midnight and restore/date rollback: current week/day/FPP, adjacent-week browsing, return-current, notice eligibility, legacy date projection. Test keyboard/screen-reader focus, 320px/enlarged text, tabs and touch targets.
+5. Real browser/OS permissions and push only with separate authorization: denial/retry, sign-out unsubscribe failure, category text, duplicate prevention and delivery. No notifications were sent by this task.
+6. Controlled account/export/restore/deletion acceptance: stale and changed-owner responses, stalled sync/local-only exports, other-device records/photos and PIN-note expectations. These are not established by browser emulation.
+
+Browser emulation does not prove physical Android, installed-PWA, actual push, real MySQL or object-storage acceptance. Medical review, provider operation, release authorization and improvements outside the software bug fixes remain separate work.

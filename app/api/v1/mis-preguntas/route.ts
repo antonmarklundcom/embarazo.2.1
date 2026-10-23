@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { clientKeyFromHeaders, isRateLimited } from "@/lib/rateLimit";
 import { dbOrNull } from "@/lib/server/db";
+import { AccountWriteDenied, withAccountWrite } from "@/lib/server/accountWrite";
 import { getSession, isAuthAvailable } from "@/lib/server/auth";
 import { questionsOf, submitQuestion } from "@/lib/server/questions";
 import { drizzleQuestionsBackend } from "@/lib/server/questionsBackend";
@@ -97,11 +98,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const result = await submitQuestion(
-    drizzleQuestionsBackend(database),
-    userId,
-    parsed.data.question,
-  );
+  let result;
+  try {
+    result = await withAccountWrite(database, userId, (transaction) => submitQuestion(
+      drizzleQuestionsBackend(transaction), userId, parsed.data.question,
+    ));
+  } catch (error) {
+    if (error instanceof AccountWriteDenied) return NextResponse.json(
+      { error: "sesión requerida" }, { status: 401, headers: HEADERS },
+    );
+    throw error;
+  }
   if (!result.ok) {
     return NextResponse.json(
       {

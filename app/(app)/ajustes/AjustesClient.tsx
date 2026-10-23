@@ -58,7 +58,7 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
   const companionView = companionViewOf(shared.views);
   const companionAppointmentAt = companionView?.snapshot?.nextAppointmentAt ?? null;
 
-  const today = toDateInput(Date.now());
+  const today = toDateInput(profile.now);
   const guarani = useGuarani();
 
   // U11 — the way into U7's theme sheet from /ajustes, next to the language
@@ -73,6 +73,19 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
     await wipeSignedOutDevice(() => signOut({ redirect: false }));
     // A signed-out first-run gate cannot restore the account's cloud copy.
     if (typeof window !== "undefined") window.location.href = "/cuenta";
+  }
+
+  // Wait for the first on-device read before mounting editable drafts.
+  if (profile.loading) {
+    return (
+      <div className="space-y-6">
+        <header>
+          <h1 className="text-2xl font-black tracking-tight text-ink">Ajustes</h1>
+          <PrivacyLine className="mt-1" />
+        </header>
+        <p role="status" className="text-sm text-muted">Cargando tus ajustes…</p>
+      </div>
+    );
   }
 
   return (
@@ -148,6 +161,7 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
           mode={profile.mode}
           lmpDate={profile.lmpDate}
           dueDate={profile.dueDate}
+          gestationDays={profile.gestationDays}
           today={today}
         />
         <GestationSettings

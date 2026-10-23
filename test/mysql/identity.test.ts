@@ -125,7 +125,7 @@ describe.skipIf(!mysqlEnabled)("identity on a real database", () => {
     ]);
     await c.end();
     const row = await first("SELECT passwordHash, sessionVersion FROM users WHERE id = ?", [id]);
-    expect(results.filter((r) => r.ok)).toHaveLength(1);
+    expect(results.filter((r) => r.ok), JSON.stringify(results)).toHaveLength(1);
     expect(row.sessionVersion).toBe(1);
     const winner = results[0]!.ok ? "new password A1" : "new password B2";
     expect(await password.verifyPassword(winner, row.passwordHash as string)).toBe(true);

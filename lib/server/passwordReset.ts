@@ -3,6 +3,7 @@ import "server-only";
 import { and, eq, sql } from "drizzle-orm";
 
 import { db, isDatabaseConfigured } from "./db";
+import { AccountWriteDenied, withAccountWrite } from "./accountWrite";
 import { users, verificationTokens } from "./schema";
 import { isEmailConfigured, sendPasswordResetEmail } from "./email";
 import { EmailSchema, NewPasswordSchema, hashPassword } from "@/lib/auth/password";
@@ -159,17 +160,18 @@ export async function requestPasswordReset(
   // One active reset at a time. Clearing first means an older link that is
   // still inside its 30 minutes stops working the moment a newer one is asked
   // for, so "I requested it twice" cannot leave two live tokens in two inboxes.
-  await db()
-    .delete(verificationTokens)
-    .where(eq(verificationTokens.identifier, parsed.data));
-
-  await db()
-    .insert(verificationTokens)
-    .values({
-      identifier: parsed.data,
-      token: hashResetToken(token),
-      expires: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+  try {
+    await withAccountWrite(db(), row.id, async (transaction) => {
+      await transaction.delete(verificationTokens).where(eq(verificationTokens.identifier, parsed.data));
+      await transaction.insert(verificationTokens).values({
+        identifier: parsed.data, token: hashResetToken(token),
+        expires: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+      });
     });
+  } catch (error) {
+    if (error instanceof AccountWriteDenied) return { ok: true };
+    throw error;
+  }
 
   try {
     await sendPasswordResetEmail(parsed.data, url);
@@ -252,7 +254,8 @@ export async function resetPassword(
   // It may have expired while bcrypt ran.
   if (row.expires.getTime() <= Date.now()) return { ok: false, error: "expired" };
 
-  return db().transaction(async (tx) => {
+  try {
+  return await withAccountWrite(db(), owner.id, async (tx) => {
     const claim = await tx
       .delete(verificationTokens)
       .where(
@@ -268,7 +271,7 @@ export async function resetPassword(
     const [account] = await tx
       .select({ id: users.id, deletedAt: users.deletedAt })
       .from(users)
-      .where(eq(users.email, row.identifier))
+      .where(eq(users.id, owner.id))
       .limit(1);
     // No account (or one being erased): the token is spent either way.
     if (!account || account.deletedAt) {
@@ -285,6 +288,10 @@ export async function resetPassword(
 
     return { ok: true } as const;
   });
+  } catch (error) {
+    if (error instanceof AccountWriteDenied) return { ok: false, error: "invalid-token" };
+    throw error;
+  }
 }
 
 /** mysql2 reports a DELETE's row count here — same reading as lib/server/account.ts. */

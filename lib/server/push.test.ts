@@ -85,6 +85,42 @@ function memoryBackend(): PushBackend & {
       for (const row of rows) reminders.set(row.id, { ...row, sentAt: null });
     },
 
+    async replacePendingReminders(endpoint, category, times) {
+      // The real backend holds a DB row lock through these operations.
+      // Synchronous Map mutation models the atomic contract, not its SQL proof.
+      const sent = new Set([...reminders.values()].filter((row) => row.endpoint === endpoint && row.category === category && row.sentAt !== null).map((row) => row.fireAt));
+      for (const [id, row] of reminders) {
+        if (row.endpoint === endpoint && row.category === category && row.sentAt === null) reminders.delete(id);
+      }
+      for (const fireAt of new Set(times)) {
+        if (sent.has(fireAt)) continue;
+        const id = crypto.randomUUID();
+        reminders.set(id, { id, endpoint, category, fireAt, sentAt: null });
+      }
+    },
+
+    async rotateSubscription(oldEndpoint, next) {
+      const old = subs.get(oldEndpoint);
+      if (!old) return "unknown";
+      const existing = subs.get(next.endpoint);
+      subs.set(next.endpoint, { id: existing?.id ?? crypto.randomUUID(), endpoint: next.endpoint, userId: old.userId ?? existing?.userId ?? null, categories: old.categories });
+      if (next.endpoint === oldEndpoint) return "rotated";
+      const all = [...reminders.values()].filter((row) => row.endpoint === next.endpoint)
+        .concat([...reminders.values()].filter((row) => row.endpoint === oldEndpoint));
+      const chosen = new Map<string, (typeof all)[number]>();
+      for (const row of all) {
+        const key = `${row.category}|${row.fireAt}`;
+        const previous = chosen.get(key);
+        if (!previous || (previous.sentAt === null && row.sentAt !== null)) chosen.set(key, row);
+      }
+      for (const row of all) {
+        if (chosen.get(`${row.category}|${row.fireAt}`)?.id !== row.id) reminders.delete(row.id);
+        else row.endpoint = next.endpoint;
+      }
+      subs.delete(oldEndpoint);
+      return "rotated";
+    },
+
     async dueReminders(now, limit): Promise<DueReminder[]> {
       // Mirrors the INNER JOIN: a reminder for an endpoint with no live
       // subscription does not come back.
@@ -108,9 +144,9 @@ function memoryBackend(): PushBackend & {
     },
 
     // N5: mirrors the conditional UPDATE … WHERE sentAt IS NULL.
-    async claim(id, at) {
+    async claim(id, at, expectedEndpoint) {
       const row = reminders.get(id);
-      if (!row || row.sentAt !== null) return false;
+      if (!row || row.sentAt !== null || (expectedEndpoint !== undefined && row.endpoint !== expectedEndpoint)) return false;
       row.sentAt = at;
       return true;
     },
@@ -252,7 +288,7 @@ describe("rotating a subscription (pushsubscriptionchange)", () => {
     expect(backend.subs.has(ENDPOINT)).toBe(false);
   });
 
-  it("moves pending reminders, keeps their times, and leaves sent ones behind", async () => {
+  it("moves pending reminders and preserves claimed/sent history with the same IDs", async () => {
     const backend = memoryBackend();
     await saveSubscription(backend, { endpoint: ENDPOINT, p256dh: "p", auth: "a", categories: [], userId: null });
     await scheduleReminders(backend, ENDPOINT, "recordatorios", [NOW + 1000, NOW + 2000]);
@@ -263,19 +299,18 @@ describe("rotating a subscription (pushsubscriptionchange)", () => {
     await rotateSubscription(backend, ENDPOINT, NEW_SUB, NOW);
 
     const rows = [...backend.reminders.values()];
-    // The sent row is gone with the old subscription; it was never moved.
-    expect(rows.find((r) => r.id === sentId)).toBeUndefined();
+    expect(rows.find((r) => r.id === sentId)).toMatchObject({ endpoint: NEW_ENDPOINT, sentAt: NOW });
     expect(rows.some((r) => r.endpoint === ENDPOINT)).toBe(false);
     expect(
       rows
-        .filter((r) => r.endpoint === NEW_ENDPOINT)
+        .filter((r) => r.endpoint === NEW_ENDPOINT && r.sentAt === null)
         .map((r) => [r.category, r.fireAt])
         .sort(),
     ).toEqual([
       ["consejos", NOW + 3000],
       ["recordatorios", NOW + 2000],
     ]);
-    expect(rows.every((r) => r.sentAt === null)).toBe(true);
+    expect(rows.filter((r) => r.sentAt !== null)).toHaveLength(1);
   });
 
   it("does nothing, and says so, when the old endpoint is not stored", async () => {
@@ -353,7 +388,7 @@ describe("rotating a subscription (pushsubscriptionchange)", () => {
     ]);
   });
 
-  it("does not treat a sent row on the new endpoint as a duplicate, and leaves it untouched", async () => {
+  it("preserves a sent row without queuing the same category/time again on rotation", async () => {
     const backend = memoryBackend();
     await saveSubscription(backend, { endpoint: ENDPOINT, p256dh: "p", auth: "a", categories: [], userId: null });
     await scheduleReminders(backend, ENDPOINT, "recordatorios", [NOW + 1000]);
@@ -364,9 +399,9 @@ describe("rotating a subscription (pushsubscriptionchange)", () => {
     await rotateSubscription(backend, ENDPOINT, NEW_SUB, NOW);
 
     const rows = [...backend.reminders.values()];
-    expect(rows).toHaveLength(2);
+    expect(rows).toHaveLength(1);
     expect(backend.reminders.get(sent.id)).toMatchObject({ endpoint: NEW_ENDPOINT, sentAt: NOW });
-    expect(rows.filter((r) => r.sentAt === null)).toHaveLength(1);
+    expect(rows.filter((r) => r.sentAt === null)).toHaveLength(0);
   });
 
   it("a rotated reminder is dispatched to the new endpoint, not the old", async () => {
@@ -399,6 +434,26 @@ describe("unsubscribing", () => {
 });
 
 describe("scheduling reminders", () => {
+  it("concurrent equal schedules contain one event per time", async () => {
+    const backend = memoryBackend();
+    await Promise.all(Array.from({ length: 8 }, () => scheduleReminders(backend, ENDPOINT, "recordatorios", [NOW, NOW, NOW + 1000])));
+    expect([...backend.reminders.values()].map((row) => row.fireAt).sort()).toEqual([NOW, NOW + 1000]);
+  });
+
+  it("does not enqueue an equal event already claimed/sent", async () => {
+    const backend = memoryBackend();
+    await scheduleReminders(backend, ENDPOINT, "recordatorios", [NOW]);
+    const first = [...backend.reminders.values()][0]!;
+    await backend.claim(first.id, NOW);
+    await scheduleReminders(backend, ENDPOINT, "recordatorios", [NOW]);
+    expect([...backend.reminders.values()]).toEqual([first]);
+  });
+
+  it("different replacements resolve as whole lists, with the last call winning", async () => {
+    const backend = memoryBackend();
+    await Promise.all([scheduleReminders(backend, ENDPOINT, "recordatorios", [NOW]), scheduleReminders(backend, ENDPOINT, "recordatorios", [NOW + 1000, NOW + 2000])]);
+    expect([...backend.reminders.values()].map((row) => row.fireAt)).toEqual([NOW + 1000, NOW + 2000]);
+  });
   it("replaces the pending list for one category", async () => {
     const backend = memoryBackend();
     await scheduleReminders(backend, ENDPOINT, "recordatorios", [NOW, NOW + 1000]);
@@ -468,6 +523,57 @@ describe("dispatching due reminders", () => {
     return vi.fn(async () => outcome);
   }
 
+  it.each(["sent", "failed"] as const)("rotation during an old-endpoint send (%s) preserves one event and its retry", async (outcome) => {
+    const backend = memoryBackend();
+    const next = "https://fcm.googleapis.com/fcm/send/rotated-during-send";
+    await saveSubscription(backend, { endpoint: ENDPOINT, p256dh: "p", auth: "a", categories: ["consejos"], userId: null });
+    await scheduleReminders(backend, ENDPOINT, "consejos", [NOW - 1000]);
+    const originalId = [...backend.reminders.keys()][0]!;
+    let beginSend!: () => void; let finishSend!: () => void;
+    const started = new Promise<void>((resolve) => { beginSend = resolve; });
+    const finish = new Promise<void>((resolve) => { finishSend = resolve; });
+    const firstSend = vi.fn(async () => { beginSend(); await finish; return outcome; });
+    const firstRun = dispatchDueReminders(backend, NOW, firstSend);
+    await started;
+    await saveSubscription(backend, { endpoint: next, p256dh: "p", auth: "a", categories: ["consejos"], userId: null });
+    await scheduleReminders(backend, next, "consejos", [NOW - 1000]);
+    await rotateSubscription(backend, ENDPOINT, { endpoint: next, p256dh: "p", auth: "a" }, NOW);
+    expect([...backend.reminders.values()]).toEqual([{ id: originalId, endpoint: next, category: "consejos", fireAt: NOW - 1000, sentAt: NOW }]);
+    const secondSend = fakeSender("sent");
+    await dispatchDueReminders(backend, NOW + 1, secondSend);
+    expect(secondSend).not.toHaveBeenCalled();
+    finishSend(); await firstRun;
+    if (outcome === "failed") {
+      expect(backend.reminders.get(originalId)?.sentAt).toBeNull();
+      await dispatchDueReminders(backend, NOW + 2, secondSend);
+      expect(secondSend).toHaveBeenCalledTimes(1);
+      expect(secondSend).toHaveBeenCalledWith(next, expect.any(Object), NOW + 2);
+    } else {
+      await dispatchDueReminders(backend, NOW + 2, secondSend);
+      expect(secondSend).not.toHaveBeenCalled();
+    }
+  });
+  it("a stale old-endpoint due snapshot cannot consume a rotated pending event", async () => {
+    const backend = memoryBackend();
+    const next = "https://fcm.googleapis.com/fcm/send/rotated-before-claim";
+    await saveSubscription(backend, { endpoint: ENDPOINT, p256dh: "p", auth: "a", categories: ["consejos"], userId: null });
+    await scheduleReminders(backend, ENDPOINT, "consejos", [NOW - 1000]);
+    const originalRead = backend.dueReminders.bind(backend);
+    let rotated = false;
+    backend.dueReminders = async (at, limit) => {
+      const snapshot = await originalRead(at, limit);
+      if (!rotated) {
+        rotated = true;
+        await rotateSubscription(backend, ENDPOINT, { endpoint: next, p256dh: "p", auth: "a" }, NOW);
+      }
+      return snapshot;
+    };
+    const send = fakeSender("sent");
+    expect((await dispatchDueReminders(backend, NOW, send)).sent).toBe(0);
+    expect(send).not.toHaveBeenCalled();
+    expect((await dispatchDueReminders(backend, NOW + 1, send)).sent).toBe(1);
+    expect(send).toHaveBeenCalledWith(next, expect.any(Object), NOW + 1);
+  });
   it("N5: two overlapping runs send a due reminder once", async () => {
     const backend = memoryBackend();
     await saveSubscription(backend, { endpoint: ENDPOINT, p256dh: "p", auth: "a", categories: ["recordatorios"], userId: null });

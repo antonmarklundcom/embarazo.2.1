@@ -6,6 +6,7 @@ import type { Database } from "./db";
 import { deleteObject } from "./photoStorage";
 import { verificationIdentifier } from "./emailVerification";
 import { ERASED_AI_USER } from "./aiBaby";
+import { isUploadIntentStore } from "./photoUploadIntents";
 import {
   accounts,
   aiGenerations,
@@ -81,8 +82,10 @@ export const TABLE_DISPOSITION = {
   // "account deletion leaves zero blobs" is the task's own acceptance
   // criterion. The row goes AND the object goes — deleting the index while
   // leaving the bytes in a bucket would be the worst of both: unreachable
-  // through the app, still sitting on somebody's disk.
-  photoBlobs: "deleted (rows AND the objects they point at)",
+  // through the app, still sitting on somebody's disk. Signed-upload intents
+  // are the explicit exception: their opaque user/key and null payload stay
+  // solely for repeated DELETE of late PUTs until safe compaction is known.
+  photoBlobs: "deleted (photo metadata and object bytes; payload-free upload cleanup keys retained)",
 
   // Devices and paid-for work.
   pushSubscriptions: "deleted",
@@ -217,8 +220,8 @@ export interface AccountDeleteExecutor {
  * foreign keys — with the user row last, so an interrupted deletion leaves a
  * marked row that `finishPendingDeletions` (and any later sign-in attempt for
  * the address) completes, rather than orphaned health data with no owner.
- * Finally a second pass catches anything a request that was already past its
- * session check wrote while the first pass ran.
+ * Every durable account writer holds a user-row lock in withAccountWrite.
+ * markDeleting waits for those commits; later writers see deletedAt/missing.
  */
 export async function deleteAccountData(
   executor: AccountDeleteExecutor,
@@ -250,9 +253,8 @@ export async function deleteAccountData(
     users: await executor.deleteUser(userId),
   };
 
-  // Late writes: a request that passed its session check before the mark
-  // can still commit after the first pass. The sessions are revoked, so this
-  // window is a single request long; one more pass closes it.
+  // Defensive idempotent sweep for legacy rows. Correctness comes from the
+  // shared user-row write barrier, not from guessing how long requests take.
   counts.syncRecords! += await executor.deleteSyncRecords(userId);
   counts.photoBlobs! += await executor.deletePhotoBlobs(userId);
   counts.aiGenerations! += await executor.anonymiseAiGenerations(userId);
@@ -408,6 +410,7 @@ export function drizzleAccountExecutor(
           store: photoBlobs.store,
           recordId: photoBlobs.recordId,
           objectKey: photoBlobs.objectKey,
+          updatedAt: photoBlobs.updatedAt,
         })
         .from(photoBlobs)
         .where(eq(photoBlobs.userId, userId));
@@ -424,6 +427,9 @@ export function drizzleAccountExecutor(
       let deleted = 0;
       for (const row of rows) {
         if (!(await deleteObject(userId, row.objectKey))) continue;
+        // DELETE is not revocation of an already issued PUT capability. Keep
+        // its payload-free retry key even after expiry and a successful DELETE.
+        if (isUploadIntentStore(row.store)) continue;
         deleted += affected(
           await database
             .delete(photoBlobs)

@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { db, type AppMode } from "@/lib/db";
+import { db, notDeleted, type AppMode } from "@/lib/db";
 import { toDateInput } from "@/lib/appointments";
 import {
   getDueDate,
   lmpFromDueDate,
   getRawWeek,
+  GESTATION_DAYS,
   MAX_WEEK,
 } from "@/lib/pregnancy";
 
@@ -21,31 +22,43 @@ export function PregnancyDateSettings({
   mode,
   lmpDate,
   dueDate,
+  gestationDays = GESTATION_DAYS,
   today,
 }: {
   mode: AppMode;
   lmpDate: number | undefined;
   dueDate: number | undefined;
+  gestationDays?: number;
   today: string;
 }) {
   // Editable pregnancy date (build spec §1).
   const [useDueDate, setUseDueDate] = useState(false);
-  const [lmpInput, setLmpInput] = useState("");
-  const [dueInput, setDueInput] = useState("");
+  const [lmpInput, setLmpInput] = useState(() => toDateInput(lmpDate));
+  const [dueInput, setDueInput] = useState(() => toDateInput(dueDate));
   const [dateMsg, setDateMsg] = useState("");
   const [dateWarn, setDateWarn] = useState("");
 
+  const lmpDraft = useRef({ dirty: false, version: 0 });
+  const dueDraft = useRef({ dirty: false, version: 0 });
   useEffect(() => {
-    if (lmpDate) setLmpInput(toDateInput(lmpDate));
-    if (dueDate) setDueInput(toDateInput(dueDate));
-  }, [lmpDate, dueDate]);
+    if (!lmpDraft.current.dirty) setLmpInput(toDateInput(lmpDate));
+  }, [lmpDate]);
+  useEffect(() => {
+    if (!dueDraft.current.dirty) setDueInput(toDateInput(dueDate));
+  }, [dueDate]);
 
   async function savePregnancyDate() {
     setDateMsg("");
     setDateWarn("");
+    const submittedDraft = useDueDate ? dueDraft : lmpDraft;
+    const submittedVersion = submittedDraft.current.version;
+    // Read the latest duration, including an edit/sync from another tab that
+    // arrived after this form rendered. Never resurrect a tombstoned row.
+    const first = notDeleted(await db().pregnancy.toArray())[0];
+    const duration = first?.gestationDays ?? gestationDays;
     const nextLmpDate = useDueDate
       ? dueInput
-        ? lmpFromDueDate(new Date(`${dueInput}T00:00:00`).getTime())
+        ? lmpFromDueDate(new Date(`${dueInput}T00:00:00`).getTime(), duration)
         : NaN
       : lmpInput
         ? new Date(`${lmpInput}T00:00:00`).getTime()
@@ -67,20 +80,23 @@ export function PregnancyDateSettings({
       );
     }
 
-    const rows = await db().pregnancy.toArray();
-    const first = rows[0];
+    // An explicit new FUM/FPP supersedes the previous FIV/conception method;
+    // preserve the custom duration and every unrelated pregnancy field.
+    const patch = {
+      lmpDate: nextLmpDate,
+      dueDate: getDueDate(nextLmpDate, duration),
+      method: useDueDate ? "ecografia" as const : "lmp" as const,
+    };
     if (first?.id) {
-      await db().pregnancy.update(first.id, {
-        lmpDate: nextLmpDate,
-        dueDate: getDueDate(nextLmpDate),
-      });
+      await db().pregnancy.update(first.id, patch);
     } else {
       await db().pregnancy.add({
-        lmpDate: nextLmpDate,
-        dueDate: getDueDate(nextLmpDate),
+        ...patch,
+        gestationDays: duration,
         createdAt: Date.now(),
       });
     }
+    if (submittedDraft.current.version === submittedVersion) submittedDraft.current.dirty = false;
     setDateMsg("Fecha actualizada. Tu semana se recalculó.");
     setTimeout(() => setDateMsg(""), 3000);
   }
@@ -117,7 +133,7 @@ export function PregnancyDateSettings({
             type="date"
             value={lmpInput}
             max={today}
-            onChange={(e) => setLmpInput(e.target.value)}
+            onChange={(e) => { lmpDraft.current.dirty = true; lmpDraft.current.version++; setLmpInput(e.target.value); }}
             className="mt-1 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-3 py-2 focus:border-petrol focus:outline-none"
           />
         </div>
@@ -130,11 +146,11 @@ export function PregnancyDateSettings({
             id="due-edit"
             type="date"
             value={dueInput}
-            onChange={(e) => setDueInput(e.target.value)}
+            onChange={(e) => { dueDraft.current.dirty = true; dueDraft.current.version++; setDueInput(e.target.value); }}
             className="mt-1 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-3 py-2 focus:border-petrol focus:outline-none"
           />
           <p className="mt-1 text-[11px] text-muted">
-            Calculamos tu última regla restando 280 días a esta fecha.
+            Calculamos tu última regla restando {gestationDays} días a esta fecha.
           </p>
         </div>
       )}

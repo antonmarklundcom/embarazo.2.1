@@ -163,7 +163,7 @@ export default function PataditasPage() {
           type="button"
           onClick={startSession}
           disabled={busy || !restored}
-          className="min-h-[44px] w-full rounded-tile bg-petrol px-4 py-3 text-sm font-medium text-white transition active:scale-[0.98] disabled:opacity-60"
+          className="min-h-[44px] w-full rounded-tile bg-petrol px-4 py-3 text-sm font-medium text-white transition-transform active:scale-[0.98] disabled:opacity-60"
         >
           Empezar una sesión
         </button>
@@ -173,7 +173,7 @@ export default function PataditasPage() {
             type="button"
             onClick={addKick}
             disabled={busy || active === undefined || active?.completedAt !== undefined}
-            className="flex h-56 w-56 flex-col items-center justify-center rounded-full bg-rose/20 text-petrol-dark shadow-soft transition active:scale-[0.97] disabled:opacity-60"
+            className="flex h-56 w-56 flex-col items-center justify-center rounded-full bg-rose/20 text-petrol-dark shadow-soft transition-transform active:scale-[0.97] disabled:opacity-60"
             aria-label="Registrar una patadita"
           >
             <span className="text-6xl font-medium">{count}</span>
@@ -195,7 +195,7 @@ export default function PataditasPage() {
               <p className="font-extrabold">{KICKS_WINDOW_ALERT.es}</p>
               <Link
                 href="/emergencia"
-                className="block rounded-tile bg-terracotta px-3 py-2.5 text-center text-sm font-extrabold text-white transition active:scale-[0.99]"
+                className="block rounded-tile bg-terracotta px-3 py-2.5 text-center text-sm font-extrabold text-white transition-transform active:scale-[0.99]"
               >
                 Ir a Emergencia
               </Link>

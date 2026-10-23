@@ -7,6 +7,7 @@ import { drizzlePushBackend } from "@/lib/server/pushBackend";
 import { isAllowedPushEndpoint } from "@/lib/push/endpoints";
 import { clientKeyFromHeaders, isRateLimited } from "@/lib/rateLimit";
 import { refuseCrossSite } from "@/lib/server/requestGuard";
+import { AccountWriteDenied, withAccountWrite } from "@/lib/server/accountWrite";
 
 // `pushsubscriptionchange` — the push service replaced this browser's
 // subscription, and the service worker (app/sw.ts) is telling us which
@@ -100,12 +101,21 @@ export async function POST(req: NextRequest) {
   }
 
   const { oldEndpoint, endpoint, keys } = parsed.data;
-  const outcome = await rotateSubscription(
-    drizzlePushBackend(database),
+  const backend = drizzlePushBackend(database);
+  const stored = await Promise.all([backend.subscriptionOf(oldEndpoint), backend.subscriptionOf(endpoint)]);
+  const owners = [...new Set(stored.map((row) => row?.userId).filter((id): id is string => Boolean(id)))];
+  let outcome: "rotated" | "unknown";
+  try {
+  outcome = await withAccountWrite(database, owners, (transaction) => rotateSubscription(
+    drizzlePushBackend(transaction, owners),
     oldEndpoint,
     { endpoint, p256dh: keys.p256dh, auth: keys.auth },
     Date.now(),
-  );
+  ));
+  } catch (error) {
+    if (error instanceof AccountWriteDenied) return NextResponse.json({ error: "cuenta no disponible" }, { status: 401, headers: HEADERS });
+    throw error;
+  }
 
   // "unknown" is not an error: the server never knew that device, and the
   // app's start-up refresh will subscribe it the ordinary way.

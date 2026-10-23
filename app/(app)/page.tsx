@@ -20,12 +20,12 @@ import {
   PopularThisWeek,
   ShareCard,
   QueEsperarCard,
+  PerspectiveSwitcher,
 } from "@/components/home/dynamicSections";
 
 import {
   formatCompletedGestation,
   formatWeekPlusDay,
-  getDaysRemaining,
   getDueDate,
   getDaysSinceLMP,
   getProgressFraction,
@@ -236,10 +236,10 @@ export default function InicioPage() {
 
   const lmpDate = profile.lmpDate!;
   const gestationDays = profile.gestationDays;
-  const daysElapsed = getDaysSinceLMP(lmpDate);
-  const daysLeft = getDaysRemaining(lmpDate, Date.now(), gestationDays);
-  const progress = getProgressFraction(lmpDate, Date.now(), gestationDays);
-  const dueDateLabel = new Date(getDueDate(lmpDate, gestationDays)).toLocaleDateString(
+  const daysElapsed = getDaysSinceLMP(lmpDate, profile.now);
+  const daysLeft = profile.daysRemaining!;
+  const progress = getProgressFraction(lmpDate, profile.now, gestationDays);
+  const dueDateLabel = new Date(profile.dueDate ?? getDueDate(lmpDate, gestationDays)).toLocaleDateString(
     "es-PY",
     { day: "numeric", month: "short" },
   );
@@ -259,6 +259,7 @@ export default function InicioPage() {
           dueDateLabel={dueDateLabel}
           babies={profile.babies}
           role={profile.role}
+          weeklyOverview={<PerspectiveSwitcher week={week} role={profile.role} />}
         />
         <StoryRail week={week} role={profile.role} />
         <NextAppointmentCard
@@ -285,7 +286,7 @@ export default function InicioPage() {
       </section>
 
       <section aria-label="Para conocer tu semana" className="space-y-7">
-        <WeekContentRail week={week} role={profile.role} withLine={false} sizeInHero />
+        <WeekContentRail week={week} role={profile.role} withLine={false} withPerspectives={false} sizeInHero />
         <QueEsperarCard week={week} answers={profile} />
         <PopularThisWeek />
       </section>

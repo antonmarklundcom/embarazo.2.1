@@ -3,6 +3,7 @@ import "server-only";
 import { and, eq, sql } from "drizzle-orm";
 
 import type { Database } from "./db";
+import { withAccountWrite } from "./accountWrite";
 import { aiGenerations } from "./schema";
 import {
   AI_BABY_PROMPT,
@@ -97,13 +98,13 @@ export interface QuotaStore {
 export function drizzleQuotaStore(database: Database): QuotaStore {
   return {
     async reserve(row) {
-      await database.insert(aiGenerations).values({
+      await withAccountWrite(database, row.userId, (transaction) => transaction.insert(aiGenerations).values({
         id: row.id,
         userId: row.userId,
         quotaMonth: row.quotaMonth,
         model: row.model,
         status: "pending",
-      });
+      }).then(() => undefined));
     },
     async release(id) {
       await database.delete(aiGenerations).where(eq(aiGenerations.id, id));

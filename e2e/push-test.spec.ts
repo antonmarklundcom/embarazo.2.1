@@ -62,6 +62,8 @@ const marker = (page: Page) =>
 test("a subscribed phone can ask for a test after closing the app", async ({ page }) => {
   await subscribedDevice(page, 202);
   await completeOnboarding(page);
+  // These cases test mocked API outcomes, after cold worker installation has finished.
+  await page.evaluate(() => navigator.serviceWorker.ready);
   await page.goto("/ajustes");
 
   // readPushState waits up to 6 s for the service worker (lib/push/client.ts).
@@ -78,6 +80,8 @@ test("a subscribed phone can ask for a test after closing the app", async ({ pag
 test("each refusal is explained and leaves no marker behind", async ({ page }) => {
   await subscribedDevice(page, 404);
   await completeOnboarding(page);
+  // These cases test mocked API outcomes, after cold worker installation has finished.
+  await page.evaluate(() => navigator.serviceWorker.ready);
   await page.goto("/ajustes");
 
   await page.getByRole("button", { name: "Enviar ahora" }).click();
@@ -88,6 +92,8 @@ test("each refusal is explained and leaves no marker behind", async ({ page }) =
 test("a signed-out phone is told to sign in instead of sending", async ({ page }) => {
   await subscribedDevice(page, 200, false);
   await completeOnboarding(page);
+  // These cases test mocked API outcomes, after cold worker installation has finished.
+  await page.evaluate(() => navigator.serviceWorker.ready);
   await page.goto("/ajustes");
 
   await page.getByRole("button", { name: "Enviar ahora" }).click();
@@ -98,6 +104,8 @@ test("a signed-out phone is told to sign in instead of sending", async ({ page }
 test("tapping the test notification lands on a confirmation", async ({ page }) => {
   await subscribedDevice(page, 200);
   await completeOnboarding(page);
+  // These cases test mocked API outcomes, after cold worker installation has finished.
+  await page.evaluate(() => navigator.serviceWorker.ready);
   await page.goto("/ajustes?avisos=prueba");
   await expect(page.getByText("¡Funciona! Llegaste acá tocando el aviso de prueba.")).toBeVisible();
 });

@@ -1,21 +1,17 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
 import { Serwist, CacheFirst, NetworkFirst, NetworkOnly } from "serwist";
-import { APP_NAME } from "@/lib/brand";
 import { MIN_WEEK, MAX_WEEK, getCurrentWeek } from "@/lib/pregnancy";
 // K11: the *index*, not the articles — the service worker needs eight slugs
 // to precache, and importing the loader put every article body and zod into
 // the worker bundle, which every user downloads.
 import { ARTICLE_INDEX } from "@/lib/articles/loadIndex";
-import {
-  companionReminderSentence,
-  ownReminderSentence,
-} from "@/lib/appointments";
 // PR-5b — the two sentences push learned to write. Pure, and unit-tested in
 // lib/push/sentences.test.ts, because a service worker is the hardest place in
 // the app to assert anything about.
-import { cheerSentence, weeklyTipSentence } from "@/lib/push/sentences";
-import { babyAgeSentence } from "@/lib/baby/push";
+import { composeAllowedNotification } from "@/lib/push/compose";
+import { readNotificationPolicy } from "@/lib/push/notificationPolicy";
+import { repairPrecache } from "@/lib/sw/repair";
 import { revisionedPages } from "@/lib/sw/pageRevision";
 import {
   PUSH_TEST_CACHE,
@@ -168,6 +164,8 @@ const serwist = new Serwist({
   clientsClaim: true,
   navigationPreload: true,
   runtimeCaching: [
+    // Recovery must never replay an older repair script from a runtime cache.
+    { matcher: ({ url, sameOrigin }) => sameOrigin && url.pathname === "/reparar", handler: new NetworkOnly() },
     // A3, widened by K14: /api/v1/sync is never cached, in either direction —
     // a cached pull would replay stale records over newer local ones, and a
     // cached push response would clear a dirty flag for a write the server
@@ -261,6 +259,37 @@ const serwist = new Serwist({
       },
     ],
   },
+});
+
+// The recovery page is a plain response and cannot import app code. Its
+// message is acknowledged only after a complete safe offline copy is ready.
+let repairTask: Promise<void> | undefined;
+const repairPorts = new Set<MessagePort>();
+self.addEventListener("message", (event: ExtendableMessageEvent) => {
+  if (event.data?.type !== "MIBEBE_REPAIR_PRECACHE" || !event.ports[0]) return;
+  const source = event.source;
+  if (!source || !("url" in source) || new URL(source.url).origin !== self.location.origin ||
+      new URL(source.url).pathname !== "/reparar") return;
+  const port = event.ports[0];
+  repairPorts.add(port);
+  port.postMessage({ type: "MIBEBE_REPAIR_PROGRESS", done: 0, total: serwist.getUrlsToPrecacheKeys().size });
+  event.waitUntil((async () => {
+    try {
+      if (!repairTask) {
+        repairTask = repairPrecache({
+          storage: caches, cacheName: serwist.precacheStrategy.cacheName,
+          entries: serwist.getUrlsToPrecacheKeys(), pages: new Set(pageRoutes),
+          fetcher: self.fetch.bind(self),
+          integrityForKey: key => serwist.getIntegrityForPrecacheKey(key),
+          progress: (done, total) => { for (const listener of repairPorts) { try { listener.postMessage({ type: "MIBEBE_REPAIR_PROGRESS", done, total }); } catch { repairPorts.delete(listener); } } },
+        }).finally(() => { repairTask = undefined; });
+      }
+      await repairTask;
+      port.postMessage({ type: "MIBEBE_REPAIR_COMPLETE" });
+    } catch {
+      port.postMessage({ type: "MIBEBE_REPAIR_FAILED" });
+    } finally { repairPorts.delete(port); }
+  })());
 });
 
 serwist.addEventListeners();
@@ -484,49 +513,14 @@ async function consumePushTestMarker(now: number): Promise<boolean> {
 async function composeNotification(): Promise<{ title: string; body: string; url?: string }> {
   const now = Date.now();
   if (await consumePushTestMarker(now)) return { ...PUSH_TEST_NOTICE };
-  const local = await readLocalReminderState();
-
-  // Her own control first: it is the common case, it needs no network, and a
-  // device that tracks both would otherwise describe somebody else's.
-  // Tapping her own control reminder opens "Preparar mi control": the day
-  // before is exactly when to pick the questions to ask.
-  const own = ownReminderSentence(local.nextAppointment, now);
-  if (own) return { ...own, url: "/herramientas/resumen" };
-
-  if (local.companionReminder) {
-    const companion = companionReminderSentence(
-      await readCompanionAppointment(),
-      now,
-    );
-    if (companion) return companion;
-  }
-
-  // PR-5b — a cheer beats a weekly tip, and sits below both control reminders.
-  //
-  // The ordering is by cost of being wrong. Missing a control is the only
-  // thing in this list she loses something by missing, so it wins even on the
-  // rare day a cheer arrives an hour before one. A cheer beats a tip because
-  // somebody is waiting for her to see it.
-  const cheerId = await readFreshCheer(now);
-  if (cheerId) return cheerSentence(cheerId);
-
-  // The weekly tip. Also the honest landing place for a control reminder whose
-  // appointment moved between scheduling and firing: there is something true
-  // to say about her week either way.
-  // Growth plan item 9 (G3): after the birth, the notice is about the baby's
-  // age, never a pregnancy week that no longer exists.
-  if (local.birthDate !== null) return { ...babyAgeSentence(local.birthDate, now), url: "/" };
-
-  const weekly = weeklyTipSentence(local.week);
-  if (weekly) return weekly;
-
-  // Nothing local to say — no week, no cheer, no control. We still have to
-  // show something (`userVisibleOnly`), so show something true and useless
-  // rather than something specific and wrong.
-  return {
-    title: APP_NAME,
-    body: "Tocá para ver cómo va tu semana.",
-  };
+  const categories = await readNotificationPolicy();
+  // With no pregnancy-related opt-in, do not even open the health-data
+  // stores. Mimos/avisos can compose from their allowed live/generic source.
+  const local = categories.includes("recordatorios") || categories.includes("consejos")
+    ? await readLocalReminderState()
+    : { nextAppointment: null, companionReminder: false, week: null, birthDate: null };
+  return composeAllowedNotification(local, categories, now,
+    readCompanionAppointment, () => readFreshCheer(now));
 }
 
 self.addEventListener("push", (event) => {

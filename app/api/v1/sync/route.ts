@@ -3,6 +3,7 @@ import { refuseCrossSite, refuseOtherAccount } from "@/lib/server/requestGuard";
 
 import { getSession, isAuthAvailable } from "@/lib/server/auth";
 import { dbOrNull } from "@/lib/server/db";
+import { AccountWriteDenied, withAccountWrite } from "@/lib/server/accountWrite";
 import { drizzleBackend, pullRecords, pushRecords } from "@/lib/server/sync";
 import { userSyncState } from "@/lib/server/support";
 import { drizzleSupportBackend } from "@/lib/server/supportBackend";
@@ -93,15 +94,16 @@ export async function POST(req: NextRequest) {
 
   // I1/U6: read alongside the write so a support-forced resync reaches the
   // device on the very next request it makes, in either direction.
-  const state = await userSyncState(drizzleSupportBackend(ctx.database), ctx.userId);
-
-  const result = await pushRecords(
-    drizzleBackend(ctx.database),
-    ctx.userId,
-    valid,
-    Date.now(),
-    state?.syncEpoch,
-  );
+  let result;
+  try {
+    result = await withAccountWrite(ctx.database, ctx.userId, async (transaction) => {
+      const state = await userSyncState(drizzleSupportBackend(transaction), ctx.userId);
+      return pushRecords(drizzleBackend(transaction), ctx.userId, valid, Date.now(), state?.syncEpoch);
+    });
+  } catch (error) {
+    if (error instanceof AccountWriteDenied) return unauthorized();
+    throw error;
+  }
 
   return NextResponse.json(
     { ...result, results: [...result.results, ...rejected] },

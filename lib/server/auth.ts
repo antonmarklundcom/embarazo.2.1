@@ -11,6 +11,8 @@ import type { NextRequest } from "next/server";
 import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 
 import { db, isDatabaseConfigured } from "./db";
+import type { Database } from "./db";
+import { withAccountWrite } from "./accountWrite";
 import { accounts, sessions, users, verificationTokens } from "./schema";
 import {
   enabledProviders,
@@ -141,6 +143,22 @@ async function clearConsentCookie(): Promise<void> {
   }
 }
 
+/** Adapter inserts must obey the same erasure barrier as health-data writes. */
+export function erasureSafeAdapter(database: Database): ReturnType<typeof DrizzleAdapter> {
+  const tables = { usersTable: users, accountsTable: accounts, sessionsTable: sessions, verificationTokensTable: verificationTokens };
+  const raw = (transaction: Database) => DrizzleAdapter(transaction, tables);
+  const adapter = raw(database);
+  return {
+    ...adapter,
+    linkAccount: (account) => withAccountWrite(database, account.userId,
+      async (transaction) => { await raw(transaction).linkAccount!(account); }),
+    createSession: (session) => withAccountWrite(database, session.userId,
+      async (transaction) => raw(transaction).createSession!(session)),
+    updateUser: (user) => withAccountWrite(database, user.id,
+      async (transaction) => raw(transaction).updateUser!(user)),
+  };
+}
+
 function buildConfig(): NextAuthConfig {
   const providers = [];
   const enabled = enabledProviders(process.env);
@@ -260,12 +278,7 @@ function buildConfig(): NextAuthConfig {
     trustHost: true,
     logger: { error: logAuthFailure },
     adapter: isDatabaseConfigured()
-      ? DrizzleAdapter(db(), {
-          usersTable: users,
-          accountsTable: accounts,
-          sessionsTable: sessions,
-          verificationTokensTable: verificationTokens,
-        })
+      ? erasureSafeAdapter(db())
       : undefined,
     providers,
     session: { strategy: "jwt" },

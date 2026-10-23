@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
 import { clearOnboardingDraft } from "@/lib/onboarding/draftStorage";
+import { db } from "@/lib/db";
+import { waitForBackupSync } from "@/lib/sync/export";
+import { exportCompleteness } from "@/lib/sync/status";
 import { APP_NAME } from "@/lib/brand";
 import { BackupError, exportBackup, backupFileName, importBackup } from "@/lib/backup";
 import { syncNow } from "@/lib/sync/client";
@@ -13,8 +16,12 @@ import { requestPersistentStorage } from "@/lib/storagePersist";
 export function BackupSettings() {
   // Backup / restore (Phase 0 hardening — data never leaves the device).
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const active = useRef(true);
+  useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   const [backupMsg, setBackupMsg] = useState("");
   const [backupErr, setBackupErr] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const [localOnlyOffer, setLocalOnlyOffer] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [confirmRestoreFile, setConfirmRestoreFile] = useState<File | null>(null);
 
@@ -26,27 +33,42 @@ export function BackupSettings() {
     void requestPersistentStorage().then(setPersisted);
   }, []);
 
-  async function handleExport() {
+  async function handleExport(localOnly = false) {
     setBackupErr("");
     setBackupMsg("");
+    setExporting(true);
     try {
-      // A5: "Descargar mis datos" must include synced data. The device is the
-      // source of truth, but a record written on another phone lives only on
-      // the server until it is pulled — so pull first, then export. This is a
-      // no-op (and silent) without an account, which is the common case.
-      await syncNow();
+      const owner = (await db().syncState.get("default"))?.accountId;
+      const linked = Boolean(owner);
+      if (linked && !localOnly) {
+        const summary = await waitForBackupSync(() => syncNow({ waitForRunning: true }));
+        const completeness = exportCompleteness(summary.outcome);
+        if (completeness === "refused") {
+          setLocalOnlyOffer(false);
+          setBackupErr("No descargamos datos: entrá con la cuenta de estos registros.");
+          return;
+        }
+        if (completeness === "local-only") {
+          setLocalOnlyOffer(true);
+          setBackupErr("No pudimos confirmar los registros de otros aparatos. Podés descargar solo lo disponible en este teléfono.");
+          return;
+        }
+      }
       const blob = await exportBackup();
+      if (!active.current || (await db().syncState.get("default"))?.accountId !== owner) return;
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = backupFileName();
       a.click();
-      URL.revokeObjectURL(url);
-      setBackupMsg("Copia descargada. Guardala en un lugar seguro.");
-      setTimeout(() => setBackupMsg(""), 4000);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setLocalOnlyOffer(false);
+      setBackupMsg(localOnly
+        ? "Copia local descargada. Puede faltar lo cargado desde otros aparatos."
+        : "Copia descargada. Contiene los registros y fotos disponibles en este teléfono.");
     } catch {
       setBackupErr("No pudimos generar la copia. Probá de nuevo.");
-    }
+    } finally { setExporting(false); }
   }
 
   function handlePickRestoreFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -88,9 +110,11 @@ export function BackupSettings() {
         Sin cuenta, tus datos viven solo en este teléfono: si lo perdés, lo
         cambiás o borrás los datos del navegador, se pierden para siempre a
         menos que tengas una copia. Descargá un archivo con todos tus datos y
-        guardalo en un lugar seguro (por ejemplo, envíatelo por WhatsApp o
-        guardalo en Google Drive). Si tenés cuenta, la copia incluye también
-        lo que hayas cargado desde otros aparatos.
+        guardalo en un lugar privado. Si tenés cuenta, primero comprobamos la
+        sincronización de tus registros. Las fotos del archivo son las que están
+        disponibles en este teléfono; no se descargan automáticamente todas las
+        fotos de otros aparatos. El archivo contiene información personal sin
+        cifrar, excepto las notas que ya protegiste con PIN.
       </p>
       {persisted === false && (
         <p className="mt-2 text-sm text-terracotta">
@@ -100,11 +124,13 @@ export function BackupSettings() {
       )}
       <button
         type="button"
-        onClick={handleExport}
+        onClick={() => void handleExport()}
+        disabled={exporting || restoring}
         className="mt-3 min-h-[44px] w-full rounded-tile bg-petrol px-4 py-2.5 text-sm font-medium text-white transition active:scale-[0.98]"
       >
-        Descargar mis datos
+        {exporting ? "Preparando copia…" : "Descargar mis datos"}
       </button>
+      {localOnlyOffer && <button type="button" disabled={exporting || restoring} onClick={() => void handleExport(true)} className="mt-2 min-h-11 w-full rounded-tile border border-line px-4 py-2 text-sm font-bold text-petrol">Descargar solo la copia de este teléfono</button>}
 
       <input
         ref={fileInputRef}
@@ -149,8 +175,8 @@ export function BackupSettings() {
         </div>
       )}
 
-      {backupMsg && <p className="mt-2 text-sm text-sage">{backupMsg}</p>}
-      {backupErr && <p className="mt-2 text-sm text-terracotta">{backupErr}</p>}
+      {backupMsg && <p role="status" aria-live="polite" className="mt-2 text-sm text-sage">{backupMsg}</p>}
+      {backupErr && <p role="alert" className="mt-2 text-sm text-terracotta">{backupErr}</p>}
     </section>
   );
 }

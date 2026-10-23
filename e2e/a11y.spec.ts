@@ -98,6 +98,9 @@ test("Hoy and every personal screen have no serious accessibility violations", a
   for (const path of PERSONAL_ROUTES) {
     await page.goto(path);
     await expect(page.locator("main").first()).toBeVisible();
+    if (path === "/ajustes") {
+      await expect(page.getByRole("spinbutton", { name: "Duración del embarazo, en días" })).toBeVisible();
+    }
     await audit(page, path);
   }
 });

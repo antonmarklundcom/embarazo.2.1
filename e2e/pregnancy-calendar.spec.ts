@@ -10,7 +10,7 @@ async function savedPregnancy(page: Page) {
       request.onerror = () => reject(request.error);
     });
     try {
-      return await new Promise<{ lmpDate: number; dueDate: number; gestationDays?: number; method?: string }>((resolve, reject) => {
+      return await new Promise<{ lmpDate: number; dueDate: number; gestationDays?: number; method?: string; plannedDeliveryDate?: number }>((resolve, reject) => {
         const read = database.transaction("pregnancy").objectStore("pregnancy").getAll();
         read.onsuccess = () => resolve(read.result.find((row) => !row.deletedAt));
         read.onerror = () => reject(read.error);
@@ -20,6 +20,121 @@ async function savedPregnancy(page: Page) {
     }
   });
 }
+
+
+test("settings wait for the initial profile and preserve drafts during a later live refresh", async ({ page, context }) => {
+  await completeOnboarding(page, { daysAgo: 120 });
+  // Synthetic existing custom duration, before the next settings mount.
+  await page.evaluate(async () => {
+    const open = indexedDB.open("mibebe");
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      open.onsuccess = () => resolve(open.result);
+      open.onerror = () => reject(open.error);
+    });
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const tx = database.transaction("pregnancy", "readwrite");
+        const store = tx.objectStore("pregnancy");
+        const read = store.getAll();
+        read.onsuccess = () => {
+          const row = read.result.find((item) => !item.deletedAt);
+          const due = new Date(row.lmpDate);
+          due.setDate(due.getDate() + 294);
+          // Keep an older tombstone ahead of the displayed live pregnancy.
+          store.put({ ...row, deletedAt: Date.now() });
+          const live = { ...row, uid: crypto.randomUUID(), gestationDays: 294, dueDate: due.getTime() };
+          delete live.id;
+          store.add(live);
+        };
+        tx.oncomplete = () => resolve();
+        tx.onabort = () => reject(tx.error);
+      });
+    } finally {
+      database.close();
+    }
+  });
+  // Hold delivery of the real initial profile read; do not replace its data.
+  await page.addInitScript(() => {
+    const callbacks: (() => void)[] = [];
+    let released = false;
+    const gate = {
+      pending: 0,
+      release() {
+        released = true;
+        for (const callback of callbacks.splice(0)) callback();
+        gate.pending = 0;
+      },
+    };
+    Object.assign(window, { settingsProfileReadGate: gate });
+    const getAll = IDBObjectStore.prototype.getAll;
+    IDBObjectStore.prototype.getAll = function (this: IDBObjectStore, ...args: Parameters<typeof getAll>) {
+      const request = getAll.apply(this, args);
+      if (location.pathname !== "/ajustes" || this.name !== "profile") return request;
+      let handler: IDBRequest["onsuccess"] = null;
+      Object.defineProperty(request, "onsuccess", {
+        configurable: true,
+        get: () => handler,
+        set: (next: IDBRequest["onsuccess"]) => { handler = next; },
+      });
+      request.addEventListener("success", (event) => {
+        const deliver = () => handler?.call(request, event);
+        if (released) deliver();
+        else { gate.pending++; callbacks.push(deliver); }
+      });
+      return request;
+    };
+  });
+  await page.goto("/ajustes");
+  await expect.poll(() => page.evaluate(() => (window as Window & {
+    settingsProfileReadGate: { pending: number };
+  }).settingsProfileReadGate.pending)).toBeGreaterThan(0);
+  await expect(page.getByRole("status").filter({ hasText: "Cargando tus ajustes…" })).toBeVisible();
+  await expect(page.getByRole("spinbutton", { name: "Duración del embarazo, en días" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Guardar duración", exact: true })).toHaveCount(0);
+  await expect(page.locator("#lmp-edit")).toHaveCount(0);
+  await page.evaluate(() => (window as Window & {
+    settingsProfileReadGate: { release: () => void };
+  }).settingsProfileReadGate.release());
+
+  const durationInput = page.getByRole("spinbutton", { name: "Duración del embarazo, en días" });
+  await expect(durationInput).toHaveValue("294");
+  const editedLmp = localDateInput(-121);
+  await page.locator("#lmp-edit").fill(editedLmp);
+  await durationInput.fill("266");
+  const useDue = page.getByRole("checkbox", { name: /No sé mi última regla/ });
+  await useDue.check();
+
+  const second = await context.newPage();
+  try {
+    await second.goto("/ajustes");
+    await second.getByRole("spinbutton", { name: "Duración del embarazo, en días" }).fill("280");
+    await second.getByRole("button", { name: "Guardar duración", exact: true }).click();
+    await expect(second.getByText("Duración actualizada. Tu fecha probable de parto se recalculó.")).toBeVisible();
+    const planned = localDateInput(100);
+    await second.getByLabel("Fecha de parto planificada", { exact: true }).fill(planned);
+    await second.getByRole("button", { name: "Guardar fecha planificada", exact: true }).click();
+    await expect(second.getByText("Fecha planificada guardada.", { exact: true })).toBeVisible();
+    const plannedAt = await second.evaluate((value) => new Date(value + "T00:00:00").getTime(), planned);
+    await expect.poll(async () => (await savedPregnancy(second)).plannedDeliveryDate).toBe(plannedAt);
+    // This prop-derived label proves the first tab received the profile update.
+    await expect(page.getByText("Calculamos tu última regla restando 280 días a esta fecha.")).toBeVisible();
+    await expect(durationInput).toHaveValue("266");
+    await useDue.uncheck();
+    await expect(page.locator("#lmp-edit")).toHaveValue(editedLmp);
+
+    await page.getByRole("button", { name: "Guardar duración", exact: true }).click();
+    await expect(page.getByText("Duración actualizada. Tu fecha probable de parto se recalculó.")).toBeVisible();
+    await expect.poll(async () => (await savedPregnancy(page)).gestationDays).toBe(266);
+    await expect(page.locator("#lmp-edit")).toHaveValue(editedLmp);
+    await page.getByRole("button", { name: "Guardar fecha", exact: true }).click();
+    await expect(page.getByText("Fecha actualizada. Tu semana se recalculó.")).toBeVisible();
+    const saved = await savedPregnancy(page);
+    expect(saved.gestationDays).toBe(266);
+    expect(saved.lmpDate).toBe(await page.evaluate((value) => new Date(value + "T00:00:00").getTime(), editedLmp));
+  } finally {
+    await second.close();
+  }
+});
 
 for (const duration of [266, 280, 294]) {
   test(`date editing preserves ${duration}-day duration and both FUM/FPP round trips`, async ({ page }) => {

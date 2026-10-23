@@ -75,6 +75,19 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
     if (typeof window !== "undefined") window.location.href = "/cuenta";
   }
 
+  // Wait for the first on-device read before mounting editable drafts.
+  if (profile.loading) {
+    return (
+      <div className="space-y-6">
+        <header>
+          <h1 className="text-2xl font-black tracking-tight text-ink">Ajustes</h1>
+          <PrivacyLine className="mt-1" />
+        </header>
+        <p role="status" className="text-sm text-muted">Cargando tus ajustes…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <header>

@@ -85,14 +85,14 @@ test("settings wait for the initial profile and preserve drafts during a later l
     };
   });
   await page.goto("/ajustes");
-  await expect.poll(() => page.evaluate(() => (window as Window & {
+  await expect.poll(() => page.evaluate(() => (window as unknown as {
     settingsProfileReadGate: { pending: number };
   }).settingsProfileReadGate.pending)).toBeGreaterThan(0);
   await expect(page.getByRole("status").filter({ hasText: "Cargando tus ajustes…" })).toBeVisible();
   await expect(page.getByRole("spinbutton", { name: "Duración del embarazo, en días" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Guardar duración", exact: true })).toHaveCount(0);
   await expect(page.locator("#lmp-edit")).toHaveCount(0);
-  await page.evaluate(() => (window as Window & {
+  await page.evaluate(() => (window as unknown as {
     settingsProfileReadGate: { release: () => void };
   }).settingsProfileReadGate.release());
 

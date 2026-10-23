@@ -65,7 +65,7 @@ describe("what may be signed is whitelisted before anything is signed", () => {
     // A bound on a number the upload URL does not carry bounds nothing: the
     // PUT would accept any length. `photoStorage.test.ts` drives the signer.
     expect(ROUTE).toContain(
-      "uploadUrl(ctx.userId, objectKey, data.contentType, data.bytes)",
+      "uploadUrl(ctx.userId, objectKey, data.contentType, data.bytes, new Date(mintedAt))",
     );
     expect(STORAGE).toContain('"Content-Length": String(bytes)');
   });

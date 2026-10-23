@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { hasSizeComparison } from "@/lib/weeks";
 import {
@@ -51,38 +51,55 @@ export function NewWeekCard({
   // that flashes in and back out on hydration is worse than one that fades in.
   const [visible, setVisible] = useState(false);
   const [offer, setOffer] = useState<OfferState>("hidden");
+  const lifecycle = useRef({ generation: 0 }).current;
 
   useEffect(() => {
-    if (!inNewWeekWindow(daysIntoWeek)) return;
-    if (readSeenWeek() === week) return;
-    setVisible(true);
-
     let cancelled = false;
-    void readPushState().then((state) => {
-      if (cancelled) return;
-      const usable = (state.status === "on" || state.status === "off") && !state.needsInstall;
-      if (usable && !(state.status === "on" && state.categories.includes("consejos"))) {
-        setOffer("offer");
-      }
-    });
+    function refresh() {
+      const current = ++lifecycle.generation;
+      setOffer("hidden");
+      const show = week >= 2 && inNewWeekWindow(daysIntoWeek) && readSeenWeek() !== week;
+      setVisible(show);
+      if (!show) return;
+      void readPushState().then((state) => {
+        if (cancelled || lifecycle.generation !== current) return;
+        const usable = (state.status === "on" || state.status === "off") && !state.needsInstall;
+        if (usable && !(state.status === "on" && state.categories.includes("consejos"))) {
+          setOffer("offer");
+        }
+      }).catch(() => { /* Passive browser reads must not leave a stale offer. */ });
+    }
+    refresh();
+    window.addEventListener("storage", refresh);
+    window.addEventListener("focus", refresh);
     return () => {
       cancelled = true;
+      ++lifecycle.generation;
+      window.removeEventListener("storage", refresh);
+      window.removeEventListener("focus", refresh);
     };
-  }, [week, daysIntoWeek]);
+  }, [week, daysIntoWeek, lmpDate, lifecycle]);
 
-  if (!visible || week < 2) return null;
+  if (!visible || week < 2 || !inNewWeekWindow(daysIntoWeek)) return null;
 
   const weekday = turnoverWeekday(lmpDate);
 
   function dismiss() {
     markWeekSeen(week);
+    ++lifecycle.generation;
     setVisible(false);
+    setOffer("hidden");
   }
 
   async function turnOn() {
+    const current = lifecycle.generation;
     setOffer("busy");
-    const status = await enableWeekStartNotice();
-    setOffer(offerOutcome(status));
+    try {
+      const status = await enableWeekStartNotice();
+      if (lifecycle.generation === current) setOffer(offerOutcome(status));
+    } catch {
+      if (lifecycle.generation === current) setOffer("blocked");
+    }
   }
 
   return (

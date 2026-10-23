@@ -6,6 +6,7 @@ import type { Database } from "./db";
 import { finishPendingDeletions } from "./account";
 import { deleteObject } from "./photoStorage";
 import { photoBlobs, users, verificationTokens } from "./schema";
+import { isUploadIntentStore, retryUploadIntents } from "./photoUploadIntents";
 
 // Housekeeping that has to happen even when nobody signs in again. It rides
 // the one scheduled request this deployment already has
@@ -50,7 +51,7 @@ export async function runMaintenance(
       .delete(verificationTokens)
       .where(lt(verificationTokens.expires, new Date(now))),
   );
-  const orphanPhotosDeleted = await retryOrphanPhotos(database, now);
+  const orphanPhotosDeleted = await retryUploadIntents(database, now) + await retryOrphanPhotos(database, now);
   return { deletionsCompleted, expiredTokens, orphanPhotosDeleted };
 }
 
@@ -62,6 +63,7 @@ async function retryOrphanPhotos(database: Database, now: number, limit = 20): P
       store: photoBlobs.store,
       recordId: photoBlobs.recordId,
       objectKey: photoBlobs.objectKey,
+      updatedAt: photoBlobs.updatedAt,
     })
     .from(photoBlobs)
     .leftJoin(users, eq(users.id, photoBlobs.userId))
@@ -74,6 +76,7 @@ async function retryOrphanPhotos(database: Database, now: number, limit = 20): P
     .limit(limit);
   let deleted = 0;
   for (const row of orphans) {
+    if (isUploadIntentStore(row.store)) continue;
     if (!(await deleteObject(row.userId, row.objectKey))) continue;
     await database
       .delete(photoBlobs)

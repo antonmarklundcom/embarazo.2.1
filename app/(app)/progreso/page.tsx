@@ -55,7 +55,7 @@ export default function ProgresoPage() {
                   key={w.week}
                   href={`/semana/${w.week}`}
                   aria-current={isCurrent ? "step" : undefined}
-                  className={`flex min-h-[44px] items-center justify-center rounded-tile text-sm font-medium transition active:scale-[0.96] ${
+                  className={`flex min-h-[44px] items-center justify-center rounded-tile text-sm font-medium transition-transform active:scale-[0.96] ${
                     isCurrent
                       ? "bg-petrol text-white shadow-soft"
                       : isPast

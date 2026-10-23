@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 
-import { db, type AppMode } from "@/lib/db";
+import { db, notDeleted, type AppMode } from "@/lib/db";
 import { toDateInput } from "@/lib/appointments";
 import {
   getDueDate,
   lmpFromDueDate,
   getRawWeek,
+  GESTATION_DAYS,
   MAX_WEEK,
 } from "@/lib/pregnancy";
 
@@ -21,11 +22,13 @@ export function PregnancyDateSettings({
   mode,
   lmpDate,
   dueDate,
+  gestationDays = GESTATION_DAYS,
   today,
 }: {
   mode: AppMode;
   lmpDate: number | undefined;
   dueDate: number | undefined;
+  gestationDays?: number;
   today: string;
 }) {
   // Editable pregnancy date (build spec §1).
@@ -43,9 +46,13 @@ export function PregnancyDateSettings({
   async function savePregnancyDate() {
     setDateMsg("");
     setDateWarn("");
+    // Read the latest duration, including an edit/sync from another tab that
+    // arrived after this form rendered. Never resurrect a tombstoned row.
+    const first = notDeleted(await db().pregnancy.toArray())[0];
+    const duration = first?.gestationDays ?? gestationDays;
     const nextLmpDate = useDueDate
       ? dueInput
-        ? lmpFromDueDate(new Date(`${dueInput}T00:00:00`).getTime())
+        ? lmpFromDueDate(new Date(`${dueInput}T00:00:00`).getTime(), duration)
         : NaN
       : lmpInput
         ? new Date(`${lmpInput}T00:00:00`).getTime()
@@ -67,17 +74,19 @@ export function PregnancyDateSettings({
       );
     }
 
-    const rows = await db().pregnancy.toArray();
-    const first = rows[0];
+    // An explicit new FUM/FPP supersedes the previous FIV/conception method;
+    // preserve the custom duration and every unrelated pregnancy field.
+    const patch = {
+      lmpDate: nextLmpDate,
+      dueDate: getDueDate(nextLmpDate, duration),
+      method: useDueDate ? "ecografia" as const : "lmp" as const,
+    };
     if (first?.id) {
-      await db().pregnancy.update(first.id, {
-        lmpDate: nextLmpDate,
-        dueDate: getDueDate(nextLmpDate),
-      });
+      await db().pregnancy.update(first.id, patch);
     } else {
       await db().pregnancy.add({
-        lmpDate: nextLmpDate,
-        dueDate: getDueDate(nextLmpDate),
+        ...patch,
+        gestationDays: duration,
         createdAt: Date.now(),
       });
     }
@@ -134,7 +143,7 @@ export function PregnancyDateSettings({
             className="mt-1 min-h-[44px] w-full rounded-tile border border-black/10 bg-cream px-3 py-2 focus:border-petrol focus:outline-none"
           />
           <p className="mt-1 text-[11px] text-muted">
-            Calculamos tu última regla restando 280 días a esta fecha.
+            Calculamos tu última regla restando {gestationDays} días a esta fecha.
           </p>
         </div>
       )}

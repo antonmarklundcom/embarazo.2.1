@@ -260,3 +260,27 @@ describe("the account cannot change during a sync", () => {
     expect((await db().weightEntries.toArray())[0]?.kg).toBe(60);
   });
 });
+
+describe("explicit backup joins an in-flight synchronization", () => {
+  it("waits for remote-only records instead of accepting a busy result as complete", async () => {
+    await otherDevicePushes(Date.now() - 1000, 62);
+    const server = globalThis.fetch;
+    let release!: () => void;
+    const delay = new Promise<void>(resolve => { release = resolve; });
+    let observed!: () => void;
+    const blocked = new Promise<void>(resolve => { observed = resolve; });
+    let firstRequest = true;
+    vi.stubGlobal("fetch", async (input: string | URL, init?: RequestInit) => {
+      if (firstRequest) { firstRequest = false; observed(); await delay; }
+      return server(input, init);
+    });
+    const background = syncNow();
+    await blocked;
+    const explicit = syncNow({ waitForRunning: true });
+    expect((await syncNow()).outcome).toBe("busy");
+    release();
+    expect((await background).outcome).toBe("ok");
+    expect((await explicit).outcome).toBe("ok");
+    expect((await db().weightEntries.where("uid").equals("w1").first())?.kg).toBe(62);
+  });
+});

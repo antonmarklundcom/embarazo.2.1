@@ -4,6 +4,8 @@ import { z } from "zod";
 
 import { getSession, isAuthAvailable } from "@/lib/server/auth";
 import { dbOrNull } from "@/lib/server/db";
+import { AccountWriteDenied, withAccountWrite } from "@/lib/server/accountWrite";
+import { isUploadIntentStore, rememberUploadIntent } from "@/lib/server/photoUploadIntents";
 import {
   allObjectKeys,
   forgetPhotoRow,
@@ -150,7 +152,7 @@ async function context(req: NextRequest) {
   if (otherAccount) return { error: otherAccount } as const;
   const database = dbOrNull();
   if (!database) return { error: unavailable() } as const;
-  return { userId, photos: drizzlePhotosBackend(database) } as const;
+  return { userId, database, photos: drizzlePhotosBackend(database) } as const;
 }
 
 /**
@@ -234,6 +236,35 @@ export async function POST(req: NextRequest) {
   const data = parsed.data;
   const now = Date.now();
 
+  try {
+    let lateUploadKey: string | undefined;
+    const perform = async (transaction: NonNullable<ReturnType<typeof dbOrNull>>) => {
+      // Use the locked transaction for every index write and URL issuance.
+      const photos = drizzlePhotosBackend(transaction);
+      return performPhotoAction({ ...ctx, photos }, data, now, transaction, (key) => { lateUploadKey = key; });
+    };
+    // These paths only UPDATE/DELETE existing rows and delete objects. They
+    // cannot resurrect erased data, and provider retries need no user lock.
+    const response = data.action === "delete" || data.action === "delete-all"
+      ? await perform(ctx.database)
+      : await withAccountWrite(ctx.database, ctx.userId, perform);
+    if (lateUploadKey) await deleteObject(ctx.userId, lateUploadKey);
+    return response;
+  } catch (error) {
+    if (error instanceof AccountWriteDenied) return NextResponse.json(
+      { error: "sesión requerida" }, { status: 401, headers: HEADERS },
+    );
+    throw error;
+  }
+}
+
+async function performPhotoAction(
+  ctx: { userId: string; photos: ReturnType<typeof drizzlePhotosBackend> },
+  data: z.infer<typeof ActionSchema>,
+  now: number,
+  transaction: NonNullable<ReturnType<typeof dbOrNull>>,
+  cleanLateUpload: (key: string) => void,
+) {
   if (data.action === "delete-all") {
     // The opt-out. Objects first — an orphaned row is recoverable, an orphaned
     // object is not — and a row goes only once ITS object is confirmed gone.
@@ -249,6 +280,7 @@ export async function POST(req: NextRequest) {
     let pending = 0;
     for (const row of keys) {
       if (await deleteObject(ctx.userId, row.objectKey)) {
+        if (isUploadIntentStore(row.store)) continue; // Durable retry key; no photo payload.
         await forgetPhotoRow(ctx.photos, ctx.userId, row.store, row.recordId);
         deleted += 1;
       } else {
@@ -281,8 +313,10 @@ export async function POST(req: NextRequest) {
     if (existing?.deletedAt != null) return gone();
     // `bytes` is signed as Content-Length, so the PUT must be exactly the size
     // the schema above just bounded — see `uploadUrl`.
-    const url = uploadUrl(ctx.userId, objectKey, data.contentType, data.bytes);
+    const mintedAt = Date.now();
+    const url = uploadUrl(ctx.userId, objectKey, data.contentType, data.bytes, new Date(mintedAt));
     if (!url) return unavailable();
+    await rememberUploadIntent(transaction, ctx.userId, data.store, data.recordId, objectKey, mintedAt);
     return NextResponse.json({ url, contentType: data.contentType }, { headers: HEADERS });
   }
 
@@ -306,7 +340,7 @@ export async function POST(req: NextRequest) {
     // bytes are a late PUT nobody will ever list: remove them now.
     const after = await photoRow(ctx.photos, ctx.userId, data.store, data.recordId);
     if (after?.deletedAt != null) {
-      await deleteObject(ctx.userId, objectKey);
+      cleanLateUpload(objectKey);
       return gone();
     }
     return NextResponse.json({ ok: true }, { headers: HEADERS });

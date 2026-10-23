@@ -58,7 +58,7 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
   const companionView = companionViewOf(shared.views);
   const companionAppointmentAt = companionView?.snapshot?.nextAppointmentAt ?? null;
 
-  const today = toDateInput(Date.now());
+  const today = toDateInput(profile.now);
   const guarani = useGuarani();
 
   // U11 — the way into U7's theme sheet from /ajustes, next to the language
@@ -148,6 +148,7 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
           mode={profile.mode}
           lmpDate={profile.lmpDate}
           dueDate={profile.dueDate}
+          gestationDays={profile.gestationDays}
           today={today}
         />
         <GestationSettings

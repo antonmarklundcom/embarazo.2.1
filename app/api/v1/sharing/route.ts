@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { getSession, isAuthAvailable } from "@/lib/server/auth";
 import { dbOrNull } from "@/lib/server/db";
+import { AccountWriteDenied, withAccountWrite } from "@/lib/server/accountWrite";
 import { drizzleSharingBackend } from "@/lib/server/sharingBackend";
 import { scheduleCheerPoke } from "@/lib/server/push";
 import { drizzlePushBackend } from "@/lib/server/pushBackend";
@@ -212,6 +213,7 @@ async function context(req: NextRequest) {
   // table and not one of sharing's.
   return {
     userId,
+    database,
     push: drizzlePushBackend(database),
     sharing: drizzleSharingBackend(database),
   } as const;
@@ -304,6 +306,32 @@ export async function POST(req: NextRequest) {
   const now = Date.now();
   const data = parsed.data;
 
+  if (data.action === "accept" && !isValidInviteCode(data.code.toUpperCase())) return unavailable();
+  // Companions write into the owner's pregnancy too: both identities share
+  // the erasure barrier. Re-read authorization through the locked transaction.
+  const targetPregnancyId = data.action === "accept"
+    ? (await ctx.sharing.findInvite(data.code.toUpperCase()))?.pregnancyId
+    : "pregnancyId" in data ? data.pregnancyId : undefined;
+  const ownerUserId = targetPregnancyId
+    ? await ctx.sharing.findPregnancyOwner(targetPregnancyId) : undefined;
+  if ((data.action === "accept" && !targetPregnancyId) || (targetPregnancyId && !ownerUserId)) return unavailable();
+  try {
+    return await withAccountWrite(ctx.database, [ctx.userId, ...(ownerUserId ? [ownerUserId] : [])], async (transaction) =>
+      performSharingAction({ userId: ctx.userId, sharing: drizzleSharingBackend(transaction), push: drizzlePushBackend(transaction) }, data, now),
+    );
+  } catch (error) {
+    if (error instanceof AccountWriteDenied) return NextResponse.json(
+      { error: "sesión requerida" }, { status: 401, headers: HEADERS },
+    );
+    throw error;
+  }
+}
+
+async function performSharingAction(
+  ctx: { userId: string; sharing: ReturnType<typeof drizzleSharingBackend>; push: ReturnType<typeof drizzlePushBackend> },
+  data: z.infer<typeof ActionSchema>,
+  now: number,
+) {
   if (data.action === "accept") {
     // Shape-check before touching the database: a malformed code is a typo,
     // not a lookup.

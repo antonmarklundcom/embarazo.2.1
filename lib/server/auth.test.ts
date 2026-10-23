@@ -395,7 +395,8 @@ describe("authorize() — R0-3's rate limit", () => {
       );
       expect(oneTooMany).toBeNull();
     },
-    20_000,
+    // Repeated real bcrypt checks are CPU-bound; this is not a latency assertion.
+    60_000,
   );
 
   it("keys the limit per address — a neighbour is unaffected", async () => {

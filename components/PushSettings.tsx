@@ -18,12 +18,14 @@ import {
   type PushState,
   type PushTestResult,
 } from "@/lib/push/client";
+import { DEFAULT_CATEGORIES } from "@/lib/push/categories";
 
 /** What each test outcome tells her, in the words she will act on. */
 const NOT_READY_MESSAGE = "Todavía no pudimos preparar los avisos. Probá de nuevo en un momento.";
 /** Shown once a request she made on purpose has waited this long. */
 const PREPARING_AFTER_MS = 2000;
 const PREPARING_MESSAGE = "Preparando los avisos en este teléfono…";
+const BROWSER_ERROR_MESSAGE = "El navegador no pudo completar el cambio. Tus opciones siguen guardadas. Probá de nuevo; si vuelve a pasar, revisá los permisos del sitio.";
 
 const TEST_MESSAGES: Record<PushTestResult, string> = {
   pending: NOT_READY_MESSAGE,
@@ -69,7 +71,10 @@ export function PushSettings({
 
   useEffect(() => {
     // Reading the state never prompts — it only inspects.
-    void readPushState().then(setState);
+    void readPushState().then(setState).catch(() => {
+      setState({ status: "error", categories: DEFAULT_CATEGORIES, needsInstall: false });
+      setMessage(BROWSER_ERROR_MESSAGE);
+    });
     // Tapping the test notification lands here (PUSH_TEST_URL): say so, so the
     // tap destination is something she can confirm rather than infer.
     if (new URLSearchParams(window.location.search).get("avisos") === "prueba") {
@@ -86,19 +91,23 @@ export function PushSettings({
     setBusy(true);
     setMessage("");
     const timer = setTimeout(() => setPreparing(true), PREPARING_AFTER_MS);
-    let status: PushState["status"];
+    let status: PushState["status"] = "error";
     try {
       status = await enablePush(state!.categories, companionAppointmentAt);
+    } catch {
+      status = "error";
     } finally {
       clearTimeout(timer);
       setPreparing(false);
+      setBusy(false);
     }
     // "pending" (worker still not ready) must not read as a refusal, and the
     // switch stays off so she can simply try again.
     setState({ ...state!, status });
-    setBusy(false);
 
-    if (status === "pending") {
+    if (status === "error") {
+      setMessage(BROWSER_ERROR_MESSAGE);
+    } else if (status === "pending") {
       setMessage(NOT_READY_MESSAGE);
     } else if (status === "on" && pushResyncPending()) {
       // N5: the browser subscription exists, but the server did not store the
@@ -122,6 +131,8 @@ export function PushSettings({
     const timer = setTimeout(() => setPreparing(true), PREPARING_AFTER_MS);
     try {
       setTestMessage(TEST_MESSAGES[await sendTestNotification(delayMs)]);
+    } catch {
+      setTestMessage(TEST_MESSAGES.failed);
     } finally {
       clearTimeout(timer);
       setPreparing(false);
@@ -133,15 +144,26 @@ export function PushSettings({
     setBusy(true);
     setMessage("");
     setTestMessage("");
-    const status = await disablePush();
-    setState({ ...state!, status });
-    setBusy(false);
+    try {
+      const status = await disablePush();
+      if (status === "error") setMessage(BROWSER_ERROR_MESSAGE);
+      else setState({ ...state!, status });
+    } catch {
+      setMessage(BROWSER_ERROR_MESSAGE);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function onToggleCategory(category: PushCategory, on: boolean) {
     const next = toggleCategory(state!.categories, category, on);
     setState({ ...state!, categories: next });
-    await setCategories(next, companionAppointmentAt);
+    try {
+      await setCategories(next, companionAppointmentAt);
+      if (pushResyncPending()) setMessage("Guardamos tus opciones en este teléfono. Vamos a intentar guardarlas en el servidor cuando vuelva la conexión.");
+    } catch {
+      setMessage(BROWSER_ERROR_MESSAGE);
+    }
   }
 
   // Push is not configured in this deployment. Say nothing rather than show a
@@ -204,7 +226,7 @@ export function PushSettings({
             </button>
           )}
 
-          {message && <p className="mt-2 text-sm text-muted">{message}</p>}
+          {(message || state.status === "error") && <p role="status" className="mt-2 text-sm text-muted">{message || BROWSER_ERROR_MESSAGE}</p>}
 
           {preparing && (
             <p role="status" className="mt-2 text-sm text-ink">{PREPARING_MESSAGE}</p>

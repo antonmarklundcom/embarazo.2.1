@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { refuseCrossSite, refuseOtherAccount } from "@/lib/server/requestGuard";
+import { ACCOUNT_HEADER, refuseCrossSite, refuseOtherAccount } from "@/lib/server/requestGuard";
 import { z } from "zod";
 
 import { getSession } from "@/lib/server/auth";
@@ -12,6 +12,7 @@ import {
   scheduleReminders,
 } from "@/lib/server/push";
 import { drizzlePushBackend } from "@/lib/server/pushBackend";
+import { AccountWriteDenied, withAccountWrite } from "@/lib/server/accountWrite";
 import { PUSH_CATEGORIES } from "@/lib/push/categories";
 import { isAllowedPushEndpoint } from "@/lib/push/endpoints";
 import { clientKeyFromHeaders, isRateLimited } from "@/lib/rateLimit";
@@ -144,6 +145,9 @@ export async function POST(req: NextRequest) {
   // A session links the subscription to an account when there is one, so A5's
   // deletion removes it. Its absence is not an error.
   const session = await getSession();
+  if (!session?.user?.id && req.headers.get(ACCOUNT_HEADER)) {
+    return NextResponse.json({ error: "sesión requerida" }, { status: 401, headers: HEADERS });
+  }
   // F01: reminder times computed from another account's local data are not
   // filed under this one.
   if (session?.user?.id) {
@@ -151,6 +155,11 @@ export async function POST(req: NextRequest) {
     if (otherAccount) return otherAccount;
   }
 
+  const storedOwner = (await backend.subscriptionOf(endpoint))?.userId;
+  const owners = [...new Set([session?.user?.id, storedOwner].filter((id): id is string => Boolean(id)))];
+  try {
+  await withAccountWrite(database, owners, async (transaction) => {
+  const backend = drizzlePushBackend(transaction, owners);
   await saveSubscription(backend, {
     endpoint,
     p256dh: keys.p256dh,
@@ -171,6 +180,11 @@ export async function POST(req: NextRequest) {
   }
   if (consejos) {
     await scheduleReminders(backend, endpoint, "consejos", bounded(consejos));
+  }
+  });
+  } catch (error) {
+    if (error instanceof AccountWriteDenied) return NextResponse.json({ error: "cuenta no disponible" }, { status: 401, headers: HEADERS });
+    throw error;
   }
 
   return NextResponse.json({ ok: true }, { headers: HEADERS });

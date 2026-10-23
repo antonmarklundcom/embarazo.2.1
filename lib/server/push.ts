@@ -98,8 +98,8 @@ export interface RotationInput {
  * reminder the new endpoint already has unsent (same category and time — the
  * app re-posted its schedule before this call arrived) is dropped rather than
  * moved, so the queue never holds the same poke twice. What
- * does not: rows already sent (a record, not a promise), which go with the old
- * subscription. If `oldEndpoint` is not stored this does nothing and says so —
+ * also moves claimed/sent markers with their IDs and timestamps, suppressing
+ * matching pending events and preserving failed-send retry at the new endpoint. If `oldEndpoint` is not stored this does nothing and says so —
  * the caller must not be able to mint a subscription out of thin air, and the
  * app's own start-up refresh (`refreshWeeklyTips`) is the fallback for a
  * device the server never knew.
@@ -119,23 +119,7 @@ export async function rotateSubscription(
   now: number,
 ): Promise<"rotated" | "unknown"> {
   void now;
-  const old = await backend.subscriptionOf(oldEndpoint);
-  if (!old) return "unknown";
-
-  await backend.upsertSubscription({
-    endpoint: newSub.endpoint,
-    p256dh: newSub.p256dh,
-    auth: newSub.auth,
-    categories: normaliseCategories(old.categories),
-    userId: old.userId,
-  });
-
-  // Same endpoint (a key-only refresh): nothing to move or delete.
-  if (newSub.endpoint === oldEndpoint) return "rotated";
-
-  await backend.moveUnsentReminders(oldEndpoint, newSub.endpoint);
-  await deleteSubscription(backend, oldEndpoint);
-  return "rotated";
+  return backend.rotateSubscription(oldEndpoint, newSub);
 }
 
 // ---------------------------------------------------------------------------
@@ -155,18 +139,7 @@ export async function scheduleReminders(
   category: PushCategory,
   fireAtList: number[],
 ): Promise<void> {
-  await backend.deletePendingReminders(endpoint, category);
-
-  if (fireAtList.length === 0) return;
-
-  await backend.insertReminders(
-    fireAtList.map((fireAt) => ({
-      id: crypto.randomUUID(),
-      endpoint,
-      category,
-      fireAt,
-    })),
-  );
+  await backend.replacePendingReminders(endpoint, category, fireAtList);
 }
 
 // ---------------------------------------------------------------------------
@@ -217,7 +190,9 @@ export async function dispatchDueReminders(
     // N5: claim before sending. Two runs overlapping (a slow run and the next
     // cron tick) used to send the same poke twice. The claim is the "sent"
     // stamp, written conditionally; a failed send gives it back below.
-    if (!(await backend.claim(row.id, now))) continue;
+    // A due snapshot can predate endpoint rotation. Do not claim a moved ID
+    // and then deliver to the obsolete endpoint from that snapshot.
+    if (!(await backend.claim(row.id, now, row.endpoint))) continue;
 
     const outcome = await send(row.endpoint, keys, now);
 

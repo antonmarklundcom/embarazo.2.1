@@ -43,6 +43,11 @@ const ROLE_DEFAULT: Record<Role, PerspectiveId> = {
 export function PerspectiveSwitcher({ week, role }: { week: number; role: Role }) {
   // Browsing this card never changes the pregnancy dates or hero.
   const [selection, setSelection] = useState({ currentWeek: week, selectedWeek: week });
+  // Clear the remembered browse week on *every* real-week change, including
+  // a date correction/restore that later returns to an earlier week.
+  if (selection.currentWeek !== week) {
+    setSelection({ currentWeek: week, selectedWeek: week });
+  }
   const selectedWeek = selection.currentWeek === week ? selection.selectedWeek : week;
   const bands = perspectivesFor(selectedWeek);
   const touch = useRef<{ x: number; y: number } | null>(null);
@@ -58,9 +63,10 @@ export function PerspectiveSwitcher({ week, role }: { week: number; role: Role }
 
   function onKeyDown(event: React.KeyboardEvent, index: number) {
     const delta = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
-    if (delta === 0) return;
+    const edge = event.key === "Home" ? 0 : event.key === "End" ? ORDER.length - 1 : null;
+    if (delta === 0 && edge === null) return;
     event.preventDefault();
-    const next = (index + delta + ORDER.length) % ORDER.length;
+    const next = edge ?? (index + delta + ORDER.length) % ORDER.length;
     setActive(ORDER[next]!);
     buttons.current[next]?.focus();
   }
@@ -80,7 +86,10 @@ export function PerspectiveSwitcher({ week, role }: { week: number; role: Role }
           {selectedWeek === week ? (
             <p className="text-xs text-muted">Tu semana actual</p>
           ) : (
-            <button type="button" onClick={() => selectWeek(week)} className="min-h-11 text-xs font-bold text-petrol underline">Volver a mi semana</button>
+            <div>
+              <p className="text-xs text-muted">Explorando semana {selectedWeek}</p>
+              <button type="button" onClick={() => selectWeek(week)} className="min-h-11 text-xs font-bold text-petrol underline">Volver a mi semana</button>
+            </div>
           )}
         </div>
         <button type="button" aria-label="Semana siguiente" disabled={selectedWeek >= 42} onClick={() => selectWeek(selectedWeek + 1)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line text-petrol disabled:opacity-30">
@@ -107,7 +116,7 @@ export function PerspectiveSwitcher({ week, role }: { week: number; role: Role }
             tabIndex={id === active ? 0 : -1}
             onClick={() => setActive(id)}
             onKeyDown={(event) => onKeyDown(event, index)}
-            className={`min-h-11 min-w-0 rounded-tile px-3 py-2 text-[13px] font-extrabold leading-snug transition last:col-span-2 sm:last:col-span-1 ${
+            className={`min-h-11 min-w-0 rounded-tile px-3 py-2 text-[13px] font-extrabold leading-snug transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petrol last:col-span-2 sm:last:col-span-1 ${
               id === active ? "bg-pastel-lavanda text-ink" : "bg-pastel-arena/50 text-ink/80"
             }`}
           >
@@ -118,9 +127,10 @@ export function PerspectiveSwitcher({ week, role }: { week: number; role: Role }
 
       <div
         role="tabpanel"
+        tabIndex={0}
         id="perspectiva-panel"
         aria-labelledby={`perspectiva-tab-${active}`}
-        className="border-t border-line pt-4"
+        className="border-t border-line pt-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petrol"
         style={{ touchAction: "pan-y pinch-zoom" }}
         onTouchStart={(event) => {
           const point = event.touches[0];
@@ -142,7 +152,7 @@ export function PerspectiveSwitcher({ week, role }: { week: number; role: Role }
         </p>
       </div>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
-        <p className="text-xs text-muted">Deslizá el texto para cambiar de semana.</p>
+        <p className="text-xs text-muted">Deslizá el texto para cambiar de semana. Algunos consejos abarcan varias semanas y pueden repetirse.</p>
         <Link href={`/semana/${selectedWeek}`} className="inline-flex min-h-11 items-center text-xs font-extrabold text-petrol underline">
           Detalles de la semana
         </Link>

@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { getSession, isAuthAvailable } from "@/lib/server/auth";
 import { dbOrNull } from "@/lib/server/db";
+import { AccountWriteDenied } from "@/lib/server/accountWrite";
 import {
   drizzleQuotaStore,
   generateBabyImage,
@@ -166,11 +167,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const result = await generateBabyImage(
-    drizzleQuotaStore(database),
-    userId,
-    parsed.data.photos,
-  );
+  let result;
+  try {
+    result = await generateBabyImage(drizzleQuotaStore(database), userId, parsed.data.photos);
+  } catch (error) {
+    if (error instanceof AccountWriteDenied) return NextResponse.json(
+      { error: "sesión requerida" }, { status: 401, headers: HEADERS },
+    );
+    throw error;
+  }
 
   if (!result.ok) {
     return NextResponse.json(

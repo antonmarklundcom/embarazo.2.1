@@ -55,6 +55,17 @@ export interface SyncSummary {
 // ---------------------------------------------------------------------------
 
 let running = false;
+let inFlight: Promise<SyncSummary> | null = null;
+const activityListeners = new Set<() => void>();
+export function subscribeSyncActivity(listener: () => void): () => void {
+  activityListeners.add(listener);
+  return () => { activityListeners.delete(listener); };
+}
+export function isSyncRunning(): boolean { return running; }
+function setRunning(value: boolean): void {
+  running = value;
+  for (const listener of activityListeners) listener();
+}
 /**
  * Set when the server tells us sync is not for this visitor — no session, or
  * no account system configured at all. Sticky: there is no point re-asking every
@@ -502,7 +513,15 @@ export function accountHeaders(accountId: string): Record<string, string> {
  * A6 puts one thing ahead of both: establishing that the data on this phone
  * belongs to the account we are about to sync it with.
  */
-export async function syncNow(): Promise<SyncSummary> {
+/** Explicit exports may join an active operation instead of treating busy as success. */
+export function syncNow(options: { waitForRunning?: boolean } = {}): Promise<SyncSummary> {
+  if (inFlight) return options.waitForRunning ? inFlight : Promise.resolve({ outcome: "busy", pushed: 0, pulled: 0, conflicts: 0 });
+  const task = performSync().finally(() => { if (inFlight === task) inFlight = null; });
+  inFlight = task;
+  return task;
+}
+
+async function performSync(): Promise<SyncSummary> {
   const idle: SyncSummary = {
     outcome: "ok",
     pushed: 0,
@@ -518,7 +537,7 @@ export async function syncNow(): Promise<SyncSummary> {
   const operation = lifecycle.begin();
   if (!operation) return { ...idle, outcome: "unavailable" };
 
-  running = true;
+  setRunning(true);
   let accountId: string | undefined;
   let observedOwner: string | undefined;
   try {
@@ -571,6 +590,7 @@ export async function syncNow(): Promise<SyncSummary> {
       unavailable = true;
       sessionConfirmed = false;
       clearAuthStatusCache();
+      if (observedOwner) await writeSyncState({ lastError: "No pudimos comprobar tu cuenta para sincronizar." }, observedOwner).catch(() => {});
       return { ...idle, outcome: "unavailable" };
     }
     await writeSyncState({
@@ -578,9 +598,17 @@ export async function syncNow(): Promise<SyncSummary> {
     }, accountId ?? observedOwner).catch(() => {});
     return { ...idle, outcome: "error" };
   } finally {
-    running = false;
+    setRunning(false);
     operation.finish();
   }
+}
+
+/** An explicit retry refreshes availability without undoing a writer pause/wipe. */
+export function retrySyncNow(): Promise<SyncSummary> {
+  unavailable = false;
+  sessionConfirmed = false;
+  clearAuthStatusCache();
+  return syncNow({ waitForRunning: true });
 }
 
 /** Sync after a quiet moment. Called on every local write. */

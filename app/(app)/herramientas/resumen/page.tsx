@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
+import { useCalendarClock } from "@/lib/useCalendarClock";
 import { db, notDeleted, type JournalEntry, type Mood } from "@/lib/db";
 import {
   getCurrentWeek,
@@ -55,7 +56,7 @@ function fmtDateTime(ts: number): string {
 }
 
 export default function ResumenPage() {
-  const [generatedAt] = useState(() => Date.now());
+  const generatedAt = useCalendarClock();
   const [pinNeeded, setPinNeeded] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState("");
@@ -147,9 +148,9 @@ export default function ResumenPage() {
 
   const { profile, pregnancy, weights, journal, kicks, contractions } = data;
   const lmp = pregnancy?.lmpDate;
-  const week = lmp !== undefined ? getCurrentWeek(lmp) : undefined;
+  const week = lmp !== undefined ? getCurrentWeek(lmp, generatedAt) : undefined;
   const completed =
-    lmp !== undefined ? formatCompletedGestation(getCompletedGestation(lmp)) : undefined;
+    lmp !== undefined ? formatCompletedGestation(getCompletedGestation(lmp, generatedAt)) : undefined;
 
   const firstWeight = weights[0];
   const lastWeight = weights[weights.length - 1];

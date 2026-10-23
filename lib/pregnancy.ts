@@ -1,12 +1,11 @@
 import type { Trimester } from "./types";
+import { addCalendarDays, calendarDaysBetween } from "./calendarDate";
 
 // Pure pregnancy math (build spec §5). Unit-tested in lib/pregnancy.test.ts.
 
 export const GESTATION_DAYS = 280; // 40 weeks from LMP
 export const MIN_WEEK = 1;
 export const MAX_WEEK = 42;
-
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 /** Clamp an arbitrary week number into the valid 1..42 range. */
 export function clampWeek(week: number): number {
@@ -21,7 +20,7 @@ export function clampWeek(week: number): number {
  * Week 1 begins at the LMP date itself; result is clamped to 1..42.
  */
 export function getCurrentWeek(lmp: number, now: number = Date.now()): number {
-  const days = Math.floor((now - lmp) / MS_PER_DAY);
+  const days = calendarDaysBetween(lmp, now);
   const week = Math.floor(days / 7) + 1;
   return clampWeek(week);
 }
@@ -40,7 +39,7 @@ export function getTrimester(week: number): Trimester {
  * different formula, just a different `gestationDays`).
  */
 export function getDueDate(lmp: number, gestationDays: number = GESTATION_DAYS): number {
-  return lmp + gestationDays * MS_PER_DAY;
+  return addCalendarDays(lmp, gestationDays);
 }
 
 /** Back-calculate the LMP from an entered due date (build spec §1, B3). */
@@ -48,7 +47,7 @@ export function lmpFromDueDate(
   dueDate: number,
   gestationDays: number = GESTATION_DAYS,
 ): number {
-  return dueDate - gestationDays * MS_PER_DAY;
+  return addCalendarDays(dueDate, -gestationDays);
 }
 
 /**
@@ -81,7 +80,7 @@ export function lmpFromEcografia(
  * point from a theoretical LMP) + the embryo's age in days.
  */
 export function lmpFromFiv(transferDate: number, embryoDayAtTransfer: number): number {
-  return transferDate - (14 + embryoDayAtTransfer) * MS_PER_DAY;
+  return addCalendarDays(transferDate, -(14 + embryoDayAtTransfer));
 }
 
 /**
@@ -91,7 +90,7 @@ export function lmpFromFiv(transferDate: number, embryoDayAtTransfer: number): n
  * offset).
  */
 export function lmpFromConception(conceptionDate: number): number {
-  return conceptionDate - 14 * MS_PER_DAY;
+  return addCalendarDays(conceptionDate, -14);
 }
 
 /**
@@ -100,7 +99,7 @@ export function lmpFromConception(conceptionDate: number): number {
  * beyond 42 weeks while still allowing the save.
  */
 export function getRawWeek(lmp: number, now: number = Date.now()): number {
-  const days = Math.floor((now - lmp) / MS_PER_DAY);
+  const days = calendarDaysBetween(lmp, now);
   return Math.floor(days / 7) + 1;
 }
 
@@ -110,13 +109,18 @@ export function getDaysRemaining(
   now: number = Date.now(),
   gestationDays: number = GESTATION_DAYS,
 ): number {
-  const remaining = Math.ceil((getDueDate(lmp, gestationDays) - now) / MS_PER_DAY);
+  return getDaysRemainingForDueDate(getDueDate(lmp, gestationDays), now);
+}
+
+/** Preserve an existing saved FPP on read; only an explicit edit recalculates it. */
+export function getDaysRemainingForDueDate(dueDate: number, now: number = Date.now()): number {
+  const remaining = calendarDaysBetween(now, dueDate);
   return remaining < 0 ? 0 : remaining;
 }
 
-/** Whole days elapsed since the LMP (clamped at 0). */
+/** Local calendar days since the displayed LMP date (clamped at 0). */
 export function getDaysSinceLMP(lmp: number, now: number = Date.now()): number {
-  const days = Math.floor((now - lmp) / MS_PER_DAY);
+  const days = calendarDaysBetween(lmp, now);
   return days < 0 ? 0 : days;
 }
 

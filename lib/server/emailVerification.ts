@@ -3,6 +3,7 @@ import "server-only";
 import { and, eq } from "drizzle-orm";
 
 import { db, isDatabaseConfigured } from "./db";
+import { AccountWriteDenied, withAccountWrite } from "./accountWrite";
 import { users, verificationTokens } from "./schema";
 import { isEmailConfigured, sendVerificationEmail } from "./email";
 import { EmailSchema } from "@/lib/auth/password";
@@ -161,15 +162,21 @@ async function deliverVerification(
   // One live confirmation link at a time, and — because of the namespace — this
   // delete cannot reach the plain-email row a password reset may be holding for
   // the very same address.
-  await db().delete(verificationTokens).where(eq(verificationTokens.identifier, identifier));
-
-  await db()
-    .insert(verificationTokens)
-    .values({
-      identifier,
-      token: hashVerificationToken(token),
-      expires: new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS),
+  const [account] = await db().select({ id: users.id }).from(users)
+    .where(eq(users.email, parsed.data)).limit(1);
+  if (!account) return { ok: true };
+  try {
+    await withAccountWrite(db(), account.id, async (transaction) => {
+      await transaction.delete(verificationTokens).where(eq(verificationTokens.identifier, identifier));
+      await transaction.insert(verificationTokens).values({
+        identifier, token: hashVerificationToken(token),
+        expires: new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS),
+      });
     });
+  } catch (error) {
+    if (error instanceof AccountWriteDenied) return { ok: true };
+    throw error;
+  }
 
   try {
     await sendVerificationEmail(parsed.data, url);
@@ -309,14 +316,16 @@ export async function verifyEmailToken(
   // F02/F19: an account being erased confirms nothing.
   if (!account || account.deletedAt) return { ok: false, error: "invalid-token" };
 
-  await db()
+  try {
+    await withAccountWrite(db(), account.id, async (transaction) => {
+  await transaction
     .update(users)
     .set({ emailVerified: new Date() })
     .where(eq(users.id, account.id));
 
   // Single-use. Last, so a failed update above leaves the link usable rather
   // than stranding somebody with a spent token and an unconfirmed address.
-  await db()
+  await transaction
     .delete(verificationTokens)
     .where(
       and(
@@ -324,6 +333,11 @@ export async function verifyEmailToken(
         eq(verificationTokens.token, hashed),
       ),
     );
+    });
+  } catch (error) {
+    if (error instanceof AccountWriteDenied) return { ok: false, error: "invalid-token" };
+    throw error;
+  }
 
   return { ok: true };
 }

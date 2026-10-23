@@ -5,6 +5,7 @@ import { and, asc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import type { Database } from "./db";
 import { pushReminders, pushSubscriptions } from "./schema";
 import type { PushCategory } from "@/lib/push/categories";
+import { AccountWriteDenied } from "./accountWrite";
 
 // BUILD-PLAN B5, W5 — the storage half of push.
 //
@@ -52,6 +53,8 @@ export interface PushBackend {
   deleteSubscriptionRow(endpoint: string): Promise<void>;
   /** This endpoint's not-yet-sent reminders for one category. */
   deletePendingReminders(endpoint: string, category: PushCategory): Promise<void>;
+  /** Serialize replacement with other schedules/rotation on the subscription row. */
+  replacePendingReminders(endpoint: string, category: PushCategory, fireAt: number[]): Promise<void>;
   insertReminders(
     rows: { id: string; endpoint: string; category: PushCategory; fireAt: number }[],
   ): Promise<void>;
@@ -64,7 +67,7 @@ export interface PushBackend {
    * overlapping dispatch runs exactly one sends it. False when another run
    * already has it.
    */
-  claim(id: string, at: number): Promise<boolean>;
+  claim(id: string, at: number, expectedEndpoint?: string): Promise<boolean>;
   /** Give a claimed reminder back after a failed send, for a later run. */
   release(id: string): Promise<void>;
   pruneSentBefore(before: number): Promise<void>;
@@ -78,22 +81,31 @@ export interface PushBackend {
     endpoint: string,
   ): Promise<{ userId: string | null; categories: PushCategory[] } | null>;
   /**
-   * Re-point every not-yet-sent reminder of `from` at `to`, keeping its id,
-   * category and time. Already-sent rows stay where they are.
+   * Re-point reminders and claimed/sent markers from `from` to `to`, keeping
+   * their id, category, time and sentAt. Claimed/sent beats pending on overlap.
    *
-   * A reminder whose (category, fireAt) already exists unsent on `to` is NOT
-   * moved: the app may have re-posted the new endpoint's schedule before the
-   * worker's rotate call arrived, and moving it would queue the same poke
-   * twice. Those duplicates are deleted from `from` instead.
+   * An equal pending (category, fireAt) is kept only once. The app may have
+   * re-posted the destination schedule before rotation; its pending duplicate
+   * must not survive a claim on either endpoint. Already-started network sends
+   * on both endpoints cannot be cancelled by a database operation.
    */
   moveUnsentReminders(from: string, to: string): Promise<void>;
+  /** Atomic rotation, including opt-ins, pending reminders and old-row deletion. */
+  rotateSubscription(oldEndpoint: string, next: { endpoint: string; p256dh: string; auth: string }): Promise<"rotated" | "unknown">;
 }
 
 /** The real thing. Constructed once per request. */
-export function drizzlePushBackend(database: Database): PushBackend {
+export function drizzlePushBackend(database: Database, guardedOwners?: readonly string[]): PushBackend {
   return {
     async upsertSubscription(input) {
-      await database
+      await database.transaction(async (tx) => {
+      const [existing] = await tx.select({ userId: pushSubscriptions.userId }).from(pushSubscriptions)
+        .where(eq(pushSubscriptions.endpoint, input.endpoint)).for("update");
+      if (existing?.userId && guardedOwners && !guardedOwners.includes(existing.userId)) throw new AccountWriteDenied();
+      // Account switching signs out/unsubscribes first. A captured endpoint
+      // cannot be rebound from one non-null owner to another by a plain POST.
+      if (existing?.userId && input.userId && existing.userId !== input.userId) throw new AccountWriteDenied();
+      await tx
         .insert(pushSubscriptions)
         .values({
           id: crypto.randomUUID(),
@@ -116,6 +128,7 @@ export function drizzlePushBackend(database: Database): PushBackend {
             lastSeenAt: new Date(),
           },
         });
+      });
     },
 
     async deleteAllReminders(endpoint) {
@@ -143,6 +156,52 @@ export function drizzlePushBackend(database: Database): PushBackend {
       await database.insert(pushReminders).values(rows);
     },
 
+    async replacePendingReminders(endpoint, category, fireAt) {
+      await database.transaction(async (tx) => {
+        // This existing, unique endpoint row is the mutex across server
+        // processes. A JS queue would only serialize one process's requests.
+        const [subscription] = await tx.select({ id: pushSubscriptions.id, userId: pushSubscriptions.userId })
+          .from(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint)).for("update");
+        if (!subscription) return;
+        if (subscription.userId && guardedOwners && !guardedOwners.includes(subscription.userId)) throw new AccountWriteDenied();
+        // Lock rows before inspecting sentAt: a dispatch claiming an old row
+        // must finish its claim before we decide whether to replace it.
+        const existing = await tx.select({ fireAt: pushReminders.fireAt, sentAt: pushReminders.sentAt })
+          .from(pushReminders).where(and(eq(pushReminders.endpoint, endpoint), eq(pushReminders.category, category))).for("update");
+        const alreadySent = new Set(existing.filter((row) => row.sentAt !== null).map((row) => row.fireAt));
+        await tx.delete(pushReminders).where(and(eq(pushReminders.endpoint, endpoint), eq(pushReminders.category, category), isNull(pushReminders.sentAt)));
+        const rows = [...new Set(fireAt)].filter((at) => !alreadySent.has(at)).map((at) => ({
+          id: crypto.randomUUID(), endpoint, category, fireAt: at,
+        }));
+        if (rows.length > 0) await tx.insert(pushReminders).values(rows);
+      });
+    },
+
+    async rotateSubscription(oldEndpoint, next) {
+      return database.transaction(async (tx) => {
+        // Stable endpoint order avoids opposing rotations taking locks in
+        // opposite order. The upsert also holds the destination's unique key
+        // until commit, serializing ordinary schedules with this migration.
+        for (const endpoint of [...new Set([oldEndpoint, next.endpoint])].sort()) {
+          await tx.select({ id: pushSubscriptions.id }).from(pushSubscriptions)
+            .where(eq(pushSubscriptions.endpoint, endpoint)).for("update");
+        }
+        const backend = drizzlePushBackend(tx as unknown as Database, guardedOwners);
+        const old = await backend.subscriptionOf(oldEndpoint);
+        if (!old) return "unknown";
+        const destination = await backend.subscriptionOf(next.endpoint);
+        for (const owner of [old.userId, destination?.userId]) {
+          if (owner && guardedOwners && !guardedOwners.includes(owner)) throw new AccountWriteDenied();
+        }
+        await backend.upsertSubscription({ ...next, userId: old.userId, categories: old.categories });
+        if (next.endpoint === oldEndpoint) return "rotated";
+        await backend.moveUnsentReminders(oldEndpoint, next.endpoint);
+        await backend.deleteAllReminders(oldEndpoint);
+        await backend.deleteSubscriptionRow(oldEndpoint);
+        return "rotated";
+      });
+    },
+
     async dueReminders(now, limit) {
       return database
         .select({
@@ -166,11 +225,12 @@ export function drizzlePushBackend(database: Database): PushBackend {
       await database.update(pushReminders).set({ sentAt }).where(eq(pushReminders.id, id));
     },
 
-    async claim(id, at) {
+    async claim(id, at, expectedEndpoint) {
       const result = await database
         .update(pushReminders)
         .set({ sentAt: at })
-        .where(and(eq(pushReminders.id, id), isNull(pushReminders.sentAt)));
+        .where(and(eq(pushReminders.id, id), isNull(pushReminders.sentAt),
+          expectedEndpoint === undefined ? undefined : eq(pushReminders.endpoint, expectedEndpoint)));
       const header = Array.isArray(result) ? result[0] : result;
       return ((header as { affectedRows?: number } | undefined)?.affectedRows ?? 0) > 0;
     },
@@ -206,38 +266,35 @@ export function drizzlePushBackend(database: Database): PushBackend {
     },
 
     async moveUnsentReminders(from, to) {
-      // Read-then-write rather than DELETE … WHERE EXISTS: MySQL refuses a
-      // subquery on the table being deleted from (error 1093). The window for
-      // a concurrent insert is the same one the move itself always had.
-      const [existing, moving] = await Promise.all([
-        database
-          .select({ category: pushReminders.category, fireAt: pushReminders.fireAt })
-          .from(pushReminders)
-          .where(and(eq(pushReminders.endpoint, to), isNull(pushReminders.sentAt))),
-        database
-          .select({
-            id: pushReminders.id,
-            category: pushReminders.category,
-            fireAt: pushReminders.fireAt,
-          })
-          .from(pushReminders)
-          .where(and(eq(pushReminders.endpoint, from), isNull(pushReminders.sentAt))),
-      ]);
-
-      if (existing.length > 0 && moving.length > 0) {
-        const taken = new Set(existing.map((row) => `${row.category}|${row.fireAt}`));
-        const duplicateIds = moving
-          .filter((row) => taken.has(`${row.category}|${row.fireAt}`))
-          .map((row) => row.id);
-        if (duplicateIds.length > 0) {
-          await database.delete(pushReminders).where(inArray(pushReminders.id, duplicateIds));
-        }
+      // The historical method name also carries claimed/sent markers. A
+      // claim stamps sentAt BEFORE network I/O, so discarding that row during
+      // rotation would let a duplicate destination event send a second time.
+      const fields = {
+        id: pushReminders.id,
+        category: pushReminders.category,
+        fireAt: pushReminders.fireAt,
+        sentAt: pushReminders.sentAt,
+      };
+      const existing = await database.select(fields).from(pushReminders)
+        .where(eq(pushReminders.endpoint, to)).for("update");
+      const moving = await database.select(fields).from(pushReminders)
+        .where(eq(pushReminders.endpoint, from)).for("update");
+      const all = [...existing, ...moving];
+      const chosen = new Map<string, (typeof all)[number]>();
+      for (const row of all) {
+        const key = `${row.category}|${row.fireAt}`;
+        const previous = chosen.get(key);
+        // Prefer a claimed/sent row over a pending duplicate; otherwise keep
+        // the destination's canonical ID. Never manufacture a fresh event.
+        if (!previous || (previous.sentAt === null && row.sentAt !== null)) chosen.set(key, row);
       }
-
-      await database
-        .update(pushReminders)
-        .set({ endpoint: to })
-        .where(and(eq(pushReminders.endpoint, from), isNull(pushReminders.sentAt)));
+      const duplicateIds = all.filter((row) => chosen.get(`${row.category}|${row.fireAt}`)?.id !== row.id).map((row) => row.id);
+      if (duplicateIds.length > 0) await database.delete(pushReminders).where(inArray(pushReminders.id, duplicateIds));
+      // Preserve the winning claim ID and sentAt. If its in-flight send later
+      // fails, release(id) requeues that same marker on the NEW endpoint.
+      // Network sends already started on BOTH endpoints cannot be unsent.
+      await database.update(pushReminders).set({ endpoint: to })
+        .where(eq(pushReminders.endpoint, from));
     },
   };
 }

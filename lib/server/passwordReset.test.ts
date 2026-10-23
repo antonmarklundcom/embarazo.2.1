@@ -76,6 +76,7 @@ const store = vi.hoisted(() => ({
   configured: true,
   users: [] as Record<string, unknown>[],
   tokens: [] as Record<string, unknown>[],
+  beforeLock: undefined as (() => void) | undefined,
 }));
 
 function tableRows(table: unknown): Row[] {
@@ -101,8 +102,8 @@ const fakeDb = {
   select: (fields: Record<string, { name: string }>) => ({
     from: (table: unknown) => ({
       where: (clause: unknown) => ({
-        limit: (n: number) =>
-          Promise.resolve(
+        limit: (n: number) => {
+          const read = () => Promise.resolve(
             tableRows(table)
               .filter((row) => matches(row, clause))
               .slice(0, n)
@@ -110,11 +111,15 @@ const fakeDb = {
                 Object.fromEntries(
                   Object.entries(fields).map(([alias, column]) => [
                     alias,
-                    row[column.name],
+                    column.name === "deletedAt" && row[column.name] === undefined ? null : row[column.name],
                   ]),
                 ),
               ),
-          ),
+          );
+          return Object.assign(read(), { for: () => {
+            const hook = store.beforeLock; store.beforeLock = undefined; hook?.(); return read();
+          } });
+        },
       }),
     }),
   }),
@@ -205,6 +210,7 @@ beforeEach(async () => {
     },
   ];
   store.tokens = [];
+  store.beforeLock = undefined;
   mail.configured = true;
   mail.fail = false;
   mail.sent = [];
@@ -212,6 +218,15 @@ beforeEach(async () => {
 
 afterEach(() => {
   delete process.env.NEXT_PUBLIC_APP_URL;
+});
+
+describe("password reset issuance versus account erasure", () => {
+  it("keeps the generic response but writes and mails nothing after a concurrent erase", async () => {
+    store.beforeLock = () => { store.users[0]!.deletedAt = new Date(); };
+    expect(await requestPasswordReset(EMAIL, freshHeaders())).toEqual({ ok: true });
+    expect(store.tokens).toEqual([]);
+    expect(mail.sent).toEqual([]);
+  });
 });
 
 // Accessors rather than bare indexing: `noUncheckedIndexedAccess` is on, and a

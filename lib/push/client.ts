@@ -11,6 +11,7 @@ import {
 import { weekStartTimes, weeklyTipTimes } from "./weekly";
 import { babyAgeTimes } from "@/lib/baby/push";
 import { PUSH_TEST_CACHE, PUSH_TEST_KEY } from "./testNotice";
+import { writeNotificationPolicy } from "./notificationPolicy";
 
 // BUILD-PLAN B5 — the device half.
 //
@@ -32,6 +33,8 @@ export type PushStatus =
   | "denied"
   | "off"
   | "on"
+  /** Browser operation failed; permission/categories are preserved for retry. */
+  | "error"
   /**
    * She said yes, but this phone's service worker was still not active after
    * the long wait an explicit request gets (`EXPLICIT_READY_MS`). Neither
@@ -80,7 +83,8 @@ function readLocalCategories(): PushCategory[] {
     if (!raw) return DEFAULT_CATEGORIES;
     return normaliseCategories(JSON.parse(raw) as string[]);
   } catch {
-    return DEFAULT_CATEGORIES;
+    // Damaged/unreadable existing consent must not re-enable opt-outs.
+    return [];
   }
 }
 
@@ -150,15 +154,17 @@ export async function readPushState(): Promise<PushState> {
     return { status: "unconfigured", categories, needsInstall };
   }
   if (Notification.permission === "denied") {
+    await writeNotificationPolicy([]);
     return { status: "denied", categories, needsInstall };
   }
 
-  const subscription = await existingSubscription();
-  return {
-    status: subscription ? "on" : "off",
-    categories,
-    needsInstall,
-  };
+  try {
+    const subscription = await existingSubscription();
+    await writeNotificationPolicy(subscription ? categories : []);
+    return { status: subscription ? "on" : "off", categories, needsInstall };
+  } catch {
+    return { status: "error", categories, needsInstall };
+  }
 }
 
 /**
@@ -195,8 +201,12 @@ export async function enablePush(
   const publicKey = preparedPublicKey ?? await serverPublicKey();
   if (!publicKey) return "unconfigured";
 
+  try {
   const permission = await Notification.requestPermission();
-  if (permission !== "granted") return permission === "denied" ? "denied" : "off";
+  if (permission !== "granted") {
+    await writeNotificationPolicy([]);
+    return permission === "denied" ? "denied" : "off";
+  }
 
   // Explicit request: wait for a slow first install rather than reporting a
   // refusal she never made.
@@ -216,17 +226,24 @@ export async function enablePush(
     ? normaliseCategories([...(existing ? readLocalCategories() : []), "consejos"])
     : categories;
   writeLocalCategories(selected);
+  await writeNotificationPolicy(selected);
   if (weeklyOnly && existing) await refreshWeeklyTips();
   else await syncSubscription(subscription, selected, companionAppointmentAt);
   return "on";
+  } catch {
+    // A denied/revoked permission is ordinary. AbortError and browser/storage
+    // faults leave a retryable control rather than an unhandled rejection.
+    return Notification.permission === "denied" ? "denied" : "error";
+  }
 }
 
 export async function disablePush(): Promise<PushStatus> {
+  await writeNotificationPolicy([]);
   let subscription: PushSubscription | null = null;
   try {
     subscription = await existingSubscription();
   } catch {
-    // A browser that refuses to look is a browser with nothing to undo.
+    return Notification.permission === "denied" ? "denied" : "error";
   }
   if (!subscription) return "off";
 
@@ -249,7 +266,10 @@ export async function disablePush(): Promise<PushStatus> {
   try {
     await subscription.unsubscribe();
   } catch {
-    // The server row is already gone or the push service will drop it.
+    // Generic-only policy prevents specific copy while a later retry removes
+    // the browser registration. Do not claim the device unsubscribed.
+    await serverDelete;
+    return "error";
   }
   await serverDelete;
   return "off";
@@ -282,10 +302,12 @@ export async function endPushForSignOut(waitMs: number = SIGN_OUT_PUSH_WAIT_MS):
   } finally {
     clearTimeout(timer);
   }
-  // The next account on this phone starts from the defaults, not from the
-  // previous person's category choices or a pending resync of her schedule.
+  // Leave an explicit empty choice, not an absent key: a failed unsubscribe
+  // can leave the old browser subscription alive. A passive settings read
+  // must never re-enable default categories against retained health records.
+  // The next account can choose its categories through an explicit action.
+  writeLocalCategories([]);
   try {
-    localStorage.removeItem(LOCAL_KEY);
     localStorage.removeItem(RESYNC_KEY);
   } catch {
     // Storage unavailable: nothing to forget.
@@ -297,9 +319,14 @@ export async function setCategories(
   companionAppointmentAt: number | null = null,
 ): Promise<void> {
   writeLocalCategories(categories);
-  const subscription = await existingSubscription();
-  if (subscription) {
-    await syncSubscription(subscription, categories, companionAppointmentAt);
+  await writeNotificationPolicy(categories);
+  try {
+    const subscription = await existingSubscription();
+    if (subscription) {
+      await syncSubscription(subscription, categories, companionAppointmentAt);
+    }
+  } catch {
+    markResync(true);
   }
 }
 
@@ -516,6 +543,7 @@ function dedupe(times: number[]): number[] {
 export async function refreshReminders(
   companionAppointmentAt: number | null = null,
 ): Promise<void> {
+  await writeNotificationPolicy(readLocalCategories());
   const subscription = await existingSubscription();
   if (!subscription) return;
   await syncSubscription(
@@ -543,6 +571,7 @@ export async function refreshReminders(
  * this the narrow write it needs to be.
  */
 export async function refreshWeeklyTips(): Promise<void> {
+  await writeNotificationPolicy(readLocalCategories());
   const subscription = await existingSubscription();
   if (!subscription) return;
 
@@ -602,6 +631,7 @@ async function markPushTest(on: boolean): Promise<void> {
  */
 export async function sendTestNotification(delayMs: 0 | 20_000 = 0): Promise<PushTestResult> {
   if (!supported()) return "not-subscribed";
+  try {
   // She asked for this: wait for a slow service worker, and say so if it never
   // came up instead of claiming this phone has no subscription.
   const registration = await readyRegistration(EXPLICIT_READY_MS);
@@ -633,4 +663,8 @@ export async function sendTestNotification(delayMs: 0 | 20_000 = 0): Promise<Pus
   if (res.status === 429) return "rate-limited";
   if (res.status === 404 || res.status === 410) return "not-subscribed";
   return "failed";
+  } catch {
+    await markPushTest(false);
+    return "failed";
+  }
 }

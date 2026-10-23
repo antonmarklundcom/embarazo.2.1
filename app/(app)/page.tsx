@@ -26,7 +26,6 @@ import {
 import {
   formatCompletedGestation,
   formatWeekPlusDay,
-  getDaysRemaining,
   getDueDate,
   getDaysSinceLMP,
   getProgressFraction,
@@ -237,10 +236,10 @@ export default function InicioPage() {
 
   const lmpDate = profile.lmpDate!;
   const gestationDays = profile.gestationDays;
-  const daysElapsed = getDaysSinceLMP(lmpDate);
-  const daysLeft = getDaysRemaining(lmpDate, Date.now(), gestationDays);
-  const progress = getProgressFraction(lmpDate, Date.now(), gestationDays);
-  const dueDateLabel = new Date(getDueDate(lmpDate, gestationDays)).toLocaleDateString(
+  const daysElapsed = getDaysSinceLMP(lmpDate, profile.now);
+  const daysLeft = profile.daysRemaining!;
+  const progress = getProgressFraction(lmpDate, profile.now, gestationDays);
+  const dueDateLabel = new Date(profile.dueDate ?? getDueDate(lmpDate, gestationDays)).toLocaleDateString(
     "es-PY",
     { day: "numeric", month: "short" },
   );

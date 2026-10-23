@@ -1,12 +1,13 @@
 "use client";
 
 import { hasPersonalSetup } from "./onboarding/hasSetup";
+import { useCalendarClock } from "./useCalendarClock";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, notDeleted } from "./db";
 import {
   getCurrentWeek,
   getTrimester,
-  getDaysRemaining,
+  getDaysRemainingForDueDate,
   getCompletedGestation,
   GESTATION_DAYS,
   type CompletedGestation,
@@ -22,6 +23,8 @@ import type { PregnancyAnswers } from "./onboarding/personalisation";
  * to a personalisation function without unpacking it first.
  */
 export interface ProfileState extends PregnancyAnswers {
+  /** Shared local calendar-clock snapshot for derived values in this render. */
+  now: number;
   loading: boolean;
   hasProfile: boolean;
   hasPersonalSetup: boolean;
@@ -61,6 +64,7 @@ export interface ProfileState extends PregnancyAnswers {
  * Returns loading=true until the first IndexedDB read resolves.
  */
 export function useProfile(): ProfileState {
+  const now = useCalendarClock();
   const data = useLiveQuery(async () => {
     const profile = notDeleted(await db().profile.toArray());
     const pregnancy = notDeleted(await db().pregnancy.toArray());
@@ -72,6 +76,7 @@ export function useProfile(): ProfileState {
 
   if (data === undefined) {
     return {
+      now,
       loading: true,
       hasProfile: false,
       hasPersonalSetup: false,
@@ -85,6 +90,7 @@ export function useProfile(): ProfileState {
   const { profile, pregnancy } = data;
   if (!profile) {
     return {
+      now,
       loading: false,
       hasProfile: false,
       hasPersonalSetup: false,
@@ -98,6 +104,7 @@ export function useProfile(): ProfileState {
   const mode: AppMode = profile.mode ?? "embarazada";
   const role: Role = profile.role ?? "mama";
   const base = {
+    now,
     loading: false,
     hasProfile: true,
     hasPersonalSetup: hasPersonalSetup(profile),
@@ -122,7 +129,7 @@ export function useProfile(): ProfileState {
     return { ...base, hasPregnancy: false };
   }
 
-  const week = getCurrentWeek(pregnancy.lmpDate);
+  const week = getCurrentWeek(pregnancy.lmpDate, now);
   const gestationDays = pregnancy.gestationDays ?? GESTATION_DAYS;
   return {
     ...base,
@@ -131,8 +138,11 @@ export function useProfile(): ProfileState {
     dueDate: pregnancy.dueDate,
     week,
     trimester: getTrimester(week),
-    daysRemaining: getDaysRemaining(pregnancy.lmpDate, Date.now(), gestationDays),
-    completed: getCompletedGestation(pregnancy.lmpDate),
+    // Legacy FPP values were saved using elapsed-day arithmetic. A DST edge
+    // can make their displayed date differ from a fresh calendar calculation.
+    // Keep her saved FPP until she explicitly edits the date or duration.
+    daysRemaining: getDaysRemainingForDueDate(pregnancy.dueDate, now),
+    completed: getCompletedGestation(pregnancy.lmpDate, now),
     method: pregnancy.method ?? "lmp",
     gestationDays,
     plannedDeliveryDate: pregnancy.plannedDeliveryDate,

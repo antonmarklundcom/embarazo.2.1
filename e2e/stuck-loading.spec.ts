@@ -46,6 +46,8 @@ test("same-build repair keeps offline pages and local data, then reopens the app
   });
   await page.goto("/reparar");
   await expect(page).toHaveURL(/\/$/, { timeout: 15_000 });
+  // The repair redirect must finish mounting before a later navigation can race it.
+  await expect(page.getByRole("button", { name: /^Estoy embarazada/ })).toBeVisible();
   const after = await page.evaluate(async () => ({
     stale: Boolean(await (await caches.open("pages")).match("/stale-page")),
     emergency: Boolean(await caches.match("/emergencia", { ignoreSearch: true })),
@@ -57,7 +59,11 @@ test("same-build repair keeps offline pages and local data, then reopens the app
   expect(after.emergency).toBe(true);
   expect(after.week).toBe(true);
   await context.setOffline(true);
+  await page.goto("about:blank");
   await gotoPrecached(page, "/emergencia");
   await expect(page.locator("main h1").first()).toBeVisible();
+  await page.goto("about:blank");
+  await gotoPrecached(page, "/semana/42");
+  await expect(page.getByRole("region", { name: "Tu bebé en la semana 42", exact: true })).toBeVisible();
   await context.setOffline(false);
 });

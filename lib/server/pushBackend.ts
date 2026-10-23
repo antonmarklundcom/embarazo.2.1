@@ -185,7 +185,7 @@ export function drizzlePushBackend(database: Database, guardedOwners?: readonly 
 
     async rotateSubscription(oldEndpoint, next) {
       try {
-      return await database.transaction(async (tx) => {
+      return await database.transaction<"rotated" | "unknown">(async (tx) => {
         // Claim/lock endpoints in one order, including an absent destination.
         // Locking its missing-key gap before INSERT lets concurrent anonymous
         // rotations share gap locks and then deadlock trying to create it.

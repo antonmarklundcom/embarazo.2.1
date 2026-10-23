@@ -120,7 +120,7 @@ describe.skipIf(!mysqlEnabled)("push schedules on a disposable MySQL database", 
         const statement = typeof query === "string" ? query : query.sql;
         // Pause only the vulnerable locking read of a still-missing target.
         // An insert-first reservation returns an existing row and never waits.
-        if (statement.startsWith("select") && statement.includes("for update") &&
+        if (statement.startsWith("select") && statement.includes("from `pushSubscriptions`") && statement.includes("for update") &&
             params[0] === destination && Array.isArray(result[0]) && result[0].length === 0) {
           reads += 1;
           if (reads === 2) release();

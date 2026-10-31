@@ -38,6 +38,7 @@ the banner still tells you what replaced them and why. Nothing under
 | [`docs/FLO-BENCHMARK.md`](FLO-BENCHMARK.md) | current | the Flo benchmark behind monetisation/engagement calls | — |
 | [`docs/PREGGERS-RESEARCH-2026-10-16.md`](PREGGERS-RESEARCH-2026-10-16.md) | dated research | current official-source Preggers evidence, limits and stage-appropriate business proposals; no implementation authorization | — |
 | [`docs/ANDROID-LAUNCH.md`](ANDROID-LAUNCH.md) | current | planning the Play Store / TWA packaging phase | — |
+| [`docs/PLAY-STORE-SUBMISSION.md`](PLAY-STORE-SUBMISSION.md) | current | the ordered list of what's left for Google Play, with paste-ready listing text | — |
 | [`docs/SITE-PLAN-EMBARAZO-COM-PY.md`](SITE-PLAN-EMBARAZO-COM-PY.md) | current | content/SEO/architecture reference for the marketing site (the Next.js build in §2/§7/§8 is superseded — the founder is hand-building it as static HTML/PHP outside this repo) | — |
 | [`docs/LAUNCH-CHECKLIST.md`](LAUNCH-CHECKLIST.md) | current | the running order of what's left before public launch | — |
 | [`docs/GUARANI-REVIEW.md`](GUARANI-REVIEW.md) | current (generated) | handing the Guaraní sheet to a native-speaker reviewer; regenerate with `npm run gen:guarani-review`, never edit by hand | — |

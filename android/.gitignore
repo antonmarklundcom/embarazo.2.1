@@ -1,0 +1,11 @@
+# The upload key signs every Play release. Losing or leaking it is serious:
+# keep it in a password manager and an offline backup, never in git.
+*.keystore
+*.jks
+keystore.properties
+
+# Everything Bubblewrap generates from twa-manifest.json, plus its outputs.
+*
+!.gitignore
+!twa-manifest.json
+!README.md

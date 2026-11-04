@@ -38,6 +38,14 @@ describe("once per install", () => {
     expect(readState(store).channel).toBe("qr");
   });
 
+  it("a first load from a shared link queues one share and fixes the channel (night run item 1)", () => {
+    const store = memory();
+    captureLanding("?codigo=ABCD234XYZ&src=invita", store);
+    captureLanding("?src=semana", store);
+    expect(readState(store).pending).toEqual([{ metric: "shared", key: "invita" }]);
+    expect(readState(store).channel).toBe("compartido-invita");
+  });
+
   it("a direct first load queues nothing and fixes the channel", () => {
     const store = memory();
     captureLanding("", store);

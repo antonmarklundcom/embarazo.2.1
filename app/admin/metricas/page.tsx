@@ -77,9 +77,17 @@ const MEDIUM_LABELS: Record<string, string> = {
   other: "Otro valor",
 };
 
+// Night run item 1: the links the app composes (`lib/share/links.ts`).
+const SHARE_LABELS: Record<string, string> = {
+  semana: "Texto de una semana (pareja o familia)",
+  pareja: "«Contale a tu pareja»",
+  invita: "Invitación (a una amiga o a la familia)",
+};
+
 function channelLabel(key: string): string {
   if (key === "directo") return "Directo (sin sitio ni QR)";
   if (key === "qr") return "Código QR";
+  if (key.startsWith("compartido-")) return `Compartido · ${SHARE_LABELS[key.slice(11)] ?? key.slice(11)}`;
   if (key.startsWith("sitio-")) return `Sitio · ${MEDIUM_LABELS[key.slice(6)] ?? key.slice(6)}`;
   return key;
 }
@@ -125,6 +133,7 @@ function InstallFunnel({ rows }: { rows: FunnelRow[] }) {
           <th className="pb-1 font-extrabold">Semana (lun.)</th>
           <th className="pb-1 text-right font-extrabold">Del sitio</th>
           <th className="pb-1 text-right font-extrabold">QR</th>
+          <th className="pb-1 text-right font-extrabold">Compartido</th>
           <th className="pb-1 text-right font-extrabold">Terminó onboarding</th>
           <th className="pb-1 text-right font-extrabold">1.ª herramienta</th>
           <th className="pb-1 text-right font-extrabold">Volvió 7+ días</th>
@@ -136,6 +145,7 @@ function InstallFunnel({ rows }: { rows: FunnelRow[] }) {
             <td className="py-1.5 font-semibold text-ink">{row.week}</td>
             <td className="py-1.5 text-right text-ink">{row.arrivals}</td>
             <td className="py-1.5 text-right text-ink">{row.qr}</td>
+            <td className="py-1.5 text-right text-ink">{row.shared}</td>
             <td className="py-1.5 text-right font-extrabold text-ink">{row.onboarded}</td>
             <td className="py-1.5 text-right text-ink">{row.firstTool}</td>
             <td className="py-1.5 text-right text-ink">{row.return7}</td>
@@ -247,6 +257,18 @@ export default async function AdminMetricsPage() {
           label={channelLabel}
           heading="Canal"
           empty="Todavía nadie terminó el onboarding con este contador activo."
+        />
+      </Card>
+
+      <Card
+        title="Enlaces compartidos desde la app"
+        note="Últimas 10 semanas: primeras visitas que llegaron por un enlace que la app armó (?src=semana, ?src=pareja, ?src=invita). Una vez por teléfono."
+      >
+        <KeyTable
+          rows={totalsByKey(installRows, "shared")}
+          label={(key) => SHARE_LABELS[key] ?? key}
+          heading="Enlace"
+          empty="Todavía nadie llegó por un enlace compartido."
         />
       </Card>
 

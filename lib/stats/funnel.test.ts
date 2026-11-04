@@ -17,10 +17,12 @@ import {
 // "just for segmentation", and each one is a step toward a person.
 
 describe("the POST body is a metric and a key, and no more", () => {
-  it("accepts each of the five shapes", () => {
+  it("accepts each of the six shapes", () => {
     for (const body of [
       { metric: "arrival", key: "week" },
       { metric: "qr", key: "clinica-sur" },
+      { metric: "shared", key: "semana" },
+      { metric: "onboarded", key: "compartido-invita" },
       { metric: "onboarded", key: "sitio-tool" },
       { metric: "first_tool", key: "total" },
       { metric: "return7", key: "total" },
@@ -43,6 +45,7 @@ describe("the POST body is a metric and a key, and no more", () => {
     expect(FunnelEventSchema.safeParse({ metric: "onboarded", key: "sitio-x" }).success).toBe(false);
     expect(FunnelEventSchema.safeParse({ metric: "first_tool", key: "kegel" }).success).toBe(false);
     expect(FunnelEventSchema.safeParse({ metric: "visit", key: "total" }).success).toBe(false);
+    expect(FunnelEventSchema.safeParse({ metric: "shared", key: "clinica-sur" }).success).toBe(false);
   });
 });
 
@@ -68,6 +71,21 @@ describe("landing URL", () => {
     expect(qrSource("")).toBeNull();
     expect(qrSource("x".repeat(41))).toBeNull();
     expect(qrSource(null)).toBeNull();
+  });
+
+  it("counts the app's own share words as shares, never as a clinic (night run item 1)", () => {
+    for (const word of ["semana", "pareja", "invita"] as const) {
+      const landing = landingFromSearch(`?src=${word}`);
+      expect(landing).toEqual({ medium: null, src: null, share: word });
+      expect(channelOf(landing)).toBe(`compartido-${word}`);
+      expect(CHANNELS).toContain(`compartido-${word}`);
+    }
+    expect(landingFromSearch("?src=Semana").share).toBe("semana");
+    expect(landingFromSearch("?src=semanas")).toMatchObject({ src: "semanas", share: null });
+    // A site link that was then shared is still a share.
+    expect(channelOf(landingFromSearch("?src=pareja&utm_source=site&utm_medium=week"))).toBe(
+      "compartido-pareja",
+    );
   });
 
   it("picks one channel per install, QR first", () => {

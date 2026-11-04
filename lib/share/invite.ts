@@ -9,6 +9,7 @@
 // forwards.
 
 import { APP_NAME } from "@/lib/brand";
+import { shareLink } from "@/lib/share/links";
 
 /** What the invitation says. Fixed copy — nothing here is user content. */
 export const INVITE_TITLE = APP_NAME;
@@ -31,10 +32,16 @@ export interface InvitePayload {
   url: string;
 }
 
+/**
+ * The link is the public welcome screen, `/cuenta?src=invita` (night run item
+ * 1): `/` is behind the account gate, so the bare app URL showed a stranger a
+ * redirect first. `?src=invita` lets the funnel count the install as a share.
+ */
+export const INVITE_LANDING_PATH = "/cuenta";
+
 export function invitePayload(appUrl: string | undefined): InvitePayload | null {
-  const url = appUrl?.trim();
+  const url = shareLink(appUrl, INVITE_LANDING_PATH, "invita");
   if (!url) return null;
-  if (!/^https?:\/\//.test(url)) return null;
   return { title: INVITE_TITLE, text: INVITE_TEXT, url };
 }
 

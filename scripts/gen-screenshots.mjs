@@ -46,6 +46,15 @@ try {
   const browser = await chromium.launch({
     executablePath: existsSync(CHROMIUM_PATH) ? CHROMIUM_PATH : undefined,
   });
+  // Night run item 5 — the wide (desktop install sheet) screenshot: a public
+  // week page, which needs no onboarding. `--wide-only` writes just this one.
+  const wide = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  await wide.goto(BASE_URL + "/semana/20");
+  await wide.waitForLoadState("networkidle");
+  await wide.screenshot({ path: join(OUT, "semana-wide.png") });
+  console.log("Wrote public/screenshots/semana-wide.png");
+  await wide.close();
+  if (!process.argv.includes("--wide-only")) {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 
   await page.goto(BASE_URL + "/");
@@ -63,6 +72,7 @@ try {
   await page.waitForLoadState("networkidle");
   await page.screenshot({ path: join(OUT, "herramientas.png") });
   console.log("Wrote public/screenshots/herramientas.png");
+  }
 
   await browser.close();
 } finally {

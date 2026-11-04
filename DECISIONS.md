@@ -4764,3 +4764,29 @@ The plan lives in the site repo (`antonmarklundcom/embarazo`,
   service-worker sentence — not done overnight because it is a production
   schema change. Reusing `avisos` was rejected: it would change what existing
   opt-ins mean.
+
+## 2026-11-04 — night run items 5–6: manifest, shortcuts, domain fallback, sitemap
+
+- **Manifest stays a static file.** `app/manifest.webmanifest` gained `id: "/"`,
+  `launch_handler: navigate-existing`, `prefer_related_applications: false`,
+  four shortcuts (Mi semana `/semana`, Pataditas, Contracciones, Emergencia,
+  with the existing 192 px icon) and a wide screenshot (`/semana/20` at
+  1280×800, `npm run gen:screenshots -- --wide-only`). The same shortcuts are
+  in `android/twa-manifest.json`. `related_applications` is **not** added: a
+  static file cannot depend on `NEXT_PUBLIC_PLAY_STORE_URL`, and several tests
+  and `scripts/smoke-live.mjs` read the file directly; add it by hand when the
+  Play listing is live.
+- **`/semana` index is new.** The shortcut needs a target: with a pregnancy on
+  the phone it replaces itself with her week, otherwise it lists 1–42.
+  Precached for offline.
+- **Apple touch icon** 180 px is a resize of `icon-512.png` flattened on cream
+  (`node scripts/gen-icons.mjs --apple-only`), linked from `app/layout.tsx`.
+- **Domain.** `robots.ts`, `sitemap.ts` and `layout.tsx` fall back to
+  `https://app.embarazo.com.py` instead of `https://mibebe.app`.
+- **Sitemap.** `/` and `/derechos` are dropped rather than made public:
+  making `/derechos` public is a change to `lib/auth/access.ts`, which this run
+  did not make. `/emergencia` and `/eventos` (public) are added. A unit test
+  holds every sitemap URL to `isPublicAppPath`.
+- **Metadata** for the client-only pages (`/derechos`, `/directorio`,
+  `/recomendados`, `/emergencia`, `/eventos`, `/guias/videos`, `/familia`)
+  comes from a server `layout.tsx` next to each.

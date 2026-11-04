@@ -23,11 +23,38 @@
   },
   "appVersionName": "1.0.0",
   "appVersionCode": 1,
-  "shortcuts": [],
+  "shortcuts": [
+    {
+      "name": "Mi semana",
+      "shortName": "Mi semana",
+      "url": "/semana",
+      "chosenIconUrl": "https://app.embarazo.com.py/icons/icon-192.png"
+    },
+    {
+      "name": "Pataditas",
+      "shortName": "Pataditas",
+      "url": "/herramientas/pataditas",
+      "chosenIconUrl": "https://app.embarazo.com.py/icons/icon-192.png"
+    },
+    {
+      "name": "Contracciones",
+      "shortName": "Contracciones",
+      "url": "/herramientas/contracciones",
+      "chosenIconUrl": "https://app.embarazo.com.py/icons/icon-192.png"
+    },
+    {
+      "name": "Emergencia",
+      "shortName": "Emergencia",
+      "url": "/emergencia",
+      "chosenIconUrl": "https://app.embarazo.com.py/icons/icon-192.png"
+    }
+  ],
   "generatorApp": "bubblewrap-cli",
   "fallbackType": "customtabs",
   "features": {},
-  "alphaDependencies": { "enabled": false },
+  "alphaDependencies": {
+    "enabled": false
+  },
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,

@@ -310,5 +310,281 @@
     "origin": "biblico",
     "gender": "m",
     "meaning": "Dios con nosotros"
+  },
+  {
+    "name": "Arasy",
+    "origin": "guarani",
+    "gender": "f",
+    "meaning": "Madre del cielo"
+  },
+  {
+    "name": "Yrupe",
+    "origin": "guarani",
+    "gender": "f",
+    "meaning": "Irupé, la flor de agua de los ríos del país"
+  },
+  {
+    "name": "Poty",
+    "origin": "guarani",
+    "gender": "f",
+    "meaning": "Flor"
+  },
+  {
+    "name": "Tupasy",
+    "origin": "guarani",
+    "gender": "f",
+    "meaning": "Madre de Dios: así se nombra a la Virgen en guaraní"
+  },
+  {
+    "name": "Arandu",
+    "origin": "guarani",
+    "gender": "m",
+    "meaning": "Sabiduría, el que sabe"
+  },
+  {
+    "name": "Yvytu",
+    "origin": "guarani",
+    "gender": "m",
+    "meaning": "Viento"
+  },
+  {
+    "name": "Karai",
+    "origin": "guarani",
+    "gender": "m",
+    "meaning": "Señor: un trato de respeto"
+  },
+  {
+    "name": "Itá",
+    "origin": "guarani",
+    "gender": "m",
+    "meaning": "Piedra"
+  },
+  {
+    "name": "Ava",
+    "origin": "guarani",
+    "gender": "m",
+    "meaning": "Hombre, persona"
+  },
+  {
+    "name": "Jaguarete",
+    "origin": "guarani",
+    "gender": "m",
+    "meaning": "Yaguareté, el gran felino de la selva"
+  },
+  {
+    "name": "Taguato",
+    "origin": "guarani",
+    "gender": "m",
+    "meaning": "Gavilán"
+  },
+  {
+    "name": "Ñamandu",
+    "origin": "guarani",
+    "gender": "m",
+    "meaning": "El creador en la tradición mbya guaraní"
+  },
+  {
+    "name": "Kuarahy Rendy",
+    "origin": "guarani",
+    "gender": "m",
+    "meaning": "Resplandor del sol"
+  },
+  {
+    "name": "Aguara",
+    "origin": "guarani",
+    "gender": "m",
+    "meaning": "Zorro"
+  },
+  {
+    "name": "Ysyry",
+    "origin": "guarani",
+    "gender": "m",
+    "meaning": "Arroyo, agua que corre"
+  },
+  {
+    "name": "Yvága",
+    "origin": "guarani",
+    "gender": "m",
+    "meaning": "Cielo"
+  },
+  {
+    "name": "Tata",
+    "origin": "guarani",
+    "gender": "m",
+    "meaning": "Fuego"
+  },
+  {
+    "name": "Florencia",
+    "origin": "espanol",
+    "gender": "f",
+    "meaning": "Floreciente"
+  },
+  {
+    "name": "Victoria",
+    "origin": "espanol",
+    "gender": "f",
+    "meaning": "Victoria, la que vence"
+  },
+  {
+    "name": "Catalina",
+    "origin": "espanol",
+    "gender": "f",
+    "meaning": "Pura"
+  },
+  {
+    "name": "Agustina",
+    "origin": "espanol",
+    "gender": "f",
+    "meaning": "Venerable"
+  },
+  {
+    "name": "Paula",
+    "origin": "espanol",
+    "gender": "f",
+    "meaning": "Pequeña"
+  },
+  {
+    "name": "Agustín",
+    "origin": "espanol",
+    "gender": "m",
+    "meaning": "Venerable"
+  },
+  {
+    "name": "Martín",
+    "origin": "espanol",
+    "gender": "m",
+    "meaning": "Dedicado a Marte"
+  },
+  {
+    "name": "Nicolás",
+    "origin": "espanol",
+    "gender": "m",
+    "meaning": "Victoria del pueblo"
+  },
+  {
+    "name": "Sebastián",
+    "origin": "espanol",
+    "gender": "m",
+    "meaning": "Venerable, digno de respeto"
+  },
+  {
+    "name": "Rodrigo",
+    "origin": "espanol",
+    "gender": "m",
+    "meaning": "Famoso por su poder"
+  },
+  {
+    "name": "Ester",
+    "origin": "biblico",
+    "gender": "f",
+    "meaning": "Estrella"
+  },
+  {
+    "name": "Rebeca",
+    "origin": "biblico",
+    "gender": "f",
+    "meaning": "La que une"
+  },
+  {
+    "name": "Débora",
+    "origin": "biblico",
+    "gender": "f",
+    "meaning": "Abeja"
+  },
+  {
+    "name": "Miriam",
+    "origin": "biblico",
+    "gender": "f",
+    "meaning": "Forma hebrea de María"
+  },
+  {
+    "name": "Elisabet",
+    "origin": "biblico",
+    "gender": "f",
+    "meaning": "Dios es mi juramento"
+  },
+  {
+    "name": "Judit",
+    "origin": "biblico",
+    "gender": "f",
+    "meaning": "Mujer de Judea"
+  },
+  {
+    "name": "Noemí",
+    "origin": "biblico",
+    "gender": "f",
+    "meaning": "Mi dulzura"
+  },
+  {
+    "name": "Abigail",
+    "origin": "biblico",
+    "gender": "f",
+    "meaning": "Alegría del padre"
+  },
+  {
+    "name": "Marta",
+    "origin": "biblico",
+    "gender": "f",
+    "meaning": "Señora de la casa"
+  },
+  {
+    "name": "Eva",
+    "origin": "biblico",
+    "gender": "f",
+    "meaning": "Vida, la que da vida"
+  },
+  {
+    "name": "Juan",
+    "origin": "biblico",
+    "gender": "m",
+    "meaning": "Dios es misericordioso"
+  },
+  {
+    "name": "José",
+    "origin": "biblico",
+    "gender": "m",
+    "meaning": "Dios añadirá"
+  },
+  {
+    "name": "Pedro",
+    "origin": "biblico",
+    "gender": "m",
+    "meaning": "Piedra"
+  },
+  {
+    "name": "Pablo",
+    "origin": "biblico",
+    "gender": "m",
+    "meaning": "Pequeño, humilde"
+  },
+  {
+    "name": "Tomás",
+    "origin": "biblico",
+    "gender": "m",
+    "meaning": "Gemelo"
+  },
+  {
+    "name": "Andrés",
+    "origin": "biblico",
+    "gender": "m",
+    "meaning": "Valiente"
+  },
+  {
+    "name": "Isaac",
+    "origin": "biblico",
+    "gender": "m",
+    "meaning": "El que ríe"
+  },
+  {
+    "name": "Jonás",
+    "origin": "biblico",
+    "gender": "m",
+    "meaning": "Paloma"
+  },
+  {
+    "name": "Josué",
+    "origin": "biblico",
+    "gender": "m",
+    "meaning": "Dios salva"
   }
 ]

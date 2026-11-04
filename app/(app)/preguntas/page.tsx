@@ -5,7 +5,10 @@ import { COMMUNITY_QUESTIONS_ENABLED } from "@/lib/community/launch";
 import { CommunityQuestions } from "@/components/CommunityQuestions";
 import { FaqAccordion } from "@/components/FaqAccordion";
 import { APP_NAME } from "@/lib/brand";
-import { FAQ_TOPIC_LABELS } from "@/lib/seed/faq";
+import { JsonLd } from "@/components/JsonLd";
+import { FAQ_TOPIC_LABELS, faqFor } from "@/lib/seed/faq";
+import { faqPageJsonLd } from "@/lib/seo/jsonLd";
+import type { FaqTopic } from "@/lib/types";
 
 export const metadata: Metadata = {
   title: "Preguntas frecuentes",
@@ -18,9 +21,16 @@ export const metadata: Metadata = {
 // people ask about privacy are the ones they ask *before* trusting an app with
 // a pregnancy, and needing signal to read the answer is a bad first impression.
 
+// The accordions below, in order. The FAQPage JSON-LD is built from this same
+// list so it can only name questions the page shows (community answers, which
+// load at runtime, are left out of it).
+const PAGE_TOPICS: readonly FaqTopic[] = ["privacidad", "cuenta", "app", "salud"];
+
 export default function PreguntasPage() {
+  const faqLd = faqPageJsonLd(PAGE_TOPICS.flatMap((topic) => faqFor([topic])));
   return (
     <div className="space-y-5">
+      <JsonLd data={faqLd} />
       <header>
         <h1 className="text-2xl font-black tracking-tight text-ink">
           Preguntas frecuentes
@@ -30,10 +40,9 @@ export default function PreguntasPage() {
         </p>
       </header>
 
-      <FaqAccordion topics={["privacidad"]} title={FAQ_TOPIC_LABELS.privacidad} />
-      <FaqAccordion topics={["cuenta"]} title={FAQ_TOPIC_LABELS.cuenta} />
-      <FaqAccordion topics={["app"]} title={FAQ_TOPIC_LABELS.app} />
-      <FaqAccordion topics={["salud"]} title={FAQ_TOPIC_LABELS.salud} />
+      {PAGE_TOPICS.map((topic) => (
+        <FaqAccordion key={topic} topics={[topic]} title={FAQ_TOPIC_LABELS[topic]} />
+      ))}
 
       {/* K20 — the living half of the page. The four accordions above are the
           static FAQ, in git, precached with the app; below is what women

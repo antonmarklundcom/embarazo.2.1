@@ -7,6 +7,8 @@ import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { WelcomeBaby } from "@/components/welcome/WelcomeBaby";
 import { heroTheme } from "@/lib/hero/themes";
 import { APP_NAME } from "@/lib/brand";
+import { JsonLd } from "@/components/JsonLd";
+import { softwareApplicationJsonLd } from "@/lib/seo/jsonLd";
 import { availableProviders, getSession, isAuthAvailable } from "@/lib/server/auth";
 import { safeReturnTo, signInDestination } from "@/lib/auth/access";
 
@@ -63,10 +65,13 @@ export default async function CuentaPage({
   const raw = params.error;
   const destination = safeReturnTo(Array.isArray(params.returnTo) ? params.returnTo[0] : params.returnTo);
   const error = errorMessage(Array.isArray(raw) ? raw[0] : raw);
+  // Item 7 — describes the app itself, so it is the same on every branch.
+  const appLd = <JsonLd data={softwareApplicationJsonLd()} />;
 
   if (session) {
     return (
       <div className="space-y-4">
+        {appLd}
         <header className="px-1">
           <p className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">
             Tu cuenta
@@ -99,10 +104,16 @@ export default async function CuentaPage({
   const welcomeHref = `/cuenta?${welcomeParams}`;
   const showSignIn = params.ingreso === "1" || Boolean(error) || deleted;
   if (!showSignIn) {
-    return <WelcomeScreen accountHref={accountHref} returningHref={returningHref} forceWelcome={params.bienvenida === "1"} />;
+    return (
+      <>
+        {appLd}
+        <WelcomeScreen accountHref={accountHref} returningHref={returningHref} forceWelcome={params.bienvenida === "1"} />
+      </>
+    );
   }
   return (
     <div className="space-y-4">
+      {appLd}
       {/* The welcome's warm ground, smaller: the account step stays the focus. */}
       <div className="hero-bleed relative isolate overflow-hidden pb-2!">
         <div aria-hidden className="absolute inset-0 -z-10" style={{ background: heroTheme("halo").background }} />

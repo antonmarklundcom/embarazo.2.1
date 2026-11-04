@@ -10,6 +10,10 @@ import { readTimeLabel } from "@/lib/articles/readTime";
 import { relatedTool } from "@/lib/articles/relatedTool";
 import { RecordContentView } from "@/components/RecordContentView";
 import { siteGuideUrl } from "@/lib/siteLinks";
+import { APP_NAME } from "@/lib/brand";
+import { JsonLd } from "@/components/JsonLd";
+import { guideArticleJsonLd } from "@/lib/seo/jsonLd";
+import { DEFAULT_OG_IMAGE, pageSocialMetadata } from "@/lib/seo/openGraph";
 
 // Statically generate the guías so they precache for offline (spec §9).
 export async function generateStaticParams() {
@@ -31,6 +35,13 @@ export async function generateMetadata({
     title: article.title,
     description: article.excerpt,
     ...(canonical ? { alternates: { canonical } } : {}),
+    // og:url follows the canonical: the site twin where there is one.
+    ...pageSocialMetadata({
+      title: `${article.title} · ${APP_NAME}`,
+      description: article.excerpt,
+      url: canonical ?? `/guias/${slug}`,
+      images: [DEFAULT_OG_IMAGE],
+    }),
   };
 }
 
@@ -43,9 +54,12 @@ export default async function GuiaDetailPage({
   const article = getArticleBySlug(slug);
   if (!article) notFound();
   const related = relatedTool(slug);
+  // Item 7 — null for a guía whose canonical is the site (lib/seo/jsonLd.ts).
+  const articleLd = guideArticleJsonLd(article);
 
   return (
     <article className="space-y-4">
+      {articleLd && <JsonLd data={articleLd} />}
       {/* C7: counts this read. Client-side on purpose — these pages are
           prerendered, and a count written during the build counts the build. */}
       <RecordContentView contentId={article.slug} />

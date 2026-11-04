@@ -17,9 +17,10 @@ Repos:
 
 Context. An autonomous session opened app PRs #160–#164 overnight (sharing links, install
 prompt and counters, push defaults, manifest/SEO, home hero shell, offline e2e fix, shorter
-onboarding, names seed) and was then told to merge them in order 160 → 161 → 162 → 163 → 164
-and to open and merge a small doc PR from branch claude/night-run-merged-20261104. Its report
-is docs/NIGHT-RUN-2026-11-04.md. The site half of the plan (items 11–20) was never started;
+onboarding, names seed). They were merged on 4 November 2026 with merge commits
+55491cb (#160), ae58f2c (#161), 5e750d1 (#162), f2d17ca (#163), 549705b (#164), after the full
+local gate list passed on a tree identical to the resulting main. Its report is
+docs/NIGHT-RUN-2026-11-04.md. The site half of the plan (items 11–20) was never started;
 its full spec is Part 3 of docs/PROMPT-FOLLOW-UP-2026-11-04.md (on branch
 claude/wizardly-gauss-8tp9ns if not yet on main). Anton does not want questions: make
 reasonable calls, record them in PR bodies under "Decisions I made for you", and list anything
@@ -44,13 +45,10 @@ npx playwright test <touched specs> (Chromium preinstalled; never run playwright
 For lib/server/ or drizzle/ changes: local MariaDB, TEST_DATABASE_URL to a throwaway database,
 npm run test:mysql.
 
-## Part 1 — verify the merges actually happened and main is healthy
-1. List PRs #160–#164 and the doc PR. For each: merged or not, merge SHA, and whether its head
-   SHA matched the night-run doc (160 d615f76, 161 656fe8c, 162 5e56c7a, 163 90c2130,
-   164 a01003f). If any is still open, run the full app gates on its head and merge it with a
-   merge commit in the stated order (161–163 each contain the previous branch, so update from
-   main with a merge commit if GitHub reports a conflict, re-run gates, then merge).
-2. On main after the merges: the full gate list plus the full Playwright suite once. Known
+## Part 1 — verify main is healthy and the deploy carries the changes
+1. Confirm main contains merge commits 55491cb, ae58f2c, 5e750d1, f2d17ca and 549705b and that
+   PRs #160–#164 show as merged. If anything is off, stop and report it before changing code.
+2. On main: the full gate list plus the full Playwright suite once. Known
    flakes (KNOWN-ISSUES.md; account-entry teardown timeout; pregnancy-calendar two-tab refresh):
    rerun once, report honestly. Fix any real regression on a branch claude/post-merge-fixes-20261104,
    PR, merge.
@@ -88,8 +86,9 @@ each, merge only when ./verify.sh passes on the repo and on the deploy zip, sinc
 deploys production). Item 16's site half needs app PR #164 merged first.
 
 ## At the end
-Update docs/NIGHT-RUN-2026-11-04.md with a "Review 2026-11-04" section (merge SHAs, main gate
-results, live-check results, migration PR, site batches done or not). Final message to Anton in
+Update docs/NIGHT-RUN-2026-11-04.md with a "Merged" column (the merge SHAs above) and a
+"Review 2026-11-04" section (main gate results, live-check results, migration PR, site batches
+done or not). Final message to Anton in
 plain language: what is merged and live, what is not and why, the migration he must apply with
 the doc path, and anything flagged for medical or native review. No questions.
 ```

@@ -46,13 +46,15 @@ export function CompanionReminderSettings({
   if (!view) return null;
 
   const appointmentAt = view.snapshot?.nextAppointmentAt ?? null;
+  // Keys this device's "Tu semana nueva" to the owner's turnover day.
+  const ownerDueDate = view.snapshot?.dueDate ?? null;
   const on = enabled === true;
 
   async function toggle() {
     const next = !on;
     setEnabled(next);
     setBusy(true);
-    await setCompanionReminder(next, appointmentAt);
+    await setCompanionReminder(next, appointmentAt, ownerDueDate);
     setBusy(false);
   }
 

@@ -1,6 +1,7 @@
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { FunnelBeacon } from "@/components/FunnelBeacon";
+import { InstallNudgeSlot } from "@/components/InstallNudge";
 import { nearbyHasContent } from "@/lib/nav/nearby";
 import { AccountEntryGate } from "@/components/AccountEntryGate";
 
@@ -22,6 +23,7 @@ export default async function AppShellLayout({
           className="mx-auto max-w-3xl scroll-mt-[calc(5rem+env(safe-area-inset-top))] px-5 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-6 sm:px-8 sm:pt-8 print:max-w-none print:p-0"
         >
           {children}
+          <InstallNudgeSlot />
         </main>
         <BottomNav showNearby={showNearby} />
       </AccountEntryGate>

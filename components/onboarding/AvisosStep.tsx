@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 
 import { APP_NAME } from "@/lib/brand";
-import { enableWeekStartNotice, isIosWithoutInstall, pushResyncPending, readPushState, type PushStatus } from "@/lib/push/client";
+import {
+  ONBOARDING_CATEGORIES,
+  OFFERED_CATEGORY_INFO,
+  toggleCategory,
+  type PushCategory,
+} from "@/lib/push/categories";
+import { enableOnboardingNotices, isIosWithoutInstall, pushResyncPending, readPushState, type PushStatus } from "@/lib/push/client";
 
 import { BackButton, PrimaryButton } from "./controls";
 
@@ -22,8 +28,13 @@ const PREPARING_AFTER_MS = 2000;
  *
  * The permission prompt is shown only after she taps "Sí": a browser lets an
  * app ask once, and a prompt nobody asked for gets a "no" that is forever.
- * "Sí" goes through `enableWeekStartNotice`, the same one-tap path Hoy's new-week
- * card uses, so `Notification.requestPermission()` still lives in one function.
+ * Rendering the step, and ticking or unticking the boxes, asks nothing.
+ *
+ * The boxes start with `ONBOARDING_CATEGORIES` ticked: "Tu semana nueva" —
+ * the notice this question names, and the one place it is pre-selected — plus
+ * the two Ajustes defaults (control reminders, mimos). "Sí" subscribes with
+ * whatever is still ticked, through `enableOnboardingNotices` → `enablePush`,
+ * so `Notification.requestPermission()` still lives in one function.
  * On an iPhone without the app installed there is nothing to ask for yet, so
  * the step says so (Ajustes' copy) instead of showing a prompt that would fail.
  * Whatever the answer, onboarding finishes: a "no" changes nothing else.
@@ -36,6 +47,7 @@ export function AvisosStep({
   onBack: () => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [selected, setSelected] = useState<PushCategory[]>(ONBOARDING_CATEGORIES);
   const [iosNote, setIosNote] = useState(false);
   const [preparing, setPreparing] = useState(false);
   // "pending" (a PushStatus) = the service worker was still not ready after the
@@ -62,7 +74,7 @@ export function AvisosStep({
       // the service worker did not register, and onboarding must not hang on
       // "Un momento…". Past the cap the subscription may still finish on its own.
       const status = await Promise.race([
-        enableWeekStartNotice(),
+        enableOnboardingNotices(selected),
         new Promise<"unconfirmed">((resolve) => { timer = setTimeout(() => resolve("unconfirmed"), SUBSCRIBE_WAIT_MS); }),
       ]);
       setResult(status === "on" && pushResyncPending() ? "unconfirmed" : status);
@@ -82,12 +94,37 @@ export function AvisosStep({
         ¿Te aviso cuando empieza tu semana nueva?
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-muted">
-        Un aviso el día que empieza cada semana, con lo que está pasando. El
-        aviso se arma en tu teléfono, y lo apagás cuando quieras en Ajustes.
+        Un aviso el día que empieza cada semana, con lo que está pasando. Ya
+        dejamos marcados los avisos que más sirven; desmarcá los que no
+        quieras. Cada aviso se arma en tu teléfono, y los cambiás cuando
+        quieras en Ajustes.
       </p>
+      {!result && !iosNote && (
+        <ul className="mt-3 space-y-3">
+          {OFFERED_CATEGORY_INFO.map((category) => (
+            <li key={category.key}>
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={selected.includes(category.key)}
+                  disabled={busy}
+                  onChange={(e) =>
+                    setSelected((current) => toggleCategory(current, category.key, e.target.checked))
+                  }
+                  className="mt-1 h-5 w-5 shrink-0 accent-petrol"
+                />
+                <span>
+                  <span className="block text-sm font-extrabold text-ink">{category.label}</span>
+                  <span className="block text-xs leading-relaxed text-muted">{category.description}</span>
+                </span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      )}
       {result && (
         <p role="status" className="mt-3 text-sm font-semibold text-ink">
-          {result === "on" ? "Listo: activaste el aviso de tu semana nueva. Los demás avisos se eligen en Ajustes."
+          {result === "on" ? "Listo: activaste los avisos que elegiste. Los cambiás cuando quieras en Ajustes."
             : result === "denied" ? "Tu navegador bloqueó los avisos. Podés permitirlos en la configuración del sitio y volver a Ajustes."
             : result === "unconfigured" ? "Los avisos todavía no están disponibles. Podés seguir y revisar Ajustes más adelante."
             : result === "unsupported" ? "Este navegador no admite estos avisos. Podés usar la app igual."
@@ -128,7 +165,7 @@ export function AvisosStep({
         <>
           <PrimaryButton
             label={busy ? "Un momento…" : "Sí, avisame"}
-            disabled={busy}
+            disabled={busy || selected.length === 0}
             onClick={() => void yes()}
           />
           <button

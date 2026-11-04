@@ -4,7 +4,9 @@ import {
   landingFromSearch,
   type Channel,
   type FunnelEvent,
+  type InstallKey,
 } from "./funnel";
+import type { OnboardingStep } from "@/lib/onboarding/progress";
 
 // Growth plan items 16–18, device half. Everything "once per install" is
 // decided here, from one localStorage entry the server never sees: the server
@@ -27,6 +29,10 @@ export interface FunnelState {
   onboardedAt?: number;
   firstTool?: boolean;
   return7?: boolean;
+  /** Night run item 3 — install outcomes already counted on this device. */
+  install?: InstallKey[];
+  /** Night run item 3 — onboarding steps already counted on this device. */
+  steps?: OnboardingStep[];
   pending?: FunnelEvent[];
 }
 
@@ -135,6 +141,38 @@ export function noteOpen(now = Date.now(), store = browserStore()): FunnelState 
       ...state,
       return7: true,
       pending: [...(state.pending ?? []), { metric: "return7", key: "total" }],
+    };
+  });
+}
+
+/**
+ * Night run item 3 — an install outcome, at most once per device. Unlike the
+ * cohort counters above this does not wait for `onboardedAt`: a visitor on a
+ * public week page can install without ever onboarding.
+ */
+export function noteInstall(key: InstallKey, store = browserStore()): FunnelState {
+  return update(store, (state) => {
+    if (state.install?.includes(key)) return state;
+    return {
+      ...state,
+      install: [...(state.install ?? []), key],
+      pending: [...(state.pending ?? []), { metric: "install", key }],
+    };
+  });
+}
+
+/**
+ * Night run item 3 — an onboarding step was shown, at most once per step per
+ * device. A device that finished onboarding before this counter existed never
+ * shows a step again, so it is never counted.
+ */
+export function noteOnboardingStep(step: OnboardingStep, store = browserStore()): FunnelState {
+  return update(store, (state) => {
+    if (state.onboardedAt !== undefined || state.steps?.includes(step)) return state;
+    return {
+      ...state,
+      steps: [...(state.steps ?? []), step],
+      pending: [...(state.pending ?? []), { metric: "onb_step", key: step }],
     };
   });
 }

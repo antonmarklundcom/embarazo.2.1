@@ -3,7 +3,14 @@ import Link from "next/link";
 import { adminDb, requireAdmin } from "@/lib/server/admin";
 import { allMetrics, type FunnelStep } from "@/lib/server/adminMetrics";
 import { funnelRows } from "@/lib/server/funnelStats";
-import { totalsByKey, weeklyFunnel, type FunnelRow } from "@/lib/stats/funnel";
+import {
+  INSTALL_KEYS,
+  totalsByKey,
+  weeklyFunnel,
+  type FunnelRow,
+  type InstallKey,
+} from "@/lib/stats/funnel";
+import { ONBOARDING_STEPS, type OnboardingStep } from "@/lib/onboarding/progress";
 
 // BUILD-PLAN K16 — `/admin/metricas`.
 //
@@ -156,6 +163,70 @@ function InstallFunnel({ rows }: { rows: FunnelRow[] }) {
   );
 }
 
+// Night run item 3 — the install offer and onboarding drop-off, by week.
+const INSTALL_LABELS: Record<InstallKey, string> = {
+  prompt: "Se ofreció",
+  accepted: "Aceptó",
+  dismissed: "Rechazó",
+  installed: "Instaló",
+  standalone: "Abrió como app",
+};
+
+const STEP_LABELS: Record<OnboardingStep, string> = {
+  mode: "Modo",
+  role: "Rol",
+  lmp: "Fecha",
+  perfil: "Perfil",
+  department: "Depto.",
+  cuenta: "Cuenta",
+  codigo: "Código",
+  bebe: "Bebé",
+  invitar: "Invitar",
+  avisos: "Avisos",
+};
+
+function WeeklyCounts<K extends string>({
+  rows,
+  keys,
+  labels,
+  pick,
+}: {
+  rows: FunnelRow[];
+  keys: readonly K[];
+  labels: Record<K, string>;
+  pick: (week: ReturnType<typeof weeklyFunnel>[number]) => Record<K, number>;
+}) {
+  const weeks = weeklyFunnel(rows, new Date());
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-left text-xs uppercase tracking-wide text-muted">
+            <th className="pb-1 font-extrabold">Semana (lun.)</th>
+            {keys.map((key) => (
+              <th key={key} className="pb-1 text-right font-extrabold">
+                {labels[key]}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {weeks.map((week) => (
+            <tr key={week.week} className="border-t border-line">
+              <td className="py-1.5 font-semibold text-ink">{week.week}</td>
+              {keys.map((key) => (
+                <td key={key} className="py-1.5 text-right text-ink">
+                  {pick(week)[key]}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function Funnel({ steps }: { steps: FunnelStep[] }) {
   const top = steps[0]?.count ?? 0;
   return (
@@ -234,6 +305,20 @@ export default async function AdminMetricsPage() {
         note="Cuenta a TODAS, con o sin cuenta: cada teléfono manda un «+1» sin identificarse, una sola vez por paso. Cada fila es la semana en que llegó ese +1, no una cohorte: «volvió 7+ días» de esta semana son personas que terminaron el onboarding antes. Los teléfonos que ya usaban la app antes de este contador no suman en las últimas tres columnas."
       >
         <InstallFunnel rows={installRows} />
+      </Card>
+
+      <Card
+        title="Oferta de instalación"
+        note="Una vez por teléfono cada columna. «Se ofreció»: se mostró el aviso corto de instalar (después del onboarding, de la primera herramienta, o en una semana o guía pública). «Aceptó» y «Rechazó» son la respuesta al diálogo del navegador, que solo existe en Chrome/Android. «Abrió como app»: abrió desde el ícono o desde la app de Google Play."
+      >
+        <WeeklyCounts rows={installRows} keys={INSTALL_KEYS} labels={INSTALL_LABELS} pick={(w) => w.install} />
+      </Card>
+
+      <Card
+        title="Onboarding, paso por paso"
+        note="Cuántos teléfonos llegaron a cada paso, una vez por paso. La caída entre columnas es dónde se va la gente. No todos los caminos tienen todos los pasos: «Código» es solo para quien llega con una invitación, «Perfil» solo para la mamá, «Invitar» solo con cuenta."
+      >
+        <WeeklyCounts rows={installRows} keys={ONBOARDING_STEPS} labels={STEP_LABELS} pick={(w) => w.steps} />
       </Card>
 
       <Card

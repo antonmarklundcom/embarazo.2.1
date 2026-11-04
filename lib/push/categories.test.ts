@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEFAULT_CATEGORIES,
+  OFFERED_CATEGORY_INFO,
+  ONBOARDING_CATEGORIES,
   PUSH_CATEGORIES,
   PUSH_CATEGORY_INFO,
   acceptsCategory,
@@ -108,5 +110,25 @@ describe("acceptsCategory", () => {
 
   it("ignores junk stored against a subscription", () => {
     expect(acceptsCategory(["publicidad"], "recordatorios")).toBe(false);
+  });
+});
+
+describe("what is offered, and where consejos is pre-selected", () => {
+  it("keeps `consejos` off for a generic opt-in from Ajustes", () => {
+    expect(PUSH_CATEGORY_INFO.find((c) => c.key === "consejos")?.defaultOn).toBe(false);
+  });
+
+  it("pre-selects `consejos` in the onboarding Avisos step, next to the defaults", () => {
+    expect(ONBOARDING_CATEGORIES).toEqual(["recordatorios", "consejos", "mimos"]);
+    for (const key of DEFAULT_CATEGORIES) expect(ONBOARDING_CATEGORIES).toContain(key);
+  });
+
+  it("hides `avisos` (no sender exists) but keeps it in the contract", () => {
+    expect(OFFERED_CATEGORY_INFO.map((c) => c.key)).toEqual(["recordatorios", "consejos", "mimos"]);
+    expect(PUSH_CATEGORIES).toContain("avisos");
+    expect(ONBOARDING_CATEGORIES).not.toContain("avisos");
+    // A stored opt-in survives normalisation and unrelated toggles.
+    expect(normaliseCategories(["avisos"])).toEqual(["avisos"]);
+    expect(toggleCategory(["avisos"], "consejos", true)).toEqual(["consejos", "avisos"]);
   });
 });

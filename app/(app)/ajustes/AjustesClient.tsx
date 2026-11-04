@@ -193,6 +193,7 @@ export function AjustesClient({ account }: { account: React.ReactNode }) {
       <PushSettings
         groupTitle="Notificaciones"
         companionAppointmentAt={companionAppointmentAt}
+        companionDueDate={companionView?.snapshot?.dueDate ?? null}
       />
 
       {/* K8: only rendered when this device is accompanying somebody. */}

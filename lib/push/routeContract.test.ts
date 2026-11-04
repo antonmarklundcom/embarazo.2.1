@@ -235,3 +235,19 @@ describe("the rotate route cannot be used to plant or hijack a subscription", ()
     expect(SW).toContain("/api/v1/push/rotate");
   });
 });
+
+describe("the subscribe body stays times-only (device-half features add no field)", () => {
+  it("is strict and names exactly the five known fields", () => {
+    const start = ROUTE.indexOf("const SubscriptionSchema");
+    const schema = ROUTE.slice(start, ROUTE.indexOf("const UnsubscribeSchema"));
+    expect(schema.trimEnd().endsWith(".strict();")).toBe(true);
+    const fields = [...schema.matchAll(/^ {4}(\w+): /gm)].map((m) => m[1]);
+    expect(fields).toEqual(["endpoint", "keys", "categories", "reminders", "consejos"]);
+  });
+
+  it("has no lapse, week or due-date field: the 14-day nudge and companion turnover send only epoch times", () => {
+    const start = ROUTE.indexOf("const SubscriptionSchema");
+    const schema = ROUTE.slice(start, ROUTE.indexOf("const UnsubscribeSchema"));
+    expect(schema).not.toMatch(/lapse|lastOpen|dueDate|week\w*:/i);
+  });
+});

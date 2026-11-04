@@ -3,7 +3,8 @@
 import { useEffect, useLayoutEffect } from "react";
 import { usePathname } from "next/navigation";
 
-import { captureLanding, flush, noteOpen, noteToolOpened } from "@/lib/stats/funnel.client";
+import { captureLanding, flush, noteInstall, noteOpen, noteToolOpened } from "@/lib/stats/funnel.client";
+import { isInsideTwa, isStandalone } from "@/lib/useInstallPrompt";
 
 // Growth plan items 16–18 — the device half of the install funnel, mounted
 // once in the app shell. Renders nothing.
@@ -18,6 +19,8 @@ export function FunnelBeacon() {
   useLayoutEffect(() => {
     captureLanding(window.location.search);
     noteOpen();
+    // Night run item 3 — opened from the home-screen icon or the Play wrapper.
+    if (isStandalone() || isInsideTwa()) noteInstall("standalone");
   }, []);
 
   useEffect(() => {

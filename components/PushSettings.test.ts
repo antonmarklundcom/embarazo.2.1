@@ -69,3 +69,35 @@ describe("push settings recover their controls after browser rejection", () => {
     expect(text(render())).toContain("Probá de nuevo");
   });
 });
+
+describe("category toggles offered in Ajustes", () => {
+  beforeEach(() => {
+    hooks.values = []; hooks.cursor = 0; hooks.effect = undefined; vi.clearAllMocks();
+    client.read.mockResolvedValue({ status: "on", categories: ["recordatorios", "avisos"], needsInstall: false });
+    client.categories.mockResolvedValue(undefined);
+    vi.stubGlobal("window", { location: { search: "" } });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+  async function mount() { render(); hooks.effect!(); await Promise.resolve(); await Promise.resolve(); }
+  const checkboxes = () => descendants(render()).filter((element) => element.type === "input") as unknown as {
+    props: { checked: boolean; onChange: (e: { target: { checked: boolean } }) => Promise<void> };
+  }[];
+
+  it("hides the broadcast `avisos` toggle, which has no sender, and the not-yet-live 14-day nudge", async () => {
+    await mount();
+    const shown = text(render());
+    expect(shown).toContain("Recordatorios de control");
+    expect(shown).toContain("Tu semana nueva");
+    expect(shown).toContain("Mimos de tu familia");
+    expect(shown).not.toContain("Avisos de Mi Bebé");
+    expect(shown).not.toContain("dos semanas sin abrir");
+    expect(checkboxes()).toHaveLength(3);
+  });
+
+  it("keeps a stored `avisos` opt-in when another toggle changes", async () => {
+    await mount();
+    // Order: recordatorios, consejos, mimos. Turn "Tu semana nueva" on.
+    await checkboxes()[1]!.props.onChange({ target: { checked: true } });
+    expect(client.categories).toHaveBeenCalledWith(["recordatorios", "consejos", "avisos"], null, undefined);
+  });
+});

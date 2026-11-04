@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import { CHEERS } from "@/lib/sharing/cheers";
 import { weeklyLine } from "@/lib/seed/weeklyLines";
 import { MAX_WEEK, MIN_WEEK } from "@/lib/pregnancy";
-import { cheerSentence, weeklyTipSentence } from "./sentences";
+import { cheerSentence, lapseSentence, weeklyTipSentence } from "./sentences";
 
 // PR-5b. The service worker is the hardest place in the app to assert
 // anything about, so everything it *says* lives here instead.
@@ -72,5 +72,13 @@ describe("cheerSentence", () => {
       expect(sentence.title.length).toBeGreaterThan(0);
       expect(sentence.body.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("the 14-day nudge sentence", () => {
+  it("is gentle, voseo, and says nothing about her health or how long she was away", () => {
+    const text = lapseSentence();
+    expect(text).toEqual({ title: "¿Cómo vas?", body: "Tu semana te espera en Mi Bebé." });
+    expect(`${text.title} ${text.body}`).not.toMatch(/\d|extrañ|olvid|días/i);
   });
 });

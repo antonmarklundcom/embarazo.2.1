@@ -85,6 +85,7 @@ export function captureLanding(search: string, store = browserStore()): FunnelSt
     const pending = [...(state.pending ?? [])];
     if (landing.medium) pending.push({ metric: "arrival", key: landing.medium });
     if (landing.src) pending.push({ metric: "qr", key: landing.src });
+    if (landing.share) pending.push({ metric: "shared", key: landing.share });
     return { ...state, landed: true, channel: channelOf(landing), pending };
   });
 }

@@ -55,6 +55,11 @@ const ROUTES = routes();
 // Routes that are deliberately not linked, each with the reason. An entry here
 // is a decision; the absence of one is a bug.
 const UNLINKED: Record<string, string> = {
+  // Night run item 1: the public landing a family invitation's WhatsApp link
+  // opens. The link is built in `lib/sharing/inviteLink.ts` (outside this
+  // scan) and carries a single-use code; an in-app link without a code could
+  // only show "este enlace está incompleto".
+  "/cuenta/invitacion": "reached only from the invitation link built in lib/sharing/inviteLink.ts",
   "/privacidad": "linked from the legal footer, which this scan does not model",
   "/terminos": "linked from the legal footer",
   "/conoce": "the public pre-install landing page — reached from outside the app",

@@ -37,7 +37,11 @@ import { isSelfCentered } from "@/lib/roleCopy";
 import { hasOnboardingDraft } from "@/lib/onboarding/draftStorage";
 import { siteParamsToAnswers, withoutSiteParams } from "@/lib/onboarding/siteParams";
 import type { OnboardingAnswers } from "@/lib/onboarding/progress";
-import { INVITE_CODE_PARAM } from "@/lib/sharing/inviteLink";
+import {
+  FAMILY_INVITE_PATH,
+  INVITE_CODE_PARAM,
+  inviteCodeFromReturnTo,
+} from "@/lib/sharing/inviteLink";
 
 import {
   companionViewOf,
@@ -59,7 +63,7 @@ import { WeekHero } from "@/components/home/WeekHero";
 import { StoryRail } from "@/components/home/StoryRail";
 import { NewWeekCard } from "@/components/home/NewWeekCard";
 import { BirthCard } from "@/components/baby/BirthCard";
-import { completeHandoff, readHandoff, rememberHandoff } from "@/lib/auth/access.client";
+import { clearHandoff, completeHandoff, readHandoff, rememberHandoff } from "@/lib/auth/access.client";
 import { BabyHome } from "@/components/baby/BabyHome";
 import { flush as flushFunnel, markOnboarded } from "@/lib/stats/funnel.client";
 
@@ -86,7 +90,23 @@ export default function InicioPage() {
     const found = new URLSearchParams(window.location.search).get(
       INVITE_CODE_PARAM,
     );
-    if (found) setInviteCode(found.toUpperCase());
+    if (found) {
+      setInviteCode(found.toUpperCase());
+      return;
+    }
+    // Night run item 1 — the public `/cuenta/invitacion` page sends a signed-out
+    // visitor through sign-in with `/?codigo=` as the destination, and the
+    // account gate keeps that destination in the handoff rather than the URL.
+    // Picked up here so the invited path starts at the code step. The handoff
+    // is pointed at `/familia?codigo=` instead: if this device already has a
+    // finished setup, onboarding does not run and that is where the code can
+    // be accepted. If onboarding runs, its code step accepts it and `onDone`
+    // drops the handoff.
+    const fromSignIn = inviteCodeFromReturnTo(readHandoff()?.returnTo);
+    if (fromSignIn) {
+      setInviteCode(fromSignIn);
+      rememberHandoff(`${FAMILY_INVITE_PATH}?${INVITE_CODE_PARAM}=${fromSignIn}`);
+    }
   }, []);
 
   // SITE-PLAN-EMBARAZO-COM-PY.md §5.3 — the marketing site's CTA deep link
@@ -154,6 +174,9 @@ export default function InicioPage() {
           // Growth plan item 17: onboarding finished, counted once per device.
           markOnboarded();
           void flushFunnel();
+          // The invited path accepted its code in onboarding; do not send her
+          // on to `/familia` with a spent one.
+          if (inviteCode) clearHandoff();
           setFlow("done");
           completeHandoff();
         }}

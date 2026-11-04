@@ -30,7 +30,8 @@ describe("invitePayload", () => {
 
   it("carries the app URL and a fixed sentence", () => {
     const payload = invitePayload("https://mibebe.com.py")!;
-    expect(payload.url).toBe("https://mibebe.com.py");
+    // The public welcome screen, counted as an invitation (night run item 1).
+    expect(payload.url).toBe("https://mibebe.com.py/cuenta?src=invita");
     expect(payload.text).toBe(INVITE_TEXT);
     expect(Object.keys(payload).sort()).toEqual(["text", "title", "url"]);
   });

@@ -1,5 +1,6 @@
 import { APP_NAME } from "@/lib/brand";
 import { perspectivesFor } from "@/lib/seed/perspectives";
+import { weekShareLink } from "@/lib/share/links";
 
 // Share card v2 — "Contale a tu pareja", the text-only share next to the image.
 //
@@ -20,7 +21,8 @@ import { perspectivesFor } from "@/lib/seed/perspectives";
  * The link follows the rule every other invitation in the app follows: only
  * when `NEXT_PUBLIC_APP_URL` is set and is an http(s) URL. Without one the
  * message still goes — the paragraph is the point — just without a link to
- * nowhere.
+ * nowhere. The link is the week's public page with `?src=pareja` (night run
+ * item 1), so he can read the rest of the week without an account.
  */
 export function partnerShareText(
   week: number,
@@ -29,8 +31,8 @@ export function partnerShareText(
   const band = perspectivesFor(week);
   if (!band) return null;
   const message = `Semana ${week} — ${band.pareja}`;
-  const url = appUrl?.trim();
-  if (!url || !/^https?:\/\//.test(url)) return message;
+  const url = weekShareLink(appUrl, week, "pareja");
+  if (!url) return message;
   return `${message}\n\nLo leí en ${APP_NAME}: ${url}`;
 }
 

@@ -1,6 +1,8 @@
 import "../zodJitless.ts";
 import { z } from "zod";
 
+import { SHARE_SOURCES, isShareSource, type ShareSource } from "@/lib/share/links";
+
 // Growth plan items 16, 17, 18 — where installs come from, and whether they
 // stay. Pure half: the wire format, the landing-URL parsing and the weekly
 // table. The device half is `lib/stats/funnel.client.ts`, the server half
@@ -52,18 +54,26 @@ export function qrSource(raw: string | null | undefined): string | null {
 }
 
 /** Where this install came from, fixed on its first page load. */
-export type Channel = "directo" | "qr" | `sitio-${SiteMedium}`;
+export type Channel = "directo" | "qr" | `sitio-${SiteMedium}` | `compartido-${ShareSource}`;
 
 export const CHANNELS: readonly Channel[] = [
   "directo",
   "qr",
   ...[...SITE_MEDIA, "other" as const].map((m) => `sitio-${m}` as const),
+  ...SHARE_SOURCES.map((s) => `compartido-${s}` as const),
 ];
 
 export interface Landing {
   /** Set when the URL carries `utm_source=site`. */
   medium: SiteMedium | null;
+  /** A clinic card's `?src=`. Never one of the share words below. */
   src: string | null;
+  /**
+   * Night run item 1 — a link the app itself composed (`lib/share/links.ts`):
+   * `?src=semana`, `?src=pareja` or `?src=invita`. Those three words are
+   * reserved, so a share is never counted as a clinic.
+   */
+  share: ShareSource | null;
 }
 
 /** Read the landing URL's query string. Never throws. */
@@ -72,18 +82,22 @@ export function landingFromSearch(search: string): Landing {
   try {
     params = new URLSearchParams(search);
   } catch {
-    return { medium: null, src: null };
+    return { medium: null, src: null, share: null };
   }
   const fromSite = params.get("utm_source")?.trim().toLowerCase() === "site";
+  const src = qrSource(params.get("src"));
+  const share = isShareSource(src) ? src : null;
   return {
     medium: fromSite ? siteMedium(params.get("utm_medium")) : null,
-    src: qrSource(params.get("src")),
+    src: share ? null : src,
+    share,
   };
 }
 
-/** A QR card beats a site link when a URL somehow carries both. */
+/** A QR card beats a share, and a share beats a site link, when a URL somehow carries more than one. */
 export function channelOf(landing: Landing): Channel {
   if (landing.src) return "qr";
+  if (landing.share) return `compartido-${landing.share}`;
   if (landing.medium) return `sitio-${landing.medium}`;
   return "directo";
 }
@@ -95,13 +109,14 @@ const MediumKey = z.enum([...SITE_MEDIA, "other"]);
 const ChannelKey = z.enum(CHANNELS as [Channel, ...Channel[]]);
 
 /**
- * The whole POST body, one of five shapes. `.strict()` on each, so a field
+ * The whole POST body, one of six shapes. `.strict()` on each, so a field
  * nobody designed (an id, a week, a department) is a 400 the first time it is
  * sent rather than a silent widening of what this table learns.
  */
 export const FunnelEventSchema = z.discriminatedUnion("metric", [
   z.object({ metric: z.literal("arrival"), key: MediumKey }).strict(),
   z.object({ metric: z.literal("qr"), key: z.string().regex(QR_SOURCE_RE) }).strict(),
+  z.object({ metric: z.literal("shared"), key: z.enum(SHARE_SOURCES) }).strict(),
   z.object({ metric: z.literal("onboarded"), key: ChannelKey }).strict(),
   z.object({ metric: z.literal("first_tool"), key: z.literal("total") }).strict(),
   z.object({ metric: z.literal("return7"), key: z.literal("total") }).strict(),
@@ -112,6 +127,7 @@ export type FunnelMetric = FunnelEvent["metric"];
 export const FUNNEL_METRICS: readonly FunnelMetric[] = [
   "arrival",
   "qr",
+  "shared",
   "onboarded",
   "first_tool",
   "return7",
@@ -138,6 +154,8 @@ export interface WeeklyFunnel {
   week: string;
   arrivals: number;
   qr: number;
+  /** Night run item 1 — first opens from a link the app composed. */
+  shared: number;
   onboarded: number;
   firstTool: number;
   return7: number;
@@ -155,7 +173,7 @@ export function weeklyFunnel(rows: readonly FunnelRow[], now: Date, weeks = 8): 
     const d = new Date(`${thisWeek}T00:00:00Z`);
     d.setUTCDate(d.getUTCDate() - 7 * i);
     const week = d.toISOString().slice(0, 10);
-    const row = { week, arrivals: 0, qr: 0, onboarded: 0, firstTool: 0, return7: 0 };
+    const row = { week, arrivals: 0, qr: 0, shared: 0, onboarded: 0, firstTool: 0, return7: 0 };
     out.push(row);
     byWeek.set(week, row);
   }
@@ -164,6 +182,7 @@ export function weeklyFunnel(rows: readonly FunnelRow[], now: Date, weeks = 8): 
     if (!target) continue;
     if (row.metric === "arrival") target.arrivals += row.count;
     else if (row.metric === "qr") target.qr += row.count;
+    else if (row.metric === "shared") target.shared += row.count;
     else if (row.metric === "onboarded") target.onboarded += row.count;
     else if (row.metric === "first_tool") target.firstTool += row.count;
     else if (row.metric === "return7") target.return7 += row.count;

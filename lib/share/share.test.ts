@@ -410,7 +410,7 @@ describe("partnerShareText", () => {
 
   it("adds the app's link only when there is a real one", () => {
     expect(partnerShareText(20, "https://app.embarazo.com.py")).toMatch(
-      /\n\nLo leí en Mi Bebé: https:\/\/app\.embarazo\.com\.py$/,
+      /\n\nLo leí en Mi Bebé: https:\/\/app\.embarazo\.com\.py\/semana\/20\?src=pareja$/,
     );
     expect(partnerShareText(20, "  ")).not.toContain("http");
     expect(partnerShareText(20, "javascript:alert(1)")).not.toContain("javascript");
@@ -429,7 +429,7 @@ describe("partnerShareText", () => {
         continue;
       }
       expect(text).toBe(
-        `Semana ${week} — ${band.pareja}\n\nLo leí en Mi Bebé: https://app.embarazo.com.py`,
+        `Semana ${week} — ${band.pareja}\n\nLo leí en Mi Bebé: https://app.embarazo.com.py/semana/${week}?src=pareja`,
       );
     }
   });

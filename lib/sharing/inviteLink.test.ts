@@ -1,9 +1,13 @@
 import { describe, it, expect } from "vitest";
 
 import { INVITE_FORBIDDEN_PATTERNS } from "@/lib/share/invite";
+import { isPublicAppPath, safeReturnTo } from "@/lib/auth/access";
 import { generateInviteCode, isValidInviteCode } from "./fields";
 import {
   INVITE_CODE_PARAM,
+  INVITE_LANDING_PATH,
+  inviteCodeFromReturnTo,
+  inviteContinueHref,
   familyInviteClipboardText,
   familyInvitePayload,
   familyInviteUrl,
@@ -18,10 +22,12 @@ const APP = "https://mibebe.com.py";
 const CODE = "ABCD234XYZ";
 
 describe("familyInviteUrl", () => {
-  it("builds a link that carries the code and nothing else", () => {
+  it("builds a link to the public landing that carries the code and the share word, nothing else", () => {
     const url = familyInviteUrl(APP, CODE)!;
-    expect(url).toBe(`${APP}/familia?${INVITE_CODE_PARAM}=${CODE}`);
-    expect([...new URL(url).searchParams.keys()]).toEqual([INVITE_CODE_PARAM]);
+    expect(url).toBe(`${APP}${INVITE_LANDING_PATH}?${INVITE_CODE_PARAM}=${CODE}&src=invita`);
+    expect([...new URL(url).searchParams.keys()]).toEqual([INVITE_CODE_PARAM, "src"]);
+    // The landing must be reachable without an account.
+    expect(isPublicAppPath(INVITE_LANDING_PATH)).toBe(true);
   });
 
   it("tolerates a trailing slash on the configured app URL", () => {
@@ -111,5 +117,36 @@ describe("inviteCodeFromSearch", () => {
       const url = new URL(familyInviteUrl(APP, code)!);
       expect(inviteCodeFromSearch(url.search)).toBe(code);
     }
+  });
+});
+
+describe("the public invitation landing (night run item 1)", () => {
+  it("sends a signed-in visitor to /familia with the code filled in", () => {
+    expect(inviteContinueHref(CODE, true)).toBe(`/familia?${INVITE_CODE_PARAM}=${CODE}`);
+  });
+
+  it("sends a signed-out visitor through sign-in, keeping the code in a safe returnTo", () => {
+    const href = inviteContinueHref(CODE, false)!;
+    const url = new URL(href, "https://app.example");
+    expect(url.pathname).toBe("/cuenta");
+    expect(url.searchParams.get("ingreso")).toBe("1");
+    const returnTo = url.searchParams.get("returnTo")!;
+    expect(returnTo).toBe(`/?${INVITE_CODE_PARAM}=${CODE}`);
+    // The sign-in screen re-validates it; it must survive unchanged.
+    expect(safeReturnTo(returnTo)).toBe(returnTo);
+    expect(inviteCodeFromReturnTo(safeReturnTo(returnTo))).toBe(CODE);
+  });
+
+  it("refuses to build a link for a malformed code", () => {
+    expect(inviteContinueHref("nope", false)).toBeNull();
+    expect(inviteContinueHref(`${CODE}&x=1`, true)).toBeNull();
+  });
+
+  it("reads a code only from a home destination", () => {
+    expect(inviteCodeFromReturnTo(`/?${INVITE_CODE_PARAM}=${CODE}`)).toBe(CODE);
+    expect(inviteCodeFromReturnTo(`/familia?${INVITE_CODE_PARAM}=${CODE}`)).toBeNull();
+    expect(inviteCodeFromReturnTo("/")).toBeNull();
+    expect(inviteCodeFromReturnTo(undefined)).toBeNull();
+    expect(inviteCodeFromReturnTo(`/?${INVITE_CODE_PARAM}=nope`)).toBeNull();
   });
 });

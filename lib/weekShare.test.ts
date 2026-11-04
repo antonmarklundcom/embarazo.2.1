@@ -5,7 +5,7 @@ import { weekMessage, whatsAppShareHref } from "./weekShare";
 describe("week share links", () => {
   it("carries the week's text and the public link, nothing else", () => {
     expect(weekMessage(20, "Acompañala al control.", "https://app.embarazo.com.py")).toBe(
-      "Semana 20 — Acompañala al control.\n\nSeguí el embarazo semana a semana: https://app.embarazo.com.py",
+      "Semana 20 — Acompañala al control.\n\nSeguí el embarazo semana a semana: https://app.embarazo.com.py/semana/20?src=semana",
     );
   });
 

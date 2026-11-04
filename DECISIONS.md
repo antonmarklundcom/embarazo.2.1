@@ -4694,3 +4694,26 @@ The plan lives in the site repo (`antonmarklundcom/embarazo`,
 - **Contract.** `contracts/weeks.v1.json` carries the new names; the site PR
   imports them and replaces the 15 week illustrations and preview cards.
   Deploy both together so app and site name the same object.
+
+## 2026-11-04 — night run item 1: shared links land on public pages and are counted
+
+- **What changed.** Week shares link `/semana/N?src=semana`, the "Contale a tu
+  pareja" text links `/semana/N?src=pareja`, "Invitá a una amiga" links the
+  public welcome `/cuenta?src=invita`, and the family invitation links a new
+  public landing `/cuenta/invitacion?codigo=…&src=invita` (`lib/share/links.ts`).
+  Before, every share carried the bare app URL, and `/` and `/familia` are
+  behind the account gate.
+- **Landing path.** `/cuenta/invitacion`, not `/invitacion`: `/cuenta/**` is
+  already public in `isPublicAppPath`, so no change to `lib/auth/**` was needed
+  (AGENTS.md keeps that path closed to unlisted edits). `/familia?codigo=`
+  still works for links already sent.
+- **"Shows the week" is a sample week (20), never hers.** The landing does not
+  look the code up before sign-in: answering "whose invitation is this?" to
+  anyone holding a forwarded link would publish somebody's pregnancy. The code
+  travels only into `/familia?codigo=` (signed in) or the sign-in `returnTo`
+  `/?codigo=` (signed out), which Home now also reads from the auth handoff so
+  the invited onboarding path starts at its code step.
+- **Funnel.** `semana`, `pareja` and `invita` are reserved `?src=` words: they
+  count as a new `shared` metric and a `compartido-*` channel, never as a
+  clinic QR. Same table, same `(metric, key, day, count)` shape, closed key set;
+  no new aggregate table, so §4.5's list is unchanged.

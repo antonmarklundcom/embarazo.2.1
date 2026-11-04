@@ -8,19 +8,25 @@ import { siteGuideUrl } from "@/lib/siteLinks";
 // 301s to the site. App-shell tool pages that only make sense with local
 // on-device data (e.g. /herramientas/*) are excluded as well — they carry no
 // organic-search value on their own.
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mibebe.app";
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.embarazo.com.py";
 
+// Night run item 6: `/` and `/derechos` are not listed. Both sit behind the
+// account gate (`isPublicAppPath`), so a crawler following them lands on a
+// redirect to the sign-in screen. `/derechos` needs her own data for its
+// leave-date calculator; making it public means changing `lib/auth/access.ts`,
+// which is a separate decision.
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 
   const staticRoutes: MetadataRoute.Sitemap = [
-    { url: `${appUrl}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
     { url: `${appUrl}/guias`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${appUrl}/derechos`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${appUrl}/directorio`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
     // U3: the flag is runtime, the build is static — listed unconditionally,
     // same as /directorio (also flag/content-gated at render time).
     { url: `${appUrl}/recomendados`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
+    // Public and useful from a search: emergency numbers and alarm signs.
+    { url: `${appUrl}/emergencia`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${appUrl}/eventos`, lastModified: now, changeFrequency: "weekly", priority: 0.4 },
     { url: `${appUrl}/preguntas`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${appUrl}/privacidad`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
     // Play requires this URL to be publicly reachable; it is also the one page

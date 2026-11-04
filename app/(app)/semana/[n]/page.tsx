@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { APP_NAME } from "@/lib/brand";
 import { WEEKS, getWeek, hasSizeComparison } from "@/lib/weeks";
 import { clampWeek, MIN_WEEK, MAX_WEEK } from "@/lib/pregnancy";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
@@ -11,6 +12,7 @@ import { perspectivesFor } from "@/lib/seed/perspectives";
 import { questionsForWeek } from "@/lib/controlPrep";
 import { weekMessage, whatsAppShareHref } from "@/lib/weekShare";
 import { siteWeekUrl } from "@/lib/siteLinks";
+import { pageSocialMetadata } from "@/lib/seo/openGraph";
 
 // These exact existing tips discuss folic acid, hydration or vitamin C.
 // Editorial food/supplement art never replaces the gestational baby picture.
@@ -42,11 +44,16 @@ export async function generateMetadata({
   const size = hasSizeComparison(info.sizeComparison)
     ? `tu bebé es del tamaño de ${info.sizeComparison}`
     : info.sizeComparison;
+  const description = `Semana ${week}: ${size}. ${info.milestone}`;
+  const canonical = siteWeekUrl(week);
   return {
     title: `Semana ${week}`,
-    description: `Semana ${week}: ${size}. ${info.milestone}`,
+    description,
     // The site's week page is the indexable one (lib/siteLinks.ts).
-    alternates: { canonical: siteWeekUrl(week) },
+    alternates: { canonical },
+    // og:url follows the canonical. No `images`: `opengraph-image.tsx` in this
+    // folder supplies the card, and an explicit list here would override it.
+    ...pageSocialMetadata({ title: `Semana ${week} · ${APP_NAME}`, description, url: canonical }),
   };
 }
 

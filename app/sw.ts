@@ -89,6 +89,9 @@ const pageRoutes: string[] = [
   "/herramientas/fotos",
   "/herramientas/peso",
   "/herramientas/checklist",
+  // Night run item 5: the "Mi semana" app shortcut opens /semana, which sends
+  // her on to her current week from Dexie — offline too.
+  "/semana",
   ...Array.from(
     { length: MAX_WEEK - MIN_WEEK + 1 },
     (_, i) => `/semana/${MIN_WEEK + i}`,

@@ -8,7 +8,7 @@ import { HtmlLang } from "@/components/HtmlLang";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { SyncProvider } from "@/components/SyncProvider";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mibebe.app";
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.embarazo.com.py";
 
 // K18 — this string is the WhatsApp link preview.
 //
@@ -55,7 +55,8 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: "/icons/icon-192.png",
-    apple: "/icons/icon-192.png",
+    // Night run item 5: iOS wants 180 px; a resize of the 512 px icon.
+    apple: [{ url: "/icons/apple-touch-icon-180.png", sizes: "180x180", type: "image/png" }],
   },
 };
 

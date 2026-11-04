@@ -9,6 +9,21 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT = join(__dirname, "..", "public", "icons");
 mkdirSync(OUT, { recursive: true });
 
+// Night run item 5 — the 180 px Apple touch icon is a resize of the shipped
+// 512 px icon, not a new drawing: `node scripts/gen-icons.mjs --apple-only`
+// writes it and stops, leaving the other icons untouched.
+if (process.argv.includes("--apple-only")) {
+  const { default: sharp } = await import("sharp");
+  await sharp(join(OUT, "icon-512.png"))
+    .resize(180, 180, { fit: "cover" })
+    // iOS paints transparent pixels black: flatten onto the cream background.
+    .flatten({ background: "#FBF7F1" })
+    .png({ compressionLevel: 9 })
+    .toFile(join(OUT, "apple-touch-icon-180.png"));
+  console.log("Wrote public/icons/apple-touch-icon-180.png");
+  process.exit(0);
+}
+
 // Palette (docs/archive/REDESIGN-PLAN.md §1 — "Mi Bebé" design canvas).
 const CREAM = [0xfb, 0xf7, 0xf1];
 const PETROL = [0x2f, 0x5d, 0x50];

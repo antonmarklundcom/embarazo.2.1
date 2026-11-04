@@ -34,3 +34,31 @@ before a perf-sensitive PR.
 
 See `docs/log/w6.md` for the measured medians this unit recorded and the
 machine conditions they were taken under.
+
+## Night run 2026-11-04 (item 8) — measured, budget not tightened
+
+Change: `/` now paints Hoy's hero frame (`components/home/HomeHeroShell.tsx`)
+while the client account check is in flight, instead of one line of text;
+`next.config.ts` gained `images.formats` AVIF/WebP and a one-year
+`minimumCacheTTL`.
+
+What `npm run perf` can and cannot see: it runs signed out against a build
+that requires an account, so `/` and `/herramientas` end on
+`/cuenta?returnTo=…` and their LCP is the sign-in screen's. The hero shell only
+paints for somebody whose check is still running, which this harness never is.
+The numbers below are therefore not evidence for or against the shell.
+
+| Run (same machine, medians of 3) | `/` LCP | `/semana/20` LCP | `/herramientas` LCP | `/guias` LCP |
+|---|---|---|---|---|
+| Before the change | 4594 ms | 2965 ms | 4333 ms | 2969 ms |
+| After, `npm run perf` | 3201 ms | 761 ms | 3010 ms | 3283 ms |
+| After, without the `images` block | 3185 ms | 758 ms | 3122 ms | 3137 ms |
+| After, single direct Lighthouse runs | 4552–4568 ms | — | 4335–4336 ms | — |
+
+The direct runs reproduce the old bimodal 4.5 s on the same build that scored
+3.2 s under `npm run perf`, so the drop is machine load, not the change.
+`perf` also reported CLS 0.0093 on `/` and `/herramientas` in both "after"
+runs, and 0 in the direct runs; not reproduced, not chased. **Budget left at
+3.5 s**: no measurement here earns a tighter number. Measuring the shell needs
+a signed-in Lighthouse run (a stored session cookie), which this harness does
+not have.

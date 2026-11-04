@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { flush as flushFunnel, noteOnboardingStep } from "@/lib/stats/funnel.client";
 import Link from "next/link";
 
 import { db, type AppMode, type Role } from "@/lib/db";
@@ -127,6 +128,15 @@ export function Onboarding({
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [step]);
+
+  // Night run item 3 — which steps were reached, once per step per device, so
+  // `/admin/metricas` can show where people stop. Only after the draft is
+  // restored, so a resumed flow is not counted as reaching the first step.
+  useEffect(() => {
+    if (!hydrated) return;
+    noteOnboardingStep(step);
+    void flushFunnel();
+  }, [hydrated, step]);
 
   // --- draft: restore once, then persist every change ----------------------
 

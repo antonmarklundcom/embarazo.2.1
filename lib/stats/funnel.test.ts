@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   CHANNELS,
   FunnelEventSchema,
+  FUNNEL_METRICS,
   channelOf,
   landingFromSearch,
   qrSource,
@@ -17,11 +18,14 @@ import {
 // "just for segmentation", and each one is a step toward a person.
 
 describe("the POST body is a metric and a key, and no more", () => {
-  it("accepts each of the six shapes", () => {
+  it("accepts each of the eight shapes", () => {
     for (const body of [
       { metric: "arrival", key: "week" },
       { metric: "qr", key: "clinica-sur" },
       { metric: "shared", key: "semana" },
+      { metric: "install", key: "prompt" },
+      { metric: "install", key: "standalone" },
+      { metric: "onb_step", key: "avisos" },
       { metric: "onboarded", key: "compartido-invita" },
       { metric: "onboarded", key: "sitio-tool" },
       { metric: "first_tool", key: "total" },
@@ -46,6 +50,12 @@ describe("the POST body is a metric and a key, and no more", () => {
     expect(FunnelEventSchema.safeParse({ metric: "first_tool", key: "kegel" }).success).toBe(false);
     expect(FunnelEventSchema.safeParse({ metric: "visit", key: "total" }).success).toBe(false);
     expect(FunnelEventSchema.safeParse({ metric: "shared", key: "clinica-sur" }).success).toBe(false);
+    expect(FunnelEventSchema.safeParse({ metric: "install", key: "total" }).success).toBe(false);
+    expect(FunnelEventSchema.safeParse({ metric: "onb_step", key: "paso-3" }).success).toBe(false);
+  });
+
+  it("keeps every metric name inside the 16-character column", () => {
+    for (const metric of FUNNEL_METRICS) expect(metric.length).toBeLessThanOrEqual(16);
   });
 });
 
@@ -118,6 +128,20 @@ describe("weekly table", () => {
     expect(table[0]).toMatchObject({ arrivals: 5, onboarded: 4, firstTool: 0 });
     expect(table[1]).toMatchObject({ arrivals: 0, firstTool: 1, return7: 1 });
     expect(table[2]).toMatchObject({ arrivals: 0, onboarded: 0 });
+  });
+
+  it("sums install outcomes and onboarding steps per week (night run item 3)", () => {
+    const rows = [
+      { metric: "install", key: "prompt", day: "2026-09-22", count: 4 },
+      { metric: "install", key: "accepted", day: "2026-09-23", count: 1 },
+      { metric: "onb_step", key: "mode", day: "2026-09-22", count: 10 },
+      { metric: "onb_step", key: "avisos", day: "2026-09-24", count: 6 },
+      { metric: "onb_step", key: "nope", day: "2026-09-24", count: 99 },
+    ];
+    const [week] = weeklyFunnel(rows, new Date("2026-09-27T12:00:00Z"), 1);
+    expect(week!.install).toMatchObject({ prompt: 4, accepted: 1, dismissed: 0 });
+    expect(week!.steps).toMatchObject({ mode: 10, avisos: 6, role: 0 });
+    expect(Object.keys(week!.steps)).not.toContain("nope");
   });
 
   it("totals one metric by key, largest first", () => {

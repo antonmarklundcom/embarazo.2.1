@@ -4717,3 +4717,25 @@ The plan lives in the site repo (`antonmarklundcom/embarazo`,
   count as a new `shared` metric and a `compartido-*` channel, never as a
   clinic QR. Same table, same `(metric, key, day, count)` shape, closed key set;
   no new aggregate table, so §4.5's list is unchanged.
+
+## 2026-11-04 — night run items 2–3: a compact install prompt, and counting what it does
+
+- **Prompt.** `components/InstallNudge.tsx`: one line, "Instalar" (only when the
+  browser offers its own dialog), "Disponible en Google Play" (only with a real
+  `NEXT_PUBLIC_PLAY_STORE_URL`, on Android, outside the Play wrapper) and
+  "Ahora no". Shown once on Hoy right after onboarding finished on this device,
+  once on the first tool screen after that, and on public `/semana/N` and
+  `/guias/<slug>` until dismissed. Phones only; never when opened from the icon
+  or inside the TWA. Remembered in `mibebe.installNudge` (new key, device only).
+  The full `InstallCard` stays where it was; its "Sin App Store ni Google Play"
+  line now holds only while the Play URL is unset.
+- **Counters.** One metric `install` with keys `prompt`, `accepted`,
+  `dismissed`, `installed`, `standalone`, and `onb_step` keyed by onboarding
+  step — not five `install_*` metrics, because `funnelStats.metric` is
+  `varchar(16)` and `install_dismissed` / `opened_standalone` do not fit; a
+  migration was not worth it. Each is once per device, enforced on the device,
+  same `(metric, key, day, count)` row. `accepted`/`dismissed` are the answer
+  to the browser's dialog, not to "Ahora no". Shown as two weekly tables on
+  `/admin/metricas`.
+- **Data safety.** `docs/ANDROID-LAUNCH.md` §3.1 still holds: these are "app
+  interactions", aggregated, with no account or device identifier in the row.

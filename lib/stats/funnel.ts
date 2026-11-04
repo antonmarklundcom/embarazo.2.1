@@ -2,6 +2,19 @@ import "../zodJitless.ts";
 import { z } from "zod";
 
 import { SHARE_SOURCES, isShareSource, type ShareSource } from "@/lib/share/links";
+import { ONBOARDING_STEPS } from "@/lib/onboarding/progress";
+
+/**
+ * Night run item 3 — what happened to the install offer on this device, each
+ * at most once per install. `prompt`: the compact install prompt was shown;
+ * `accepted` / `dismissed`: her answer to the browser's own install dialog;
+ * `installed`: the browser's `appinstalled` event; `standalone`: the app was
+ * opened from its icon (display-mode standalone, or the Play wrapper). One
+ * metric with a closed key set rather than five metrics, because the stored
+ * `metric` column is 16 characters wide and a schema change is not worth it.
+ */
+export const INSTALL_KEYS = ["prompt", "accepted", "dismissed", "installed", "standalone"] as const;
+export type InstallKey = (typeof INSTALL_KEYS)[number];
 
 // Growth plan items 16, 17, 18 — where installs come from, and whether they
 // stay. Pure half: the wire format, the landing-URL parsing and the weekly
@@ -109,7 +122,7 @@ const MediumKey = z.enum([...SITE_MEDIA, "other"]);
 const ChannelKey = z.enum(CHANNELS as [Channel, ...Channel[]]);
 
 /**
- * The whole POST body, one of six shapes. `.strict()` on each, so a field
+ * The whole POST body, one of eight shapes. `.strict()` on each, so a field
  * nobody designed (an id, a week, a department) is a 400 the first time it is
  * sent rather than a silent widening of what this table learns.
  */
@@ -120,6 +133,10 @@ export const FunnelEventSchema = z.discriminatedUnion("metric", [
   z.object({ metric: z.literal("onboarded"), key: ChannelKey }).strict(),
   z.object({ metric: z.literal("first_tool"), key: z.literal("total") }).strict(),
   z.object({ metric: z.literal("return7"), key: z.literal("total") }).strict(),
+  z.object({ metric: z.literal("install"), key: z.enum(INSTALL_KEYS) }).strict(),
+  // Night run item 3 — an onboarding step was reached on this device (once per
+  // step). Steps reached, in order, are the drop-off table.
+  z.object({ metric: z.literal("onb_step"), key: z.enum(ONBOARDING_STEPS) }).strict(),
 ]);
 export type FunnelEvent = z.infer<typeof FunnelEventSchema>;
 export type FunnelMetric = FunnelEvent["metric"];
@@ -131,6 +148,8 @@ export const FUNNEL_METRICS: readonly FunnelMetric[] = [
   "onboarded",
   "first_tool",
   "return7",
+  "install",
+  "onb_step",
 ];
 
 /** One stored row, as the admin page reads it. */
@@ -159,6 +178,14 @@ export interface WeeklyFunnel {
   onboarded: number;
   firstTool: number;
   return7: number;
+  /** Night run item 3, keyed by `INSTALL_KEYS`. */
+  install: Record<InstallKey, number>;
+  /** Night run item 3, keyed by onboarding step. */
+  steps: Record<(typeof ONBOARDING_STEPS)[number], number>;
+}
+
+function zeros<K extends string>(keys: readonly K[]): Record<K, number> {
+  return Object.fromEntries(keys.map((k) => [k, 0])) as Record<K, number>;
 }
 
 /**
@@ -173,7 +200,17 @@ export function weeklyFunnel(rows: readonly FunnelRow[], now: Date, weeks = 8): 
     const d = new Date(`${thisWeek}T00:00:00Z`);
     d.setUTCDate(d.getUTCDate() - 7 * i);
     const week = d.toISOString().slice(0, 10);
-    const row = { week, arrivals: 0, qr: 0, shared: 0, onboarded: 0, firstTool: 0, return7: 0 };
+    const row: WeeklyFunnel = {
+      week,
+      arrivals: 0,
+      qr: 0,
+      shared: 0,
+      onboarded: 0,
+      firstTool: 0,
+      return7: 0,
+      install: zeros(INSTALL_KEYS),
+      steps: zeros(ONBOARDING_STEPS),
+    };
     out.push(row);
     byWeek.set(week, row);
   }
@@ -186,6 +223,11 @@ export function weeklyFunnel(rows: readonly FunnelRow[], now: Date, weeks = 8): 
     else if (row.metric === "onboarded") target.onboarded += row.count;
     else if (row.metric === "first_tool") target.firstTool += row.count;
     else if (row.metric === "return7") target.return7 += row.count;
+    else if (row.metric === "install" && row.key in target.install) {
+      target.install[row.key as InstallKey] += row.count;
+    } else if (row.metric === "onb_step" && row.key in target.steps) {
+      target.steps[row.key as keyof WeeklyFunnel["steps"]] += row.count;
+    }
   }
   return out;
 }

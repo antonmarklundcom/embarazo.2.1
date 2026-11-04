@@ -6,6 +6,8 @@ import {
   flush,
   isToolPath,
   markOnboarded,
+  noteInstall,
+  noteOnboardingStep,
   noteOpen,
   noteToolOpened,
   readState,
@@ -44,6 +46,30 @@ describe("once per install", () => {
     captureLanding("?src=semana", store);
     expect(readState(store).pending).toEqual([{ metric: "shared", key: "invita" }]);
     expect(readState(store).channel).toBe("compartido-invita");
+  });
+
+  it("counts each install outcome once per device (night run item 3)", () => {
+    const store = memory();
+    noteInstall("prompt", store);
+    noteInstall("prompt", store);
+    noteInstall("standalone", store);
+    expect(readState(store).pending).toEqual([
+      { metric: "install", key: "prompt" },
+      { metric: "install", key: "standalone" },
+    ]);
+  });
+
+  it("counts each onboarding step once, and never after onboarding finished", () => {
+    const store = memory();
+    noteOnboardingStep("mode", store);
+    noteOnboardingStep("mode", store);
+    noteOnboardingStep("role", store);
+    markOnboarded(1, store);
+    noteOnboardingStep("avisos", store);
+    expect(readState(store).pending?.filter((e) => e.metric === "onb_step")).toEqual([
+      { metric: "onb_step", key: "mode" },
+      { metric: "onb_step", key: "role" },
+    ]);
   });
 
   it("a direct first load queues nothing and fixes the channel", () => {

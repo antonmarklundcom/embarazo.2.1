@@ -9,10 +9,17 @@ import { completeOnboarding } from "./helpers/onboarding";
 
 type Sent = { metric: string; key: string };
 
-async function captureFunnel(page: Page): Promise<Sent[]> {
+// Night run item 3 added per-step onboarding counters (`onb_step`) and install
+// outcomes (`install`). They have their own test below; the cohort checks in
+// this file read the cohort metrics only.
+const STEP_METRICS = new Set(["onb_step", "install"]);
+
+async function captureFunnel(page: Page, all: Sent[] = []): Promise<Sent[]> {
   const sent: Sent[] = [];
   await page.route("**/api/v1/stats/funnel", async (route) => {
-    sent.push(JSON.parse(route.request().postData() ?? "{}") as Sent);
+    const event = JSON.parse(route.request().postData() ?? "{}") as Sent;
+    all.push(event);
+    if (!STEP_METRICS.has(event.metric)) sent.push(event);
     await route.fulfill({ status: 204, body: "" });
   });
   return sent;
@@ -70,6 +77,18 @@ test("a direct visit sends nothing until onboarding, and then only 'directo'", a
   await completeOnboarding(page);
   await expect.poll(() => sent.length).toBe(1);
   expect(sent).toEqual([{ metric: "onboarded", key: "directo" }]);
+});
+
+test("each onboarding step reached is counted once (night run item 3)", async ({ page }) => {
+  const all: Sent[] = [];
+  await captureFunnel(page, all);
+  await completeOnboarding(page);
+  await page.goto("/");
+  await expect.poll(() => all.some((e) => e.metric === "onboarded")).toBe(true);
+  const steps = all.filter((e) => e.metric === "onb_step").map((e) => e.key);
+  expect(steps[0]).toBe("mode");
+  expect(steps).toContain("lmp");
+  expect(new Set(steps).size).toBe(steps.length);
 });
 
 test("the endpoint takes a metric and a key, and refuses anything more", async ({

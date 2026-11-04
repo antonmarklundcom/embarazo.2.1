@@ -4,10 +4,11 @@ import { useState } from "react";
 import Image from "next/image";
 import { APP_NAME } from "@/lib/brand";
 import { useInstallPrompt } from "@/lib/useInstallPrompt";
+import { PLAY_URL } from "@/lib/install/offer";
 import type { InstallDevice } from "@/lib/installDevice";
 
 export function InstallCard() {
-  const { canPromptInstall, promptInstall, isStandalone, device } = useInstallPrompt();
+  const { canPromptInstall, promptInstall, isStandalone, device, playUrl } = useInstallPrompt();
   const [choice, setChoice] = useState<InstallDevice | null>(null);
   const [message, setMessage] = useState("");
   if (isStandalone || !device) return null;
@@ -16,7 +17,16 @@ export function InstallCard() {
   return (
     <section aria-label={`Instalar ${APP_NAME}`} className="rounded-card border border-line bg-white p-4">
       <h3 className="text-base font-extrabold text-ink">Agregá {APP_NAME} a tu pantalla de inicio</h3>
-      <p className="mt-1 text-sm font-semibold text-muted">Sin App Store ni Google Play. Tu cuenta es la misma en todos tus dispositivos.</p>
+      <p className="mt-1 text-sm font-semibold text-muted">
+        {/* Night run item 2: the "no store" line holds only while there is no Play listing. */}
+        {PLAY_URL ? "También está en Google Play." : "Sin App Store ni Google Play."} Tu cuenta es la misma en todos tus dispositivos.
+      </p>
+      {playUrl && (
+        <a href={playUrl} target="_blank" rel="noopener noreferrer"
+          className="mt-3 inline-flex min-h-11 items-center rounded-full bg-ink px-4 text-sm font-extrabold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petrol">
+          Disponible en Google Play
+        </a>
+      )}
       <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Elegí tu dispositivo">
         {(["iphone", "android", "desktop"] as const).map((option) => (
           <button key={option} type="button" aria-pressed={selected === option} onClick={() => setChoice(option)}

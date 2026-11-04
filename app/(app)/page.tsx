@@ -50,6 +50,7 @@ import {
 } from "@/lib/sharing/useSharedViews";
 
 import { HomeShortcuts } from "@/components/HomeShortcuts";
+import { InstallNudge } from "@/components/InstallNudge";
 import { DailyTipCard } from "@/components/home/DailyTipCard";
 import { HomeFamilySurfaces } from "@/components/home/HomeFamilySurfaces";
 import { HomeFooter } from "@/components/home/HomeFooter";
@@ -297,6 +298,8 @@ export default function InicioPage() {
           sizeComparison={info.sizeComparison}
         />
         <BirthCard week={week} lmpDate={lmpDate} birthDate={profile.birthDate} />
+        {/* Night run item 2: once, right after onboarding on this device. */}
+        <InstallNudge context="onboarded" />
       </section>
 
       <section aria-labelledby="hoy-para-vos" className="space-y-5">

@@ -66,7 +66,6 @@ export default async function WeekOpenGraphImage({
         }}
       >
         {art && (
-          // eslint-disable-next-line @next/next/no-img-element -- Satori markup, not a page
           <img
             src={art}
             width={490}
@@ -90,7 +89,7 @@ export default async function WeekOpenGraphImage({
           <div
             style={{
               marginTop: 16,
-              fontSize: art ? 104 : 140,
+              fontSize: art ? 88 : 140,
               fontWeight: 800,
               lineHeight: 1,
               color: PETROL,

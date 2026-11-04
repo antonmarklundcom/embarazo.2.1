@@ -49,8 +49,10 @@ try {
   // Night run item 5 — the wide (desktop install sheet) screenshot: a public
   // week page, which needs no onboarding. `--wide-only` writes just this one.
   const wide = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-  await wide.goto(BASE_URL + "/semana/20");
-  await wide.waitForLoadState("networkidle");
+  await wide.goto(BASE_URL + "/semana/20", { waitUntil: "load" });
+  // Not "networkidle": the service worker's precache keeps the network busy.
+  await wide.getByText("Para tu pareja y tu familia").waitFor();
+  await wide.waitForTimeout(1500);
   await wide.screenshot({ path: join(OUT, "semana-wide.png") });
   console.log("Wrote public/screenshots/semana-wide.png");
   await wide.close();

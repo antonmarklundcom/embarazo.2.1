@@ -4739,3 +4739,28 @@ The plan lives in the site repo (`antonmarklundcom/embarazo`,
   `/admin/metricas`.
 - **Data safety.** `docs/ANDROID-LAUNCH.md` §3.1 still holds: these are "app
   interactions", aggregated, with no account or device identifier in the row.
+
+## 2026-11-04 — night run item 4: push defaults
+
+- **"Tu semana nueva" is pre-selected in onboarding only.** The Avisos step now
+  shows the offered categories as boxes with recordatorios, consejos and mimos
+  ticked; "Sí" subscribes to what is still ticked, and the permission prompt
+  still appears only on "Sí". `consejos` keeps `defaultOn: false`, so
+  "Activar avisos" in Ajustes is unchanged. This reverses the earlier
+  onboarding behaviour of subscribing to `consejos` alone, which left a "Sí"
+  without control reminders.
+- **Companions' weekly push follows the owner's week.** A device with no
+  pregnancy of its own uses the companion snapshot's due date (LMP = due − 280
+  days) with `weekStartTimes`, instead of the weekday it was last opened. Only
+  epoch times reach the server. A non-default gestation length is
+  approximated (the snapshot carries no `gestationDays`).
+- **`avisos` (broadcast) is hidden** until a sender exists (`offered: false`);
+  stored opt-ins and the MySQL enum value are kept.
+- **14-day lapse nudge: device half only.** `lib/push/lapse.ts` computes one
+  fire time 14 days after the last open (new keys `mibebe.push.lastOpenAt`,
+  `mibebe.push.lapse`), off by default, toggle hidden behind
+  `LAPSE_NUDGE_SERVER_READY = false`. Shipping it needs a new
+  `pushReminders.category` enum value and migration, a route field and the
+  service-worker sentence — not done overnight because it is a production
+  schema change. Reusing `avisos` was rejected: it would change what existing
+  opt-ins mean.

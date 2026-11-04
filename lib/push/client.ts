@@ -9,6 +9,8 @@ import {
   type PushCategory,
 } from "./categories";
 import { weekStartTimes, weeklyTipTimes } from "./weekly";
+import { recordAppOpen } from "./lapse";
+import { lmpFromDueDate } from "@/lib/pregnancy";
 import { babyAgeTimes } from "@/lib/baby/push";
 import { PUSH_TEST_CACHE, PUSH_TEST_KEY } from "./testNotice";
 import { writeNotificationPolicy } from "./notificationPolicy";
@@ -195,6 +197,7 @@ export async function enablePush(
   categories: PushCategory[] = readLocalCategories(),
   companionAppointmentAt: number | null = null,
   weeklyOnly = false,
+  companionDueDate?: number | null,
 ): Promise<PushStatus> {
   if (!supported()) return "unsupported";
 
@@ -228,7 +231,7 @@ export async function enablePush(
   writeLocalCategories(selected);
   await writeNotificationPolicy(selected);
   if (weeklyOnly && existing) await refreshWeeklyTips();
-  else await syncSubscription(subscription, selected, companionAppointmentAt);
+  else await syncSubscription(subscription, selected, companionAppointmentAt, companionDueDate);
   return "on";
   } catch {
     // A denied/revoked permission is ordinary. AbortError and browser/storage
@@ -317,13 +320,14 @@ export async function endPushForSignOut(waitMs: number = SIGN_OUT_PUSH_WAIT_MS):
 export async function setCategories(
   categories: PushCategory[],
   companionAppointmentAt: number | null = null,
+  companionDueDate?: number | null,
 ): Promise<void> {
   writeLocalCategories(categories);
   await writeNotificationPolicy(categories);
   try {
     const subscription = await existingSubscription();
     if (subscription) {
-      await syncSubscription(subscription, categories, companionAppointmentAt);
+      await syncSubscription(subscription, categories, companionAppointmentAt, companionDueDate);
     }
   } catch {
     markResync(true);
@@ -340,6 +344,7 @@ export async function setCategories(
 export async function setCompanionReminder(
   enabled: boolean,
   companionAppointmentAt: number | null,
+  companionDueDate?: number | null,
 ): Promise<void> {
   try {
     const rows = await db().profile.toArray();
@@ -350,7 +355,7 @@ export async function setCompanionReminder(
   } catch {
     // No profile yet, or storage refused. The toggle simply does not stick.
   }
-  await refreshReminders(companionAppointmentAt);
+  await refreshReminders(companionAppointmentAt, companionDueDate);
 }
 
 // ---------------------------------------------------------------------------
@@ -423,6 +428,7 @@ async function syncSubscription(
   subscription: PushSubscription,
   categories: PushCategory[],
   companionAppointmentAt: number | null = null,
+  companionDueDate?: number | null,
 ): Promise<boolean> {
   const json = subscription.toJSON();
   const now = Date.now();
@@ -435,7 +441,9 @@ async function syncSubscription(
   // opt-in that no longer exists — the send-time check in `dispatchDueReminders`
   // would swallow them, but a queue full of pokes nobody will ever receive is
   // a queue that lies about what the server is going to do.
-  const consejos = categories.includes("consejos") ? await consejosTimes(now) : [];
+  const consejos = categories.includes("consejos")
+    ? await consejosTimes(now, companionDueDate)
+    : [];
 
   // A failure is remembered (`RESYNC_KEY`) and the next app start re-sends
   // everything; nothing about the app breaks in the meantime.
@@ -451,10 +459,28 @@ async function syncSubscription(
 /**
  * "Semana nueva": the days HER week turns over, from her own FUM
  * (`weekStartTimes`) — or, once the baby is born, the baby's weekly and then
- * monthly birthdays (`babyAgeTimes`, growth plan item 9). A device with no pregnancy of its own — a companion,
- * or planning mode — keeps the plain weekly slot.
+ * monthly birthdays (`babyAgeTimes`, growth plan item 9).
+ *
+ * A device with no pregnancy of its own that accompanies one (a companion) is
+ * keyed to the OWNER's turnover day, from the due date in the companion
+ * snapshot it already receives: LMP = due date − 280 days, then the same
+ * `weekStartTimes`. Before, it used `weeklyTipTimes`, i.e. the weekday of
+ * whenever the companion last opened the app, which wandered on every open.
+ * The server still learns only the resulting epoch-ms list — never the week or
+ * the due date (ARCHITECTURE §4). Snapshots carry no `gestationDays`, so an
+ * owner with a non-default term is approximated at 280 days.
+ *
+ * `companionDueDate`: a number or null is what the caller already has from its
+ * own shared-views fetch; `undefined` means "not known here", and the views
+ * are fetched live (never cached, K2) — but only when this device has no
+ * pregnancy of its own, so an owner's app start costs no extra request.
+ *
+ * Planning mode with no companion snapshot keeps the plain weekly slot.
  */
-async function consejosTimes(now: number = Date.now()): Promise<number[]> {
+async function consejosTimes(
+  now: number = Date.now(),
+  companionDueDate?: number | null,
+): Promise<number[]> {
   try {
     const pregnancy = notDeleted(await db().pregnancy.toArray())[0];
     // Growth plan item 9 (G3): after the birth, the baby's birthdays instead.
@@ -465,9 +491,29 @@ async function consejosTimes(now: number = Date.now()): Promise<number[]> {
       return weekStartTimes(pregnancy.lmpDate, now);
     }
   } catch {
-    // Storage refused: fall through to the plain weekly slot.
+    // Storage refused: fall through to the companion / plain weekly slot.
+  }
+  const dueDate = companionDueDate === undefined
+    ? await liveCompanionDueDate()
+    : companionDueDate;
+  if (typeof dueDate === "number") {
+    const times = weekStartTimes(lmpFromDueDate(dueDate), now);
+    // Past week 42 of the owner's pregnancy there is no turnover left to key
+    // to; the companion keeps the plain weekly slot rather than going silent.
+    if (times.length > 0) return times;
   }
   return weeklyTipTimes(now);
+}
+
+/** The accompanied pregnancy's due date, fetched live; null when none/offline. */
+async function liveCompanionDueDate(): Promise<number | null> {
+  try {
+    const views = await fetchSharedViews();
+    const due = views.find((view) => view.role !== "owner")?.snapshot?.dueDate;
+    return typeof due === "number" ? due : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -480,6 +526,19 @@ async function consejosTimes(now: number = Date.now()): Promise<number[]> {
  */
 export async function enableWeekStartNotice(): Promise<PushStatus> {
   return enablePush(["consejos"], null, true);
+}
+
+/**
+ * The onboarding Avisos step's "Sí": subscribe with exactly the categories she
+ * left ticked there (pre-selected: `ONBOARDING_CATEGORIES`). Same single
+ * permission request as every other path — only on her tap. Onboarding runs
+ * before any companion relation can exist on this device, so there is no
+ * companion appointment or due date to carry.
+ */
+export async function enableOnboardingNotices(
+  categories: PushCategory[],
+): Promise<PushStatus> {
+  return enablePush(normaliseCategories(categories), null, false, null);
 }
 
 /** How long before an appointment to poke. */
@@ -542,6 +601,7 @@ function dedupe(times: number[]): number[] {
  */
 export async function refreshReminders(
   companionAppointmentAt: number | null = null,
+  companionDueDate?: number | null,
 ): Promise<void> {
   await writeNotificationPolicy(readLocalCategories());
   const subscription = await existingSubscription();
@@ -550,6 +610,7 @@ export async function refreshReminders(
     subscription,
     readLocalCategories(),
     companionAppointmentAt,
+    companionDueDate,
   );
 }
 
@@ -571,6 +632,10 @@ export async function refreshReminders(
  * this the narrow write it needs to be.
  */
 export async function refreshWeeklyTips(): Promise<void> {
+  // The 14-day nudge's clock (lib/push/lapse.ts): this runs on app start, so
+  // it is the "she opened the app" signal. Recorded before the subscription
+  // check so the anchor exists even while push is off.
+  recordAppOpen();
   await writeNotificationPolicy(readLocalCategories());
   const subscription = await existingSubscription();
   if (!subscription) return;
@@ -585,6 +650,7 @@ export async function refreshWeeklyTips(): Promise<void> {
       subscription,
       readLocalCategories(),
       companion?.snapshot?.nextAppointmentAt ?? null,
+      companion?.snapshot?.dueDate ?? null,
     );
     return;
   }

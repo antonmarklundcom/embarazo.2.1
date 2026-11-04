@@ -4,10 +4,16 @@ import { useEffect, useState } from "react";
 
 import { APP_NAME } from "@/lib/brand";
 import {
-  PUSH_CATEGORY_INFO,
+  OFFERED_CATEGORY_INFO,
   toggleCategory,
   type PushCategory,
 } from "@/lib/push/categories";
+import {
+  LAPSE_NUDGE_SERVER_READY,
+  LAPSE_TOGGLE_INFO,
+  lapseNudgeOptedIn,
+  setLapseNudgeOptIn,
+} from "@/lib/push/lapse";
 import {
   disablePush,
   enablePush,
@@ -48,6 +54,7 @@ const TEST_MESSAGES: Record<PushTestResult, string> = {
 export function PushSettings({
   groupTitle,
   companionAppointmentAt = null,
+  companionDueDate,
 }: {
   groupTitle?: string;
   /**
@@ -59,6 +66,13 @@ export function PushSettings({
    * read from storage because a companion view is never cached (K2).
    */
   companionAppointmentAt?: number | null;
+  /**
+   * The due date of the pregnancy this device accompanies, from the same live
+   * snapshot. Keys a companion's "Tu semana nueva" to the owner's turnover day;
+   * only epoch times derived from it ever reach the server. Omitted = the push
+   * client fetches it live when it needs it.
+   */
+  companionDueDate?: number | null;
 }) {
   const [state, setState] = useState<PushState | null>(null);
   const [busy, setBusy] = useState(false);
@@ -68,8 +82,10 @@ export function PushSettings({
   // True once an explicit request has waited past PREPARING_AFTER_MS: the
   // service worker of a first visit can take well over ten seconds to come up.
   const [preparing, setPreparing] = useState(false);
+  const [lapseOn, setLapseOn] = useState(false);
 
   useEffect(() => {
+    setLapseOn(lapseNudgeOptedIn());
     // Reading the state never prompts — it only inspects.
     void readPushState().then(setState).catch(() => {
       setState({ status: "error", categories: DEFAULT_CATEGORIES, needsInstall: false });
@@ -93,7 +109,7 @@ export function PushSettings({
     const timer = setTimeout(() => setPreparing(true), PREPARING_AFTER_MS);
     let status: PushState["status"] = "error";
     try {
-      status = await enablePush(state!.categories, companionAppointmentAt);
+      status = await enablePush(state!.categories, companionAppointmentAt, false, companionDueDate);
     } catch {
       status = "error";
     } finally {
@@ -159,7 +175,7 @@ export function PushSettings({
     const next = toggleCategory(state!.categories, category, on);
     setState({ ...state!, categories: next });
     try {
-      await setCategories(next, companionAppointmentAt);
+      await setCategories(next, companionAppointmentAt, companionDueDate);
       if (pushResyncPending()) setMessage("Guardamos tus opciones en este teléfono. Vamos a intentar guardarlas en el servidor cuando vuelva la conexión.");
     } catch {
       setMessage(BROWSER_ERROR_MESSAGE);
@@ -266,7 +282,9 @@ export function PushSettings({
 
           {state.status === "on" && (
             <ul className="mt-4 space-y-3">
-              {PUSH_CATEGORY_INFO.map((category) => {
+              {/* Only categories with a sender: `avisos` has none yet, so its
+                  toggle is hidden (a stored opt-in is kept untouched). */}
+              {OFFERED_CATEGORY_INFO.map((category) => {
                 const on = state.categories.includes(category.key);
                 return (
                   <li key={category.key}>
@@ -291,6 +309,31 @@ export function PushSettings({
                   </li>
                 );
               })}
+              {/* The 14-day nudge: device half only (lib/push/lapse.ts). Hidden
+                  until the server has a category to store it under. */}
+              {LAPSE_NUDGE_SERVER_READY && (
+                <li>
+                  <label className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={lapseOn}
+                      onChange={(e) => {
+                        setLapseNudgeOptIn(e.target.checked);
+                        setLapseOn(e.target.checked);
+                      }}
+                      className="mt-1 h-5 w-5 shrink-0 accent-petrol"
+                    />
+                    <span>
+                      <span className="block text-sm font-extrabold text-ink">
+                        {LAPSE_TOGGLE_INFO.label}
+                      </span>
+                      <span className="block text-xs leading-relaxed text-muted">
+                        {LAPSE_TOGGLE_INFO.description}
+                      </span>
+                    </span>
+                  </label>
+                </li>
+              )}
             </ul>
           )}
         </>

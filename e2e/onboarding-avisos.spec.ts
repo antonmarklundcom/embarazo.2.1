@@ -64,6 +64,51 @@ test("'Sí' asks once and explains denial before she chooses to continue", async
   expect(await asks(page)).toBe(1);
 });
 
+test("'Tu semana nueva' is pre-selected, unticking is respected, and nothing asks before 'Sí'", async ({ page }) => {
+  await countPermissionAsks(page);
+  await page.addInitScript(() => {
+    const subscription = { endpoint: "https://fcm.googleapis.com/fixture-only", toJSON: () => ({ keys: { p256dh: "fixture", auth: "fixture" } }) };
+    Notification.requestPermission = async () => {
+      sessionStorage.setItem("asks", String(Number(sessionStorage.getItem("asks") ?? "0") + 1));
+      Object.defineProperty(Notification, "permission", { get: () => "granted", configurable: true });
+      return "granted";
+    };
+    PushManager.prototype.getSubscription = async () => null;
+    PushManager.prototype.subscribe = async () => subscription as unknown as PushSubscription;
+    const original = window.fetch.bind(window);
+    window.fetch = (input, init) => {
+      // This test gets past the permission prompt, so the key is decoded:
+      // it must be valid base64url (the shared stub's "BNtestkey" is not).
+      if (String(input).endsWith("/api/v1/push") && (init?.method ?? "GET") === "GET") {
+        return Promise.resolve(new Response(JSON.stringify({ publicKey: "BNtestkeyA" }), { status: 200, headers: { "Content-Type": "application/json" } }));
+      }
+      if (String(input).endsWith("/api/v1/push") && init?.method === "POST") {
+        sessionStorage.setItem("onboardingCategories", JSON.stringify(JSON.parse(String(init.body)).categories));
+        return Promise.resolve(new Response("{}", { status: 200 }));
+      }
+      return original(input, init);
+    };
+  });
+  await completeOnboarding(page, { stopBeforeAvisos: true });
+
+  const weekly = page.getByRole("checkbox", { name: /Tu semana nueva/ });
+  await expect(weekly).toBeChecked();
+  await expect(page.getByRole("checkbox", { name: /Recordatorios de control/ })).toBeChecked();
+  await expect(page.getByRole("checkbox", { name: /Mimos de tu familia/ })).toBeChecked();
+  // No sender exists for the broadcast category, so it is not offered.
+  await expect(page.getByRole("checkbox", { name: /Avisos de Mi Bebé/ })).toHaveCount(0);
+
+  await page.getByRole("checkbox", { name: /Mimos de tu familia/ }).uncheck();
+  // Rendering and ticking are not asking.
+  expect(await asks(page)).toBe(0);
+
+  await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
+  await page.getByRole("button", { name: "Sí, avisame" }).click();
+  await expect(page.getByRole("status")).toContainText("Listo: activaste", { timeout: 15_000 });
+  expect(await asks(page)).toBe(1);
+  expect(await page.evaluate(() => sessionStorage.getItem("onboardingCategories"))).toBe('["recordatorios","consejos"]');
+});
+
 test("an unconfigured service never claims activation or asks permission", async ({ page }) => {
   await page.addInitScript(() => {
     const original = window.fetch.bind(window);
@@ -106,7 +151,9 @@ for (const saved of [true, false]) {
     await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
     await page.getByRole("button", { name: "Sí, avisame" }).click();
     await expect(page.getByRole("status")).toContainText(saved ? "Listo: activaste" : "Todavía no pudimos confirmar", { timeout: 15_000 });
-    expect(await page.evaluate(() => sessionStorage.getItem("weeklyCategories"))).toBe('["consejos"]');
+    // "Tu semana nueva" is pre-selected here next to the two Ajustes defaults;
+    // "Sí" sends exactly what was left ticked.
+    expect(await page.evaluate(() => sessionStorage.getItem("weeklyCategories"))).toBe('["recordatorios","consejos","mimos"]');
     await page.getByRole("button", { name: "Continuar", exact: true }).click();
     await expect(page.getByText("Tip de hoy")).toBeVisible();
   });

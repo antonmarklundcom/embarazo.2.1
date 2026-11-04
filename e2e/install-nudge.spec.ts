@@ -33,7 +33,7 @@ test("a public week page offers it until «Ahora no», then never again", async 
   await nudge.getByRole("button", { name: "Ahora no" }).click();
   await expect(nudge).toHaveCount(0);
   await page.goto("/semana/21");
-  await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
+  await expect(page.locator("summary", { hasText: "Tu pareja" })).toBeVisible();
   await expect(page.locator("[data-install-nudge]")).toHaveCount(0);
 });
 

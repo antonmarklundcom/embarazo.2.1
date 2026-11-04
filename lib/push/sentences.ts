@@ -1,5 +1,6 @@
 import { weeklyLine } from "@/lib/seed/weeklyLines";
 import { cheerById } from "@/lib/sharing/cheers";
+import { APP_NAME } from "@/lib/brand";
 
 // PR-5b — the two sentences the service worker learned to write.
 //
@@ -65,5 +66,18 @@ export function cheerSentence(cheerId: string): NotificationText {
     // An id that no longer exists degrades to the generic line rather than
     // crashing the poke — the same rule `cheerById` gives the home screen.
     body: cheer ? `${cheer.emoji} ${cheer.text.es}` : "Alguien de tu familia te mandó ánimo.",
+  };
+}
+
+/**
+ * The 14-day nudge (`lib/push/lapse.ts`). Not composed by the service worker
+ * yet: the server half does not exist. Gentle and guilt-free on purpose — no
+ * "te extrañamos", no count of days missed, nothing about her health: she may
+ * have stopped opening the app for a reason that is none of its business.
+ */
+export function lapseSentence(): NotificationText {
+  return {
+    title: "¿Cómo vas?",
+    body: `Tu semana te espera en ${APP_NAME}.`,
   };
 }

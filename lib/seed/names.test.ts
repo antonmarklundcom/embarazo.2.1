@@ -75,3 +75,17 @@ describe("favourites survive a new phone", () => {
     expect(NATURAL_KEY_FIELDS.favoriteNames).toBe("name");
   });
 });
+
+describe("catalogue depth (night run item 16)", () => {
+  it("has at least 15 names per gender in every origin, with no duplicate names", async () => {
+    const raw = (await import("./names.json")).default as { name: string; origin: string; gender: string }[];
+    for (const origin of ["guarani", "espanol", "biblico"]) {
+      for (const gender of ["f", "m"]) {
+        const count = raw.filter((n) => n.origin === origin && n.gender === gender).length;
+        expect(count, `${origin}/${gender}`).toBeGreaterThanOrEqual(15);
+      }
+    }
+    const names = raw.map((n) => n.name);
+    expect(new Set(names).size).toBe(names.length);
+  });
+});

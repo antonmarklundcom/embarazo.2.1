@@ -20,6 +20,7 @@ import {
   nextStep,
   previousStep,
   resumeStep,
+  skipsRoleStep,
   stepProgress,
   stepsFor,
   type OnboardingContext,
@@ -390,17 +391,59 @@ describe("stepProgress — 'Paso N de M'", () => {
 
   it("counts the mamá's own steps after the first question", () => {
     const context = ctx({ mode: "embarazada", signedIn: true });
-    // Minus "mode" and the account step a signed-in person steps over.
-    const total = stepsFor(context).length - 2;
-    expect(stepProgress("role", context)).toEqual({ current: 1, total });
+    // Minus "mode", the role question "Estoy embarazada" steps over, and the
+    // account step a signed-in person steps over.
+    const total = stepsFor(context).length - 3;
+    expect(stepProgress("lmp", context)).toEqual({ current: 1, total });
     expect(stepProgress("avisos", context)).toEqual({ current: total, total });
+  });
+
+  it("counts the role question where it is still asked", () => {
+    const planeando = ctx({ mode: "planeando", signedIn: false });
+    expect(stepProgress("role", planeando)).toEqual({
+      current: 1,
+      total: stepsFor(planeando).length - 1,
+    });
+    const invited = ctx({ mode: "embarazada", signedIn: false, invited: true });
+    expect(stepProgress("role", invited)).toEqual({ current: 1, total: 3 });
   });
 
   it("never counts a step this person will not see", () => {
     const papa = ctx({ mode: "embarazada", signedIn: true, role: "papa" });
     const mama = ctx({ mode: "embarazada", signedIn: true });
-    expect(stepProgress("role", papa)!.total).toBe(stepProgress("role", mama)!.total - 1);
+    expect(stepProgress("lmp", papa)!.total).toBe(stepProgress("lmp", mama)!.total - 1);
     expect(stepProgress("perfil", papa)).toBeNull();
+  });
+});
+
+describe("the role question on the embarazada path (night run item 10)", () => {
+  it("is stepped over only for her own pregnancy", () => {
+    expect(skipsRoleStep(ctx({ mode: "embarazada", signedIn: false }))).toBe(true);
+    expect(skipsRoleStep(ctx({ mode: "embarazada", signedIn: true }))).toBe(true);
+    expect(skipsRoleStep(ctx({ mode: "planeando", signedIn: false }))).toBe(false);
+    expect(
+      skipsRoleStep(ctx({ mode: "embarazada", signedIn: false, invited: true })),
+    ).toBe(false);
+  });
+
+  it("stays a reachable step of the flow, leading to the date", () => {
+    for (const role of ROLE_VALUES) {
+      const context = ctx({ mode: "embarazada", signedIn: false, role });
+      expect(stepsFor(context)).toContain("role");
+      expect(resumeStep("role", context)).toBe("role");
+      expect(nextStep("role", context)).toBe("lmp");
+      expect(previousStep("lmp", context)).toBe("role");
+      expect(previousStep("role", context)).toBe("mode");
+    }
+  });
+
+  it("shows no count while it is open through 'Cambiar'", () => {
+    const context = ctx({ mode: "embarazada", signedIn: false });
+    expect(stepProgress("role", context)).toBeNull();
+  });
+
+  it("defaults to mamá, so the skipped answer is the one she would have tapped", () => {
+    expect(emptyAnswers().role).toBe("mama");
   });
 });
 

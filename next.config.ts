@@ -143,6 +143,14 @@ function securityHeaders(env: NodeJS.ProcessEnv = process.env) {
 
 const nextConfig = {
   reactStrictMode: true,
+  // Night run item 8: AVIF first, then WebP, for anything that goes through
+  // the image optimizer; and a year of cache, since every optimized source in
+  // this app is a versioned or immutable asset. AVIF costs more CPU to encode
+  // than WebP, once per size, and the result is cached for that year.
+  images: {
+    formats: ["image/avif", "image/webp"] as ("image/avif" | "image/webp")[],
+    minimumCacheTTL: 31536000,
+  },
   // `/api/v1/health` reports this. Resolved here, at build time, because the
   // deployed app may have no `.git` next to it (Hostinger): git first, then CI
   // env vars, else "unknown". See lib/server/buildRevision.ts.

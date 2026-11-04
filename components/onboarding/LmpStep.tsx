@@ -9,6 +9,7 @@ import {
   type DueDateMethod,
 } from "@/lib/pregnancy";
 import type { OnboardingAnswers } from "@/lib/onboarding/progress";
+import { ROLE_LABELS } from "@/lib/roleCopy";
 
 import { BackButton, FIELD_CLASS, PrimaryButton } from "./controls";
 
@@ -36,6 +37,7 @@ export function LmpStep({
   onChange,
   onContinue,
   onBack,
+  onChangeRole,
 }: {
   answers: OnboardingAnswers;
   error: string;
@@ -47,9 +49,30 @@ export function LmpStep({
   onChange: (patch: Partial<OnboardingAnswers>) => void;
   onContinue: () => void;
   onBack: () => void;
+  /**
+   * Night run item 10 — present when the role question was stepped over
+   * ("Estoy embarazada" defaults it to mamá). Opens the role step, so the
+   * answer that was assumed stays visible and one tap from changing.
+   */
+  onChangeRole?: () => void;
 }) {
   return (
     <div className="rounded-card bg-white p-5 shadow-soft">
+      {onChangeRole && (
+        <p className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-tile bg-cream px-3 py-2 text-sm text-ink">
+          <span>
+            Usás la app como <strong>{ROLE_LABELS[answers.role]}</strong>
+          </span>
+          <button
+            type="button"
+            onClick={onChangeRole}
+            aria-label="Cambiar cómo te describís"
+            className="min-h-[44px] cursor-pointer px-1 text-sm font-extrabold text-petrol underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petrol"
+          >
+            Cambiar
+          </button>
+        </p>
+      )}
       <label htmlFor="method" className="block text-sm font-extrabold text-ink">
         ¿Cómo sabés tu fecha?
       </label>

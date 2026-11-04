@@ -72,7 +72,6 @@ test("signed-in tool entry completes a fresh profile before opening the tool", a
   await expect(page.getByRole("button", { name: /^Estoy embarazada\b/ })).toBeVisible();
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("mibebe.auth.handoff.v1") ?? "null").returnTo)).toBe("/herramientas/resumen");
   await page.getByRole("button",{name:/^Estoy embarazada\b/}).click();
-  await page.getByRole("button",{name:"Mamá"}).click();
   await page.locator("#lmp").fill(localDateInput(-70));
   await page.getByRole("button",{name:"Continuar",exact:true}).click();
   await page.getByRole("button",{name:"Continuar",exact:true}).click();
@@ -207,7 +206,6 @@ test("a signed-in calculator arrival keeps its date through ownership setup",asy
   const fum=localDateInput(-70);
   await page.goto('/#fum='+fum);
   await page.getByRole("button",{name:/^Estoy embarazada\b/}).click();
-  await page.getByRole("button",{name:"Mamá"}).click();
   await expect(page.locator("#lmp")).toHaveValue(fum);
   expect(new URL(page.url()).hash).toBe("");
 });

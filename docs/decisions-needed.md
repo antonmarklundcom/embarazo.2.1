@@ -52,3 +52,17 @@ resolution, so the reasoning is not lost.
   that guardrail keeps pointing at real code. Repoint the three assertions at
   `components/ajustes/PinSettings.tsx`, then move the card there — it is ~60
   lines and would take the shell from 274 to ~214.~~ **Fixed**: moved to `components/ajustes/PinSettings.tsx` on 2026-10-17; `lib/pinPolicy.test.ts` now reads that file.
+
+- **Night run 2026-11-04, item 9 — KNOWN-ISSUES "Confirmed pre-existing e2e
+  flake" (offline navigation lands on `/`).** Root cause traced: the precache
+  serves the right document; the page then ends on `/` with navigation type
+  "reload", a same-URL navigation from the app document the test navigated
+  away from (Hoy after onboarding, whose offline RSC fetches make Next.js fall
+  back to browser navigations). `e2e/helpers/offline.ts` `gotoPrecached` now
+  leaves the app (`about:blank`) before the offline navigation, the pattern
+  `offline.spec.ts` already used for its tool loop. The five specs then ran
+  3× each, 81/81, plus `sync`, `appointment-agenda` and `account-entry` 4×
+  each, 96/96. Strike the KNOWN-ISSUES entry in the link pass if CI agrees. A
+  separate intermittent teardown timeout in `account-entry.spec.ts › offline
+  continuation…` (all assertions pass, "Tearing down context exceeded the test
+  timeout") was seen 3/14 on the A3 branch and 0/4 here; not chased.

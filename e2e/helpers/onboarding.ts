@@ -58,7 +58,14 @@ export async function completeOnboarding(
       name: mode === "embarazada" ? "Estoy embarazada" : "Estoy planeando / buscando",
     })
     .click();
-  await page.getByRole("button", { name: role }).click();
+  // Night run item 10 — "Estoy embarazada" lands on the date with mamá
+  // preselected; any other role goes through the date step's "Cambiar".
+  if (mode === "embarazada" && role !== "Mamá") {
+    await page.getByRole("button", { name: "Cambiar cómo te describís" }).click();
+  }
+  if (mode !== "embarazada" || role !== "Mamá") {
+    await page.getByRole("button", { name: role }).click();
+  }
 
   if (mode === "embarazada") {
     if (method !== "lmp") await page.locator("#method").selectOption(method);

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import Link from "next/link";
+import { HomeHeroShell } from "@/components/home/HomeHeroShell";
 import { db } from "@/lib/db";
 import { hasPersonalSetup } from "@/lib/onboarding/hasSetup";
 import { hasOnboardingDraft } from "@/lib/onboarding/draftStorage";
@@ -206,6 +207,9 @@ export function AccountEntryGate({ children }: { children: React.ReactNode }) {
   // The server-rendered placeholder. If the app's JavaScript never starts (an
   // old cached page naming deleted files), the repair link still appears after
   // 10 s through CSS alone.
+  // Night run item 8: on `/` the placeholder is Hoy's hero frame, so the
+  // first paint is the largest one (components/home/HomeHeroShell.tsx).
+  if (mode === "checking" && pathname === "/") return <HomeHeroShell />;
   if (mode === "checking") return <div className="py-10 text-center"><p role="status" className="text-sm text-muted">Abriendo tu embarazo…</p><Link href="/emergencia" className="mt-4 inline-block text-sm font-bold text-terracotta underline">Señales de alarma y ayuda</Link><p className="reveal-late mt-6 text-sm text-muted">¿No carga? <a href="/reparar" className="font-bold text-petrol underline">Reparar la app</a></p></div>;
   return (
     <section className="mx-auto my-5 max-w-md rounded-card border border-line bg-white p-5">

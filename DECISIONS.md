@@ -4790,3 +4790,20 @@ The plan lives in the site repo (`antonmarklundcom/embarazo`,
 - **Metadata** for the client-only pages (`/derechos`, `/directorio`,
   `/recomendados`, `/emergencia`, `/eventos`, `/guias/videos`, `/familia`)
   comes from a server `layout.tsx` next to each.
+
+## 2026-11-04 — night run item 10: a shorter pregnancy onboarding
+
+- "Estoy embarazada" is the first, large, filled call-to-action. Planning and
+  "Me invitaron / tengo un código" are smaller entrances below it, with the
+  same labels and behaviour (`docs/PRODUCT-NEXT-STEPS-2026-10-12.md` item 2).
+- The embarazada path (not invited) steps over the role question: role
+  defaults to `mama`, the date step shows "Usás la app como Mamá · Cambiar",
+  and Cambiar opens the unchanged role step.
+- The role step stays in `stepsFor`, so `nextStep`, `resumeStep` and drafts
+  already on phones that name `role` behave as before; only the default walk
+  (`skipsRoleStep`) and the "Paso N de M" count skip it.
+- Planeando and the invited path still ask the role (a papá plans too; it is
+  the invited path's only real question).
+- No data contract changed: same profile and pregnancy rows, same draft schema
+  with no new field; deep links, `?codigo=`, the notification permission rule
+  and the onboarding step counter behave as before.

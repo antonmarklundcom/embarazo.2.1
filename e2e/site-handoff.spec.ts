@@ -9,8 +9,8 @@ import { localDateInput } from "./helpers/dates";
 const isoDaysFromToday = (days: number) => localDateInput(days);
 
 async function reachDateStep(page: Page): Promise<void> {
+  // Night run item 10: mamá is preselected, so this lands on the date.
   await page.getByRole("button", { name: "Estoy embarazada" }).click();
-  await page.getByRole("button", { name: "Mamá" }).click();
 }
 
 test("a FUM from the calculator arrives as a FUM, and never in a request", async ({ page }) => {

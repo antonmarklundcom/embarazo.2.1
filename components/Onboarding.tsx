@@ -34,6 +34,7 @@ import {
   nextStep,
   previousStep,
   resumeStep,
+  skipsRoleStep,
   stepProgress,
   type OnboardingAnswers,
   type OnboardingContext,
@@ -55,8 +56,10 @@ import { RoleStep } from "./onboarding/RoleStep";
 // The flow is: mode → role → fecha → **tu situación** → departamento →
 // **cuenta** → nombre del bebé → **invitá a tu pareja y familia**, with a
 // second, much shorter path for somebody arriving on an invite: mode → role →
-// cuenta → **código**. Three things about it are requirements rather than
-// layout:
+// cuenta → **código**. Since night run item 10 (2026-11-04) "Estoy embarazada"
+// steps over the role question with mamá preselected; the date step shows the
+// role with a "Cambiar" that opens it (`skipsRoleStep`). Three things about it
+// are requirements rather than layout:
 //
 //  1. **The device row is written when the departamento step is left**, before
 //     the account step can navigate the browser to Google. The account gate
@@ -97,7 +100,9 @@ export function Onboarding({
    * A prefill from the marketing site's deep link (SITE-PLAN-EMBARAZO-COM-PY.md
    * §5.3 — `?w=`, `?fpp=`, `?fum=`, `?modo=planeando`), already parsed by
    * `lib/onboarding/siteParams.ts`. Only *values* are prefilled — she still
-   * walks through mode/role/date like anyone else, and can correct them.
+   * walks through mode/date like anyone else (role too, except on the
+   * embarazada path, where it defaults to mamá with an inline "Cambiar"), and
+   * can correct them.
    */
   initialSiteAnswers?: Partial<OnboardingAnswers>;
 }) {
@@ -293,14 +298,26 @@ export function Onboarding({
   // moment its confirmation is news.
   const skipsAccountStep = Boolean(auth?.signedIn) && !answers.invited;
 
+  // Night run item 10 — the embarazada path steps over the role question
+  // (`skipsRoleStep`) in both directions; "Cambiar" on the date step opens it.
+  const skipsRole = skipsRoleStep(context);
+
   function goBack() {
     let target = previousStep(step, context);
     if (target === "cuenta" && skipsAccountStep) target = previousStep("cuenta", context);
+    if (target === "role" && skipsRole) target = previousStep("role", context);
     if (target) goTo(target);
   }
 
   function chooseMode(mode: AppMode) {
-    setAnswers((current) => ({ ...current, mode, invited: false, step: "role" }));
+    setAnswers((current) => {
+      const chosen = { ...context, mode, invited: false, role: current.role };
+      // "Estoy embarazada" already says who she is for nearly everybody: land
+      // on the date with the role she has (mamá unless she changed it), and
+      // let the date step's "Cambiar" open the role question.
+      const step = skipsRoleStep(chosen) ? nextStep("role", chosen)! : "role";
+      return { ...current, mode, invited: false, step };
+    });
   }
 
   /**
@@ -532,6 +549,7 @@ export function Onboarding({
           onChange={update}
           onContinue={continueFromLmp}
           onBack={goBack}
+          onChangeRole={skipsRole ? () => goTo("role") : undefined}
         />
       )}
 

@@ -5,8 +5,9 @@ import { completeOnboarding } from "./helpers/onboarding";
 
 // BUILD-PLAN K1 (docs/archive/FABLE-PLAN-2026-08.md §3) — account-first onboarding.
 //
-// The flow is mode → role → fecha → **tu situación** → departamento →
-// **cuenta** → nombre del bebé → invitación, with a second, shorter path for
+// The flow is mode → (role) → fecha → **tu situación** → departamento →
+// **cuenta** → nombre del bebé → invitación — "Estoy embarazada" preselects
+// mamá and steps over role (night run item 10) — with a second, shorter path for
 // somebody arriving on an invitation: mode → role → cuenta → **código** (K9-F5). Each test gets a fresh browser context (isolated
 // IndexedDB/localStorage), so no cleanup is needed between runs.
 //
@@ -67,6 +68,37 @@ test("planeando mode skips the pregnancy-only steps", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("'Estoy embarazada' preselects mamá, and the role stays one tap away", async ({
+  page,
+}) => {
+  // Night run item 10 — the main path does not ask who she is right after she
+  // said she is pregnant; it shows the assumption and lets her change it.
+  await page.goto("/");
+  await page.getByRole("button", { name: "Estoy embarazada" }).click();
+  await expect(page.locator("#lmp")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Papá" })).toHaveCount(0);
+  await expect(page.getByText("Usás la app como Mamá")).toBeVisible();
+  expect(await readDraft(page)).toMatchObject({
+    step: "lmp",
+    mode: "embarazada",
+    role: "mama",
+    invited: false,
+  });
+
+  // "Cambiar" opens the same role question, which leads back to the date.
+  await page.getByRole("button", { name: "Cambiar cómo te describís" }).click();
+  await page.getByRole("button", { name: "Acompañante" }).click();
+  await expect(page.locator("#lmp")).toBeVisible();
+  await expect(page.getByText("Usás la app como Acompañante")).toBeVisible();
+  expect(await readDraft(page)).toMatchObject({ step: "lmp", role: "acompanante" });
+
+  // "Volver" from the date goes to the first screen, where the other
+  // entrances still are.
+  await page.getByRole("button", { name: "Volver" }).click();
+  await expect(page.getByRole("button", { name: "Estoy planeando / buscando" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Usar mi código" })).toBeVisible();
+});
+
 test("the old 'no te pedimos cuenta' promise is gone from the first screen", async ({
   page,
 }) => {
@@ -82,7 +114,6 @@ test("the old 'no te pedimos cuenta' promise is gone from the first screen", asy
 test("the account step is reached, and offers a way past it", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Estoy embarazada" }).click();
-  await page.getByRole("button", { name: "Mamá" }).click();
   await page
     .locator("#lmp")
     .fill(localDateInput(-70));
@@ -102,6 +133,7 @@ test("leaving the flow at the account step and coming back resumes it", async ({
 }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Estoy embarazada" }).click();
+  await page.getByRole("button", { name: "Cambiar cómo te describís" }).click();
   await page.getByRole("button", { name: "Papá" }).click();
   await page
     .locator("#lmp")
@@ -280,7 +312,6 @@ test("a profile with no pregnancy gets a screen, not a crash", async ({ page }) 
 test("the situación answers are optional, stored, and changeable", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Estoy embarazada" }).click();
-  await page.getByRole("button", { name: "Mamá" }).click();
   await page
     .locator("#lmp")
     .fill(localDateInput(-70));

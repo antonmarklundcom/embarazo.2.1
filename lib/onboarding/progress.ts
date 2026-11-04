@@ -100,6 +100,22 @@ export function stepsFor(context: OnboardingContext): OnboardingStep[] {
   });
 }
 
+/**
+ * Night run item 10 (2026-11-04) — "Estoy embarazada" answers the role question
+ * for almost everybody who taps it, so the main path steps over `role`.
+ *
+ * The step is not removed: it stays in `stepsFor`, so drafts that name it still
+ * resume onto it, `nextStep("role")` still leads to the date, and the date step
+ * offers an inline "Cambiar" that opens it. Only the *default walk* skips it —
+ * the role she lands with is the draft's default `"mama"` (or whatever she
+ * picked earlier in this run), and it is written to the profile exactly as if
+ * she had tapped "Mamá". Planeando keeps the question (a papá plans too), and
+ * the invited path keeps it (it is that path's only real question).
+ */
+export function skipsRoleStep(context: OnboardingContext): boolean {
+  return context.mode === "embarazada" && !context.invited;
+}
+
 /** The next step, or `null` when this was the last one (i.e. finish). */
 export function nextStep(
   step: OnboardingStep,
@@ -137,9 +153,16 @@ export function stepProgress(
   if (step === "mode") return null;
   // A signed-in person (not on an invite) steps over the account step, so it
   // is not counted for them; see `skipsAccountStep` in components/Onboarding.
+  // The role step is stepped over the same way on the embarazada path (see
+  // `skipsRoleStep`); opened through "Cambiar", it shows no count, like the
+  // account step on the one load after a Google round trip.
   const skipsAccount = context.signedIn && !context.invited;
+  const skipsRole = skipsRoleStep(context);
   const steps = stepsFor(context).filter(
-    (candidate) => candidate !== "mode" && !(skipsAccount && candidate === "cuenta"),
+    (candidate) =>
+      candidate !== "mode" &&
+      !(skipsAccount && candidate === "cuenta") &&
+      !(skipsRole && candidate === "role"),
   );
   const index = steps.indexOf(step);
   if (index === -1) return null;

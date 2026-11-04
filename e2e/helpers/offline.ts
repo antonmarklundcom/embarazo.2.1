@@ -144,6 +144,20 @@ export async function waitForPrecache(
  * So both are checked, and each failure says which one happened.
  */
 export async function gotoPrecached(page: Page, url: string): Promise<void> {
+  // Night run item 9 — leave the app before the offline navigation.
+  //
+  // Traced on 2026-11-04 with the Navigation API and the navigation timing
+  // entry: the precache served the right document for `/semana/24` (right
+  // ETag, right title), and the page then ended on `/` with navigation type
+  // "reload". That is a same-URL `location.replace("/")` (or reload) issued by
+  // the document the test navigated away FROM — Hoy, still busy after
+  // onboarding, with Next.js falling back to a browser navigation when its
+  // offline RSC fetches fail — overriding the test's own navigation. A person
+  // opening the app offline starts from no document at all, so the honest
+  // reproduction of that is to leave the app first. With this step, 79/80
+  // repeated runs passed against ~15% failing without it. The assertions below
+  // are unchanged.
+  if (page.url() !== "about:blank") await page.goto("about:blank");
   const response = await page.goto(url);
   const status = response?.status() ?? "none";
   const title = await page.title();

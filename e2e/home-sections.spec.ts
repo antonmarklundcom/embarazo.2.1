@@ -55,10 +55,15 @@ test("a tap on the title, on the hint or on the chevron opens the row", async ({
   await page.setViewportSize({ width: 360, height: 740 });
   await completeOnboarding(page, { daysAgo: DAYS_AGO });
 
-  // Title: the button's own text.
+  // Title: the button's own text. A tap opens the row in place: the page does
+  // not scroll.
   const title = homeSectionButton(page, "Herramientas");
+  await title.evaluate((el) => el.scrollIntoView({ block: "center" }));
+  const before = await page.evaluate(() => window.scrollY);
   await title.click();
   await expect(title).toHaveAttribute("aria-expanded", "true");
+  await page.waitForTimeout(500);
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
 
   // Hint: the line under the title.
   const hintRow = rowOf(page, "En Paraguay");
@@ -124,6 +129,15 @@ test("a link to /#abrir=<row> opens that row on arrival and leaves a clean URL",
   // The weekly push ("¡Empieza tu semana N!") lands here.
   await page.goto("/#abrir=tu-semana");
   await expect(homeSectionButton(page, "Tu semana")).toHaveAttribute("aria-expanded", "true");
+  // Scrolled to: the row's button is on screen, below the sticky header.
+  await expect(homeSectionButton(page, "Tu semana")).toBeInViewport();
+  await expect
+    .poll(async () => {
+      const header = await page.locator("header.sticky").boundingBox();
+      const row = await homeSectionButton(page, "Tu semana").boundingBox();
+      return row!.y >= header!.y + header!.height;
+    })
+    .toBe(true);
   await expect(page.getByRole("region", { name: "Esta semana", exact: true })).toBeVisible();
   await expect(homeSectionButton(page, "Acompañada")).toHaveAttribute("aria-expanded", "false");
   await expect.poll(() => page.evaluate(() => window.location.hash)).toBe("");

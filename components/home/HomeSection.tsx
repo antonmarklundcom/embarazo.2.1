@@ -1,11 +1,12 @@
 "use client";
 
-import { useId, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 
 import {
   isHomeSectionOpen,
   setHomeSectionOpen,
   subscribeHomeSections,
+  takePendingScroll,
   type HomeSectionId,
 } from "@/lib/home/openSections";
 
@@ -37,6 +38,29 @@ export function HomeSection({
   // same paint as the open row, including a row that was already open on mount.
   const [mounted, setMounted] = useState(open);
   if (open && !mounted) setMounted(true);
+  const rowRef = useRef<HTMLDivElement>(null);
+  // Opened by a `#abrir=` link (a push, a mimo): bring the row to the top of
+  // the screen, under the sticky header, once. Instant under reduced motion.
+  // Opened by a tap: move nothing. Listening to the store rather than only to
+  // `open` also catches a link to a row that was already open.
+  useEffect(() => {
+    const scrollIfAsked = () => {
+      if (!isHomeSectionOpen(sectionId) || !takePendingScroll(sectionId)) return;
+      requestAnimationFrame(() => {
+        const row = rowRef.current;
+        if (!row) return;
+        const header = document.querySelector("header.sticky");
+        const offset = (header?.getBoundingClientRect().bottom ?? 0) + 12;
+        const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        window.scrollTo({
+          top: Math.max(0, row.getBoundingClientRect().top + window.scrollY - offset),
+          behavior: reduce ? "auto" : "smooth",
+        });
+      });
+    };
+    scrollIfAsked();
+    return subscribeHomeSections(scrollIfAsked);
+  }, [sectionId]);
   const id = useId();
   const panelId = `${id}-panel`;
   const hintId = `${id}-hint`;
@@ -44,7 +68,7 @@ export function HomeSection({
   return (
     // The panel sits under the row, not inside its card: the blocks it holds
     // are cards (and edge-to-edge rails) of their own.
-    <div data-home-section={sectionId}>
+    <div ref={rowRef} data-home-section={sectionId}>
       <div className="relative flex min-h-[56px] items-center gap-3 rounded-card border border-line bg-white px-4 py-3">
         <div className="min-w-0 flex-1">
           <h2>

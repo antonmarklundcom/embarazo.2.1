@@ -25,6 +25,9 @@ export type HomeSectionId = (typeof HOME_SECTION_IDS)[number];
 export const OPEN_SECTION_PARAM = "abrir";
 
 const open = new Set<HomeSectionId>();
+// The row a `#abrir=` link opened and that has not been scrolled to yet. A row
+// opened by a tap never lands here: tapping moves nothing.
+let pendingScroll: HomeSectionId | null = null;
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -53,8 +56,19 @@ export function subscribeHomeSections(listener: () => void): () => void {
   };
 }
 
+/**
+ * True once for the row a `#abrir=` link opened, and clears it: the row then
+ * scrolls itself to the top of the screen, exactly once.
+ */
+export function takePendingScroll(id: HomeSectionId): boolean {
+  if (pendingScroll !== id) return false;
+  pendingScroll = null;
+  return true;
+}
+
 /** Tests only: back to "every row closed". */
 export function resetHomeSections(): void {
+  pendingScroll = null;
   open.clear();
   emit();
 }
@@ -97,6 +111,11 @@ export function consumeSectionParam(): HomeSectionId | null {
   const id = sectionFromHash(window.location.hash);
   const cleaned = withoutSectionParam(window.location.href);
   if (cleaned !== null) window.history.replaceState(window.history.state, "", cleaned);
-  if (id) setHomeSectionOpen(id, true);
+  if (id) {
+    pendingScroll = id;
+    setHomeSectionOpen(id, true);
+    // Already open: no change for the row to react to, so nudge it.
+    emit();
+  }
   return id;
 }

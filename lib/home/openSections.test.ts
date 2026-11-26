@@ -8,6 +8,7 @@ import {
   sectionFromHash,
   setHomeSectionOpen,
   subscribeHomeSections,
+  takePendingScroll,
   withoutSectionParam,
 } from "./openSections";
 
@@ -36,6 +37,11 @@ describe("Hoy's open rows (memory only)", () => {
 });
 
 describe("#abrir= links into Hoy", () => {
+  it("a tap never asks for a scroll", () => {
+    setHomeSectionOpen("tu-semana", true);
+    expect(takePendingScroll("tu-semana")).toBe(false);
+  });
+
   it("builds a fragment link, never a query (the offline copy of / is matched without one)", () => {
     expect(homeSectionHref("tu-semana")).toBe("/#abrir=tu-semana");
   });

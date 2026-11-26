@@ -1,8 +1,10 @@
-import Link from "next/link";
 import { ToolsAccountFooter } from "@/components/ToolsAccountFooter";
 import { PUBLISHED_VIDEOS } from "@/lib/seed/videos";
 import { PUBLISHED_EJERCICIOS } from "@/lib/seed/ejercicios";
-import { ToolIcon, type ToolIconName } from "@/components/ToolIcon";
+import type { ToolIconName } from "@/components/ToolIcon";
+import { ToolsGrid } from "@/components/herramientas/ToolsGrid";
+import { PUBLISHED_FOOD } from "@/lib/seed/food";
+import { PUBLISHED_PRICES } from "@/lib/seed/prices";
 
 // BUILD-PLAN D1 — illustrated tools grid (feature map #20).
 //
@@ -21,8 +23,12 @@ interface Tool {
   desc: string;
   icon: ToolIconName;
   tone: string;
-  /** Shown, but not tappable — "Pronto" badge instead of navigating. */
-  locked?: boolean;
+  /**
+   * False when nothing is published behind the destination yet. A tile either
+   * works or is absent: there is no "coming soon" tile. It comes back by itself the
+   * day the seed has published entries.
+   */
+  published?: boolean;
 }
 
 const TOOLS: Tool[] = [
@@ -39,6 +45,7 @@ const TOOLS: Tool[] = [
     desc: "Buscá un alimento o bebida y mirá si podés comerlo, con qué cuidado.",
     icon: "food",
     tone: "bg-pastel-salvia",
+    published: PUBLISHED_FOOD.length > 0,
   },
   {
     // K10 — placed right after the food lookup, the other "answer a question
@@ -50,6 +57,7 @@ const TOOLS: Tool[] = [
     desc: "Ecografía, parto, cesárea y laboratorio: qué se paga en IPS, en el público y en privado.",
     icon: "price",
     tone: "bg-pastel-arena",
+    published: PUBLISHED_PRICES.length > 0,
   },
   {
     href: "/herramientas/carne",
@@ -78,9 +86,8 @@ const TOOLS: Tool[] = [
     desc: "Ejercicios suaves para el embarazo, paso a paso con fotos.",
     icon: "exercise",
     tone: "bg-pastel-salvia",
-    // D6 — locked with a "Pronto" badge until real step photos replace the
-    // placeholder (same pattern as the video gallery below).
-    locked: PUBLISHED_EJERCICIOS.length === 0,
+    // D6 — absent until real step photos replace the placeholder.
+    published: PUBLISHED_EJERCICIOS.length > 0,
   },
   {
     href: "/herramientas/pataditas",
@@ -181,16 +188,15 @@ const TOOLS: Tool[] = [
   },
 ];
 
-// The video gallery is shown either way — locked with a "Pronto" badge until
-// real entries replace the placeholder YouTube ids (Z1, `lib/seed/videos.ts`)
-// — so people know the feature exists rather than never seeing it at all.
+// The video gallery appears once real entries replace the placeholder YouTube
+// ids (Z1, `lib/seed/videos.ts`); until then there is no tile.
 const VIDEOS: Tool = {
   href: "/guias/videos",
   title: "Videos",
   desc: "Galería de videos educativos, filtrable por tema y trimestre.",
   icon: "video",
   tone: "bg-pastel-rosa",
-  locked: PUBLISHED_VIDEOS.length === 0,
+  published: PUBLISHED_VIDEOS.length > 0,
 };
 
 // Flo benchmark (2026-10-17): the same tiles, sorted into three shelves so the
@@ -223,47 +229,8 @@ function groupTools(tools: Tool[]): { title: string; tools: Tool[] }[] {
   return groups.filter((group) => group.tools.length > 0);
 }
 
-function ToolTile({ tool }: { tool: Tool }) {
-  const body = (
-    <>
-      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/85 text-ink">
-        <ToolIcon name={tool.icon} />
-      </span>
-      <span className={`text-[12px] font-extrabold leading-tight ${tool.locked ? "text-ink/75" : "text-ink"}`}>
-        {tool.title}
-      </span>
-    </>
-  );
-  if (tool.locked) {
-    return (
-      <div
-        aria-disabled="true"
-        className="relative flex min-h-[112px] flex-col items-start justify-between gap-2 rounded-card border border-line bg-white p-3 text-left"
-      >
-        {/* Only the icon is faded elsewhere; here the tile stays white so the
-            badge, the one word explaining why it does nothing, keeps 4.7:1. */}
-        <span className="absolute right-2 top-2 rounded-full bg-sand-bg px-2 py-0.5 text-[10px] font-extrabold text-sand-text">
-          Pronto
-        </span>
-        {body}
-        <span className="sr-only">{tool.desc} (disponible pronto)</span>
-      </div>
-    );
-  }
-  return (
-    <Link
-      href={tool.href}
-      className={`flex min-h-[112px] flex-col items-start justify-between gap-2 rounded-card ${tool.tone} p-3 text-left transition active:scale-[0.97]`}
-    >
-      {body}
-      {/* Kept for screen readers and for anyone who needs the sentence. */}
-      <span className="sr-only">{tool.desc}</span>
-    </Link>
-  );
-}
-
 export default function HerramientasPage() {
-  const groups = groupTools([...TOOLS, VIDEOS]);
+  const groups = groupTools([...TOOLS, VIDEOS].filter((tool) => tool.published !== false));
 
   return (
     <div className="space-y-6">
@@ -280,18 +247,7 @@ export default function HerramientasPage() {
         </p>
       </header>
 
-      {groups.map((group, index) => (
-        <section key={group.title} aria-labelledby={`herramientas-${index}`} className="space-y-2.5">
-          <h2 id={`herramientas-${index}`} className="text-[11px] font-extrabold uppercase tracking-[1.6px] text-petrol">
-            {group.title}
-          </h2>
-          <div className="grid grid-cols-3 gap-3">
-            {group.tools.map((tool) => (
-              <ToolTile key={tool.href} tool={tool} />
-            ))}
-          </div>
-        </section>
-      ))}
+      <ToolsGrid groups={groups} />
       <ToolsAccountFooter />
     </div>
   );

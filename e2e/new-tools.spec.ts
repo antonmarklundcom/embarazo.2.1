@@ -64,12 +64,11 @@ test("the Kegel session runs on the clock", async ({ page }) => {
   await expect(page.getByText("Soltá", { exact: true })).toBeVisible({ timeout: 6000 });
 });
 
-test("the dental screen reads offline-ready and links to the directory", async ({
+test("the dental screen reads offline-ready and does not point at the empty directory", async ({
   page,
 }) => {
   await page.goto("/herramientas/dental");
   await expect(page.getByRole("heading", { name: "Salud dental" })).toBeVisible();
   await expect(page.getByText(/sangran las encías/i).first()).toBeVisible();
-  await page.getByRole("link", { name: "Buscar dónde atenderte" }).click();
-  await expect(page).toHaveURL(/\/directorio$/);
+  await expect(page.getByRole("link", { name: "Buscar dónde atenderte" })).toHaveCount(0);
 });

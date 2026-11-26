@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ToolIcon, type ToolIconName } from "@/components/ToolIcon";
 import { WeekArticleFeed } from "@/components/WeekArticleFeed";
 import type { PregnancyAnswers } from "@/lib/onboarding/personalisation";
+import { PUBLISHED_FOOD } from "@/lib/seed/food";
 
 // Hoy's "Qué esperar" card (Flo benchmark, 2026-10-17): four round shortcuts
 // into the week, then this week's guías as thumbnail rows. The guía list is
@@ -14,7 +15,10 @@ const SHORTCUTS = (week: number): { href: string; label: string; icon: ToolIconN
   { href: `/semana/${week}`, label: "Tu bebé", icon: "feet", tone: "bg-pastel-salvia" },
   { href: `/semana/${week}#preguntar`, label: "Para preguntar", icon: "faq", tone: "bg-pastel-arena" },
   { href: "/herramientas/sintomas", label: "Síntomas", icon: "symptoms", tone: "bg-pastel-rosa" },
-  { href: "/herramientas/comer", label: "Qué comer", icon: "food", tone: "bg-pastel-celeste" },
+  // Only once the food list has reviewed entries; until then there is no shortcut.
+  ...(PUBLISHED_FOOD.length > 0
+    ? [{ href: "/herramientas/comer", label: "Qué comer", icon: "food" as ToolIconName, tone: "bg-pastel-celeste" }]
+    : []),
 ];
 
 export function QueEsperarCard({ week, answers }: { week: number; answers?: PregnancyAnswers }) {
@@ -28,7 +32,7 @@ export function QueEsperarCard({ week, answers }: { week: number; answers?: Preg
       <h2 id="que-esperar" className="mt-0.5 text-lg font-extrabold leading-snug text-ink">
         Qué esperar esta semana
       </h2>
-      <ul className="mt-3 grid grid-cols-4 gap-2" aria-label="Atajos de la semana">
+      <ul className={`mt-3 grid gap-2 ${SHORTCUTS(week).length === 3 ? "grid-cols-3" : "grid-cols-4"}`} aria-label="Atajos de la semana">
         {SHORTCUTS(week).map((item) => (
           <li key={item.href}>
             <Link

@@ -162,7 +162,11 @@ export function AvisosStep({
       ) : result ? (
         <PrimaryButton label="Continuar" onClick={onFinish} />
       ) : (
-        <>
+        // Both answers share one action area pinned just above the fixed
+        // bottom bar (68px tall plus its 1px border and the safe area), so
+        // "Ahora no" is on screen from the first paint instead of behind the
+        // bar until she scrolls.
+        <div className="sticky bottom-[calc(69px+env(safe-area-inset-bottom))] z-10 -mx-5 bg-white px-5 pb-2 pt-1 shadow-[0_-8px_8px_-8px_rgba(0,0,0,0.15)]">
           <PrimaryButton
             label={busy ? "Un momento…" : "Sí, avisame"}
             disabled={busy || selected.length === 0}
@@ -176,7 +180,7 @@ export function AvisosStep({
           >
             Ahora no
           </button>
-        </>
+        </div>
       )}
       <BackButton onClick={onBack} />
     </div>

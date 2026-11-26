@@ -139,31 +139,50 @@ export function previousStep(
 }
 
 /**
- * "Paso N de M" for the step on screen, or `null` on the first question.
+ * A signed-in person (not on an invite) steps over the account step: she has
+ * nothing to do there but read "Listo, ya entraste". An invite keeps it, where
+ * it explains the code.
+ */
+export function skipsAccountStep(context: OnboardingContext): boolean {
+  return context.signedIn && !context.invited;
+}
+
+/**
+ * The screens this person actually walks through, in order: `stepsFor` minus
+ * the two steps the default walk steps over (the account step for somebody
+ * signed in, the role question on the embarazada path). The first question
+ * (`mode`) is a screen like any other, so it is part of the walk even though
+ * it carries no label.
+ */
+export function walkedSteps(context: OnboardingContext): OnboardingStep[] {
+  const skipsAccount = skipsAccountStep(context);
+  const skipsRole = skipsRoleStep(context);
+  return stepsFor(context).filter(
+    (candidate) =>
+      !(skipsAccount && candidate === "cuenta") &&
+      !(skipsRole && candidate === "role"),
+  );
+}
+
+/**
+ * "Paso N de M" for the step on screen, or `null` on the first question and on
+ * a step the default walk does not include.
  *
- * Counted over the steps this person will actually see (`stepsFor`), so a
- * papá is never told about a step only the mamá gets. The first question
- * (`mode`) has no count: the path is not known until it is answered, and a
- * count that changes under her is worse than none.
+ * M is the number of screens she will walk, the first question included: the
+ * label used to leave that screen out, so a path of seven screens said
+ * "de 6" (and ended on "Paso 6 de 6" after seven taps). Counted over
+ * `walkedSteps`, so a papá is never told about a step only the mamá gets. The
+ * first question has no label itself: the path is not known until it is
+ * answered, and a count that changes under her is worse than none. A step
+ * opened through "Cambiar" (the role question), or the account step on the one
+ * load after a Google round trip, is outside the walk and shows no count.
  */
 export function stepProgress(
   step: OnboardingStep,
   context: OnboardingContext,
 ): { current: number; total: number } | null {
   if (step === "mode") return null;
-  // A signed-in person (not on an invite) steps over the account step, so it
-  // is not counted for them; see `skipsAccountStep` in components/Onboarding.
-  // The role step is stepped over the same way on the embarazada path (see
-  // `skipsRoleStep`); opened through "Cambiar", it shows no count, like the
-  // account step on the one load after a Google round trip.
-  const skipsAccount = context.signedIn && !context.invited;
-  const skipsRole = skipsRoleStep(context);
-  const steps = stepsFor(context).filter(
-    (candidate) =>
-      candidate !== "mode" &&
-      !(skipsAccount && candidate === "cuenta") &&
-      !(skipsRole && candidate === "role"),
-  );
+  const steps = walkedSteps(context);
   const index = steps.indexOf(step);
   if (index === -1) return null;
   return { current: index + 1, total: steps.length };

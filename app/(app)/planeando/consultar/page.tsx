@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 
@@ -53,19 +52,6 @@ export default function ConsultarFertilidadPage() {
           </li>
         </ul>
       </section>
-
-      <Link
-        href="/directorio"
-        className="block rounded-card bg-petrol p-5 text-white shadow-soft transition active:scale-[0.99]"
-      >
-        <p className="text-sm text-white/70">Cerca tuyo</p>
-        <p className="mt-1 text-base font-medium">
-          Buscá obstetras y ginecología en tu departamento
-        </p>
-        <span className="mt-2 inline-block text-sm font-medium text-rose">
-          Ver el directorio →
-        </span>
-      </Link>
 
       <MedicalReviewByline />
       <p className="text-[11px] leading-relaxed text-muted">

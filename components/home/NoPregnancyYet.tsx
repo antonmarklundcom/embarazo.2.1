@@ -43,7 +43,7 @@ export function NoPregnancyYet({ role, loading }: { role: Role; loading: boolean
       <section className="rounded-card border border-line bg-white p-5">
         <h2 className="text-base font-extrabold text-ink">Mientras tanto</h2>
         <p className="mt-1 text-sm text-muted">
-          Las guías, el directorio y las herramientas funcionan igual.
+          Las guías y las herramientas funcionan igual.
         </p>
         <div className="mt-3 flex gap-2">
           <Link

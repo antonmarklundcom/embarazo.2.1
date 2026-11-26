@@ -38,3 +38,16 @@ test("the video tile stays hidden until real videos land", async ({ page }) => {
   await page.goto("/herramientas");
   await expect(page.getByRole("link", { name: /Galería de videos/ })).toHaveCount(0);
 });
+
+test("a tile either works or is absent: nothing says 'Pronto'", async ({ page }) => {
+  await page.goto("/herramientas");
+  await expect(page.getByRole("heading", { name: "Herramientas", level: 1 })).toBeVisible();
+  await expect(page.getByText("Pronto")).toHaveCount(0);
+  await expect(page.locator("main [aria-disabled='true']")).toHaveCount(0);
+  // Nothing published yet behind these: no tile (the routes keep their empty states).
+  for (const name of [/¿Puedo comer/, /¿Cuánto cuesta\?/, /Videos/]) {
+    await expect(page.getByRole("link", { name })).toHaveCount(0);
+  }
+  // Ejercicios is published, so its tile is there.
+  await expect(page.getByRole("link", { name: /^Ejercicios/ })).toBeVisible();
+});

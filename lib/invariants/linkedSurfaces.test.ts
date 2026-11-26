@@ -105,6 +105,37 @@ describe("every screen is reachable from inside the app", () => {
   });
 });
 
+// Phase 1 "dead ends": a screen whose content is unpublished is linked only
+// when it has some. The literal still has to be in the source (the scan above),
+// and the tile that carries it has to be gated on the same `PUBLISHED_*`
+// collection the route renders, so it comes back the day content is published
+// with no other code change.
+describe("linked when published", () => {
+  const GRID = readFileSync(join(process.cwd(), "app", "(app)", "herramientas", "page.tsx"), "utf8");
+  const GATED: Record<string, string> = {
+    "/herramientas/comer": "PUBLISHED_FOOD",
+    "/herramientas/precios": "PUBLISHED_PRICES",
+    "/guias/videos": "PUBLISHED_VIDEOS",
+    "/herramientas/ejercicios": "PUBLISHED_EJERCICIOS",
+  };
+
+  for (const [route, gate] of Object.entries(GATED)) {
+    it(`${route} is linked, and only while ${gate} has entries`, () => {
+      expect(ROUTES).toContain(route);
+      const at = GRID.indexOf(`"${route}"`);
+      expect(at, `the tools grid no longer names ${route}`).toBeGreaterThan(-1);
+      // The `published` line of the same tile, before the next tile starts.
+      const tile = GRID.slice(at, GRID.indexOf("}", GRID.indexOf("published", at)) + 1);
+      expect(tile).toContain(`published: ${gate}.length > 0`);
+    });
+  }
+
+  it("keeps no 'Pronto' tile in the grid", () => {
+    expect(GRID).not.toContain("Pronto");
+    expect(GRID).not.toContain("locked");
+  });
+});
+
 describe("the roadmap does not promise what the app already does", () => {
   const ROADMAP = readFileSync(
     join(process.cwd(), "components", "RoadmapSection.tsx"),

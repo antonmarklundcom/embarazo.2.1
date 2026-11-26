@@ -115,17 +115,6 @@ export function PlaneandoHome() {
         anticonceptivo.
       </div>
 
-      {/* Nearby resources pointer */}
-      <Link
-        href="/directorio"
-        className="block rounded-card bg-white p-4 shadow-soft transition active:scale-[0.99]"
-      >
-        <h3 className="text-base font-extrabold text-ink">Cerca tuyo</h3>
-        <p className="mt-1 text-sm text-muted">
-          Obstetras, ginecología y más, por departamento.
-        </p>
-      </Link>
-
       <div className="flex items-center justify-between pt-2">
         <MedicalReviewByline />
         {department && (

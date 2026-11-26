@@ -20,11 +20,14 @@ import {
   nextStep,
   previousStep,
   resumeStep,
+  skipsAccountStep,
   skipsRoleStep,
   stepProgress,
+  walkedSteps,
   stepsFor,
   type OnboardingContext,
   type OnboardingDraft,
+  type OnboardingStep,
 } from "./progress";
 
 // BUILD-PLAN K1. The flow is asserted here rather than in the component because
@@ -391,21 +394,21 @@ describe("stepProgress — 'Paso N de M'", () => {
 
   it("counts the mamá's own steps after the first question", () => {
     const context = ctx({ mode: "embarazada", signedIn: true });
-    // Minus "mode", the role question "Estoy embarazada" steps over, and the
-    // account step a signed-in person steps over.
-    const total = stepsFor(context).length - 3;
-    expect(stepProgress("lmp", context)).toEqual({ current: 1, total });
+    // Minus the role question "Estoy embarazada" steps over and the account
+    // step a signed-in person steps over; the first question is a screen.
+    const total = stepsFor(context).length - 2;
+    expect(stepProgress("lmp", context)).toEqual({ current: 2, total });
     expect(stepProgress("avisos", context)).toEqual({ current: total, total });
   });
 
   it("counts the role question where it is still asked", () => {
     const planeando = ctx({ mode: "planeando", signedIn: false });
     expect(stepProgress("role", planeando)).toEqual({
-      current: 1,
-      total: stepsFor(planeando).length - 1,
+      current: 2,
+      total: stepsFor(planeando).length,
     });
     const invited = ctx({ mode: "embarazada", signedIn: false, invited: true });
-    expect(stepProgress("role", invited)).toEqual({ current: 1, total: 3 });
+    expect(stepProgress("role", invited)).toEqual({ current: 2, total: 4 });
   });
 
   it("never counts a step this person will not see", () => {
@@ -413,6 +416,71 @@ describe("stepProgress — 'Paso N de M'", () => {
     const mama = ctx({ mode: "embarazada", signedIn: true });
     expect(stepProgress("lmp", papa)!.total).toBe(stepProgress("lmp", mama)!.total - 1);
     expect(stepProgress("perfil", papa)).toBeNull();
+  });
+});
+
+/**
+ * The screens she sees, tapping "Continuar" from the first question to the end,
+ * stepping over the account and role steps exactly as components/Onboarding.tsx
+ * does (`goBack`, `chooseMode`, `continueFromDepartment`).
+ */
+function walk(context: OnboardingContext): OnboardingStep[] {
+  const screens: OnboardingStep[] = ["mode"];
+  let step: OnboardingStep | null = nextStep("mode", context);
+  while (step !== null) {
+    if (step === "role" && skipsRoleStep(context)) step = nextStep("role", context);
+    else if (step === "cuenta" && skipsAccountStep(context)) step = nextStep("cuenta", context);
+    else {
+      screens.push(step);
+      step = nextStep(step, context);
+    }
+  }
+  return screens;
+}
+
+describe("stepProgress — the stated total is the number of screens walked", () => {
+  const roles = [...ROLE_VALUES];
+  const contexts: OnboardingContext[] = [];
+  for (const role of roles) {
+    for (const signedIn of [false, true]) {
+      contexts.push({ mode: "embarazada", signedIn, invited: false, role });
+      contexts.push({ mode: "planeando", signedIn, invited: false, role });
+      contexts.push({ mode: "embarazada", signedIn, invited: true, role });
+    }
+  }
+
+  it("covers every path the machine can produce", () => {
+    expect(contexts.length).toBe(roles.length * 6);
+  });
+
+  it("matches the screens walked, on every path", () => {
+    for (const context of contexts) {
+      const screens = walk(context);
+      const label = JSON.stringify(context);
+      expect(walkedSteps(context), label).toEqual(screens);
+      expect(stepProgress("mode", context), label).toBeNull();
+      screens.slice(1).forEach((screen, i) => {
+        expect(stepProgress(screen, context), `${label} ${screen}`).toEqual({
+          current: i + 2,
+          total: screens.length,
+        });
+      });
+    }
+  });
+
+  it("ends on 'N de N', the last screen", () => {
+    for (const context of contexts) {
+      const screens = walk(context);
+      const last = screens[screens.length - 1]!;
+      const progress = stepProgress(last, context)!;
+      expect(progress.current, JSON.stringify(context)).toBe(progress.total);
+    }
+  });
+
+  it("says 7 for the mamá's own pregnancy with no account", () => {
+    // Pregnancy question, date, perfil, departamento, cuenta, bebé, avisos.
+    const context = ctx({ mode: "embarazada", signedIn: false });
+    expect(stepProgress("lmp", context)).toEqual({ current: 2, total: 7 });
   });
 });
 

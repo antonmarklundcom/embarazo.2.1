@@ -6,9 +6,12 @@ import { test, expect } from "@playwright/test";
 // `reviewedBy`, so the tool renders its empty state. That is the state under
 // test, because it is the state that ships.
 
-test("the tool is reachable from herramientas", async ({ page }) => {
+test("herramientas does not offer a tool with nothing published behind it", async ({ page }) => {
   await page.goto("/herramientas");
-  await page.getByRole("link", { name: /¿Cuánto cuesta\?/ }).click();
+  await expect(page.getByRole("heading", { name: "Herramientas", level: 1 })).toBeVisible();
+  await expect(page.getByRole("link", { name: /¿Cuánto cuesta\?/ })).toHaveCount(0);
+  // The route itself is an installed-app contract and still answers.
+  await page.goto("/herramientas/precios");
   await expect(
     page.getByRole("heading", { name: "¿Cuánto cuesta?", level: 1 }),
   ).toBeVisible();
@@ -39,12 +42,8 @@ test("the empty state still answers the question it can answer", async ({ page }
   ).toBeVisible();
 });
 
-test("the guía about IPS vs privado hands the reader the tool", async ({ page }) => {
+test("the guía about IPS vs privado does not hand the reader an empty tool", async ({ page }) => {
   await page.goto("/guias/control-prenatal-ips-vs-privado");
-  const related = page.getByRole("link", { name: /¿Cuánto cuesta\?/ });
-  await expect(related).toBeVisible();
-  await related.click();
-  await expect(
-    page.getByRole("heading", { name: "¿Cuánto cuesta?", level: 1 }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByRole("link", { name: /¿Cuánto cuesta\?/ })).toHaveCount(0);
 });

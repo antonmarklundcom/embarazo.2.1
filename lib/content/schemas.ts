@@ -234,6 +234,51 @@ export const ConversationCardSchema = z.object({
 export type ConversationCard = z.infer<typeof ConversationCardSchema>;
 
 /**
+ * "Pregunta del día" (lib/seed/py/dailyQuestions.json): one light question a
+ * day on Hoy, with 2 to 4 answers, and how other mamás answered. Preferences,
+ * plans, family and traditions only; the banned-term guard in
+ * lib/seed/py/dailyQuestions.test.ts keeps health content out.
+ *
+ * The id and the option key end up inside an anonymous counter id,
+ * `poll-<id>-<key>` (lib/poll/dailyPoll.ts), so both use the counter's own
+ * alphabet: lowercase, digits and hyphens. Lengths keep the card compact on a
+ * 360 px phone: the question 40 to 110 characters, each answer up to 28 so the
+ * buttons wrap in two rows at most.
+ */
+export const DailyQuestionOptionSchema = z
+  .object({
+    key: z.string().regex(/^[a-z]$/, "la clave de la respuesta es una letra minúscula"),
+    label: z
+      .string()
+      .min(1, "la respuesta está vacía")
+      .max(28, "la respuesta es muy larga (máximo 28 caracteres)"),
+  })
+  .strict();
+
+export const DailyQuestionSchema = z
+  .object({
+    id: z
+      .string()
+      .min(2)
+      .max(60)
+      .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "id inválido: minúsculas, números y guiones"),
+    text: z
+      .string()
+      .min(40, "la pregunta es muy corta (mínimo 40 caracteres)")
+      .max(110, "la pregunta es muy larga (máximo 110 caracteres)"),
+    options: z
+      .array(DailyQuestionOptionSchema)
+      .min(2, "la pregunta necesita al menos 2 respuestas")
+      .max(4, "la pregunta puede tener como máximo 4 respuestas")
+      .refine(
+        (options) => new Set(options.map((option) => option.key)).size === options.length,
+        "dos respuestas tienen la misma clave",
+      ),
+  })
+  .strict();
+export type DailyQuestion = z.infer<typeof DailyQuestionSchema>;
+
+/**
  * C3 — foot and hand measurements per week (feature map #12), the two tabs
  * beside "tamaño". Optional per side: a week may have a foot figure and no
  * hand one, and the tab for the missing side simply does not appear.

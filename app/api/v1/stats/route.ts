@@ -4,6 +4,7 @@ import { dbOrNull } from "@/lib/server/db";
 import { popularContent, recordView } from "@/lib/server/stats";
 import { clientKeyFromHeaders, isRateLimited } from "@/lib/rateLimit";
 import { RecordViewSchema } from "@/lib/stats/contentStats";
+import { isPollContentId } from "@/lib/poll/dailyPoll";
 
 // BUILD-PLAN C7 — /api/v1/stats (feature map #16). **Amended by K5.**
 //
@@ -69,7 +70,10 @@ export async function POST(req: NextRequest) {
   }
 
   const parsed = RecordViewSchema.safeParse(body);
-  if (!parsed.success) {
+  // "Pregunta del día" answers are counted only through /api/v1/poll, which
+  // checks the question and the option against the published list. Accepting
+  // a `poll-` id here would let anyone write a count around that check.
+  if (!parsed.success || isPollContentId(parsed.data.contentId)) {
     return NextResponse.json({ error: "cuerpo inválido" }, { status: 400 });
   }
 

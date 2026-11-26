@@ -490,10 +490,27 @@ test("F01: after an account switch, /familia publishes nothing", async ({ browse
   await pretendSignedIn(context, account);
   await page.goto("/familia");
   // Linked to u1 on first contact (A6 "adopt"), so u1's own publish goes out.
-  await expect.poll(() => server.posts.filter((p) => p.action === "publish").length).toBeGreaterThan(0);
+  const publishes = () => server.posts.filter((p) => p.action === "publish").length;
+  await expect.poll(publishes).toBeGreaterThan(0);
+  // The first visit can publish more than once (a second publish can land
+  // well after the first under load). Wait until the count has stopped
+  // changing for 1.5 s before switching, so a late u1 publish is not counted
+  // as one made after the switch.
+  let last = -1;
+  await expect
+    .poll(
+      () => {
+        const now = publishes();
+        const settled = now === last;
+        last = now;
+        return settled;
+      },
+      { intervals: [1500], timeout: 20_000 },
+    )
+    .toBe(true);
 
   account.current = "u2";
-  const before = server.posts.filter((p) => p.action === "publish").length;
+  const before = publishes();
   await page.goto("/familia");
   await page.waitForTimeout(1500);
   expect(server.posts.filter((p) => p.action === "publish").length).toBe(before);

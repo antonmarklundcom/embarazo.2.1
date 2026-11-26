@@ -82,3 +82,34 @@ test("a low mood gets a gentle line and a way to help, an ordinary one does not"
     "/emergencia",
   );
 });
+
+test("a recorded mood gives one small link back; a low mood keeps only the support card", async ({
+  page,
+}) => {
+  // lib/moodSuggestion.ts: one live screen per mood, one neutral line.
+  await completeOnboarding(page);
+  const suggestion = page.locator("[data-mood-suggestion]");
+  await expect(suggestion).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Bien", exact: true }).click();
+  await expect(suggestion).toHaveText("¿Querés anotarlo en tu diario?");
+  await expect(suggestion).toHaveAttribute("href", "/herramientas/diario");
+
+  await page.getByRole("button", { name: "Muy bien", exact: true }).click();
+  await expect(suggestion).toHaveText("¿Querés guardar una foto de hoy?");
+  await expect(suggestion).toHaveAttribute("href", "/herramientas/fotos");
+
+  await page.getByRole("button", { name: "Regular", exact: true }).click();
+  await expect(suggestion).toHaveAttribute("href", "/herramientas/diario");
+
+  // A low mood: the Línea 155 card exactly as before, and nothing else.
+  await page.getByRole("button", { name: "Mal", exact: true }).click();
+  await expect(page.getByText("Si te sentís así seguido, no estás sola.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Línea 155 · salud mental" })).toHaveAttribute("href", "tel:155");
+  await expect(suggestion).toHaveCount(0);
+
+  // The link leads to a real screen.
+  await page.getByRole("button", { name: "Bien", exact: true }).click();
+  await suggestion.click();
+  await expect(page).toHaveURL(/\/herramientas\/diario$/);
+});

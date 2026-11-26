@@ -14,7 +14,7 @@ export async function serveClientFlags(
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ recomendados: false, guarani: false, nombres_link: false, ...flags }),
+      body: JSON.stringify({ recomendados: false, guarani: false, nombres_link: false, pregunta_del_dia: false, ...flags }),
     }),
   );
 }

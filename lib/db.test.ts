@@ -534,6 +534,34 @@ describe("borrar todos mis datos", () => {
     expect(after.verno).toBe(CURRENT_VERSION);
   });
 
+  it("removes her own answers to the Pregunta del día (localStorage)", async () => {
+    // lib/poll/dailyPoll.ts keeps which button she tapped on this device only;
+    // "Borrar todos mis datos" takes it with everything else.
+    const store = new Map<string, string>([
+      ["mibebe.pregunta.respuestas", JSON.stringify({ "nombre-pensado": "a" })],
+      ["otra.app", "x"],
+    ]);
+    const original = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: (key: string) => store.get(key) ?? null,
+        setItem: (key: string, value: string) => void store.set(key, value),
+        removeItem: (key: string) => void store.delete(key),
+      },
+    });
+    try {
+      const { POLL_STORAGE_KEY } = await import("./poll/dailyPoll");
+      expect(POLL_STORAGE_KEY).toBe("mibebe.pregunta.respuestas");
+      await wipeAllData();
+      expect(store.has(POLL_STORAGE_KEY)).toBe(false);
+      expect(store.get("otra.app")).toBe("x");
+    } finally {
+      if (original) Object.defineProperty(globalThis, "localStorage", original);
+      else delete (globalThis as { localStorage?: unknown }).localStorage;
+    }
+  });
+
   it("is safe to call twice", async () => {
     await wipeAllData();
     await expect(wipeAllData()).resolves.toBeUndefined();

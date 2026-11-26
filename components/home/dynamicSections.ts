@@ -65,6 +65,9 @@ export const FamilyCard = dynamic(() =>
 export const NextAppointmentCard = dynamic(() =>
   import("@/components/NextAppointmentCard").then((m) => m.NextAppointmentCard),
 );
+export const DailyQuestionCard = dynamic(() =>
+  import("@/components/home/DailyQuestionCard").then((m) => m.DailyQuestionCard),
+);
 export const MoodCheckIn = dynamic(() =>
   import("@/components/MoodCheckIn").then((m) => m.MoodCheckIn),
 );

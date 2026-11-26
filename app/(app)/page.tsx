@@ -254,7 +254,7 @@ export default function InicioPage() {
     return (
       <div className="space-y-8 sm:space-y-10">
         <BabyHome birthDate={profile.birthDate} />
-        <MoodCheckIn role={profile.role} week={week} />
+        <MoodCheckIn role={profile.role} week={week} afterBirth />
         <HomeToolsGrid baby />
         <HomeFooter department={department} />
       </div>

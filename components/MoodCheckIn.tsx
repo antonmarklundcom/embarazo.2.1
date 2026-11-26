@@ -6,6 +6,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 
 import { db, notDeleted, type Mood, type Role } from "@/lib/db";
 import { MOODS, moodNeedsSupport } from "@/lib/mood";
+import { moodSuggestion } from "@/lib/moodSuggestion";
 import { recordMoodToday } from "@/lib/journal/mood.client";
 import { localDay, moodStreak, streakSentence } from "@/lib/journal/streak";
 import { isSelfCentered, moodCheckInLabel } from "@/lib/roleCopy";
@@ -23,7 +24,16 @@ import { isSelfCentered, moodCheckInLabel } from "@/lib/roleCopy";
 //
 // "Registrar" survives as a secondary link, because a face is not the whole
 // journal: symptoms and a note still live on the tool screen.
-export function MoodCheckIn({ role, week }: { role: Role; week: number }) {
+export function MoodCheckIn({
+  role,
+  week,
+  afterBirth = false,
+}: {
+  role: Role;
+  week: number;
+  /** Baby mode (BabyHome): the photo screen is the bump diary, so not offered. */
+  afterBirth?: boolean;
+}) {
   const [message, setMessage] = useState("");
 
   const entries = useLiveQuery(
@@ -35,6 +45,10 @@ export function MoodCheckIn({ role, week }: { role: Role; week: number }) {
   const streak = moodStreak(moods.map((entry) => entry.createdAt));
   const today = moods.find((entry) => localDay(entry.createdAt) === localDay(Date.now()));
   const sentence = streakSentence(streak);
+  // One small link back, derived from today's saved mood like the support card
+  // below, so it stays for the day. A low mood gets none: the support card is
+  // the only thing under the row then (lib/moodSuggestion.ts).
+  const suggestion = moodSuggestion(today?.mood, { afterBirth });
 
   async function choose(mood: Mood) {
     const result = await recordMoodToday(mood, week);
@@ -135,6 +149,17 @@ export function MoodCheckIn({ role, week }: { role: Role; week: number }) {
             </a>
           </p>
         </div>
+      )}
+      {suggestion && (
+        <p className="mt-1.5 text-[13px]">
+          <Link
+            href={suggestion.href}
+            data-mood-suggestion
+            className="inline-flex min-h-[44px] items-center font-extrabold text-terracotta underline"
+          >
+            {suggestion.text}
+          </Link>
+        </p>
       )}
       {sentence && (
         <p className="mt-2.5 text-[13px] font-semibold text-petrol">{sentence}</p>

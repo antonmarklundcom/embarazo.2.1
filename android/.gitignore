@@ -9,3 +9,8 @@ keystore.properties
 !.gitignore
 !twa-manifest.json
 !README.md
+
+# The Play listing's phone screenshots (npm run gen:play-screenshots) are kept.
+!store-listing/
+!store-listing/screenshots/
+!store-listing/screenshots/*.png

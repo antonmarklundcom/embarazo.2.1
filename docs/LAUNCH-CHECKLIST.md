@@ -63,7 +63,7 @@ first.
 | # | Decision | Why it is irreversible | Reference |
 |---|---|---|---|
 | 1.1 | **Play account: organization or personal** | A personal account **cannot** be converted to an organization account later. Organization needs a D-U-N-S number (free, **1–4 weeks**) but is **exempt from the 12-testers × 14-days gate**. Personal is instant but adds 3–6 weeks before you can reach production. | `ANDROID-LAUNCH.md` §1 |
-| 1.2 | **The app name** | Expensive to change after launch, and it is the indexed title. "Mi Bebé" alone is generic and crowded — you will not rank for it. `Mi Bebé — Embarazo Paraguay` puts the two words people search in the title. Check Play results **and** the Paraguayan trademark register before committing. | `ANDROID-LAUNCH.md` §4 |
+| 1.2 | **The app name** | Expensive to change after launch, and it is the indexed title. "Mi Bebé" alone is generic and crowded — you will not rank for it. `Mi Bebé — Embarazo Paraguay` puts the two words people search in the title. Check Play results **and** the Paraguayan trademark register before committing. *(2026-11-26: the app and the listing text use `Mi Bebé · Embarazo Paraguay`, middle dot, from `lib/brand.ts`; this row's dash version is the original suggestion. Not decided here.)* | `ANDROID-LAUNCH.md` §4 |
 | 1.3 | **Ship Guaraní reviewed-pending, or gate it** | **Decided 2026-09-28: gated.** Every Guaraní string (the Ajustes toggle and the `gn` line under the Spanish) waits on the `guarani` flag in `/admin/flags`, off by default. Turn it on after the native review of `docs/GUARANI-REVIEW.md`. | `DECISIONS.md` growth plan item 20b |
 
 > **Recommendation on 1.1: register as an organization**, using the legal
@@ -151,12 +151,17 @@ Run all of these **in parallel**. None depends on another.
 - [ ] **4.3 — Store listing assets** (`ANDROID-LAUNCH.md` §4):
       - [ ] App icon 512×512 — **the generated placeholder is not good enough to
             launch on**
-      - [ ] Feature graphic 1024×500 — required
-      - [ ] 5–8 phone screenshots — `npm run gen:screenshots` starts you off,
-            but framed and captioned ones convert far better
-      - [ ] Short description ≤80 chars. Worth beating: *"Tu embarazo semana a
+      - [ ] Feature graphic 1024×500 — required. *(2026-11-26: still not made;
+            no source in the repo, design item.)*
+      - [x] 5–8 phone screenshots — `npm run gen:screenshots` starts you off,
+            but framed and captioned ones convert far better. *(2026-11-26:
+            eight at 1080×1920 in `android/store-listing/screenshots/`, from
+            `npm run gen:play-screenshots`.)*
+      - [x] Short description ≤80 chars. Worth beating: *"Tu embarazo semana a
             semana, hecho para Paraguay. Funciona sin internet."* — offline is a
-            real differentiator here and belongs above the fold
+            real differentiator here and belongs above the fold. *(2026-11-26:
+            kept as the short description; the full text, checked against the
+            app, is in `PLAY-STORE-SUBMISSION.md` §5.)*
 
 > **~20% of the nav renders empty states today.** PR-3's K18 copy turned those
 > into honest sourcing surfaces rather than broken-looking screens, so this is

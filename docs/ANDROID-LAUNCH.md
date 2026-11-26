@@ -253,20 +253,32 @@ reads it. The page promises a reply within 30 days.
 
 ## 4. Store listing assets you must produce
 
+> **State on 26 November 2026.** The text (name, short and full description,
+> release notes) is written and checked against the app in
+> `docs/PLAY-STORE-SUBMISSION.md` §5, ready to paste. The eight phone
+> screenshots are in `android/store-listing/screenshots/` (1080×1920, made by
+> `npm run gen:play-screenshots`, no captions). Still open: the feature
+> graphic, a launch-quality icon, the category and the contact e-mail, all in
+> that file's "Still needed from the owner" list.
+
 | Asset | Spec | Notes |
 |---|---|---|
 | App name | ≤ 30 chars | ASO matters — see below |
 | Short description | ≤ 80 chars | The line people actually read |
 | Full description | ≤ 4000 chars | es-PY, keyword-rich, honest |
 | App icon | 512×512 PNG | The generated placeholder is not good enough to launch on |
-| Feature graphic | 1024×500 PNG | Required. Shown at the top of the listing |
-| Phone screenshots | ≥ 2, ideally 5–8 | `npm run gen:screenshots` gets you started, but framed/captioned ones convert far better |
+| Feature graphic | 1024×500 PNG | Required. Shown at the top of the listing. Not made yet: no source or generator in the repo, design item for the owner |
+| Phone screenshots | ≥ 2, ideally 5–8 | Done: 8 in `android/store-listing/screenshots/` (`npm run gen:play-screenshots`). `npm run gen:screenshots` makes the separate PWA install-sheet set. Framed/captioned ones may convert better, but a caption must not claim "best" or "number 1" |
 
 **On the name:** "Mi Bebé" is generic and crowded on Play — you will not rank
 for it. Something like **"Mi Bebé — Embarazo Paraguay"** puts the two words
 people actually search (*embarazo*, *Paraguay*) in the indexed title. Check the
 Play search results and the Paraguayan trademark register before committing;
-the name is expensive to change after launch.
+the name is expensive to change after launch. (26 November 2026: the app,
+the web manifest and `android/twa-manifest.json` use `Mi Bebé · Embarazo
+Paraguay`, with a middle dot, from `lib/brand.ts`; the listing text uses the
+same. The dash version here is the original suggestion. Still the owner's
+call after the checks.)
 
 Short description worth beating: *"Tu embarazo semana a semana, hecho para
 Paraguay. Funciona sin internet."* — offline is a genuine differentiator here

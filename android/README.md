@@ -69,3 +69,10 @@ TWA_SHA256_FINGERPRINTS=<upload SHA-256>,<Play signing SHA-256>
 Then check `https://app.embarazo.com.py/.well-known/assetlinks.json` shows both,
 install the app from the Play internal-testing link, and confirm there is no
 browser URL bar at the top.
+
+## Store listing files
+
+`store-listing/screenshots/` holds the eight phone screenshots for the Play
+listing (1080×1920). Remake them from a production build with
+`npm run build` and then `npm run gen:play-screenshots`. The listing text is in
+`docs/PLAY-STORE-SUBMISSION.md` §5; the feature graphic does not exist yet.

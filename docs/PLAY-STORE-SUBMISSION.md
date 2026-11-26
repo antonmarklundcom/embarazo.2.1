@@ -217,6 +217,12 @@ Nothing below can be done from the repo.
 9. **Feature graphic 1024×500** and a launch-quality **512×512 icon** (§5,
    design items).
 10. **Optional phone number** for the listing (§5, `[COMPLETAR]`).
+11. **Prove the offline claim on a real phone before pasting the listing.** The
+    short description says "Funciona sin internet". Offline reading is built,
+    but it has not been confirmed on a signed-in Android phone (see `STATUS.md`,
+    "Needs Anton": sign in, open Hoy, a week and pataditas, switch to airplane
+    mode, open them again). If that test fails, change the short description
+    before submitting.
 
 ## Optional, not blocking launch
 

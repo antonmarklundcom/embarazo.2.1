@@ -8,6 +8,7 @@ import {
   VideoItemSchema,
   FoodEntrySchema,
   WeeklyLineSchema,
+  FamilyLineSchema,
   ComparisonSchema,
   LimbSizeSchema,
   PerspectiveBandSchema,
@@ -94,6 +95,20 @@ const checks: Check[] = [];
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     // Not created yet — the app falls back to showing no line at all.
   }
+}
+{
+  // The wider family's line per week (lib/seed/py/, country-tagged file).
+  // Keyed by week, like the weekly one-liner. The file's own shape
+  // ({ lang, items }) is checked by the seed layout block below.
+  const file = readJson("lib/seed/py/familyLines.json") as { items?: unknown[] };
+  checks.push(
+    validateContentArray(
+      "lib/seed/py/familyLines.json",
+      Array.isArray(file.items) ? file.items : [],
+      FamilyLineSchema,
+      (entry) => String(entry.week),
+    ),
+  );
 }
 {
   // C3 foot/hand sizes. Keyed by week: this file is edited a week at a time,

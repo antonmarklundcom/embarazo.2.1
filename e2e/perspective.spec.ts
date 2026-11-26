@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 
+import familyLines from "../lib/seed/py/familyLines.json";
 import { completeOnboarding } from "./helpers/onboarding";
 
 // BUILD-PLAN C4 (feature map #13): the same week with three entrances, opening
@@ -21,6 +22,28 @@ test("a mamá opens on 'para vos' and can read the other two", async ({ page }) 
 
   await page.getByRole("tab", { name: "Para la familia" }).click();
   await expect(page.getByRole("tabpanel", { name: "Para la familia" })).toBeVisible();
+});
+
+// The wider family's line (lib/seed/py/familyLines.json) under the band.
+test("the family tab shows the week's line for la abuela, la tía, la madrina", async ({ page }) => {
+  await onboard(page, "Mamá");
+  const overview = page.getByRole("region", { name: "Esta semana, para cada uno", exact: true });
+  const week = Number((await overview.getByText(/^Semana \d+$/).innerText()).replace("Semana ", ""));
+  const items = familyLines.items;
+  const expected = items.find((item) => item.week === week)!.text;
+
+  // Only under the family band, not the other two.
+  await expect(overview.getByTestId("family-line")).toHaveCount(0);
+  await overview.getByRole("tab", { name: "Para la familia", exact: true }).click();
+  const line = overview.getByRole("tabpanel", { name: "Para la familia" }).getByTestId("family-line");
+  await expect(line).toBeVisible();
+  await expect(line.getByRole("heading", { name: "Esta semana, la familia puede…" })).toBeVisible();
+  await expect(line).toContainText(expected);
+
+  // It follows the browsed week.
+  await overview.getByRole("button", { name: "Semana siguiente", exact: true }).click();
+  const next = items.find((item) => item.week === week + 1)!.text;
+  await expect(line).toContainText(next);
 });
 
 test("a papá does not have to tap past the 'para vos' tab", async ({ page }) => {

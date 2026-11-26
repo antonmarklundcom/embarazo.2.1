@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 
 import { perspectivesFor } from "@/lib/seed/perspectives";
+import { familyLine } from "@/lib/seed/py/familyLines";
+import { FAMILY_LINE_COPY } from "@/lib/i18n/es-PY/family";
 import type { Role } from "@/lib/db";
 
 // BUILD-PLAN C4 — perspective switcher (feature map #13).
@@ -150,6 +152,7 @@ export function PerspectiveSwitcher({ week, role }: { week: number; role: Role }
         <p className="text-[15px] font-semibold leading-relaxed text-ink">
           {bands[active]}
         </p>
+        {active === "familia" && <FamilyLine week={selectedWeek} />}
       </div>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
         <p className="text-xs text-muted">Deslizá el texto para cambiar de semana. Algunos consejos abarcan varias semanas y pueden repetirse.</p>
@@ -158,5 +161,23 @@ export function PerspectiveSwitcher({ week, role }: { week: number; role: Role }
         </Link>
       </div>
     </section>
+  );
+}
+
+/**
+ * The wider family's line for the week (lib/seed/py/familyLines.json), under
+ * the "Para la familia" band. Renders nothing for a week without one. Shared
+ * with CompanionHome's family view so both say the same thing.
+ */
+export function FamilyLine({ week }: { week: number }) {
+  const text = familyLine(week);
+  if (!text) return null;
+  return (
+    <div data-testid="family-line" className="mt-3 rounded-tile bg-pastel-salvia p-3">
+      <h3 className="text-[13px] font-extrabold text-ink">
+        {FAMILY_LINE_COPY.title}
+      </h3>
+      <p className="mt-1 text-sm leading-relaxed text-ink">{text}</p>
+    </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSharedViews, ownerViewOf } from "@/lib/sharing/useSharedViews";
+import { partnerPrompt } from "@/lib/roleCopy";
 
 // BUILD-PLAN K7 — the Familia group in Ajustes.
 //
@@ -30,7 +31,7 @@ export function FamiliaSettings() {
             ? companions.length === 0
               ? "Todavía no invitaste a nadie. Van a ver tu semana, tu fecha probable de parto y tu próximo control — nada más."
               : `${companions.length} ${companions.length === 1 ? "persona sigue" : "personas siguen"} tu embarazo. Podés sacarle el acceso a cualquiera cuando quieras.`
-            : "Con una cuenta podés invitar a tu pareja y a tu familia a seguir tu embarazo, y sacarles el acceso cuando quieras."}
+            : partnerPrompt("familiaNeedsAccount")}
       </p>
       <Link
         href="/familia"

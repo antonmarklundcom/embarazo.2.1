@@ -47,7 +47,9 @@ test("sharing the week card produces a PNG without touching the network", async 
 test("the mamá can send this week's partner paragraph to WhatsApp", async ({ page }) => {
   await completeOnboarding(page, { daysAgo: 140 });
 
-  const link = page.getByRole("link", { name: "Contale a tu pareja" });
+  // Worded so it is true for a mamá without a pareja too: the profile stores
+  // no answer that says whether she has one (lib/roleCopy.ts partnerPrompt).
+  const link = page.getByRole("link", { name: "Contale a tu pareja o a quien te acompañe", exact: true });
   await expect(link).toBeVisible();
   const href = await link.getAttribute("href");
   expect(href).toMatch(/^https:\/\/wa\.me\/\?text=/);
@@ -59,7 +61,7 @@ test("a papá is not offered the partner message", async ({ page }) => {
   await completeOnboarding(page, { daysAgo: 140, role: "Papá" });
 
   await expect(page.getByRole("button", { name: "Compartir mi semana" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Contale a tu pareja" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /Contale a tu pareja/ })).toHaveCount(0);
 });
 
 test("the copy tells the truth about where the image is made", async ({ page }) => {

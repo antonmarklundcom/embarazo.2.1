@@ -87,7 +87,7 @@ const MEDIUM_LABELS: Record<string, string> = {
 // Night run item 1: the links the app composes (`lib/share/links.ts`).
 const SHARE_LABELS: Record<string, string> = {
   semana: "Texto de una semana (pareja o familia)",
-  pareja: "«Contale a tu pareja»",
+  pareja: "«Contale a tu pareja o a quien te acompañe»",
   invita: "Invitación (a una amiga o a la familia)",
 };
 

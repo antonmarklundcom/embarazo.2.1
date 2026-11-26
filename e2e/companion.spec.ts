@@ -209,6 +209,9 @@ test("familia sees the week and the content, but never the checklist", async ({
   await expect(
     page.getByRole("region", { name: "Esta semana, para vos" }),
   ).toContainText("regalar");
+  // The wider family's line for week 24 (lib/seed/py/familyLines.json).
+  await expect(page.getByTestId("family-line")).toContainText("Esta semana, la familia puede…");
+  await expect(page.getByTestId("family-line")).toContainText("ropa de bebé guardada");
   // Ánimo is for everyone who is close; the checklist is not.
   await expect(page.getByRole("region", { name: "Mandale ánimo" })).toBeVisible();
   await expect(page.getByText("Tu lista")).toHaveCount(0);

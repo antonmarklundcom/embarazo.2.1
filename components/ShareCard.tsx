@@ -16,6 +16,7 @@ import { drawBumpFrame, drawWeekCard } from "@/lib/share/draw";
 import { useChosenHeroTheme } from "@/lib/hero/preferences";
 import { hasWeekArt, weekArtSrc } from "@/lib/hero/weekArt";
 import { partnerShareText, partnerWhatsAppUrl } from "@/lib/share/partner";
+import { partnerPrompt } from "@/lib/roleCopy";
 
 /** Read at build time, like `InviteFriend`'s; absent in dev and previews. */
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL;
@@ -214,7 +215,7 @@ export function ShareCard({
           rel="noopener noreferrer"
           className="mt-2 flex min-h-[44px] w-full items-center justify-center rounded-tile border border-line bg-white px-4 text-sm font-extrabold text-petrol transition active:scale-[0.99]"
         >
-          Contale a tu pareja
+          {partnerPrompt("shareCta")}
         </a>
       )}
 

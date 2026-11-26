@@ -32,6 +32,7 @@ import {
   obstetraContentId,
   type ReviewableItem,
 } from "../lib/content/approvals.ts";
+import { seedLayoutProblems } from "../lib/content/seedLayout.ts";
 
 // G1 content ops (BUILD-PLAN.md): `npm run validate:content` runs the same
 // zod schemas that lib/seed/*.ts run at import time, over every hand-authored
@@ -337,6 +338,20 @@ const checks: Check[] = [];
   );
   checks.push({ errors });
   for (const line of stale) console.warn(`  ! revisión vencida — ${line}`);
+}
+
+// docs/CONTENT-COUNTRY-RULE.md — new content files go in lib/seed/shared/ or
+// lib/seed/py/ as { "lang": "es-PY", "items": [...] }, never directly under
+// lib/seed/ (the files already there are a frozen list in seedLayout.ts).
+{
+  const { readdirSync } = await import("node:fs");
+  const listJson = (dir: string): string[] =>
+    readdirSync(repoRoot + dir, { withFileTypes: true }).flatMap((entry) => {
+      const rel = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) return listJson(rel);
+      return entry.name.endsWith(".json") ? [rel] : [];
+    });
+  checks.push({ errors: seedLayoutProblems(listJson("lib/seed"), readJson) });
 }
 
 const allErrors = checks.flatMap((c) => c.errors);

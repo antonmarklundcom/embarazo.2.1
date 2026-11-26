@@ -37,4 +37,8 @@ real thing, so an honest report is worth more than a confident one.
 - Do not rename storage keys (`mibebe.*`), the Dexie database name, service-worker
   cache names, or route paths. They are user data and installed-app contracts.
 - Content stays in git and typed (`lib/seed/**`, `lib/weeks.ts`). No CMS, no fetch.
+- New content is tagged by country and language (`docs/CONTENT-COUNTRY-RULE.md`): new
+  Paraguay facts go in `lib/country/py.ts`, new content files in `lib/seed/shared/` or
+  `lib/seed/py/` (never directly under `lib/seed/`), and text for a new screen in
+  `lib/i18n/es-PY/<area>.ts`. Existing files may be edited where they are.
 - Commit on the branch the dispatch names. Do not push, open PRs, or merge; the manager does.

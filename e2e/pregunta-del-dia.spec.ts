@@ -25,7 +25,9 @@ async function recordPollRequests(context: BrowserContext) {
     await route.continue();
   });
   context.on("request", (request) => {
-    if (/\/api\/v1\/poll\//.test(request.url())) gets.push(request.url());
+    // The API path itself: the worker precaches build chunks whose file
+    // names also contain "api/v1/poll" (/_next/static/chunks/app/api/...).
+    if (new URL(request.url()).pathname.startsWith("/api/v1/poll/")) gets.push(request.url());
   });
   return { posts, gets };
 }

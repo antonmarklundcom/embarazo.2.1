@@ -184,6 +184,26 @@ export const WeeklyLineSchema = z.object({
 export type WeeklyLine = z.infer<typeof WeeklyLineSchema>;
 
 /**
+ * The wider family's line for the week (lib/seed/py/familyLines.json): one
+ * concrete, kind thing la abuela, la tía or la madrina can do or say. Shown
+ * under the "Para la familia" band. Practical and emotional support only; the
+ * banned-term guard in lib/seed/py/familyLines.test.ts keeps health content
+ * out. 90–160 characters so it reads as one short paragraph on a 360 px phone.
+ */
+export const FamilyLineSchema = z.object({
+  week: z
+    .number()
+    .int()
+    .min(1, "la semana tiene que estar entre 1 y 42")
+    .max(42, "la semana tiene que estar entre 1 y 42"),
+  text: z
+    .string()
+    .min(90, "la frase para la familia es muy corta (mínimo 90 caracteres)")
+    .max(160, "la frase para la familia es muy larga (máximo 160 caracteres)"),
+});
+export type FamilyLine = z.infer<typeof FamilyLineSchema>;
+
+/**
  * C3 — foot and hand measurements per week (feature map #12), the two tabs
  * beside "tamaño". Optional per side: a week may have a foot figure and no
  * hand one, and the tab for the missing side simply does not appear.

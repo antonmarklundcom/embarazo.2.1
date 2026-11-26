@@ -14,6 +14,7 @@ import {
 import { formatAppointment, isAccompanying } from "@/lib/appointments";
 import { perspectivesFor } from "@/lib/seed/perspectives";
 import { CHECKLISTS } from "@/lib/checklists";
+import { FamilyLine } from "@/components/PerspectiveSwitcher";
 
 // BUILD-PLAN K2 — the companion's home screen (docs/archive/FABLE-PLAN-2026-08.md §3).
 //
@@ -119,6 +120,7 @@ export function CompanionHome({
           <p className="mt-2 text-[15px] font-semibold leading-relaxed text-ink">
             {isPartner ? bands.pareja : bands.familia}
           </p>
+          {!isPartner && week && <FamilyLine week={week} />}
         </section>
       )}
 

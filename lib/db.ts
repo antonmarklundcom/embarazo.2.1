@@ -721,6 +721,7 @@ export async function wipeAllData(options?: { expectedAccountId?: string }): Pro
     // "Para conversar" marks (CONVERSAR_STORAGE_KEY in `lib/conversar.ts`, a
     // literal here so this module does not pull in the card content).
     window.localStorage.removeItem("mibebe.conversar.talked");
+    window.localStorage.removeItem("mibebe.pregunta.respuestas");
   } catch {
     // Storage refused; nothing was stored either.
   }

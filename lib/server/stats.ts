@@ -1,6 +1,6 @@
 import "server-only";
 
-import { inArray, sql } from "drizzle-orm";
+import { and, inArray, notLike, sql } from "drizzle-orm";
 
 import type { Database } from "./db";
 import { contentStats } from "./schema";
@@ -11,6 +11,7 @@ import {
   windowDays,
   type PopularByBucket,
 } from "@/lib/stats/contentStats";
+import { POLL_ID_PREFIX, isPollContentId } from "@/lib/poll/dailyPoll";
 
 // BUILD-PLAN C7 — the counter, server side. **Amended by K5.**
 //
@@ -86,7 +87,15 @@ export async function popularContent(
       views: sql<number>`sum(${contentStats.views})`.as("views"),
     })
     .from(contentStats)
-    .where(inArray(contentStats.day, windowDays(now)))
+    // "Pregunta del día" answers share this table (lib/poll/dailyPoll.ts) and
+    // are not content anyone read: kept out here, and again in
+    // `rankByBucket`, so they can never push a guía out of the top N.
+    .where(
+      and(
+        inArray(contentStats.day, windowDays(now)),
+        notLike(contentStats.contentId, `${POLL_ID_PREFIX}%`),
+      ),
+    )
     .groupBy(contentStats.contentId, contentStats.week);
 
   return rankByBucket(
@@ -116,6 +125,8 @@ export function rankByBucket(
   };
 
   for (const row of rows) {
+    // A poll answer is not a read (see `popularContent`).
+    if (isPollContentId(row.contentId)) continue;
     // Bucket 0 = everybody, so every row counts twice: once in its own bucket
     // and once in the fallback.
     add(0, row.contentId, row.views);

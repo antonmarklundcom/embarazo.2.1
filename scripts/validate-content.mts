@@ -10,6 +10,7 @@ import {
   WeeklyLineSchema,
   FamilyLineSchema,
   ConversationCardSchema,
+  DailyQuestionSchema,
   ComparisonSchema,
   LimbSizeSchema,
   PerspectiveBandSchema,
@@ -121,6 +122,20 @@ const checks: Check[] = [];
       "lib/seed/shared/conversationCards.json",
       Array.isArray(file.items) ? file.items : [],
       ConversationCardSchema,
+    ),
+  );
+}
+{
+  // "Pregunta del día" (lib/seed/py/, country-tagged file). Keyed by id: the
+  // id is half of the anonymous counter id `poll-<id>-<key>`, so a duplicate
+  // would merge two questions' answers. Option keys are unique per question
+  // (checked by the schema).
+  const file = readJson("lib/seed/py/dailyQuestions.json") as { items?: unknown[] };
+  checks.push(
+    validateContentArray(
+      "lib/seed/py/dailyQuestions.json",
+      Array.isArray(file.items) ? file.items : [],
+      DailyQuestionSchema,
     ),
   );
 }

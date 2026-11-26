@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { serveClientFlags } from "./helpers/flags";
 import { completeOnboarding } from "./helpers/onboarding";
 import { HOME_SECTION_TITLES, homeSectionButton, openHomeSection } from "./helpers/homeSections";
 
@@ -121,6 +122,20 @@ test("at 360x740 «Hoy» starts within the first 1,000 px and the closed page st
   expect(top).toBeLessThan(1000);
   const height = await page.evaluate(() => document.documentElement.scrollHeight);
   expect(height).toBeLessThan(2400);
+});
+
+test("with the Pregunta del día on, the closed page at 360x740 stays under 2,650 px", async ({ page, context }) => {
+  await serveClientFlags(context, { preguntaDelDia: true });
+  await page.setViewportSize({ width: 360, height: 740 });
+  await completeOnboarding(page, { daysAgo: DAYS_AGO });
+  await expect(page.getByRole("region", { name: "Pregunta del día" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Tu semana en historias" })).toBeVisible();
+  for (const title of HOME_SECTION_TITLES) {
+    await expect(homeSectionButton(page, title)).toHaveAttribute("aria-expanded", "false");
+  }
+
+  const height = await page.evaluate(() => document.documentElement.scrollHeight);
+  expect(height).toBeLessThan(2650);
 });
 
 test("a link to /#abrir=<row> opens that row on arrival and leaves a clean URL", async ({ page }) => {

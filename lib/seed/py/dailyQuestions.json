@@ -1,0 +1,275 @@
+{
+  "lang": "es-PY",
+  "items": [
+    { "id": "nombre-pensado", "text": "¿Ya tenés un nombre pensado para tu bebé?", "options": [
+      { "key": "a", "label": "Sí, ya está elegido" },
+      { "key": "b", "label": "Tengo dos o tres" },
+      { "key": "c", "label": "Todavía no" },
+      { "key": "d", "label": "Prefiero no decir" }
+    ] },
+    { "id": "nombre-origen", "text": "Si ya pensaste un nombre, ¿de dónde salió la idea?", "options": [
+      { "key": "a", "label": "De alguien de la familia" },
+      { "key": "b", "label": "Lo escuché y me gustó" },
+      { "key": "c", "label": "Por lo que significa" },
+      { "key": "d", "label": "Todavía no hay nombre" }
+    ] },
+    { "id": "primero-contaste", "text": "¿Quién fue la primera persona a la que le contaste del embarazo?", "options": [
+      { "key": "a", "label": "Mi pareja" },
+      { "key": "b", "label": "Alguien de mi familia" },
+      { "key": "c", "label": "Una amiga" },
+      { "key": "d", "label": "A nadie por ahora" }
+    ] },
+    { "id": "reaccion-familia", "text": "Cuando tu familia se enteró de la noticia, ¿cómo reaccionó?", "options": [
+      { "key": "a", "label": "Con mucha alegría" },
+      { "key": "b", "label": "Con sorpresa" },
+      { "key": "c", "label": "Un poco de todo" },
+      { "key": "d", "label": "Todavía no saben" }
+    ] },
+    { "id": "como-contar", "text": "¿Cómo contaste la noticia, o cómo te gustaría contarla?", "options": [
+      { "key": "a", "label": "En persona" },
+      { "key": "b", "label": "Por mensaje o llamada" },
+      { "key": "c", "label": "Con una sorpresa" },
+      { "key": "d", "label": "Todavía no la cuento" }
+    ] },
+    { "id": "preparando-casa", "text": "¿Qué estás preparando en casa para cuando llegue el bebé?", "options": [
+      { "key": "a", "label": "Su ropita" },
+      { "key": "b", "label": "La cuna o su rincón" },
+      { "key": "c", "label": "Un poco de todo" },
+      { "key": "d", "label": "Todavía nada" }
+    ] },
+    { "id": "musica", "text": "¿Qué música le ponés al bebé, o te gustaría ponerle?", "options": [
+      { "key": "a", "label": "Polcas y guaranias" },
+      { "key": "b", "label": "Canciones de cuna" },
+      { "key": "c", "label": "Lo que escucho siempre" },
+      { "key": "d", "label": "Todavía no pensé" }
+    ] },
+    { "id": "cerca-llegada", "text": "Cuando nazca el bebé, ¿a quién te gustaría tener cerca?", "options": [
+      { "key": "a", "label": "A mi mamá" },
+      { "key": "b", "label": "A una amiga" },
+      { "key": "c", "label": "A alguien de la familia" },
+      { "key": "d", "label": "Prefiero no decir" }
+    ] },
+    { "id": "mostrar-primero", "text": "¿Qué es lo primero que te gustaría mostrarle al bebé?", "options": [
+      { "key": "a", "label": "Mi casa y mi barrio" },
+      { "key": "b", "label": "A la gente que quiero" },
+      { "key": "c", "label": "Los árboles y el cielo" },
+      { "key": "d", "label": "Todavía no sé" }
+    ] },
+    { "id": "idioma", "text": "¿En qué idioma te imaginás hablándole al bebé en casa?", "options": [
+      { "key": "a", "label": "Castellano" },
+      { "key": "b", "label": "Guaraní" },
+      { "key": "c", "label": "Los dos" },
+      { "key": "d", "label": "Otro idioma" }
+    ] },
+    { "id": "ropa-heredada", "text": "¿El bebé va a usar ropita que le pasen de otros chicos de la familia?", "options": [
+      { "key": "a", "label": "Sí, ya me dieron" },
+      { "key": "b", "label": "Algo, seguramente" },
+      { "key": "c", "label": "Todo nuevo" },
+      { "key": "d", "label": "Todavía no sé" }
+    ] },
+    { "id": "cancion-cuna", "text": "¿Te acordás de una canción de cuna que te cantaban de chica?", "options": [
+      { "key": "a", "label": "Sí, en castellano" },
+      { "key": "b", "label": "Sí, en guaraní" },
+      { "key": "c", "label": "No me acuerdo" },
+      { "key": "d", "label": "Voy a buscar una" }
+    ] },
+    { "id": "recuerdos", "text": "¿Estás guardando recuerdos de esta etapa, como fotos o notas?", "options": [
+      { "key": "a", "label": "Fotos" },
+      { "key": "b", "label": "Notas o un diario" },
+      { "key": "c", "label": "Las dos cosas" },
+      { "key": "d", "label": "Todavía no" }
+    ] },
+    { "id": "regalo-ilusion", "text": "¿Qué regalo para el bebé te haría más ilusión recibir?", "options": [
+      { "key": "a", "label": "Algo hecho a mano" },
+      { "key": "b", "label": "Un juguete" },
+      { "key": "c", "label": "Ropita" },
+      { "key": "d", "label": "No pensé en eso" }
+    ] },
+    { "id": "tejido", "text": "En muchas familias alguien teje o cose algo para el bebé. ¿Pasa en la tuya?", "options": [
+      { "key": "a", "label": "Sí, ya empezaron" },
+      { "key": "b", "label": "Lo voy a hacer yo" },
+      { "key": "c", "label": "No en mi familia" },
+      { "key": "d", "label": "Todavía no sé" }
+    ] },
+    { "id": "madrina-padrino", "text": "¿Ya pensaste en una madrina o un padrino para el bebé?", "options": [
+      { "key": "a", "label": "Sí, ya lo decidí" },
+      { "key": "b", "label": "Tengo a alguien en mente" },
+      { "key": "c", "label": "Todavía no" },
+      { "key": "d", "label": "No es mi costumbre" }
+    ] },
+    { "id": "visitas", "text": "Cuando llegue el bebé, ¿cómo te gustaría recibir las visitas?", "options": [
+      { "key": "a", "label": "Que vengan todos" },
+      { "key": "b", "label": "Pocas y cortas" },
+      { "key": "c", "label": "Después de unas semanas" },
+      { "key": "d", "label": "Todavía no sé" }
+    ] },
+    { "id": "apodo", "text": "¿Ya le decís al bebé con algún apodo cariñoso?", "options": [
+      { "key": "a", "label": "Sí, uno que me encanta" },
+      { "key": "b", "label": "Varios" },
+      { "key": "c", "label": "Todavía no" },
+      { "key": "d", "label": "Prefiero no decir" }
+    ] },
+    { "id": "rincon", "text": "¿Qué lugar de la casa te imaginás como el rincón del bebé?", "options": [
+      { "key": "a", "label": "Mi pieza" },
+      { "key": "b", "label": "Su propia pieza" },
+      { "key": "c", "label": "Donde haya lugar" },
+      { "key": "d", "label": "Todavía no sé" }
+    ] },
+    { "id": "leer-cuentos", "text": "¿Te gustaría leerle cuentos al bebé cuando sea más grande?", "options": [
+      { "key": "a", "label": "Sí, todas las noches" },
+      { "key": "b", "label": "De vez en cuando" },
+      { "key": "c", "label": "Prefiero cantarle" },
+      { "key": "d", "label": "Todavía no sé" }
+    ] },
+    { "id": "historia-familia", "text": "¿Qué historia de tu familia te gustaría contarle algún día?", "options": [
+      { "key": "a", "label": "Una de mis abuelos" },
+      { "key": "b", "label": "De dónde venimos" },
+      { "key": "c", "label": "Una de mi infancia" },
+      { "key": "d", "label": "Todavía no sé" }
+    ] },
+    { "id": "tradicion", "text": "¿Hay alguna tradición de tu familia que quieras seguir con el bebé?", "options": [
+      { "key": "a", "label": "Sí, una muy nuestra" },
+      { "key": "b", "label": "Varias" },
+      { "key": "c", "label": "Quiero empezar una nueva" },
+      { "key": "d", "label": "No por ahora" }
+    ] },
+    { "id": "ilusion", "text": "¿Qué es lo que más ilusión te hace de los próximos meses?", "options": [
+      { "key": "a", "label": "Conocer su carita" },
+      { "key": "b", "label": "Preparar sus cosas" },
+      { "key": "c", "label": "Verlo crecer" },
+      { "key": "d", "label": "Prefiero no decir" }
+    ] },
+    { "id": "consejos", "text": "¿Quién te da más consejos en esta etapa, aunque no se los pidas?", "options": [
+      { "key": "a", "label": "Mi mamá" },
+      { "key": "b", "label": "Las tías" },
+      { "key": "c", "label": "Las amigas" },
+      { "key": "d", "label": "Nadie por ahora" }
+    ] },
+    { "id": "heredar-de-vos", "text": "¿Qué te gustaría que el bebé saque de vos algún día?", "options": [
+      { "key": "a", "label": "Mi forma de reír" },
+      { "key": "b", "label": "Mi carácter" },
+      { "key": "c", "label": "Mi gusto por la música" },
+      { "key": "d", "label": "Prefiero no decir" }
+    ] },
+    { "id": "encuentro", "text": "¿Te gustaría hacer un encuentro o baby shower antes de que nazca?", "options": [
+      { "key": "a", "label": "Sí, ya lo estoy armando" },
+      { "key": "b", "label": "Algo chiquito" },
+      { "key": "c", "label": "No es para mí" },
+      { "key": "d", "label": "Todavía no sé" }
+    ] },
+    { "id": "mascota", "text": "¿Hay alguna mascota en casa que va a conocer al bebé?", "options": [
+      { "key": "a", "label": "Un perro" },
+      { "key": "b", "label": "Un gato" },
+      { "key": "c", "label": "Otra mascota" },
+      { "key": "d", "label": "No hay mascota" }
+    ] },
+    { "id": "carta", "text": "¿Te gustaría escribirle una carta al bebé para que la lea de grande?", "options": [
+      { "key": "a", "label": "Sí, ya empecé" },
+      { "key": "b", "label": "Me gustaría" },
+      { "key": "c", "label": "No es lo mío" },
+      { "key": "d", "label": "Todavía no sé" }
+    ] },
+    { "id": "parecido", "text": "¿A quién te imaginás que se va a parecer el bebé?", "options": [
+      { "key": "a", "label": "A mí" },
+      { "key": "b", "label": "A alguien de la familia" },
+      { "key": "c", "label": "No me lo imagino" },
+      { "key": "d", "label": "Prefiero la sorpresa" }
+    ] },
+    { "id": "juego-infancia", "text": "¿Qué juego de tu infancia te gustaría compartir con el bebé?", "options": [
+      { "key": "a", "label": "Juegos en el patio" },
+      { "key": "b", "label": "Canciones con palmas" },
+      { "key": "c", "label": "Cuentos de la abuela" },
+      { "key": "d", "label": "Todavía no sé" }
+    ] },
+    { "id": "primer-paseo", "text": "¿A qué lugar te gustaría llevar al bebé de paseo por primera vez?", "options": [
+      { "key": "a", "label": "A una plaza" },
+      { "key": "b", "label": "A visitar a la familia" },
+      { "key": "c", "label": "A ver el río" },
+      { "key": "d", "label": "Todavía no sé" }
+    ] },
+    { "id": "una-mano", "text": "Cuando llegue el bebé, ¿quién te gustaría que te dé una mano en casa?", "options": [
+      { "key": "a", "label": "Alguien de mi familia" },
+      { "key": "b", "label": "Una amiga" },
+      { "key": "c", "label": "Me arreglo sola" },
+      { "key": "d", "label": "Todavía no sé" }
+    ] },
+    { "id": "redes", "text": "¿Pensás compartir la noticia del bebé en tus redes sociales?", "options": [
+      { "key": "a", "label": "Ya la compartí" },
+      { "key": "b", "label": "Más adelante" },
+      { "key": "c", "label": "Prefiero no hacerlo" },
+      { "key": "d", "label": "Todavía no sé" }
+    ] },
+    { "id": "primera-ropita", "text": "¿Ya elegiste la primera ropita que va a usar el bebé?", "options": [
+      { "key": "a", "label": "Sí, ya está lista" },
+      { "key": "b", "label": "Tengo varias opciones" },
+      { "key": "c", "label": "Me la van a regalar" },
+      { "key": "d", "label": "Todavía no" }
+    ] },
+    { "id": "colores", "text": "¿Qué colores te gustan para la ropita y las cosas del bebé?", "options": [
+      { "key": "a", "label": "Colores claros" },
+      { "key": "b", "label": "Colores vivos" },
+      { "key": "c", "label": "Blanco y beige" },
+      { "key": "d", "label": "Me da igual" }
+    ] },
+    { "id": "foto-generaciones", "text": "¿Te gustaría sacar una foto de varias generaciones juntas con el bebé?", "options": [
+      { "key": "a", "label": "Sí, con las abuelas" },
+      { "key": "b", "label": "Con quien esté" },
+      { "key": "c", "label": "No es para mí" },
+      { "key": "d", "label": "Todavía no sé" }
+    ] },
+    { "id": "palabras-guarani", "text": "¿Te gustaría que el bebé aprenda palabras en guaraní desde chiquito?", "options": [
+      { "key": "a", "label": "Sí, claro" },
+      { "key": "b", "label": "Algunas" },
+      { "key": "c", "label": "No por ahora" },
+      { "key": "d", "label": "Todavía no sé" }
+    ] },
+    { "id": "objeto-especial", "text": "¿Guardás algún objeto especial para dárselo al bebé algún día?", "options": [
+      { "key": "a", "label": "Algo de la familia" },
+      { "key": "b", "label": "Algo mío de chica" },
+      { "key": "c", "label": "Todavía no" },
+      { "key": "d", "label": "Prefiero no decir" }
+    ] },
+    { "id": "cantar-hablar", "text": "Durante el día, ¿le cantás o le hablás al bebé de vez en cuando?", "options": [
+      { "key": "a", "label": "Le canto" },
+      { "key": "b", "label": "Le hablo" },
+      { "key": "c", "label": "Las dos cosas" },
+      { "key": "d", "label": "Todavía no" }
+    ] },
+    { "id": "primer-cumple", "text": "¿Ya te imaginás cómo va a ser el primer cumpleaños del bebé?", "options": [
+      { "key": "a", "label": "Una fiesta grande" },
+      { "key": "b", "label": "Algo en familia" },
+      { "key": "c", "label": "Algo tranquilo" },
+      { "key": "d", "label": "Todavía no pensé" }
+    ] },
+    { "id": "aprendiendo", "text": "¿Qué estás aprendiendo estos meses para cuando llegue el bebé?", "options": [
+      { "key": "a", "label": "A cambiar pañales" },
+      { "key": "b", "label": "A bañarlo" },
+      { "key": "c", "label": "Canciones nuevas" },
+      { "key": "d", "label": "Todavía nada" }
+    ] },
+    { "id": "salir-a-ver", "text": "¿Con quién te gusta salir a mirar cosas para el bebé?", "options": [
+      { "key": "a", "label": "Con alguien de la familia" },
+      { "key": "b", "label": "Con una amiga" },
+      { "key": "c", "label": "Con mi pareja" },
+      { "key": "d", "label": "Sola, a mi ritmo" }
+    ] },
+    { "id": "cuento-favorito", "text": "¿Cuál era tu cuento o personaje favorito cuando eras chica?", "options": [
+      { "key": "a", "label": "Un cuento clásico" },
+      { "key": "b", "label": "Uno que contaba la abuela" },
+      { "key": "c", "label": "Un dibujo animado" },
+      { "key": "d", "label": "No me acuerdo" }
+    ] },
+    { "id": "nombre-guarani", "text": "¿Te gustaría un nombre en guaraní para el bebé, aunque sea el segundo?", "options": [
+      { "key": "a", "label": "Sí, me encanta la idea" },
+      { "key": "b", "label": "Como segundo nombre" },
+      { "key": "c", "label": "Prefiero otro" },
+      { "key": "d", "label": "Todavía no sé" }
+    ] },
+    { "id": "lista", "text": "¿Hiciste una lista de cosas para tener listas antes de que llegue?", "options": [
+      { "key": "a", "label": "Sí, y la voy tachando" },
+      { "key": "b", "label": "La tengo en la cabeza" },
+      { "key": "c", "label": "Todavía no" },
+      { "key": "d", "label": "No me gustan las listas" }
+    ] }
+  ]
+}

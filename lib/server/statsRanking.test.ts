@@ -71,3 +71,27 @@ describe("ranking", () => {
     expect(ranked.map((entry) => entry.bucket)).toEqual([0]);
   });
 });
+
+describe("Pregunta del día answers are not reads", () => {
+  // They share `contentStats` (lib/poll/dailyPoll.ts) under `poll-…` ids. A
+  // popular question must never push a guía out of "lo más leído".
+  it("drops every poll- id from every bucket, however many answers it has", () => {
+    const ranked = rankByBucket([
+      row("poll-nombre-pensado-a", 8, 500),
+      row("poll-musica-b", 30, 400),
+      row("senales-de-alarma-embarazo", 8, 2),
+    ]);
+    const ids = ranked.flatMap((entry) => entry.items.map((item) => item.contentId));
+    expect(ids.some((id) => id.startsWith("poll-"))).toBe(false);
+    expect(ranked.find((entry) => entry.bucket === 0)!.items).toEqual([
+      { contentId: "senales-de-alarma-embarazo", views: 2 },
+    ]);
+    expect(ranked.find((entry) => entry.bucket === weekBucket(30))).toBeUndefined();
+  });
+
+  it("is excluded in the query too, not only after it", async () => {
+    const { readFileSync } = await import("node:fs");
+    const source = readFileSync(new URL("./stats.ts", import.meta.url), "utf8");
+    expect(source).toMatch(/notLike\(contentStats\.contentId, `\$\{POLL_ID_PREFIX\}%`\)/);
+  });
+});

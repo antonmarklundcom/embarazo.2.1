@@ -80,6 +80,16 @@ export const FLAG_DEFINITIONS = {
       "Muestra el enlace a nombres.com.py en el paso del nombre del bebé y en " +
       "Ajustes. Apagado hasta que el sitio esté en línea.",
   },
+  // "Pregunta del día" on Hoy (components/home/DailyQuestionCard.tsx). Off
+  // until the owner has read the questions in lib/seed/py/dailyQuestions.json.
+  // Off means the card does not render and nothing is sent.
+  preguntaDelDia: {
+    scope: "client",
+    default: false,
+    description:
+      "Muestra la Pregunta del día en Hoy y cómo respondieron otras mamás. " +
+      "Apagada hasta revisar las preguntas (lib/seed/py/dailyQuestions.json).",
+  },
 } as const satisfies Record<string, FlagDefinition>;
 
 export type FlagKey = keyof typeof FLAG_DEFINITIONS;

@@ -38,7 +38,7 @@ describe("/admin home summary without a database", () => {
     expect(html).toContain("Avisos atrasados");
     expect(html.match(/sin base de datos/g)?.length).toBeGreaterThanOrEqual(2);
     expect(html).toContain("Sin base de datos: las funciones están en su valor por defecto.");
-    for (const key of ["ai_baby_paused", "recomendados", "guarani", "nombres_link"]) {
+    for (const key of ["ai_baby_paused", "recomendados", "guarani", "nombres_link", "preguntaDelDia"]) {
       expect(html).toContain(key);
     }
     expect(html).toContain("Apagada");

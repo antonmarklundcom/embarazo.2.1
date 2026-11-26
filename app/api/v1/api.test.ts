@@ -156,6 +156,7 @@ describe("/api/v1/flags takes no parameters and publishes client flags only", ()
     expect(await res.json()).toEqual({
       guarani: false,
       nombres_link: false,
+      preguntaDelDia: false,
       recomendados: false,
     });
   });

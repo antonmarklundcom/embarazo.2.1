@@ -10,6 +10,7 @@ import { useProfile } from "@/lib/useProfile";
 // reasoning for each group.
 import {
   CompanionHome,
+  DailyQuestionCard,
   InstallCard,
   InviteFriend,
   MoodCheckIn,
@@ -308,7 +309,8 @@ export default function InicioPage() {
         <InstallNudge context="onboarded" />
       </section>
 
-      {/* Proposal "Hoy corto": exactly three things for today, nothing else. */}
+      {/* Proposal "Hoy corto": the things for today, nothing else. The
+          "Pregunta del día" is behind its flag and renders nothing when off. */}
       <section aria-labelledby="hoy-para-vos" className="space-y-5">
         <h2 id="hoy-para-vos" className="text-xl font-extrabold tracking-tight text-ink">
           Hoy
@@ -319,6 +321,9 @@ export default function InicioPage() {
           companionAppointmentAt={companionViewOf(shared.views)?.snapshot?.nextAppointmentAt ?? null}
         />
         <DailyTipCard text={tip.text} tipId={tip.id} />
+        {/* Asked of her, so not of a partner or family member who set up
+            the app with her dates. */}
+        {isSelfCentered(profile.role) && <DailyQuestionCard week={week} trimester={trimester} />}
         <MoodCheckIn role={profile.role} week={week} />
       </section>
 

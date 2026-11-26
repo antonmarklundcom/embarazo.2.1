@@ -22,6 +22,7 @@ describe("the flag vocabulary", () => {
       "ai_baby_paused",
       "guarani",
       "nombres_link",
+      "preguntaDelDia",
       "recomendados",
     ]);
   });
@@ -51,10 +52,11 @@ describe("the flag vocabulary", () => {
   });
 
   it("publishes only client-scope keys", () => {
-    expect(CLIENT_FLAG_KEYS).toEqual(["guarani", "nombres_link", "recomendados"]);
+    expect(CLIENT_FLAG_KEYS).toEqual(["guarani", "nombres_link", "preguntaDelDia", "recomendados"]);
     expect(clientScope(defaultFlags())).toEqual({
       guarani: false,
       nombres_link: false,
+      preguntaDelDia: false,
       recomendados: false,
     });
     expect(Object.keys(clientScope(defaultFlags()))).not.toContain(
@@ -67,6 +69,12 @@ describe("the flag vocabulary", () => {
     expect(FLAG_DEFINITIONS.nombres_link.scope).toBe("client");
     expect(FLAG_DEFINITIONS.nombres_link.default).toBe(false);
     expect(defaultFlags().nombres_link).toBe(false);
+  });
+
+  it("keeps `preguntaDelDia` a client-scope flag that is off by default", () => {
+    // Off until the owner has read the questions; off sends nothing.
+    expect(FLAG_DEFINITIONS.preguntaDelDia.scope).toBe("client");
+    expect(defaultFlags().preguntaDelDia).toBe(false);
   });
 
   it("narrows an untrusted string", () => {
@@ -83,6 +91,7 @@ describe("folding stored rows onto the defaults", () => {
       ai_baby_paused: false,
       guarani: false,
       nombres_link: false,
+      preguntaDelDia: false,
       recomendados: true,
     });
   });
@@ -107,6 +116,7 @@ describe("folding stored rows onto the defaults", () => {
       ai_baby_paused: false,
       guarani: false,
       nombres_link: false,
+      preguntaDelDia: false,
       recomendados: true,
     });
   });

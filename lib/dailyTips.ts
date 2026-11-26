@@ -108,7 +108,7 @@ export const DAILY_TIPS: DailyTip[] = [
   { id: "t-82", trimester: 2, text: "Una guía simple para el ejercicio: moverte a un ritmo en el que todavía puedas conversar." },
   { id: "t-83", trimester: 2, text: "Evitá los deportes con riesgo de caídas o de golpes en la panza." },
   { id: "t-84", trimester: 2, text: "Hablale y cantale al bebé: ya empieza a oír sonidos." },
-  { id: "t-85", trimester: 2, text: "Si tu pareja quiere participar, invitala a un control o a sentir las pataditas con vos." },
+  { id: "t-85", trimester: 2, text: "Si tu pareja o quien te acompaña quiere participar, invitá a esa persona a un control o a sentir las pataditas con vos." },
   { id: "t-86", trimester: 2, text: "Anotá en qué momentos del día el bebé se mueve más: te ayuda a conocer su ritmo." },
   { id: "t-87", trimester: 2, text: "Si la panza se pone dura seguido o con dolor, contalo en tu control o consultá antes." },
   { id: "t-88", trimester: 3, text: "No hace falta contar pataditas todo el día; lo importante es notar si cambia su ritmo habitual." },

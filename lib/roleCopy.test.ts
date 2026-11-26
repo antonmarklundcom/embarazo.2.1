@@ -3,6 +3,8 @@ import {
   babyAtWeekLabel,
   isSelfCentered,
   moodCheckInLabel,
+  partnerPrompt,
+  type PartnerPromptKey,
   pregnancyPossessive,
   pregnancyPossessiveCap,
   ROLE_LABELS,
@@ -69,5 +71,24 @@ describe("ROLE_LABELS / ROLE_ONBOARDING_COPY", () => {
       expect(ROLE_ONBOARDING_COPY[role].title).toBeTruthy();
       expect(ROLE_ONBOARDING_COPY[role].desc).toBeTruthy();
     }
+  });
+});
+
+describe("partnerPrompt", () => {
+  const KEYS: PartnerPromptKey[] = ["shareCta", "familiaDescription", "familiaNeedsAccount"];
+
+  it("never assumes she has a pareja: every prompt also names whoever accompanies her", () => {
+    // No stored answer says whether she has a partner, so the wording has to
+    // be true for a woman who does not.
+    for (const key of KEYS) {
+      const text = partnerPrompt(key);
+      expect(text, key).toContain("quien te acompañe");
+      expect(text, key).not.toMatch(/a tu pareja y a tu familia/);
+    }
+  });
+
+  it("keeps the share link short enough for one button line", () => {
+    expect(partnerPrompt("shareCta")).toBe("Contale a tu pareja o a quien te acompañe");
+    expect(partnerPrompt("shareCta").length).toBeLessThanOrEqual(42);
   });
 });

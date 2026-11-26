@@ -63,3 +63,33 @@ export function moodCheckInLabel(role: Role | undefined): string {
     ? "¿Cómo te sentís hoy?"
     : "¿Cómo se siente hoy?";
 }
+
+/**
+ * Prompts that ask the mamá to reach out to "her pareja".
+ *
+ * Not every woman using the app has one, and the people who accompany her are
+ * often a sister, a mother or a friend. The profile stores no answer that says
+ * whether she has a partner (onboarding asks primer embarazo, dónde te
+ * atendés and trabajás, nothing more), so these prompts cannot be switched per
+ * person; they are worded so they are true either way. One place, so a future
+ * "¿tenés pareja?" answer only has to change this function.
+ */
+export type PartnerPromptKey =
+  /** The WhatsApp link under the share card on Hoy. */
+  | "shareCta"
+  /** /familia page description. */
+  | "familiaDescription"
+  /** Familia settings, before she has an account. */
+  | "familiaNeedsAccount";
+
+const PARTNER_PROMPTS: Record<PartnerPromptKey, string> = {
+  shareCta: "Contale a tu pareja o a quien te acompañe",
+  familiaDescription:
+    "Invitá a tu pareja o a quien te acompañe, y a tu familia, a seguir tu embarazo desde su teléfono, con lo que vos elijas compartir.",
+  familiaNeedsAccount:
+    "Con una cuenta podés invitar a tu pareja o a quien te acompañe, y a tu familia, a seguir tu embarazo, y sacarles el acceso cuando quieras.",
+};
+
+export function partnerPrompt(key: PartnerPromptKey): string {
+  return PARTNER_PROMPTS[key];
+}

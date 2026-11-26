@@ -1,13 +1,9 @@
 import type { AdPlacement, Article, DirectoryListing } from "./types";
 import { ARTICLES } from "./seed/articles";
-import directoryData from "./seed/directory.json";
+import { PUBLISHED_DIRECTORY } from "./seed/directory";
 import placementsData from "./seed/placements.json";
 import { publishedOnly } from "./seed/gate";
-import {
-  AdPlacementSchema,
-  DirectoryListingSchema,
-  validateContentArray,
-} from "./content/schemas";
+import { AdPlacementSchema, validateContentArray } from "./content/schemas";
 
 // The app's content source: the in-repo seed files.
 //
@@ -33,16 +29,8 @@ import {
 // G1 content ops: validated at import time, same as the other seed files —
 // a malformed listing/placement throws immediately, naming the file and the
 // entry, rather than shipping quietly.
-const directoryResult = validateContentArray(
-  "lib/seed/directory.json",
-  directoryData.listings as unknown[],
-  DirectoryListingSchema,
-);
-if (directoryResult.errors.length > 0) {
-  throw new Error(
-    `Contenido inválido en lib/seed/directory.json:\n${directoryResult.errors.join("\n")}`,
-  );
-}
+// The directory's validation and placeholder gate live in
+// `lib/seed/directory.ts`, so client components can read the same answer.
 const placementsResult = validateContentArray(
   "lib/seed/placements.json",
   placementsData.placements as unknown[],
@@ -59,7 +47,7 @@ if (placementsResult.errors.length > 0) {
 // page are all covered by construction: invented businesses and sponsors with
 // non-working +595 numbers can never reach a user. Entries appear automatically
 // once they carry real data.
-const SEED_DIRECTORY: DirectoryListing[] = publishedOnly(directoryResult.valid);
+const SEED_DIRECTORY: DirectoryListing[] = PUBLISHED_DIRECTORY;
 const SEED_PLACEMENTS: AdPlacement[] = publishedOnly(placementsResult.valid);
 
 export async function getArticles(): Promise<Article[]> {

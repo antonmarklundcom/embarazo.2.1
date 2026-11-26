@@ -1,6 +1,8 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
+import { PUBLISHED_DIRECTORY } from "@/lib/seed/directory";
 
 export const metadata: Metadata = {
   title: "Salud dental en el embarazo",
@@ -74,6 +76,16 @@ export default function DentalPage() {
         <p className="mt-2 text-sm font-semibold text-ink">
           Una infección dental no se cura sola y no conviene esperar al parto.
         </p>
+        {/* Shown only while the directory has published listings, the same
+            gate as the "Cerca tuyo" tab; it comes back by itself. */}
+        {PUBLISHED_DIRECTORY.length > 0 && (
+          <Link
+            href="/directorio"
+            className="mt-3 inline-flex min-h-[44px] items-center rounded-tile bg-white px-4 text-sm font-extrabold text-ink"
+          >
+            Buscar dónde atenderte
+          </Link>
+        )}
       </section>
 
       <section className="space-y-3">

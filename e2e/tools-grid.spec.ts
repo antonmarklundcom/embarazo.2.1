@@ -51,3 +51,13 @@ test("a tile either works or is absent: nothing says 'Pronto'", async ({ page })
   // Ejercicios is published, so its tile is there.
   await expect(page.getByRole("link", { name: /^Ejercicios/ })).toBeVisible();
 });
+
+test("the AI portrait tile is absent while the feature is off", async ({ page }) => {
+  // The e2e build runs with AI_BABY_ENABLED unset, so /api/v1/ai/baby answers
+  // 404 and the tile would lead nowhere. The route stays reachable by URL
+  // (e2e/ai-baby.spec.ts covers it).
+  await page.goto("/herramientas");
+  await expect(page.getByRole("heading", { name: "Herramientas", level: 1 })).toBeVisible();
+  await expect(page.locator("main a[href='/herramientas/bebe-ia']")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /Así podría ser/ })).toHaveCount(0);
+});

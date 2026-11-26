@@ -70,5 +70,8 @@ test("the dental screen reads offline-ready and does not point at the empty dire
   await page.goto("/herramientas/dental");
   await expect(page.getByRole("heading", { name: "Salud dental" })).toBeVisible();
   await expect(page.getByText(/sangran las encías/i).first()).toBeVisible();
+  // The button is gated on PUBLISHED_DIRECTORY: every directory listing is a
+  // placeholder today, so it is absent. It returns, linking to /directorio,
+  // the day a real listing is published.
   await expect(page.getByRole("link", { name: "Buscar dónde atenderte" })).toHaveCount(0);
 });

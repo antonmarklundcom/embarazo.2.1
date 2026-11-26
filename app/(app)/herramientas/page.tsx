@@ -5,6 +5,7 @@ import type { ToolIconName } from "@/components/ToolIcon";
 import { ToolsGrid } from "@/components/herramientas/ToolsGrid";
 import { PUBLISHED_FOOD } from "@/lib/seed/food";
 import { PUBLISHED_PRICES } from "@/lib/seed/prices";
+import { isConfigured as isAiBabyConfigured } from "@/lib/server/aiBaby";
 
 // BUILD-PLAN D1 — illustrated tools grid (feature map #20).
 //
@@ -185,6 +186,11 @@ const TOOLS: Tool[] = [
     desc: "Una imagen generada de cómo podría ser tu bebé. Es un juego, no una predicción.",
     icon: "ai",
     tone: "bg-pastel-lavanda",
+    // Absent while the feature is off (`/api/v1/ai/baby` answers 404 then).
+    // This page is static, so the value is decided when the app is built:
+    // switching AI_BABY_ENABLED on needs a redeploy for the tile to appear.
+    // The route itself stays reachable by URL either way.
+    published: isAiBabyConfigured(),
   },
 ];
 

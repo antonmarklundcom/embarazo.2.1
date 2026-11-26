@@ -16,14 +16,14 @@
 // somebody eventually fills with the nearest-looking tool, and then the link
 // means nothing.
 
+import { PUBLISHED_PRICES } from "@/lib/seed/prices";
+
 export interface RelatedTool {
   href: string;
   label: string;
   /** Why this tool, said in the reader's terms rather than the product's. */
   blurb: string;
 }
-
-import { PUBLISHED_PRICES } from "@/lib/seed/prices";
 
 export const RELATED_TOOLS: Record<string, RelatedTool> = {
   "control-prenatal-ips-vs-privado": {

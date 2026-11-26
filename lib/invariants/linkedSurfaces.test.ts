@@ -130,6 +130,34 @@ describe("linked when published", () => {
     });
   }
 
+  it("/herramientas/bebe-ia is linked only while the feature is configured", () => {
+    // Not a seed collection: the route answers 404 unless the server's
+    // `isConfigured()` (lib/server/aiBaby.ts) says the feature is on, so the
+    // tile is gated on that same function, evaluated when the page is built.
+    expect(ROUTES).toContain("/herramientas/bebe-ia");
+    expect(GRID).toContain('import { isConfigured as isAiBabyConfigured } from "@/lib/server/aiBaby"');
+    const at = GRID.indexOf('"/herramientas/bebe-ia"');
+    expect(at, "the tools grid no longer names /herramientas/bebe-ia").toBeGreaterThan(-1);
+    const tile = GRID.slice(at, GRID.indexOf("}", GRID.indexOf("published", at)) + 1);
+    expect(tile).toContain("published: isAiBabyConfigured()");
+  });
+
+  // The directory pointers are gated on the same published listings the
+  // "Cerca tuyo" tab and `getDirectory()` use, so they return with the first
+  // real listing instead of being deleted for good.
+  for (const file of [
+    "app/(app)/herramientas/dental/page.tsx",
+    "app/(app)/planeando/consultar/page.tsx",
+    "components/PlaneandoHome.tsx",
+    "components/home/NoPregnancyYet.tsx",
+  ]) {
+    it(`${file} names the directory only while PUBLISHED_DIRECTORY has entries`, () => {
+      const source = readFileSync(join(process.cwd(), file), "utf8");
+      expect(source).toContain("PUBLISHED_DIRECTORY.length > 0");
+      expect(source).toMatch(/"\/directorio"|el directorio/);
+    });
+  }
+
   it("keeps no 'Pronto' tile in the grid", () => {
     expect(GRID).not.toContain("Pronto");
     expect(GRID).not.toContain("locked");

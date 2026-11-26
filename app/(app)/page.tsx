@@ -55,6 +55,7 @@ import { DailyTipCard } from "@/components/home/DailyTipCard";
 import { HomeFamilySurfaces } from "@/components/home/HomeFamilySurfaces";
 import { HomeFooter } from "@/components/home/HomeFooter";
 import { HomeParaguayCards } from "@/components/home/HomeParaguayCards";
+import { HomeSection } from "@/components/home/HomeSection";
 import { HomeSkeleton } from "@/components/home/HomeSkeleton";
 import { HomeToolsGrid } from "@/components/home/HomeToolsGrid";
 import { NoPregnancyYet } from "@/components/home/NoPregnancyYet";
@@ -286,11 +287,6 @@ export default function InicioPage() {
           weeklyOverview={<PerspectiveSwitcher week={week} role={profile.role} />}
         />
         <StoryRail week={week} role={profile.role} />
-        <NextAppointmentCard
-          appointmentAt={profile.nextAppointment}
-          guests={ownerView?.members ?? []}
-          companionAppointmentAt={companionViewOf(shared.views)?.snapshot?.nextAppointmentAt ?? null}
-        />
         <NewWeekCard
           week={week}
           daysIntoWeek={profile.completed?.days ?? 3}
@@ -302,52 +298,71 @@ export default function InicioPage() {
         <InstallNudge context="onboarded" />
       </section>
 
+      {/* Proposal "Hoy corto": exactly three things for today, nothing else. */}
       <section aria-labelledby="hoy-para-vos" className="space-y-5">
         <h2 id="hoy-para-vos" className="text-xl font-extrabold tracking-tight text-ink">
-          Un momento para vos
+          Hoy
         </h2>
-        <WeeklyLineCard week={week} />
+        <NextAppointmentCard
+          appointmentAt={profile.nextAppointment}
+          guests={ownerView?.members ?? []}
+          companionAppointmentAt={companionViewOf(shared.views)?.snapshot?.nextAppointmentAt ?? null}
+        />
         <DailyTipCard text={tip.text} tipId={tip.id} />
         <MoodCheckIn role={profile.role} week={week} />
       </section>
 
-      <section aria-label="Para conocer tu semana" className="space-y-7">
-        <WeekContentRail week={week} role={profile.role} withLine={false} withPerspectives={false} sizeInHero />
-        <QueEsperarCard week={week} answers={profile} />
-        <PopularThisWeek />
-      </section>
+      {/* Everything else opens on tap and is not rendered until it does. */}
+      <div className="space-y-3">
+        <HomeSection title={`Tu semana ${week}`} hint="Tamaño, qué esperar y lecturas">
+          <section aria-label="Para conocer tu semana" className="space-y-7">
+            <WeeklyLineCard week={week} />
+            <WeekContentRail week={week} role={profile.role} withLine={false} withPerspectives={false} sizeInHero />
+            <QueEsperarCard week={week} answers={profile} />
+            <PopularThisWeek />
+          </section>
+        </HomeSection>
 
-      <section aria-label="Tus herramientas" className="space-y-6">
-        <HomeShortcuts week={week} />
-        <HomeToolsGrid />
-      </section>
+        <HomeSection title="Herramientas" hint="Pataditas, peso, fotos y más">
+          <section aria-label="Tus herramientas" className="space-y-6">
+            <HomeShortcuts week={week} />
+            <HomeToolsGrid />
+          </section>
+        </HomeSection>
 
-      <section aria-label="Acompañada en esta etapa" className="space-y-5">
-        <HomeFamilySurfaces
-          showAppointment={false}
-          ownerView={ownerView}
-          nextAppointment={profile.nextAppointment}
-          companionAppointmentAt={
-            companionViewOf(shared.views)?.snapshot?.nextAppointmentAt ?? null
-          }
-        />
-        <ShareCard
-          week={week}
-          label="Compartir mi semana"
-          offerInvite
-          offerPartner={isSelfCentered(profile.role)}
-          nickname={shareNickname(profile.babies)}
-        />
-      </section>
+        <HomeSection title="Acompañada" hint="Tu pareja, tu familia y compartir">
+          <section aria-label="Acompañada en esta etapa" className="space-y-5">
+            <HomeFamilySurfaces
+              showAppointment={false}
+              ownerView={ownerView}
+              nextAppointment={profile.nextAppointment}
+              companionAppointmentAt={
+                companionViewOf(shared.views)?.snapshot?.nextAppointmentAt ?? null
+              }
+            />
+            <ShareCard
+              week={week}
+              label="Compartir mi semana"
+              offerInvite
+              offerPartner={isSelfCentered(profile.role)}
+              nickname={shareNickname(profile.babies)}
+            />
+          </section>
+        </HomeSection>
 
-      <section aria-label="Recursos para vos" className="space-y-5">
-        <RecomendadosRail trimester={trimester} />
-        <HomeParaguayCards trimester={trimester} />
-      </section>
+        <HomeSection title="En Paraguay" hint="Tus derechos y recursos">
+          <section aria-label="Recursos para vos" className="space-y-5">
+            <RecomendadosRail trimester={trimester} />
+            <HomeParaguayCards trimester={trimester} />
+          </section>
+        </HomeSection>
 
-      <div className="space-y-5">
-        <InviteFriend />
-        <InstallCard />
+        <HomeSection title="Más" hint="Invitar a una amiga e instalar la app">
+          <div className="space-y-5">
+            <InviteFriend />
+            <InstallCard />
+          </div>
+        </HomeSection>
       </div>
       <HomeFooter department={department} />
     </div>

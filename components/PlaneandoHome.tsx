@@ -7,6 +7,7 @@ import { cycleDay, daysUntil } from "@/lib/cycle";
 import { departmentName } from "@/lib/departments";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { PrivacyLine } from "@/components/PrivacyLine";
+import { PUBLISHED_DIRECTORY } from "@/lib/seed/directory";
 
 function fmtLong(ts: number): string {
   return new Date(ts).toLocaleDateString("es-PY", {
@@ -115,16 +116,19 @@ export function PlaneandoHome() {
         anticonceptivo.
       </div>
 
-      {/* Nearby resources pointer */}
-      <Link
-        href="/directorio"
-        className="block rounded-card bg-white p-4 shadow-soft transition active:scale-[0.99]"
-      >
-        <h3 className="text-base font-extrabold text-ink">Cerca tuyo</h3>
-        <p className="mt-1 text-sm text-muted">
-          Obstetras, ginecología y más, por departamento.
-        </p>
-      </Link>
+      {/* Nearby resources pointer — only while the directory has published
+          listings, the same gate as the "Cerca tuyo" tab. */}
+      {PUBLISHED_DIRECTORY.length > 0 && (
+        <Link
+          href="/directorio"
+          className="block rounded-card bg-white p-4 shadow-soft transition active:scale-[0.99]"
+        >
+          <h3 className="text-base font-extrabold text-ink">Cerca tuyo</h3>
+          <p className="mt-1 text-sm text-muted">
+            Obstetras, ginecología y más, por departamento.
+          </p>
+        </Link>
+      )}
 
       <div className="flex items-center justify-between pt-2">
         <MedicalReviewByline />

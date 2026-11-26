@@ -105,6 +105,65 @@ describe("every screen is reachable from inside the app", () => {
   });
 });
 
+// Phase 1 "dead ends": a screen whose content is unpublished is linked only
+// when it has some. The literal still has to be in the source (the scan above),
+// and the tile that carries it has to be gated on the same `PUBLISHED_*`
+// collection the route renders, so it comes back the day content is published
+// with no other code change.
+describe("linked when published", () => {
+  const GRID = readFileSync(join(process.cwd(), "app", "(app)", "herramientas", "page.tsx"), "utf8");
+  const GATED: Record<string, string> = {
+    "/herramientas/comer": "PUBLISHED_FOOD",
+    "/herramientas/precios": "PUBLISHED_PRICES",
+    "/guias/videos": "PUBLISHED_VIDEOS",
+    "/herramientas/ejercicios": "PUBLISHED_EJERCICIOS",
+  };
+
+  for (const [route, gate] of Object.entries(GATED)) {
+    it(`${route} is linked, and only while ${gate} has entries`, () => {
+      expect(ROUTES).toContain(route);
+      const at = GRID.indexOf(`"${route}"`);
+      expect(at, `the tools grid no longer names ${route}`).toBeGreaterThan(-1);
+      // The `published` line of the same tile, before the next tile starts.
+      const tile = GRID.slice(at, GRID.indexOf("}", GRID.indexOf("published", at)) + 1);
+      expect(tile).toContain(`published: ${gate}.length > 0`);
+    });
+  }
+
+  it("/herramientas/bebe-ia is linked only while the feature is configured", () => {
+    // Not a seed collection: the route answers 404 unless the server's
+    // `isConfigured()` (lib/server/aiBaby.ts) says the feature is on, so the
+    // tile is gated on that same function, evaluated when the page is built.
+    expect(ROUTES).toContain("/herramientas/bebe-ia");
+    expect(GRID).toContain('import { isConfigured as isAiBabyConfigured } from "@/lib/server/aiBaby"');
+    const at = GRID.indexOf('"/herramientas/bebe-ia"');
+    expect(at, "the tools grid no longer names /herramientas/bebe-ia").toBeGreaterThan(-1);
+    const tile = GRID.slice(at, GRID.indexOf("}", GRID.indexOf("published", at)) + 1);
+    expect(tile).toContain("published: isAiBabyConfigured()");
+  });
+
+  // The directory pointers are gated on the same published listings the
+  // "Cerca tuyo" tab and `getDirectory()` use, so they return with the first
+  // real listing instead of being deleted for good.
+  for (const file of [
+    "app/(app)/herramientas/dental/page.tsx",
+    "app/(app)/planeando/consultar/page.tsx",
+    "components/PlaneandoHome.tsx",
+    "components/home/NoPregnancyYet.tsx",
+  ]) {
+    it(`${file} names the directory only while PUBLISHED_DIRECTORY has entries`, () => {
+      const source = readFileSync(join(process.cwd(), file), "utf8");
+      expect(source).toContain("PUBLISHED_DIRECTORY.length > 0");
+      expect(source).toMatch(/"\/directorio"|el directorio/);
+    });
+  }
+
+  it("keeps no 'Pronto' tile in the grid", () => {
+    expect(GRID).not.toContain("Pronto");
+    expect(GRID).not.toContain("locked");
+  });
+});
+
 describe("the roadmap does not promise what the app already does", () => {
   const ROADMAP = readFileSync(
     join(process.cwd(), "components", "RoadmapSection.tsx"),

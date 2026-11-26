@@ -98,3 +98,58 @@ test("a mother can record a premature birth in Settings before the Hoy prompt ap
   await page.reload();
   await expect(page.getByRole("heading", { name: "Tu bebé tiene 2 días" })).toBeVisible();
 });
+
+async function recordBirth(page: import("@playwright/test").Page, daysAgo: number) {
+  await completeOnboarding(page, { daysAgo: 262 });
+  const card = page.getByRole("region", { name: "¿Ya nació tu bebé?" });
+  await card.getByRole("button", { name: "Sí, ya nació" }).click();
+  await card.getByLabel("¿Qué día nació?").fill(localInput(daysAgo));
+  await card.getByRole("button", { name: "Guardar la fecha" }).click();
+  await expect(page.getByRole("heading", { name: /Tu bebé tiene/ })).toBeVisible();
+}
+
+test("in baby mode the tools offer neither Pataditas nor Contracciones, but the routes still open", async ({ page }) => {
+  await completeOnboarding(page, { daysAgo: 262 });
+  // While pregnant both are offered, on Hoy and in Herramientas.
+  await expect(page.getByRole("link", { name: /^Pataditas/ })).toBeVisible();
+  await page.goto("/herramientas");
+  await expect(page.getByRole("link", { name: /^Pataditas/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /^Contracciones/ })).toBeVisible();
+
+  await page.goto("/");
+  const card = page.getByRole("region", { name: "¿Ya nació tu bebé?" });
+  await card.getByRole("button", { name: "Sí, ya nació" }).click();
+  await card.getByLabel("¿Qué día nació?").fill(localInput(3));
+  await card.getByRole("button", { name: "Guardar la fecha" }).click();
+  await expect(page.getByRole("heading", { name: /Tu bebé tiene/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Pataditas/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /Contracciones/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /^Peso/ })).toBeVisible();
+
+  await page.goto("/herramientas");
+  await expect(page.getByRole("link", { name: /^Peso/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Pataditas/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /Contracciones/ })).toHaveCount(0);
+  // Only those two went; the rest of the grid is where it was.
+  await expect(page.getByRole("link", { name: /^Emergencia/ })).toBeVisible();
+
+  await page.goto("/herramientas/pataditas");
+  await expect(page.getByRole("heading", { name: "Pataditas" })).toBeVisible();
+});
+
+test("in baby mode /semana opens on the baby's age and offers the weeks only as a look-back", async ({ page }) => {
+  await recordBirth(page, 10);
+  await page.goto("/semana");
+
+  await expect(page.getByRole("heading", { name: "Tu bebé tiene 1 semana", level: 1 })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Volver a Hoy" })).toHaveAttribute("href", "/");
+  await expect(page.getByRole("heading", { name: "Tu embarazo, semana a semana" })).toBeVisible();
+  // No redirect to a "current" pregnancy week, no current-week claim.
+  await expect(page).toHaveURL(/\/semana$/);
+  await expect(page.getByText(/estás en la semana/i)).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "38", exact: true })).toBeVisible();
+
+  await page.getByRole("link", { name: "Volver a Hoy" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("heading", { name: "Tu bebé tiene 1 semana" })).toBeVisible();
+});

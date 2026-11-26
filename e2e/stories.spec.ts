@@ -54,9 +54,11 @@ test("Qué esperar: week shortcuts and this week's guías as thumbnail rows", as
   await completeOnboarding(page, { role: "Mamá", daysAgo: 140 });
   const card = page.getByRole("region", { name: "Qué esperar esta semana" });
   await expect(card).toBeVisible();
-  for (const name of ["Tu bebé", "Para preguntar", "Síntomas", "Qué comer"]) {
+  for (const name of ["Tu bebé", "Para preguntar", "Síntomas"]) {
     await expect(card.getByRole("link", { name })).toBeVisible();
   }
+  // The food list has no reviewed entries yet, so there is no shortcut to it.
+  await expect(card.getByRole("link", { name: "Qué comer" })).toHaveCount(0);
   const reading = card.getByRole("region", { name: "Para leer esta semana" });
   await expect(reading).toContainText("min de lectura");
   const first = reading.getByRole("link").filter({ hasText: "min de lectura" }).first();

@@ -6,6 +6,7 @@ import { RealisticPicture } from "@/components/RealisticPicture";
 import { editorialImage } from "@/lib/editorialImages";
 import { hasWeekArt, weekArtSrc } from "@/lib/hero/weekArt";
 import { PUBLISHED_EJERCICIOS } from "@/lib/seed/ejercicios";
+import { PUBLISHED_FOOD } from "@/lib/seed/food";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
 import { readTimeLabel } from "@/lib/articles/readTime";
 import { PUBLISHED_VIDEOS } from "@/lib/seed/videos";
@@ -150,6 +151,7 @@ export default async function GuiasPage() {
         </section>
       )}
 
+      {PUBLISHED_FOOD.length > 0 && (
       <section aria-labelledby="guias-comer" className="space-y-3">
         <ShelfHeading id="guias-comer" title="Qué comer" href="/herramientas/comer" />
         <Link href="/herramientas/comer" className={`${TILE_LINK_CLASS} flex items-center gap-3 p-2`}>
@@ -172,6 +174,7 @@ export default async function GuiasPage() {
           <span className="text-base font-extrabold text-ink">Qué comer</span>
         </Link>
       </section>
+      )}
 
       {PUBLISHED_VIDEOS.length > 0 && (
         <Link

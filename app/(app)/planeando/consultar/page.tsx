@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { MedicalReviewByline } from "@/components/MedicalReviewByline";
+import { PUBLISHED_DIRECTORY } from "@/lib/seed/directory";
 
 export const metadata: Metadata = {
   title: "¿Cuándo consultar por fertilidad?",
@@ -54,18 +55,22 @@ export default function ConsultarFertilidadPage() {
         </ul>
       </section>
 
-      <Link
-        href="/directorio"
-        className="block rounded-card bg-petrol p-5 text-white shadow-soft transition active:scale-[0.99]"
-      >
-        <p className="text-sm text-white/70">Cerca tuyo</p>
-        <p className="mt-1 text-base font-medium">
-          Buscá obstetras y ginecología en tu departamento
-        </p>
-        <span className="mt-2 inline-block text-sm font-medium text-rose">
-          Ver el directorio →
-        </span>
-      </Link>
+      {/* Shown only while the directory has published listings, the same
+          gate as the "Cerca tuyo" tab; it comes back by itself. */}
+      {PUBLISHED_DIRECTORY.length > 0 && (
+        <Link
+          href="/directorio"
+          className="block rounded-card bg-petrol p-5 text-white shadow-soft transition active:scale-[0.99]"
+        >
+          <p className="text-sm text-white/70">Cerca tuyo</p>
+          <p className="mt-1 text-base font-medium">
+            Buscá obstetras y ginecología en tu departamento
+          </p>
+          <span className="mt-2 inline-block text-sm font-medium text-rose">
+            Ver el directorio →
+          </span>
+        </Link>
+      )}
 
       <MedicalReviewByline />
       <p className="text-[11px] leading-relaxed text-muted">

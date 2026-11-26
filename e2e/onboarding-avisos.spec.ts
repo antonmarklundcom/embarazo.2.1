@@ -47,6 +47,29 @@ test("'Ahora no' finishes onboarding without asking the browser", async ({ page 
   expect(await asks(page)).toBe(0);
 });
 
+test("'Ahora no' is on screen and tappable at 360x740 without scrolling", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await completeOnboarding(page, { stopBeforeAvisos: true });
+  await expect(page.getByRole("heading", { name: "¿Te aviso cuando empieza tu semana nueva?" })).toBeVisible();
+  const later = page.getByRole("button", { name: "Ahora no" });
+  await expect(later).toBeVisible();
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+
+  const box = (await later.boundingBox())!;
+  // Fully inside the viewport...
+  expect(box.y).toBeGreaterThanOrEqual(0);
+  expect(box.y + box.height).toBeLessThanOrEqual(740);
+  // ...and nothing (the fixed bottom bar) is on top of it.
+  const covered = await later.evaluate((el) => {
+    const rect = el.getBoundingClientRect();
+    const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+    return hit === el || el.contains(hit) ? false : true;
+  });
+  expect(covered).toBe(false);
+  const nav = (await page.getByRole("navigation", { name: "Navegación principal" }).boundingBox())!;
+  expect(box.y + box.height).toBeLessThanOrEqual(nav.y);
+});
+
 test("'Sí' asks once and explains denial before she chooses to continue", async ({ page }) => {
   await countPermissionAsks(page);
   await completeOnboarding(page, { stopBeforeAvisos: true });

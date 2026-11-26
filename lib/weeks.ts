@@ -191,7 +191,7 @@ const RAW_WEEKS: RawWeek[] = [
     weightG: 300,
     milestone:
       "Llegaste a la mitad del camino. El bebé traga líquido y sus riñones ya producen pis.",
-    tip: "Es momento de empezar a pensar dónde querés tener al bebé. Mirá el directorio de Mi Bebé por departamento.",
+    tip: "Es momento de empezar a pensar dónde querés tener al bebé. Anotá tus dudas para charlarlas en tu próximo control.",
   },
   {
     week: 21,

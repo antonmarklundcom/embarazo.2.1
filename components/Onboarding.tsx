@@ -34,6 +34,7 @@ import {
   nextStep,
   previousStep,
   resumeStep,
+  skipsAccountStep as skipsAccountStepFor,
   skipsRoleStep,
   stepProgress,
   type OnboardingAnswers,
@@ -296,7 +297,7 @@ export function Onboarding({
   // tap Continuar. Step over it in both directions. Landing on it after a
   // Google round trip from that very step still shows it — that is the one
   // moment its confirmation is news.
-  const skipsAccountStep = Boolean(auth?.signedIn) && !answers.invited;
+  const skipsAccountStep = skipsAccountStepFor(context);
 
   // Night run item 10 — the embarazada path steps over the role question
   // (`skipsRoleStep`) in both directions; "Cambiar" on the date step opens it.

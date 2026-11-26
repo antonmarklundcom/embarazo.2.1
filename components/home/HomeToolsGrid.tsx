@@ -7,7 +7,11 @@ import Link from "next/link";
 import { ToolIcon, type ToolIconName } from "@/components/ToolIcon";
 import { PUBLISHED_FOOD } from "@/lib/seed/food";
 
-export function HomeToolsGrid() {
+/**
+ * `baby`: the birth is recorded, so the two pregnancy-only tools (kicks and
+ * contractions) are not offered; the routes stay reachable by URL.
+ */
+export function HomeToolsGrid({ baby = false }: { baby?: boolean }) {
   return (
     <section aria-labelledby="herramientas" className="space-y-2.5 pt-1">
       <h2
@@ -17,8 +21,12 @@ export function HomeToolsGrid() {
         Herramientas
       </h2>
       <div className="grid grid-cols-2 gap-3">
-        <ToolCard href="/herramientas/pataditas" title="Pataditas" subtitle="Contá movimientos" icon="feet" />
-        <ToolCard href="/herramientas/contracciones" title="Contracciones" subtitle="Cronometrá" icon="timer" />
+        {!baby && (
+          <>
+            <ToolCard href="/herramientas/pataditas" title="Pataditas" subtitle="Contá movimientos" icon="feet" />
+            <ToolCard href="/herramientas/contracciones" title="Contracciones" subtitle="Cronometrá" icon="timer" />
+          </>
+        )}
         <ToolCard href="/herramientas/peso" title="Peso" subtitle="Seguí tu progreso" icon="scale" />
         <ToolCard href="/herramientas/fotos" title="Fotos" subtitle="Diario de tu panza" icon="camera" />
         {/* The food list is gated on a medical reviewer and ships empty until

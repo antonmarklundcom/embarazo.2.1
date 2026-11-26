@@ -38,3 +38,26 @@ test("the video tile stays hidden until real videos land", async ({ page }) => {
   await page.goto("/herramientas");
   await expect(page.getByRole("link", { name: /Galería de videos/ })).toHaveCount(0);
 });
+
+test("a tile either works or is absent: nothing says 'Pronto'", async ({ page }) => {
+  await page.goto("/herramientas");
+  await expect(page.getByRole("heading", { name: "Herramientas", level: 1 })).toBeVisible();
+  await expect(page.getByText("Pronto")).toHaveCount(0);
+  await expect(page.locator("main [aria-disabled='true']")).toHaveCount(0);
+  // Nothing published yet behind these: no tile (the routes keep their empty states).
+  for (const name of [/¿Puedo comer/, /¿Cuánto cuesta\?/, /Videos/]) {
+    await expect(page.getByRole("link", { name })).toHaveCount(0);
+  }
+  // Ejercicios is published, so its tile is there.
+  await expect(page.getByRole("link", { name: /^Ejercicios/ })).toBeVisible();
+});
+
+test("the AI portrait tile is absent while the feature is off", async ({ page }) => {
+  // The e2e build runs with AI_BABY_ENABLED unset, so /api/v1/ai/baby answers
+  // 404 and the tile would lead nowhere. The route stays reachable by URL
+  // (e2e/ai-baby.spec.ts covers it).
+  await page.goto("/herramientas");
+  await expect(page.getByRole("heading", { name: "Herramientas", level: 1 })).toBeVisible();
+  await expect(page.locator("main a[href='/herramientas/bebe-ia']")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /Así podría ser/ })).toHaveCount(0);
+});

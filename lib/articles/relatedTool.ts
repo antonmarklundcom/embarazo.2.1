@@ -16,6 +16,8 @@
 // somebody eventually fills with the nearest-looking tool, and then the link
 // means nothing.
 
+import { PUBLISHED_PRICES } from "@/lib/seed/prices";
+
 export interface RelatedTool {
   href: string;
   label: string;
@@ -42,6 +44,17 @@ export const RELATED_TOOLS: Record<string, RelatedTool> = {
   },
 };
 
+/**
+ * A guía never hands her to a tool with nothing behind it: the price list
+ * shows up here only once it has published entries, and then with no other
+ * code change.
+ */
+function hasContent(href: string): boolean {
+  if (href === "/herramientas/precios") return PUBLISHED_PRICES.length > 0;
+  return true;
+}
+
 export function relatedTool(slug: string): RelatedTool | null {
-  return RELATED_TOOLS[slug] ?? null;
+  const tool = RELATED_TOOLS[slug] ?? null;
+  return tool && hasContent(tool.href) ? tool : null;
 }

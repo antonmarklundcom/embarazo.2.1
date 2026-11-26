@@ -19,7 +19,7 @@ import type { Trimester } from "@/lib/types";
 // "Pregunta del día" — one light question on Hoy, between "Tip de hoy" and the
 // mood check-in, and how other mamás in her trimester answered it.
 //
-// Behind the `preguntaDelDia` flag (off by default): off renders nothing and
+// Behind the `pregunta_del_dia` flag (off by default): off renders nothing and
 // sends nothing. On, a tap:
 //   1. keeps her answer on this device (`mibebe.pregunta.respuestas`), so a
 //      second visit the same day shows the answered state and she can never
@@ -34,7 +34,7 @@ import type { Trimester } from "@/lib/types";
 // Compact on purpose (the "Hoy" block has four things now): two answer columns
 // at a fixed height whatever the question, and thin bars for the results.
 export function DailyQuestionCard({ week, trimester }: { week: number; trimester: Trimester }) {
-  const enabled = useFlag("preguntaDelDia");
+  const enabled = useFlag("pregunta_del_dia");
   // Fixed for the visit: a card that changed its question at midnight under
   // her thumb would be stranger than one that waits for the next visit.
   const question = useMemo(() => questionForDay(new Date()), []);

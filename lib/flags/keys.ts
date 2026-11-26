@@ -83,7 +83,7 @@ export const FLAG_DEFINITIONS = {
   // "Pregunta del día" on Hoy (components/home/DailyQuestionCard.tsx). Off
   // until the owner has read the questions in lib/seed/py/dailyQuestions.json.
   // Off means the card does not render and nothing is sent.
-  preguntaDelDia: {
+  pregunta_del_dia: {
     scope: "client",
     default: false,
     description:

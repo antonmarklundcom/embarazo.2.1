@@ -60,7 +60,7 @@ test("flag off: no card and nothing sent", async ({ page, context }) => {
 });
 
 test("flag on: a tap marks the answer, sends one count, and a reload keeps it", async ({ page, context }) => {
-  await serveClientFlags(context, { preguntaDelDia: true });
+  await serveClientFlags(context, { pregunta_del_dia: true });
   const requests = await recordPollRequests(context);
   await completeOnboarding(page, { daysAgo: DAYS_AGO });
 
@@ -99,7 +99,7 @@ test("flag on: a tap marks the answer, sends one count, and a reload keeps it", 
 });
 
 test("results stay hidden under the threshold in HER trimester", async ({ page, context }) => {
-  await serveClientFlags(context, { preguntaDelDia: true });
+  await serveClientFlags(context, { pregunta_del_dia: true });
   // 29 in the second trimester (hers), plenty in the others.
   await serveResults(context, { 1: [40, 20, 10, 5], 2: [10, 9, 6, 4], 3: [50, 30, 20, 10] });
   await completeOnboarding(page, { daysAgo: DAYS_AGO });
@@ -111,7 +111,7 @@ test("results stay hidden under the threshold in HER trimester", async ({ page, 
 });
 
 test("with enough answers, the bars show percentages that add up to 100", async ({ page, context }) => {
-  await serveClientFlags(context, { preguntaDelDia: true });
+  await serveClientFlags(context, { pregunta_del_dia: true });
   await serveResults(context, { 1: [0, 0, 0, 0], 2: [13, 9, 5, 4], 3: [0, 0, 0, 0] });
   await completeOnboarding(page, { daysAgo: DAYS_AGO });
 

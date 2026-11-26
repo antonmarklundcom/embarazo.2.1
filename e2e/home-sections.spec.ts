@@ -125,7 +125,7 @@ test("at 360x740 «Hoy» starts within the first 1,000 px and the closed page st
 });
 
 test("with the Pregunta del día on, the closed page at 360x740 stays under 2,650 px", async ({ page, context }) => {
-  await serveClientFlags(context, { preguntaDelDia: true });
+  await serveClientFlags(context, { pregunta_del_dia: true });
   await page.setViewportSize({ width: 360, height: 740 });
   await completeOnboarding(page, { daysAgo: DAYS_AGO });
   await expect(page.getByRole("region", { name: "Pregunta del día" })).toBeVisible();

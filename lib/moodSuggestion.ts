@@ -12,7 +12,7 @@ import { moodNeedsSupport } from "./mood";
 //     compete with the one that matters.
 //   * "Regular": the diary. `lib/mood.ts` calls "Regular" an ordinary day, and
 //     linking it to the sleep log would read as a guess at why her day was so-so.
-//     "Para conversar" does not exist on this branch.
+//     The owner kept "Regular" on the diary after "Para conversar" landed.
 //   * "Bien": the diary.
 //   * "Muy bien": the photo diary during the pregnancy ("Diario de tu panza");
 //     after the birth, the diary, because that screen is about the bump.

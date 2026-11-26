@@ -1,6 +1,6 @@
 # STATUS: app.embarazo.com.py (Mi Bebé)
 
-Updated: 2026-11-26 21:30 (Paraguay) by the manager session (Claude Fable 5.2; workers on Opus 5.5, one on Sonnet 5.5)
+Updated: 2026-11-26 20:50 (Paraguay) by the manager session (Claude Fable 5.2; workers on Opus 5.5, one on Sonnet 5.5)
 
 ## State
 waiting for Anton
@@ -59,6 +59,8 @@ Smaller:
 - Day 30: impressions / leads
 
 ## Next step
+Ideas, decisions and the full backlog from the 26 November session: [docs/PRODUCT-BACKLOG-2026-11-26.md](docs/PRODUCT-BACKLOG-2026-11-26.md).
+
 1. Anton's phone test and answers above.
 2. Buildable without him: a `ready` command (secrets, database, legal pages), baby-mode wording that still talks about the pregnancy ("Diario de tu panza").
 3. On his yes: content drafts hidden until reviewed; "ver mi semana" before sign-in.

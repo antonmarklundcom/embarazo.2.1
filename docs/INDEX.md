@@ -34,6 +34,8 @@ the banner still tells you what replaced them and why. Nothing under
 | [`docs/OPUS-HANDOFF-2026-10-16.md`](OPUS-HANDOFF-2026-10-16.md) | current continuation | starting today's Opus/build session; approved work, evidence and next plan | — |
 | [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) | current | before writing any code; §4 is the data contract | — |
 | [`docs/CONTENT-COUNTRY-RULE.md`](CONTENT-COUNTRY-RULE.md) | current rule | before adding any content file, country fact or new screen text | — |
+| [`docs/BABYJOURNEY-BENCHMARK-2026-11-25.md`](BABYJOURNEY-BENCHMARK-2026-11-25.md) | dated research | why Baby Journey works, the 33-row gap table, Paraguay adaptations, the three-phase plan | — |
+| [`docs/PRODUCT-BACKLOG-2026-11-26.md`](PRODUCT-BACKLOG-2026-11-26.md) | current backlog | what was built from the benchmark, the decisions taken, what is hidden, later or skipped, and what is left before launch | — |
 | [`docs/BUILD-PLAN.md`](BUILD-PLAN.md) | current | task-level detail for phased engineering work | — |
 | [`docs/FEATURE-MAP.md`](FEATURE-MAP.md) | current | tracing a Preggers-benchmarked item to its task | — |
 | [`docs/FLO-BENCHMARK.md`](FLO-BENCHMARK.md) | current | the Flo benchmark behind monetisation/engagement calls | — |

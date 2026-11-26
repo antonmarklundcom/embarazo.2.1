@@ -284,9 +284,7 @@ export default function InicioPage() {
           dueDateLabel={dueDateLabel}
           babies={profile.babies}
           role={profile.role}
-          weeklyOverview={<PerspectiveSwitcher week={week} role={profile.role} />}
         />
-        <StoryRail week={week} role={profile.role} />
         <NewWeekCard
           week={week}
           daysIntoWeek={profile.completed?.days ?? 3}
@@ -312,10 +310,13 @@ export default function InicioPage() {
         <MoodCheckIn role={profile.role} week={week} />
       </section>
 
+      <StoryRail week={week} role={profile.role} />
+
       {/* Everything else opens on tap and is not rendered until it does. */}
       <div className="space-y-3">
-        <HomeSection title={`Tu semana ${week}`} hint="Tamaño, qué esperar y lecturas">
+        <HomeSection title="Tu semana" hint={`Semana ${week}: tamaño, qué esperar y lecturas`}>
           <section aria-label="Para conocer tu semana" className="space-y-7">
+            <PerspectiveSwitcher week={week} role={profile.role} />
             <WeeklyLineCard week={week} />
             <WeekContentRail week={week} role={profile.role} withLine={false} withPerspectives={false} sizeInHero />
             <QueEsperarCard week={week} answers={profile} />

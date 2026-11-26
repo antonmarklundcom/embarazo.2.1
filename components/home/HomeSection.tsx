@@ -20,44 +20,52 @@ export function HomeSection({
   const [mounted, setMounted] = useState(false);
   const id = useId();
   const panelId = `${id}-panel`;
+  const hintId = `${id}-hint`;
 
   return (
     // The panel sits under the row, not inside its card: the blocks it holds
     // are cards (and edge-to-edge rails) of their own.
     <div>
-      <h2 className="rounded-card border border-line bg-white">
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-controls={panelId}
-          onClick={() => {
-            setMounted(true);
-            setOpen((value) => !value);
-          }}
-          className="flex min-h-[56px] w-full items-center gap-3 rounded-card px-4 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-petrol"
-        >
-          <span className="min-w-0 flex-1">
-            <span className="block text-lg font-extrabold leading-snug tracking-tight text-ink">
+      <div className="relative flex min-h-[56px] items-center gap-3 rounded-card border border-line bg-white px-4 py-3">
+        <div className="min-w-0 flex-1">
+          <h2>
+            {/* The button's name is the title alone and the hint is its
+                description, so a hint cannot collide with a query for another
+                control's name. Its ::after covers the whole card, so the hint
+                and the chevron are part of the tap target too. */}
+            <button
+              type="button"
+              aria-expanded={open}
+              aria-controls={panelId}
+              aria-describedby={hintId}
+              onClick={() => {
+                setMounted(true);
+                setOpen((value) => !value);
+              }}
+              className="block text-left text-lg font-extrabold leading-snug tracking-tight text-ink outline-none after:absolute after:inset-0 after:rounded-card after:content-[''] focus-visible:after:outline focus-visible:after:outline-2 focus-visible:after:outline-petrol"
+            >
               {title}
-            </span>
-            <span className="block text-xs font-semibold text-muted">{hint}</span>
-          </span>
-          <svg
-            aria-hidden
-            viewBox="0 0 24 24"
-            width="20"
-            height="20"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.25"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={`shrink-0 text-petrol transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-          >
-            <path d="m6 9 6 6 6-6" />
-          </svg>
-        </button>
-      </h2>
+            </button>
+          </h2>
+          <p id={hintId} className="text-xs font-semibold text-muted">
+            {hint}
+          </p>
+        </div>
+        <svg
+          aria-hidden
+          viewBox="0 0 24 24"
+          width="20"
+          height="20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.25"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`pointer-events-none shrink-0 text-petrol transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </div>
       <div id={panelId} hidden={!open} className="pt-5">
         {mounted ? children : null}
       </div>

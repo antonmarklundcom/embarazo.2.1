@@ -59,6 +59,7 @@ const PERSONAL_ROUTES = [
   "/herramientas/checklist",
   "/herramientas/comer",
   "/herramientas/contracciones",
+  "/herramientas/conversar",
   "/herramientas/dental",
   "/herramientas/diario",
   "/herramientas/ejercicios",

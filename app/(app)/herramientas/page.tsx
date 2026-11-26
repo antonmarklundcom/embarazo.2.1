@@ -6,6 +6,8 @@ import { ToolsGrid } from "@/components/herramientas/ToolsGrid";
 import { PUBLISHED_FOOD } from "@/lib/seed/food";
 import { PUBLISHED_PRICES } from "@/lib/seed/prices";
 import { isConfigured as isAiBabyConfigured } from "@/lib/server/aiBaby";
+import { PUBLISHED_CONVERSATION_CARDS } from "@/lib/seed/shared/conversationCards";
+import { CONVERSAR_COPY } from "@/lib/i18n/es-PY/conversar";
 
 // BUILD-PLAN D1 — illustrated tools grid (feature map #20).
 //
@@ -73,6 +75,17 @@ const TOOLS: Tool[] = [
     desc: "Nombres en guaraní, español y bíblicos, con su significado. Guardá tus favoritos.",
     icon: "names",
     tone: "bg-pastel-lavanda",
+  },
+  {
+    // Question cards for her and whoever accompanies her. Not in any GROUPS
+    // list, so it lands in "Para saber y preparar". Borrows the speech bubble
+    // of "Preguntas" (no new icon); the tone tells the two apart.
+    href: "/herramientas/conversar",
+    title: CONVERSAR_COPY.title,
+    desc: CONVERSAR_COPY.toolDesc,
+    icon: "faq",
+    tone: "bg-pastel-rosa",
+    published: PUBLISHED_CONVERSATION_CARDS.length > 0,
   },
   {
     href: "/herramientas/kegel",

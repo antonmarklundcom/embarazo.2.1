@@ -89,6 +89,10 @@ const pageRoutes: string[] = [
   "/herramientas/fotos",
   "/herramientas/peso",
   "/herramientas/checklist",
+  // "Para conversar": fixed question cards plus a localStorage list of ids, a
+  // static "use client" page with no session, cookie or fetch in its render.
+  // Precached like dental, so it opens on a couch with no signal.
+  "/herramientas/conversar",
   // Night run item 5: the "Mi semana" app shortcut opens /semana, which sends
   // her on to her current week from Dexie — offline too.
   "/semana",

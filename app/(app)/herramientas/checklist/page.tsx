@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { CHECKLISTS } from "@/lib/checklists";
 import { personaliseChecklists } from "@/lib/onboarding/personalisation";
 import { useProfile } from "@/lib/useProfile";
+import { TrimesterToDos } from "@/components/checklist/TrimesterToDos";
 
 export default function ChecklistPage() {
   const profile = useProfile();
@@ -82,6 +83,8 @@ export default function ChecklistPage() {
           </section>
         );
       })}
+
+      <TrimesterToDos current={profile.trimester} />
     </div>
   );
 }

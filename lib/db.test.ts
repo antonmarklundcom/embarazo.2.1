@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import Dexie from "dexie";
@@ -478,6 +478,32 @@ describe("borrar todos mis datos", () => {
     }
     expect(await after.syncState.count()).toBe(0);
     expect(await after.conflicts.count()).toBe(0);
+  });
+
+  it("clears the device-only lists kept in localStorage", async () => {
+    const stored = new Map<string, string>([
+      ["mibebe.control.questions", "{}"],
+      ["mibebe.conversar.talked", '["casa-1"]'],
+      ["mibebe.installNudge", "1"],
+    ]);
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => stored.get(key) ?? null,
+      setItem: (key: string, value: string) => void stored.set(key, value),
+      removeItem: (key: string) => void stored.delete(key),
+    });
+    try {
+      await seedDatabaseAt(CURRENT_VERSION);
+      await db().open();
+
+      await wipeAllData();
+
+      expect(stored.has("mibebe.control.questions")).toBe(false);
+      expect(stored.has("mibebe.conversar.talked")).toBe(false);
+      // Not a blanket clear: an unrelated preference stays.
+      expect(stored.get("mibebe.installNudge")).toBe("1");
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("drops the database itself, not just its rows", async () => {

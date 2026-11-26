@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 
 import {
   acceptInviteCode,
@@ -23,6 +24,7 @@ import { inviteCodeFromSearch } from "@/lib/sharing/inviteLink";
 import { fetchAuthStatus, type AuthStatus } from "@/lib/auth/status";
 import { SignInCard } from "@/components/SignInCard";
 import { EditorialPicture } from "@/components/EditorialPicture";
+import { CONVERSAR_COPY } from "@/lib/i18n/es-PY/conversar";
 
 // BUILD-PLAN E1 — one screen, both sides of sharing.
 //
@@ -169,6 +171,8 @@ export default function FamiliaPage() {
             </p>
           )}
         </section>
+
+        <ConversarLink />
       </div>
     );
   }
@@ -231,6 +235,8 @@ export default function FamiliaPage() {
       {owned && <SharingLevels onChanged={() => void reload()} />}
 
       {owned && <PartnerTasks view={owned} onChanged={reload} />}
+
+      <ConversarLink />
 
       <section className="rounded-card bg-white p-4 shadow-soft">
         <h2 className="text-base font-extrabold text-ink">
@@ -334,6 +340,26 @@ export default function FamiliaPage() {
         {message && <p className="mt-2 text-sm text-terracotta">{message}</p>}
       </section>
     </div>
+  );
+}
+
+/**
+ * "Para conversar": the question cards need no account and no invitation, so
+ * the link shows to everybody on this screen, owner and companion alike.
+ */
+function ConversarLink() {
+  return (
+    <Link
+      href="/herramientas/conversar"
+      className="block rounded-card bg-pastel-rosa p-4 shadow-soft transition active:scale-[0.99]"
+    >
+      <span className="block text-base font-extrabold text-ink">
+        {CONVERSAR_COPY.familyLinkTitle}
+      </span>
+      <span className="mt-1 block text-sm leading-relaxed text-ink">
+        {CONVERSAR_COPY.familyLinkBody}
+      </span>
+    </Link>
   );
 }
 

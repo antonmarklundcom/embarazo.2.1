@@ -9,6 +9,7 @@ import {
   FoodEntrySchema,
   WeeklyLineSchema,
   FamilyLineSchema,
+  ConversationCardSchema,
   ComparisonSchema,
   LimbSizeSchema,
   PerspectiveBandSchema,
@@ -107,6 +108,19 @@ const checks: Check[] = [];
       Array.isArray(file.items) ? file.items : [],
       FamilyLineSchema,
       (entry) => String(entry.week),
+    ),
+  );
+}
+{
+  // "Para conversar" question cards (lib/seed/shared/, country-tagged file).
+  // Keyed by id. The file's own shape ({ lang, items }) is checked by the
+  // seed layout block below.
+  const file = readJson("lib/seed/shared/conversationCards.json") as { items?: unknown[] };
+  checks.push(
+    validateContentArray(
+      "lib/seed/shared/conversationCards.json",
+      Array.isArray(file.items) ? file.items : [],
+      ConversationCardSchema,
     ),
   );
 }

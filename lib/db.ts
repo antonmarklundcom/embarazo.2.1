@@ -718,6 +718,9 @@ export async function wipeAllData(options?: { expectedAccountId?: string }): Pro
   // with everything else.
   try {
     window.localStorage.removeItem("mibebe.control.questions");
+    // "Para conversar" marks (CONVERSAR_STORAGE_KEY in `lib/conversar.ts`, a
+    // literal here so this module does not pull in the card content).
+    window.localStorage.removeItem("mibebe.conversar.talked");
   } catch {
     // Storage refused; nothing was stored either.
   }

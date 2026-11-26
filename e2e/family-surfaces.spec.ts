@@ -2,6 +2,7 @@ import { test, expect, type BrowserContext } from "@playwright/test";
 
 import { localDateInput } from "./helpers/dates";
 import { completeOnboarding } from "./helpers/onboarding";
+import { openAllHomeSections, openHomeSection } from "./helpers/homeSections";
 
 // K7 — "/familia is reachable in ≤2 taps from Hoy", and the three states of
 // the card, and the signed-out guard.
@@ -79,6 +80,7 @@ test("an owner with nobody invited gets the empty card, and it invites", async (
   await serveOwner(context, []);
   const page = await context.newPage();
   await completeOnboarding(page);
+  await openHomeSection(page, "Acompañada");
 
   const card = page.getByRole("region", { name: "Tu familia" });
   await expect(card).toBeVisible();
@@ -100,6 +102,7 @@ test("the card counts one companion, and n companions, by role", async ({
   await serveOwner(context, [{ userId: "a", role: "partner" }]);
   const page = await context.newPage();
   await completeOnboarding(page);
+  await openHomeSection(page, "Acompañada");
 
   const card = page.getByRole("region", { name: "Tu familia" });
   await expect(card).toContainText("Una persona sigue tu embarazo");
@@ -119,6 +122,7 @@ test("three companions read as three", async ({ browser }) => {
   ]);
   const page = await context.newPage();
   await completeOnboarding(page);
+  await openHomeSection(page, "Acompañada");
 
   await expect(page.getByRole("region", { name: "Tu familia" })).toContainText(
     "3 personas siguen tu embarazo",
@@ -134,6 +138,9 @@ test("a signed-out local-only user sees no family card, and /familia asks for an
   await serveSignedOut(context);
   const page = await context.newPage();
   await completeOnboarding(page);
+  // Open the rows the card and the invite would live in, or absent proves nothing.
+  await openHomeSection(page, "Acompañada");
+  await openHomeSection(page, "Más");
 
   // No card: there is no family to have without an account, and rendering an
   // invite this user cannot complete is the bug §7 flags.
@@ -193,6 +200,7 @@ test("the roadmap no longer promises a feature that shipped", async ({
   await serveOwner(context, []);
   const page = await context.newPage();
   await completeOnboarding(page);
+  await openAllHomeSections(page);
 
   // It shipped in E1. A "próximamente" badge on a working feature is how a
   // user decides to stop looking for it.

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { completeOnboarding } from "./helpers/onboarding";
+import { openHomeSection } from "./helpers/homeSections";
 import { localDateInput, localTimeOn } from "./helpers/dates";
 
 async function savedPregnancy(page: Page) {
@@ -172,6 +173,8 @@ for (const duration of [266, 280, 294]) {
 test("midnight/resume updates all week displays and cannot revive an old browsing selection", async ({ page }) => {
   await page.clock.install({ time: new Date() });
   await completeOnboarding(page, { daysAgo: 146 });
+  // "Hoy corto": the overview sits in the "Tu semana" row.
+  await openHomeSection(page, "Tu semana");
   const overview = page.getByRole("region", { name: "Esta semana, para cada uno", exact: true });
   const title = overview.getByText(/^Semana \d+$/);
   await expect(title).toHaveText("Semana 21");
@@ -210,6 +213,7 @@ test("midnight/resume updates all week displays and cannot revive an old browsin
 
 test("overview respects both week bounds and supports keyboard tab edges and focusable content", async ({ page }) => {
   await completeOnboarding(page, { daysAgo: 0 });
+  await openHomeSection(page, "Tu semana");
   let overview = page.getByRole("region", { name: "Esta semana, para cada uno", exact: true });
   await expect(overview.getByRole("button", { name: "Semana anterior", exact: true })).toBeDisabled();
   await overview.getByRole("tab", { name: "Para vos", exact: true }).focus();
@@ -224,6 +228,8 @@ test("overview respects both week bounds and supports keyboard tab edges and foc
   await page.getByRole("button", { name: "Guardar fecha", exact: true }).click();
   await expect(page.getByText("Fecha actualizada. Tu semana se recalculó.")).toBeVisible();
   await page.goto("/");
+  // A full load starts with every row closed.
+  await openHomeSection(page, "Tu semana");
   overview = page.getByRole("region", { name: "Esta semana, para cada uno", exact: true });
   await expect(overview.getByText("Semana 42", { exact: true })).toBeVisible();
   await expect(overview.getByRole("button", { name: "Semana siguiente", exact: true })).toBeDisabled();

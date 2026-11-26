@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
+import { openHomeSection } from "./helpers/homeSections";
 
 // BUILD-PLAN C3 (feature map #12): the same week answered three ways. A 70-day
 // LMP puts the user in week 11 — foot ≈0,7 cm, hand ≈0,6 cm.
@@ -17,6 +18,8 @@ test("Hoy answers the week three ways without repeating the hero", async ({ page
 
   // Tamaño: in the hero.
   await expect(page.getByText(/Referencia de longitud|Referencia de peso/).first()).toBeVisible();
+  // The rest of the week is in the "Tu semana" row.
+  await openHomeSection(page, "Tu semana");
   await expect(page.getByRole("region", { name: "Qué tan grande está" })).toHaveCount(0);
 
   const panel = page.getByRole("region", { name: "Su pie y su mano" }).getByRole("tabpanel");
@@ -34,6 +37,9 @@ test("a week with no foot or hand to measure shows no extra size card", async ({
   await onboardAt(page, 30);
 
   await expect(page.getByText("Tip de hoy")).toBeVisible();
+  // Open the row it would live in, or absent proves nothing.
+  await openHomeSection(page, "Tu semana");
+  await expect(page.getByRole("region", { name: "Qué esperar esta semana" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Su pie y su mano" })).toHaveCount(0);
   await expect(page.getByRole("tab", { name: "Pie" })).toHaveCount(0);
   await expect(page.getByRole("tab", { name: "Mano" })).toHaveCount(0);

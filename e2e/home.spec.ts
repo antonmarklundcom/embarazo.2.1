@@ -1,6 +1,7 @@
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
+import { openHomeSection } from "./helpers/homeSections";
 
 // U11 — the home screen now mounts U3's Recomendados rail directly (U3 built
 // it self-gating but unmounted anywhere). Same mocking pattern
@@ -20,6 +21,8 @@ async function mockRecomendadosFlag(page: import("@playwright/test").Page, on: b
 test("flag off: no Recomendados rail on the home screen", async ({ page }) => {
   await mockRecomendadosFlag(page, false);
   await completeOnboarding(page, { daysAgo: 70 });
+  // The rail lives in the "En Paraguay" row: open it, or absent proves nothing.
+  await openHomeSection(page, "En Paraguay");
 
   await expect(page.locator("#recomendados")).toHaveCount(0);
 });
@@ -29,6 +32,7 @@ test("flag on: the Recomendados rail renders on the home screen", async ({
 }) => {
   await mockRecomendadosFlag(page, true);
   await completeOnboarding(page, { daysAgo: 70 });
+  await openHomeSection(page, "En Paraguay");
 
   await expect(page.locator("#recomendados")).toBeVisible();
   // Stage 0 (shown at every trimester), same fixture e2e/recomendados.spec.ts

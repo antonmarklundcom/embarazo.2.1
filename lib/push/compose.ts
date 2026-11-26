@@ -1,6 +1,7 @@
 import { APP_NAME } from "@/lib/brand";
 import { companionReminderSentence, ownReminderSentence } from "@/lib/appointments";
 import { babyAgeSentence } from "@/lib/baby/push";
+import { homeSectionHref } from "@/lib/home/openSections";
 import { cheerSentence, weeklyTipSentence } from "./sentences";
 import type { PushCategory } from "./categories";
 
@@ -29,12 +30,14 @@ export async function composeAllowedNotification(
   }
   if (categories.includes("mimos")) {
     const cheer = await readCheer();
-    if (cheer) return cheerSentence(cheer);
+    // The cheer and who sent it are shown on Hoy, inside the "Acompañada" row.
+    if (cheer) return { ...cheerSentence(cheer), url: homeSectionHref("acompanada") };
   }
   if (categories.includes("consejos")) {
     if (local.birthDate !== null) return { ...babyAgeSentence(local.birthDate, now), url: "/" };
     const weekly = weeklyTipSentence(local.week);
-    if (weekly) return weekly;
+    // The same line WeeklyLineCard shows, inside Hoy's "Tu semana" row.
+    if (weekly) return { ...weekly, url: homeSectionHref("tu-semana") };
   }
   // userVisibleOnly requires a visible notice even when a delayed poke is
   // delivered after opt-out. Never infer another category or expose its data.

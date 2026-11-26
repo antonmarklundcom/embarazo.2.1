@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
+import { openAllHomeSections } from "./helpers/homeSections";
 
 // Growth plan item 14 — "¿Cómo te está yendo?" sends a happy answer to the
 // Play listing only when NEXT_PUBLIC_PLAY_STORE_URL is set AND the app runs
@@ -22,5 +23,7 @@ test("with the switch unset, the Android app gets no Play link", async ({ page }
   await asAndroidApp(page);
   await completeOnboarding(page);
   await expect(page.getByText("Tip de hoy")).toBeVisible();
+  // Every row open: the install card sits in "Más".
+  await openAllHomeSections(page);
   await expect(page.locator('a[href*="play.google.com"]')).toHaveCount(0);
 });

@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
+import { openAllHomeSections, openHomeSection } from "./helpers/homeSections";
 
 // BUILD-PLAN C8 (feature map #18, #19). The shortcuts must reach real screens
 // in one tap, and — in this build, which has no business number configured —
@@ -11,6 +12,8 @@ const onboard = (page: import("@playwright/test").Page) =>
 
 test("the three shortcuts reach their screens", async ({ page }) => {
   await onboard(page);
+  // Back from each screen the row is still open (lib/home/openSections).
+  await openHomeSection(page, "Herramientas");
 
   const shortcuts = page.getByRole("region", { name: "Accesos rápidos" });
   await expect(shortcuts).toBeVisible();
@@ -38,6 +41,8 @@ test("the three shortcuts reach their screens", async ({ page }) => {
 
 test("no dead WhatsApp number is offered anywhere", async ({ page }) => {
   await onboard(page);
+  // Every row open, so "anywhere" includes what Hoy keeps behind a tap.
+  await openAllHomeSections(page);
 
   // With NEXT_PUBLIC_BUSINESS_WHATSAPP unset there is no feedback card at all,
   // rather than one that opens a chat with nobody.
@@ -45,6 +50,7 @@ test("no dead WhatsApp number is offered anywhere", async ({ page }) => {
 
   for (const path of ["/", "/directorio", "/eventos", "/herramientas/contracciones"]) {
     await page.goto(path);
+    if (path === "/") await openAllHomeSections(page);
     // The all-zero fallback these screens used to ship.
     await expect(page.locator('a[href*="wa.me/595000000000"]')).toHaveCount(0);
     await expect(page.locator('a[href*="wa.me/5950"]')).toHaveCount(0);

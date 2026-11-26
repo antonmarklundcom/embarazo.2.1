@@ -1,12 +1,13 @@
 # STATUS: app.embarazo.com.py (Mi Bebé)
 
-Updated: 2026-11-25 23:58 (Paraguay) by the manager session (Claude Fable 5.2; workers on Sonnet 5.5)
+Updated: 2026-11-26 00:10 (Paraguay) by the manager session (Claude Fable 5.2; workers on Sonnet 5.5)
 
 ## State
 waiting for Anton
 
 ## Done
-- 2026-11-25: Baby Journey benchmark and build plan written: [docs/BABYJOURNEY-BENCHMARK-2026-11-25.md](docs/BABYJOURNEY-BENCHMARK-2026-11-25.md). Research only: no code, schema, deploy or production change.
+- 2026-11-25: Baby Journey benchmark and build plan written: [docs/BABYJOURNEY-BENCHMARK-2026-11-25.md](docs/BABYJOURNEY-BENCHMARK-2026-11-25.md). Research only: no code or schema change.
+- 2026-11-26: PR 165 (the benchmark doc and this file) merged into `main` as `ee383be` on Anton's yes. Docs only; the merge starts Hostinger's automatic build like any push to `main`.
 - 2026-11-25: checkout unparked from E: to `C:\dev\embarazo.2.1` with `unpark.ps1` (32,176 files verified). The E: copy is kept as a snapshot. The old junction `C:\Claude 1\embarazo.2.1` is gone.
 - 2026-11-25: `main` (`549705b`) built and run locally in device-only mode for screenshots and lab speed numbers. No tracked file changed.
 - Earlier work: see `docs/NIGHT-RUN-2026-11-04.md` and the owner manual at `C:/operation manuals/embarazo.2.1/README.md`.
@@ -22,7 +23,7 @@ Full list with detail: "Needs Anton" in the benchmark doc. The ones that unblock
 4. Google Play organisation account (D-U-N-S).
 5. Read `/admin/metricas` and note the funnel baseline; confirm production flags and that the push cron runs.
 6. WhatsApp Business Platform cost for a weekly-message pilot `[COMPLETAR]`.
-7. Review and merge the benchmark PR (doc and this file only).
+7. One real-phone test: sign in, open Hoy and a week, switch to airplane mode, open them again.
 
 ## Still red
 Nothing was built, so no gates were run for this change. The repo has no `npm run done`, `ready` or `secrets:check` yet (apps-lane gap list); `npm run verify` exists.

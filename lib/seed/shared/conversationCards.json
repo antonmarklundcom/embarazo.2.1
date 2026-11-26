@@ -1,0 +1,46 @@
+{
+  "lang": "es-PY",
+  "items": [
+    { "id": "casa-1", "theme": "casa", "text": "¿Cómo te imaginás el primer día en casa con el bebé? ¿Qué te gustaría que hagamos juntos ese día?" },
+    { "id": "casa-2", "theme": "casa", "text": "En las primeras semanas, ¿qué cosas de la casa podemos dejar para después sin sentir culpa?" },
+    { "id": "casa-3", "theme": "casa", "text": "En los primeros días, ¿qué nos ayudaría más: tener compañía, tener silencio o que alguien nos dé una mano?" },
+    { "id": "casa-4", "theme": "casa", "text": "¿Cómo nos vamos a turnar de noche para que las dos personas puedan descansar un rato?" },
+    { "id": "casa-5", "theme": "casa", "text": "Si un día no damos más de cansancio, ¿cómo nos lo vamos a decir y a quién podemos llamar?" },
+    { "id": "casa-6", "theme": "casa", "text": "¿Qué costumbres chiquitas de todos los días querés que no se pierdan cuando llegue el bebé?" },
+
+    { "id": "reparto-1", "theme": "reparto", "text": "¿Qué tareas de la casa hace hoy cada uno y cuáles van a cambiar cuando llegue el bebé?" },
+    { "id": "reparto-2", "theme": "reparto", "text": "¿Qué tarea te da más pereza y cuál hacés con gusto? ¿Nos podemos repartir así las cosas?" },
+    { "id": "reparto-3", "theme": "reparto", "text": "Cuando sintamos que no damos abasto, ¿cómo nos lo vamos a decir sin terminar peleando?" },
+    { "id": "reparto-4", "theme": "reparto", "text": "¿Quién se va a encargar de las compras, la ropa y los mandados? ¿Lo anotamos en algún lado?" },
+    { "id": "reparto-5", "theme": "reparto", "text": "¿Qué cosas te gustaría hacer vos con el bebé y cuáles te gustaría que haga yo?" },
+    { "id": "reparto-6", "theme": "reparto", "text": "¿Cada cuánto nos sentamos a ver cómo va el reparto de tareas y si hay que cambiar algo?" },
+
+    { "id": "plata-1", "theme": "plata", "text": "¿Cómo nos vamos a organizar con el trabajo en los primeros meses después de que llegue el bebé?" },
+    { "id": "plata-2", "theme": "plata", "text": "¿Qué gastos que vienen te preocupan más y cuáles podemos dejar para más adelante?" },
+    { "id": "plata-3", "theme": "plata", "text": "¿Cómo vamos a decidir juntos en qué gastar y en qué no, ahora que viene el bebé?" },
+    { "id": "plata-4", "theme": "plata", "text": "¿Qué cosas para el bebé podemos pedir prestadas o heredar de alguien conocido?" },
+    { "id": "plata-5", "theme": "plata", "text": "Si alguno tiene que trabajar menos por un tiempo, ¿cómo lo vamos a vivir y cómo nos acomodamos?" },
+    { "id": "plata-6", "theme": "plata", "text": "¿Qué significa para vos estar tranquilos con la plata? ¿Qué necesitaríamos para sentirlo?" },
+
+    { "id": "visitas-1", "theme": "visitas", "text": "¿Quiénes te gustaría que vengan primero a conocer al bebé, y quiénes pueden esperar un poco?" },
+    { "id": "visitas-2", "theme": "visitas", "text": "Si una visita se queda mucho y estamos cansados, ¿cómo le vamos a decir que es hora de irse?" },
+    { "id": "visitas-3", "theme": "visitas", "text": "¿Qué consejos de la familia queremos escuchar, y cuáles vamos a agradecer y dejar pasar?" },
+    { "id": "visitas-4", "theme": "visitas", "text": "¿A quién le podemos pedir una ayuda concreta en los primeros meses, y para qué cosas?" },
+    { "id": "visitas-5", "theme": "visitas", "text": "¿Qué costumbres de tu familia te gustaría que el bebé conozca y viva con nosotros?" },
+    { "id": "visitas-6", "theme": "visitas", "text": "¿Cómo vamos a contarles a la familia y a los amigos que llegó el bebé? ¿Quién avisa a quién?" },
+
+    { "id": "ilusiones-1", "theme": "ilusiones", "text": "¿Qué es lo que más te ilusiona de conocer al bebé? ¿Qué imagen se te viene a la cabeza?" },
+    { "id": "ilusiones-2", "theme": "ilusiones", "text": "¿Hay algo que te dé miedo de lo que viene y que todavía no te animaste a contarme?" },
+    { "id": "ilusiones-3", "theme": "ilusiones", "text": "¿Qué te gustaría que yo haga cuando te vea con miedo o con la cabeza llena de preguntas?" },
+    { "id": "ilusiones-4", "theme": "ilusiones", "text": "¿Qué parte de esta etapa querés disfrutar más, aunque haya mucho para hacer?" },
+    { "id": "ilusiones-5", "theme": "ilusiones", "text": "¿Qué te gustaría recordar de estos meses dentro de unos años? ¿Cómo lo podemos guardar?" },
+    { "id": "ilusiones-6", "theme": "ilusiones", "text": "Cuando pensás en cómo va a cambiar nuestra vida, ¿qué te entusiasma y qué te da un poco de vértigo?" },
+
+    { "id": "criar-1", "theme": "criar", "text": "¿Qué cosa de cómo te criaron te gustaría repetir con el bebé, y qué te gustaría hacer distinto?" },
+    { "id": "criar-2", "theme": "criar", "text": "¿Cómo vamos a decidir juntos cuando no estemos de acuerdo en algo del bebé?" },
+    { "id": "criar-3", "theme": "criar", "text": "¿Qué valores te gustaría que el bebé aprenda de nosotros desde que es chiquito?" },
+    { "id": "criar-4", "theme": "criar", "text": "¿Qué canciones, cuentos o palabras de nuestra familia le queremos pasar al bebé?" },
+    { "id": "criar-5", "theme": "criar", "text": "¿Qué te gustaría que el bebé sienta cuando esté con nosotros en casa?" },
+    { "id": "criar-6", "theme": "criar", "text": "¿Cómo te imaginás un día cualquiera con el bebé, dentro de un año? ¿Qué no puede faltar?" }
+  ]
+}

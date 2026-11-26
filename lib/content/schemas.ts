@@ -204,6 +204,36 @@ export const FamilyLineSchema = z.object({
 export type FamilyLine = z.infer<typeof FamilyLineSchema>;
 
 /**
+ * "Para conversar" (lib/seed/shared/conversationCards.json): one open question
+ * for her and whoever accompanies her (a pareja, her mother, a sister, a
+ * friend) to talk about before the baby arrives. Conversation starters only;
+ * the banned-term guard in lib/seed/shared/conversationCards.test.ts keeps
+ * health, legal and money facts out. 60–140 characters so a card reads in one
+ * breath on a 360 px phone. The themes are a fixed list, in screen order.
+ */
+export const CONVERSATION_THEMES = [
+  "casa",
+  "reparto",
+  "plata",
+  "visitas",
+  "ilusiones",
+  "criar",
+] as const;
+export type ConversationTheme = (typeof CONVERSATION_THEMES)[number];
+
+export const ConversationCardSchema = z.object({
+  id: idSchema,
+  theme: z.enum(CONVERSATION_THEMES, {
+    message: `el tema tiene que ser uno de: ${CONVERSATION_THEMES.join(", ")}`,
+  }),
+  text: z
+    .string()
+    .min(60, "la pregunta es muy corta (mínimo 60 caracteres)")
+    .max(140, "la pregunta es muy larga (máximo 140 caracteres)"),
+});
+export type ConversationCard = z.infer<typeof ConversationCardSchema>;
+
+/**
  * C3 — foot and hand measurements per week (feature map #12), the two tabs
  * beside "tamaño". Optional per side: a week may have a foot figure and no
  * hand one, and the tab for the missing side simply does not appear.

@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { localDateInput } from "./helpers/dates";
 import { completeOnboarding } from "./helpers/onboarding";
+import { openHomeSection } from "./helpers/homeSections";
 
 // Growth plan item 9 ("Ya nació", G1): the birth date on the pregnancy record.
 
@@ -110,7 +111,8 @@ async function recordBirth(page: import("@playwright/test").Page, daysAgo: numbe
 
 test("in baby mode the tools offer neither Pataditas nor Contracciones, but the routes still open", async ({ page }) => {
   await completeOnboarding(page, { daysAgo: 262 });
-  // While pregnant both are offered, on Hoy and in Herramientas.
+  // While pregnant both are offered, on Hoy (in its "Herramientas" row) and in Herramientas.
+  await openHomeSection(page, "Herramientas");
   await expect(page.getByRole("link", { name: /^Pataditas/ })).toBeVisible();
   await page.goto("/herramientas");
   await expect(page.getByRole("link", { name: /^Pataditas/ })).toBeVisible();

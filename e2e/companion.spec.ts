@@ -1,6 +1,7 @@
 import { test, expect, type BrowserContext } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
+import { openHomeSection } from "./helpers/homeSections";
 import { serveIdentity } from "./helpers/identity";
 import { serveClientFlags } from "./helpers/flags";
 
@@ -241,6 +242,8 @@ test("the mamá sees the ánimos, grouped, and acknowledges them once", async ({
   const page = await context.newPage();
 
   await completeOnboarding(page);
+  // "Hoy corto": the ánimos sit in the "Acompañada" row.
+  await openHomeSection(page, "Acompañada");
 
   const card = page.getByRole("region", { name: "Ánimos de tu familia" });
   await expect(card).toBeVisible();

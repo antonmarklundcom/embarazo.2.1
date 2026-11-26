@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
+import { openHomeSection } from "./helpers/homeSections";
 
 // Hoy's daily stories (Flo benchmark, 2026-10-17): a row of circles under the
 // hero and a full-screen viewer that never advances by itself.
@@ -52,6 +53,7 @@ test("the last story ends with the symptom log", async ({ page }) => {
 
 test("Qué esperar: week shortcuts and this week's guías as thumbnail rows", async ({ page }) => {
   await completeOnboarding(page, { role: "Mamá", daysAgo: 140 });
+  await openHomeSection(page, "Tu semana");
   const card = page.getByRole("region", { name: "Qué esperar esta semana" });
   await expect(card).toBeVisible();
   for (const name of ["Tu bebé", "Para preguntar", "Síntomas"]) {

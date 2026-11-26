@@ -3,6 +3,7 @@ import { test, expect } from "@playwright/test";
 import approvals from "../lib/seed/approvals.json";
 import reviewers from "../lib/seed/reviewers.json";
 import { completeOnboarding } from "./helpers/onboarding";
+import { openHomeSection } from "./helpers/homeSections";
 
 // BUILD-PLAN C5 (feature map #14), F22 (2026-10). The card renders a week's
 // note only with a reviewer's approval of that week's exact text in
@@ -28,6 +29,9 @@ test("the obstetra card follows the week's approval, not a reviewer setting", as
   page,
 }) => {
   await completeOnboarding(page, { daysAgo: 175 });
+  // "Hoy corto": the card sits in the "Tu semana" row; open it, so the absent
+  // branch below proves something.
+  await openHomeSection(page, "Tu semana");
 
   const card = page.getByRole("region", { name: "De la obstetra" });
 

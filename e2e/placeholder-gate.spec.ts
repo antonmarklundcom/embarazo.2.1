@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
+import { openAllHomeSections } from "./helpers/homeSections";
 
 // BUILD-PLAN Z1: no invented business, sponsor or event may reach a user.
 // The unit tests in lib/seed/gate.test.ts prove the data is filtered; these
@@ -52,6 +53,8 @@ test("eventos shows an honest empty state, not invented charlas", async ({
 
 test("home screen renders no sponsored placements", async ({ page }) => {
   await completeOnboarding(page);
+  // Every row open, so nothing Hoy keeps behind a tap escapes the check.
+  await openAllHomeSections(page);
   await expect(page.getByText("Patrocinado")).toHaveCount(0);
   await expectNoPlaceholderContent(page);
 });

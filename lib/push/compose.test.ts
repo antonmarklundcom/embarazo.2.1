@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { composeAllowedNotification } from "./compose";
 import { PUSH_CATEGORIES, type PushCategory } from "./categories";
 import { weeklyTipSentence, cheerSentence } from "./sentences";
+import { homeSectionHref } from "@/lib/home/openSections";
 
 const NOW = new Date(2026, 9, 23, 10).getTime();
 const local = { nextAppointment: NOW + 24 * 60 * 60 * 1000, companionReminder: true, week: 22, birthDate: null };
@@ -14,8 +15,8 @@ describe("notification composition respects device category consent", () => {
       const cheer = vi.fn(async () => "abrazo");
       const notice = await composeAllowedNotification(local, categories, NOW, companion, cheer);
       if (categories.includes("recordatorios")) expect(notice.title).toContain("control prenatal");
-      else if (categories.includes("mimos")) expect(notice).toEqual(cheerSentence("abrazo"));
-      else if (categories.includes("consejos")) expect(notice).toEqual(weeklyTipSentence(22));
+      else if (categories.includes("mimos")) expect(notice).toEqual({ ...cheerSentence("abrazo"), url: homeSectionHref("acompanada") });
+      else if (categories.includes("consejos")) expect(notice).toEqual({ ...weeklyTipSentence(22), url: homeSectionHref("tu-semana") });
       else expect(notice.body).toBe("Tocá para abrir la app.");
       if (!categories.includes("recordatorios")) expect(companion).not.toHaveBeenCalled();
       if (!categories.includes("mimos")) expect(cheer).not.toHaveBeenCalled();
@@ -26,7 +27,7 @@ describe("notification composition respects device category consent", () => {
     const companion = vi.fn(async () => local.nextAppointment);
     const cheer = vi.fn(async () => "abrazo");
     const notice = await composeAllowedNotification(local, ["consejos"], NOW, companion, cheer);
-    expect(notice).toEqual(weeklyTipSentence(22));
+    expect(notice).toEqual({ ...weeklyTipSentence(22), url: "/#abrir=tu-semana" });
     expect(companion).not.toHaveBeenCalled();
     expect(cheer).not.toHaveBeenCalled();
   });

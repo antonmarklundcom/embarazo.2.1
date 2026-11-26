@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
+import { openHomeSection } from "./helpers/homeSections";
 
 // V1 — the enforced Content-Security-Policy, walked.
 //
@@ -229,6 +230,7 @@ test.describe("the flows that load something other than same-origin HTML", () =>
     const fromConsole = await watchForViolations(page);
 
     await completeOnboarding(page, { daysAgo: 140 });
+    await openHomeSection(page, "Acompañada");
     const download = page.waitForEvent("download");
     await page.getByRole("button", { name: "Compartir mi semana" }).click();
     await download;

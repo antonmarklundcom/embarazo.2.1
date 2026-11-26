@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
+import { openHomeSection } from "./helpers/homeSections";
 
 for (const width of [320, 1280]) {
   test(`home stays readable and navigable at ${width}px`, async ({ page }) => {
@@ -10,7 +11,9 @@ for (const width of [320, 1280]) {
     const main = page.getByRole("main");
     const hero = page.getByRole("region", { name: "El desarrollo de tu bebé", exact: true });
     const appointment = page.getByRole("region", { name: "Próximo control", exact: true });
-    const daily = page.getByRole("region", { name: "Un momento para vos", exact: true });
+    // "Hoy corto" (owner-approved, 2026-11): the daily block is "Hoy" and now
+    // holds the próximo control; the reading and the tools open on tap.
+    const daily = page.getByRole("region", { name: "Hoy", exact: true });
     const reading = page.getByRole("region", { name: "Para conocer tu semana", exact: true });
     const tools = page.getByRole("region", { name: "Tus herramientas", exact: true });
 
@@ -19,11 +22,14 @@ for (const width of [320, 1280]) {
     await expect(hero.getByRole("button", { name: "Cambiar el fondo" })).toBeVisible();
     await expect(hero.getByRole("group", { name: "Cómo ver el tamaño de tu bebé" })).toBeVisible();
 
+    await openHomeSection(page, "Tu semana");
+    await openHomeSection(page, "Herramientas");
+
     // The practical next action and daily habit lead the longer reading/tool lists.
-    for (const region of [hero, appointment, daily, reading, tools]) {
+    for (const region of [hero, daily, appointment, reading, tools]) {
       await expect(region).toBeVisible();
     }
-    const regions = await Promise.all([hero, appointment, daily, reading, tools].map((item) => item.boundingBox()));
+    const regions = await Promise.all([hero, daily, appointment, reading, tools].map((item) => item.boundingBox()));
     for (let index = 1; index < regions.length; index += 1) {
       expect(regions[index]!.y).toBeGreaterThan(regions[index - 1]!.y);
     }

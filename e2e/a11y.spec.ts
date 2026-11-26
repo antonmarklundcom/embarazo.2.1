@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
+import { openAllHomeSections } from "./helpers/homeSections";
 
 // Automated accessibility check (WCAG 2.x A/AA rules in axe-core) on the
 // screens a new or returning user actually meets. It fails on "serious" and
@@ -94,7 +95,11 @@ test("the first onboarding questions have no serious accessibility violations", 
 test("Hoy and every personal screen have no serious accessibility violations", async ({ page }) => {
   test.setTimeout(180_000);
   await completeOnboarding(page);
+  // "Hoy corto": once with every row closed (how she meets it), once with
+  // every row open (everything the rows hold).
   await audit(page, "Hoy");
+  await openAllHomeSections(page);
+  await audit(page, "Hoy, every row open");
   for (const path of PERSONAL_ROUTES) {
     await page.goto(path);
     await expect(page.locator("main").first()).toBeVisible();

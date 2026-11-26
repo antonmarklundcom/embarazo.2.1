@@ -2,12 +2,16 @@ import { test, expect } from "@playwright/test";
 
 import familyLines from "../lib/seed/py/familyLines.json";
 import { completeOnboarding } from "./helpers/onboarding";
+import { openHomeSection } from "./helpers/homeSections";
 
 // BUILD-PLAN C4 (feature map #13): the same week with three entrances, opening
 // on the role the user chose in onboarding (B1).
 
-const onboard = (page: import("@playwright/test").Page, role: string) =>
-  completeOnboarding(page, { role, daysAgo: 140 });
+// "Hoy corto": the switcher now opens the "Tu semana" row.
+const onboard = async (page: import("@playwright/test").Page, role: string) => {
+  await completeOnboarding(page, { role, daysAgo: 140 });
+  await openHomeSection(page, "Tu semana");
+};
 
 test("a mamá opens on 'para vos' and can read the other two", async ({ page }) => {
   await onboard(page, "Mamá");
@@ -66,8 +70,10 @@ test("mobile overview wraps tabs and browses weeks without changing the pregnanc
   const hero = await page.getByRole("heading", { level: 1 }).innerText();
   const tabs = overview.getByRole("tablist");
   expect(await tabs.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+  // "Hoy corto" (owner-approved, 2026-11): the overview moved from above the
+  // "Un momento para vos" block into the "Tu semana" row, which it leads.
   const box = await overview.boundingBox();
-  const later = await page.getByRole("heading", { name: "Un momento para vos" }).boundingBox();
+  const later = await page.getByRole("region", { name: "Esta semana", exact: true }).boundingBox();
   expect(box!.y).toBeLessThan(later!.y);
   await overview.getByRole("button", { name: "Semana siguiente", exact: true }).click();
   await expect(title).toHaveText(`Semana ${current + 1}`);
@@ -95,6 +101,8 @@ test("mobile overview wraps tabs and browses weeks without changing the pregnanc
   });
   await expect(title).toHaveText(`Semana ${current + 1}`);
   await page.reload();
+  // A reload starts with every row closed.
+  await openHomeSection(page, "Tu semana");
   await expect(title).toHaveText(initial);
   await overview.evaluate((el) => {
     window.scrollTo(0, Math.max(0, window.scrollY + el.getBoundingClientRect().top - 100));

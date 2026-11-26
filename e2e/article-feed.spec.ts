@@ -1,13 +1,17 @@
 import { test, expect } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
+import { openHomeSection } from "./helpers/homeSections";
 
 // BUILD-PLAN C6 (feature map #15, #17): the home rail shows the guías that are
 // about this week, with a read time, and the read time follows through to the
 // article itself.
 
-const onboardAt = (page: import("@playwright/test").Page, daysAgo: number) =>
-  completeOnboarding(page, { daysAgo });
+// "Hoy corto": the rail sits in the "Tu semana" row.
+const onboardAt = async (page: import("@playwright/test").Page, daysAgo: number) => {
+  await completeOnboarding(page, { daysAgo });
+  await openHomeSection(page, "Tu semana");
+};
 
 test("week 34 is offered the bolso guía, and it opens", async ({ page }) => {
   await onboardAt(page, 238); // ~34 weeks

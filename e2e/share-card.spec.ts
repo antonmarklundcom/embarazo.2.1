@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 import { completeOnboarding } from "./helpers/onboarding";
+import { openHomeSection } from "./helpers/homeSections";
 
 // BUILD-PLAN E2 (feature map #30). Chromium's headless build does not offer
 // `navigator.share`, which is the *fallback* path and therefore the one worth
@@ -28,6 +29,7 @@ test("sharing the week card produces a PNG without touching the network", async 
   });
 
   await completeOnboarding(page, { daysAgo: 140 });
+  await openHomeSection(page, "Acompañada");
 
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Compartir mi semana" }).click();
@@ -46,6 +48,7 @@ test("sharing the week card produces a PNG without touching the network", async 
 // the test for WhatsApp.
 test("the mamá can send this week's partner paragraph to WhatsApp", async ({ page }) => {
   await completeOnboarding(page, { daysAgo: 140 });
+  await openHomeSection(page, "Acompañada");
 
   // Worded so it is true for a mamá without a pareja too: the profile stores
   // no answer that says whether she has one (lib/roleCopy.ts partnerPrompt).
@@ -59,6 +62,7 @@ test("the mamá can send this week's partner paragraph to WhatsApp", async ({ pa
 
 test("a papá is not offered the partner message", async ({ page }) => {
   await completeOnboarding(page, { daysAgo: 140, role: "Papá" });
+  await openHomeSection(page, "Acompañada");
 
   await expect(page.getByRole("button", { name: "Compartir mi semana" })).toBeVisible();
   await expect(page.getByRole("link", { name: /Contale a tu pareja/ })).toHaveCount(0);
@@ -66,6 +70,7 @@ test("a papá is not offered the partner message", async ({ page }) => {
 
 test("the copy tells the truth about where the image is made", async ({ page }) => {
   await completeOnboarding(page, { daysAgo: 140 });
+  await openHomeSection(page, "Acompañada");
 
   await expect(page.getByText(/se arma en tu teléfono y solo lleva la semana/)).toBeVisible();
 });
@@ -73,6 +78,7 @@ test("the copy tells the truth about where the image is made", async ({ page }) 
 // Growth plan item 11 — the baby's nickname is offered, ticked, and honest.
 test("the nickname is offered on the card, and the note says so", async ({ page }) => {
   await completeOnboarding(page, { daysAgo: 140, babyName: "Mateo" });
+  await openHomeSection(page, "Acompañada");
 
   const box = page.getByRole("checkbox", { name: "Con el apodo «Mateo»" });
   await expect(box).toBeChecked();

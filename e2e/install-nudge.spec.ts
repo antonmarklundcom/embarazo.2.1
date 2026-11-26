@@ -41,7 +41,7 @@ test("after onboarding it shows once on Hoy and once on the first tool", async (
   await completeOnboarding(page);
   await expect(page.locator('[data-install-nudge="onboarded"]')).toBeVisible();
   await page.reload();
-  await expect(page.getByText("Un momento para vos")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Hoy", exact: true })).toBeVisible();
   await expect(page.locator('[data-install-nudge="onboarded"]')).toHaveCount(0);
 
   await page.goto("/herramientas/contracciones");
